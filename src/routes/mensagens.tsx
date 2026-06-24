@@ -2399,6 +2399,8 @@ function ChatPanel({ myId, contact, onBack }: {
     viewOnce = false,
   ) {
     if (sending || uploading) return;
+    if (isBlocked) { toast.error(`Desbloqueia @${contact.username} para enviar mensagens.`); return; }
+    if (iAmBlockedBy) { toast.error("Não é possível enviar mensagens a este utilizador."); return; }
     const t = text.trim();
     if (!t && !mediaUrl) return;
     setSending(true);
