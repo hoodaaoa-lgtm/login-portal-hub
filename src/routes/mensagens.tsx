@@ -1983,19 +1983,15 @@ function ChatPanel({ myId, contact, onBack }: {
     setShowChatMenu(false);
     setChatConfirm({
       title: "Limpar conversa",
-      body: "Todas as mensagens desta conversa serão apagadas para ti. Esta ação não pode ser desfeita.",
+      body: "Todas as mensagens serão apagadas para ti localmente. Esta ação não pode ser desfeita.",
       action: async () => {
         setChatConfirm(null);
-        // Apagar todas as mensagens da conversa onde sou o sender
-        const { error } = await db.from("messages")
+        // Apagar as minhas mensagens da DB (RLS impede apagar as do outro)
+        await db.from("messages")
           .delete()
           .eq("conversation_id", contact.conversationId)
           .eq("sender_id", myId);
-        if (error) {
-          toast.error("Erro ao limpar: " + error.message);
-          return;
-        }
-        // Também limpar cache local
+        // Limpar visualmente TUDO (cache + state)
         setMsgs([]);
         try { localStorage.removeItem(CACHE_KEY); } catch {}
         toast("✓ Conversa limpa");
