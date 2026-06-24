@@ -1072,7 +1072,7 @@ function ActivityPanel({ onBack }: { onBack: () => void }) {
 
       const [postsRes, likesRes, followsRes] = await Promise.all([
         supabase.from("posts").select("id,created_at").eq("author_id", uid).order("created_at", { ascending: false }).limit(10),
-        supabase.from("likes").select("id,created_at,post_id").eq("user_id", uid).order("created_at", { ascending: false }).limit(10),
+        supabase.from("post_likes").select("post_id,created_at").eq("user_id", uid).order("created_at", { ascending: false }).limit(10),
         supabase.from("follows").select("id,created_at,target_username").eq("follower_id", uid).order("created_at", { ascending: false }).limit(10),
       ]);
 
