@@ -1897,6 +1897,8 @@ function ChatPanel({ myId, contact, onBack }: {
   const [trimEnd,      setTrimEnd]      = useState(100); // 0-100 %
   const [previewPlaying, setPreviewPlaying] = useState(false);
   const [previewPos,   setPreviewPos]   = useState(0);   // 0-100 %
+  const trimEndRef   = useRef<number>(100);
+  const trimStartRef = useRef<number>(0);
   const previewAudioRef = useRef<HTMLAudioElement|null>(null);
   const [waveform,     setWaveform]     = useState<number[]>([]);
   const [mediaSendQueue, setMediaSendQueue] = useState<{file:File;url:string;type:"image"|"video";edit:MediaEditState|null;caption:string}[]>([]);
@@ -2165,6 +2167,7 @@ function ChatPanel({ myId, contact, onBack }: {
   const mediaRecorderRef = useRef<MediaRecorder|null>(null);
   const audioChunksRef   = useRef<Blob[]>([]);
   const recordTimerRef   = useRef<ReturnType<typeof setInterval>|null>(null);
+  const recordSecsLive   = useRef<number>(0); // duração real sem depender de setState async
   const imgInputRef   = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef  = useRef<HTMLInputElement>(null);
@@ -2773,8 +2776,10 @@ function ChatPanel({ myId, contact, onBack }: {
         stream.getTracks().forEach(t => t.stop());
         setRecording(false);
         if (recordTimerRef.current) clearInterval(recordTimerRef.current);
-        // capturar antes de resetar
-        setRecordSecs(s => { recordSecsAtStop = s; return 0; });
+        // usar o ref síncrono — setState é async e chegaria sempre a 0
+        recordSecsAtStop = recordSecsLive.current;
+        setRecordSecs(0);
+        recordSecsLive.current = 0;
         const blob = new Blob(audioChunksRef.current, { type: mimeType });
         if (blob.size < 500) { toast.error("Gravação muito curta"); return; }
         const blobUrl = URL.createObjectURL(blob);
@@ -2783,6 +2788,7 @@ function ChatPanel({ myId, contact, onBack }: {
         const realDur = recordSecsAtStop > 0 ? recordSecsAtStop : 1;
         setAudioPreview({ blob, url: blobUrl, dur: realDur });
         setTrimStart(0); setTrimEnd(100);
+        trimStartRef.current = 0; trimEndRef.current = 100;
         setPreviewPos(0); setPreviewPlaying(false);
         setWaveform(Array.from({ length: 40 }, (_, i) => {
           const bell = Math.sin((i / 39) * Math.PI) * 45;
@@ -2794,7 +2800,11 @@ function ChatPanel({ myId, contact, onBack }: {
       mr.start(250);
       setRecording(true);
       setRecordSecs(0);
-      recordTimerRef.current = setInterval(() => setRecordSecs(s => s + 1), 1000);
+      recordSecsLive.current = 0;
+      recordTimerRef.current = setInterval(() => {
+        recordSecsLive.current += 1;
+        setRecordSecs(s => s + 1);
+      }, 1000);
     } catch (err) {
       console.error("[recording]", err);
       toast.error("Não foi possível aceder ao microfone");
@@ -2810,6 +2820,7 @@ function ChatPanel({ myId, contact, onBack }: {
 
   function cancelRecording() {
     if (recordTimerRef.current) clearInterval(recordTimerRef.current);
+    recordSecsLive.current = 0;
     audioChunksRef.current = [];
     mediaRecorderRef.current?.stop();
     setAudioPreview(null);
@@ -2827,14 +2838,16 @@ function ChatPanel({ myId, contact, onBack }: {
     if (!previewAudioRef.current) {
       const a = new Audio(audioPreview.url);
       previewAudioRef.current = a;
-      const startPct = trimStart / 100;
-      const endPct   = trimEnd / 100;
-      a.currentTime = (audioPreview.dur * startPct);
+      a.currentTime = audioPreview.dur * (trimStartRef.current / 100);
       a.ontimeupdate = () => {
         const pct = a.currentTime / audioPreview.dur * 100;
-        console.log("pct:", pct.toFixed(2), "| trimEnd:", trimEnd, "| endPct*100:", endPct * 100);
+        console.log("pct:", pct.toFixed(2), "| trimEnd:", trimEndRef.current);
         setPreviewPos(pct);
-        if (pct >= endPct * 100) { a.pause(); setPreviewPlaying(false); setPreviewPos(trimStart); }
+        if (pct >= trimEndRef.current) {
+          a.pause();
+          setPreviewPlaying(false);
+          setPreviewPos(trimStartRef.current);
+        }
       };
       a.onended = () => { setPreviewPlaying(false); setPreviewPos(trimStart); };
     }
@@ -2842,8 +2855,10 @@ function ChatPanel({ myId, contact, onBack }: {
       previewAudioRef.current.pause(); setPreviewPlaying(false);
     } else {
       const a = previewAudioRef.current;
-      const startPct = trimStart / 100;
-      if (previewPos < trimStart || previewPos > trimEnd) a.currentTime = audioPreview.dur * startPct;
+      const startPct = trimStartRef.current / 100;
+      if (previewPos < trimStartRef.current || previewPos > trimEndRef.current) {
+        a.currentTime = audioPreview.dur * startPct;
+      }
       a.play().catch((err) => {
         console.error("Erro ao reproduzir áudio:", err);
         toast.error("Não foi possível reproduzir o áudio");
@@ -2865,10 +2880,14 @@ function ChatPanel({ myId, contact, onBack }: {
     }
     const file = new File([audioPreview.blob], `audio-${Date.now()}.${ext}`, { type: blobType });
     const dur = audioPreview.dur;
-    discardPreview();
     const url = await uploadFile(file, "audio");
     console.log("URL do áudio após upload:", url);
-    if (url) await send("🎤 Áudio", "audio", url, undefined, dur);
+    if (!url) {
+      toast.error("Falha no upload — áudio não foi enviado");
+      return;
+    }
+    discardPreview();
+    await send("🎤 Áudio", "audio", url, undefined, dur);
   }
 
   // ── Media msgs for lightbox ──
@@ -3237,10 +3256,10 @@ function ChatPanel({ myId, contact, onBack }: {
             </span>
             <div className="flex-1 flex flex-col gap-1">
               <input type="range" min={0} max={trimEnd - 2} value={trimStart}
-                onChange={e => { const v = Number(e.target.value); setTrimStart(v); if (previewAudioRef.current) previewAudioRef.current.currentTime = audioPreview.dur * v / 100; setPreviewPos(v); }}
+                onChange={e => { const v = Number(e.target.value); setTrimStart(v); trimStartRef.current = v; if (previewAudioRef.current) previewAudioRef.current.currentTime = audioPreview.dur * v / 100; setPreviewPos(v); }}
                 className="w-full h-1 accent-[#5B3FCF]" style={{ cursor:"pointer" }} />
               <input type="range" min={trimStart + 2} max={100} value={trimEnd}
-                onChange={e => setTrimEnd(Number(e.target.value))}
+                onChange={e => { const v = Number(e.target.value); setTrimEnd(v); trimEndRef.current = v; }}
                 className="w-full h-1" style={{ cursor:"pointer", accentColor:"#E94B8A" }} />
             </div>
             <span className="text-[9px] shrink-0" style={{ color:"#E94B8A", minWidth:28 }}>
