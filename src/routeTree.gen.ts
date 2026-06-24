@@ -9,38 +9,274 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as StudioRouteImport } from './routes/studio'
+import { Route as SignupRouteImport } from './routes/signup'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as PerfilRouteImport } from './routes/perfil'
+import { Route as MensagensRouteImport } from './routes/mensagens'
+import { Route as HoodatvRouteImport } from './routes/hoodatv'
+import { Route as HomeRouteImport } from './routes/home'
+import { Route as ExplorarRouteImport } from './routes/explorar'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as StudioIndexRouteImport } from './routes/studio.index'
+import { Route as UUsernameRouteImport } from './routes/u.$username'
+import { Route as StudioUploadRouteImport } from './routes/studio.upload'
+import { Route as StudioOnboardingRouteImport } from './routes/studio.onboarding'
+import { Route as StudioContentRouteImport } from './routes/studio.content'
+import { Route as AuthBridgeRouteImport } from './routes/auth.bridge'
 
+const StudioRoute = StudioRouteImport.update({
+  id: '/studio',
+  path: '/studio',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SignupRoute = SignupRouteImport.update({
+  id: '/signup',
+  path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PerfilRoute = PerfilRouteImport.update({
+  id: '/perfil',
+  path: '/perfil',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MensagensRoute = MensagensRouteImport.update({
+  id: '/mensagens',
+  path: '/mensagens',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HoodatvRoute = HoodatvRouteImport.update({
+  id: '/hoodatv',
+  path: '/hoodatv',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HomeRoute = HomeRouteImport.update({
+  id: '/home',
+  path: '/home',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ExplorarRoute = ExplorarRouteImport.update({
+  id: '/explorar',
+  path: '/explorar',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const StudioIndexRoute = StudioIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => StudioRoute,
+} as any)
+const UUsernameRoute = UUsernameRouteImport.update({
+  id: '/u/$username',
+  path: '/u/$username',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StudioUploadRoute = StudioUploadRouteImport.update({
+  id: '/upload',
+  path: '/upload',
+  getParentRoute: () => StudioRoute,
+} as any)
+const StudioOnboardingRoute = StudioOnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
+  getParentRoute: () => StudioRoute,
+} as any)
+const StudioContentRoute = StudioContentRouteImport.update({
+  id: '/content',
+  path: '/content',
+  getParentRoute: () => StudioRoute,
+} as any)
+const AuthBridgeRoute = AuthBridgeRouteImport.update({
+  id: '/auth/bridge',
+  path: '/auth/bridge',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/explorar': typeof ExplorarRoute
+  '/home': typeof HomeRoute
+  '/hoodatv': typeof HoodatvRoute
+  '/mensagens': typeof MensagensRoute
+  '/perfil': typeof PerfilRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/signup': typeof SignupRoute
+  '/studio': typeof StudioRouteWithChildren
+  '/auth/bridge': typeof AuthBridgeRoute
+  '/studio/content': typeof StudioContentRoute
+  '/studio/onboarding': typeof StudioOnboardingRoute
+  '/studio/upload': typeof StudioUploadRoute
+  '/u/$username': typeof UUsernameRoute
+  '/studio/': typeof StudioIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/explorar': typeof ExplorarRoute
+  '/home': typeof HomeRoute
+  '/hoodatv': typeof HoodatvRoute
+  '/mensagens': typeof MensagensRoute
+  '/perfil': typeof PerfilRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/signup': typeof SignupRoute
+  '/auth/bridge': typeof AuthBridgeRoute
+  '/studio/content': typeof StudioContentRoute
+  '/studio/onboarding': typeof StudioOnboardingRoute
+  '/studio/upload': typeof StudioUploadRoute
+  '/u/$username': typeof UUsernameRoute
+  '/studio': typeof StudioIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/explorar': typeof ExplorarRoute
+  '/home': typeof HomeRoute
+  '/hoodatv': typeof HoodatvRoute
+  '/mensagens': typeof MensagensRoute
+  '/perfil': typeof PerfilRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/signup': typeof SignupRoute
+  '/studio': typeof StudioRouteWithChildren
+  '/auth/bridge': typeof AuthBridgeRoute
+  '/studio/content': typeof StudioContentRoute
+  '/studio/onboarding': typeof StudioOnboardingRoute
+  '/studio/upload': typeof StudioUploadRoute
+  '/u/$username': typeof UUsernameRoute
+  '/studio/': typeof StudioIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/explorar'
+    | '/home'
+    | '/hoodatv'
+    | '/mensagens'
+    | '/perfil'
+    | '/reset-password'
+    | '/signup'
+    | '/studio'
+    | '/auth/bridge'
+    | '/studio/content'
+    | '/studio/onboarding'
+    | '/studio/upload'
+    | '/u/$username'
+    | '/studio/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/explorar'
+    | '/home'
+    | '/hoodatv'
+    | '/mensagens'
+    | '/perfil'
+    | '/reset-password'
+    | '/signup'
+    | '/auth/bridge'
+    | '/studio/content'
+    | '/studio/onboarding'
+    | '/studio/upload'
+    | '/u/$username'
+    | '/studio'
+  id:
+    | '__root__'
+    | '/'
+    | '/explorar'
+    | '/home'
+    | '/hoodatv'
+    | '/mensagens'
+    | '/perfil'
+    | '/reset-password'
+    | '/signup'
+    | '/studio'
+    | '/auth/bridge'
+    | '/studio/content'
+    | '/studio/onboarding'
+    | '/studio/upload'
+    | '/u/$username'
+    | '/studio/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ExplorarRoute: typeof ExplorarRoute
+  HomeRoute: typeof HomeRoute
+  HoodatvRoute: typeof HoodatvRoute
+  MensagensRoute: typeof MensagensRoute
+  PerfilRoute: typeof PerfilRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
+  SignupRoute: typeof SignupRoute
+  StudioRoute: typeof StudioRouteWithChildren
+  AuthBridgeRoute: typeof AuthBridgeRoute
+  UUsernameRoute: typeof UUsernameRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/studio': {
+      id: '/studio'
+      path: '/studio'
+      fullPath: '/studio'
+      preLoaderRoute: typeof StudioRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/signup': {
+      id: '/signup'
+      path: '/signup'
+      fullPath: '/signup'
+      preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/perfil': {
+      id: '/perfil'
+      path: '/perfil'
+      fullPath: '/perfil'
+      preLoaderRoute: typeof PerfilRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mensagens': {
+      id: '/mensagens'
+      path: '/mensagens'
+      fullPath: '/mensagens'
+      preLoaderRoute: typeof MensagensRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/hoodatv': {
+      id: '/hoodatv'
+      path: '/hoodatv'
+      fullPath: '/hoodatv'
+      preLoaderRoute: typeof HoodatvRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/home': {
+      id: '/home'
+      path: '/home'
+      fullPath: '/home'
+      preLoaderRoute: typeof HomeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/explorar': {
+      id: '/explorar'
+      path: '/explorar'
+      fullPath: '/explorar'
+      preLoaderRoute: typeof ExplorarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,22 +284,81 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/studio/': {
+      id: '/studio/'
+      path: '/'
+      fullPath: '/studio/'
+      preLoaderRoute: typeof StudioIndexRouteImport
+      parentRoute: typeof StudioRoute
+    }
+    '/u/$username': {
+      id: '/u/$username'
+      path: '/u/$username'
+      fullPath: '/u/$username'
+      preLoaderRoute: typeof UUsernameRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/studio/upload': {
+      id: '/studio/upload'
+      path: '/upload'
+      fullPath: '/studio/upload'
+      preLoaderRoute: typeof StudioUploadRouteImport
+      parentRoute: typeof StudioRoute
+    }
+    '/studio/onboarding': {
+      id: '/studio/onboarding'
+      path: '/onboarding'
+      fullPath: '/studio/onboarding'
+      preLoaderRoute: typeof StudioOnboardingRouteImport
+      parentRoute: typeof StudioRoute
+    }
+    '/studio/content': {
+      id: '/studio/content'
+      path: '/content'
+      fullPath: '/studio/content'
+      preLoaderRoute: typeof StudioContentRouteImport
+      parentRoute: typeof StudioRoute
+    }
+    '/auth/bridge': {
+      id: '/auth/bridge'
+      path: '/auth/bridge'
+      fullPath: '/auth/bridge'
+      preLoaderRoute: typeof AuthBridgeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
+interface StudioRouteChildren {
+  StudioContentRoute: typeof StudioContentRoute
+  StudioOnboardingRoute: typeof StudioOnboardingRoute
+  StudioUploadRoute: typeof StudioUploadRoute
+  StudioIndexRoute: typeof StudioIndexRoute
+}
+
+const StudioRouteChildren: StudioRouteChildren = {
+  StudioContentRoute: StudioContentRoute,
+  StudioOnboardingRoute: StudioOnboardingRoute,
+  StudioUploadRoute: StudioUploadRoute,
+  StudioIndexRoute: StudioIndexRoute,
+}
+
+const StudioRouteWithChildren =
+  StudioRoute._addFileChildren(StudioRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ExplorarRoute: ExplorarRoute,
+  HomeRoute: HomeRoute,
+  HoodatvRoute: HoodatvRoute,
+  MensagensRoute: MensagensRoute,
+  PerfilRoute: PerfilRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
+  SignupRoute: SignupRoute,
+  StudioRoute: StudioRouteWithChildren,
+  AuthBridgeRoute: AuthBridgeRoute,
+  UUsernameRoute: UUsernameRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
