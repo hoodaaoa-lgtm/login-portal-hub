@@ -138,7 +138,7 @@ function OnboardingPage() {
       if (err) throw err;
 
       await qc.invalidateQueries({ queryKey: ["my-channel"] });
-      setChannelUrl(`hoodatv.com/@${handle}`);
+      setChannelUrl(`${window.location.host}/@${handle}`);
       setStep(3);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Erro ao criar canal");
@@ -194,7 +194,7 @@ function OnboardingPage() {
         <div className="flex items-center rounded-2xl overflow-hidden transition"
           style={{ background: "var(--s2)", border: "1.5px solid var(--border-default)" }}>
           <span className="pl-4 pr-2 text-sm shrink-0 py-3" style={{ color: "var(--text-muted)" }}>
-            hoodatv.com/@
+            {window.location.host}/@
           </span>
           <input value={handle}
             onChange={e => setHandle(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""))}
