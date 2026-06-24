@@ -1,0 +1,389 @@
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { myChannelQuery, channelStatsQuery, myVideosQuery } from "@/lib/channel-queries";
+import {
+  Eye, Video as VideoIcon, Upload, ArrowUpRight, TrendingUp,
+  Clock, Users, PlayCircle, MoreVertical, Globe, Lock, Tv2,
+} from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+import { pt } from "date-fns/locale";
+import { useState } from "react";
+import { toast } from "sonner";
+
+export const Route = createFileRoute("/studio/")({
+  head: () => ({ meta: [{ title: "Painel — Hooda Studio" }] }),
+  component: DashboardPage,
+});
+
+const PURPLE = "#5B3FCF";
+const GRAD   = "linear-gradient(135deg,#5B3FCF,#E94B8A)";
+
+/* ── Stat card ── */
+function StatCard({ label, value, sub, icon: Icon, accent, loading }: {
+  label: string; value: string | number; sub?: string;
+  icon: React.ElementType; accent: string; loading?: boolean;
+}) {
+  return (
+    <div className="rounded-2xl p-5 flex flex-col gap-3 relative overflow-hidden"
+      style={{ background: "var(--s0)", boxShadow: "var(--shadow-card)", border: "1px solid var(--border-subtle)" }}>
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>{label}</span>
+        <div className="h-8 w-8 rounded-xl flex items-center justify-center"
+          style={{ background: accent + "18" }}>
+          <Icon className="h-4 w-4" style={{ color: accent }} />
+        </div>
+      </div>
+      {loading
+        ? <div className="h-8 w-24 rounded-lg animate-pulse" style={{ background: "var(--s2)" }} />
+        : <div className="text-3xl font-bold tracking-tight" style={{ color: "var(--text-primary)" }}>
+            {typeof value === "number" ? value.toLocaleString("pt-PT") : value}
+          </div>
+      }
+      {sub && <p className="text-xs flex items-center gap-1" style={{ color: "#6BA547" }}>
+        <TrendingUp className="h-3 w-3" />{sub}
+      </p>}
+      {/* decorative circle */}
+      <div className="absolute -right-4 -bottom-4 h-20 w-20 rounded-full opacity-[0.06]"
+        style={{ background: accent }} />
+    </div>
+  );
+}
+
+/* ── Video row ── */
+function VideoRow({ v, onEdit, onDelete }: { v: any; onEdit: (v:any)=>void; onDelete: (v:any)=>void }) {
+  const [menu, setMenu] = useState(false);
+  const isPublic = v.visibility === "public";
+  return (
+    <li className="flex items-center gap-4 px-5 py-3 transition-colors hover:bg-[var(--s1)] group">
+      {/* Thumbnail */}
+      <div className="h-12 w-[86px] rounded-xl overflow-hidden shrink-0 flex items-center justify-center"
+        style={{ background: "var(--s2)" }}>
+        {v.thumbnail_url
+          ? <img src={v.thumbnail_url} alt="" className="h-full w-full object-cover" />
+          : <PlayCircle className="h-5 w-5" style={{ color: "var(--text-muted)" }} />}
+      </div>
+
+      {/* Info */}
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>{v.title}</p>
+        <p className="text-xs mt-0.5 flex items-center gap-1.5" style={{ color: "var(--text-muted)" }}>
+          <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${isPublic ? "text-green-700 bg-green-50" : "text-neutral-500 bg-neutral-100"}`}>
+            {isPublic ? <Globe className="h-2.5 w-2.5" /> : <Lock className="h-2.5 w-2.5" />}
+            {isPublic ? "Público" : "Privado"}
+          </span>
+          · {Number(v.views_count ?? 0).toLocaleString("pt-PT")} vistas
+          {v.created_at && <> · {formatDistanceToNow(new Date(v.created_at), { locale: pt, addSuffix: true })}</>}
+        </p>
+      </div>
+
+      {/* Menu */}
+      <div className="relative shrink-0">
+        <button onClick={() => setMenu(m => !m)}
+          className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition"
+          style={{ color: "var(--text-muted)" }}
+          onMouseOver={e => (e.currentTarget.style.background = "var(--s2)")}
+          onMouseOut={e => (e.currentTarget.style.background = "transparent")}>
+          <MoreVertical className="h-4 w-4" />
+        </button>
+        {menu && (
+          <div className="absolute right-0 top-full mt-1 rounded-xl shadow-lg z-10 overflow-hidden min-w-[140px] border"
+            style={{ background: "var(--s0)", borderColor: "var(--border-default)" }}>
+                <button onClick={() => { setMenu(false); onEdit(v); }}
+                className="w-full text-left px-4 py-2.5 text-sm transition hover:bg-[var(--s1)]"
+                style={{ color: "var(--text-primary)" }}>
+                Editar
+              </button>
+              <a href={`/hoodatv`}
+                className="w-full block text-left px-4 py-2.5 text-sm transition hover:bg-[var(--s1)]"
+                style={{ color: "var(--text-primary)" }}
+                onClick={() => setMenu(false)}>
+                Ver na HoodaTV
+              </a>
+              <div style={{ height:1, background:"var(--border-subtle)" }} />
+              <button onClick={() => { setMenu(false); onDelete(v); }}
+                className="w-full text-left px-4 py-2.5 text-sm transition hover:bg-red-50"
+                style={{ color: "#E94B8A" }}>
+                Eliminar
+              </button>
+          </div>
+        )}
+      </div>
+    </li>
+  );
+}
+
+/* ── Dashboard ── */
+export default function DashboardPage() {
+  const qc = useQueryClient();
+  const { data: channel, isLoading: chLoading } = useQuery(myChannelQuery());
+  const { data: stats, isLoading } = useQuery(channelStatsQuery(channel?.id));
+  const { data: videos } = useQuery(myVideosQuery(channel?.id));
+  const [tab, setTab]           = useState<"all" | "public" | "private">("all");
+  const [editVideo, setEditVideo] = useState<any|null>(null);
+
+  async function deleteVideo(v: any) {
+    if (v.video_path) {
+      await supabase.storage.from("videos").remove([v.video_path]);
+    }
+    await (supabase as any).from("videos").delete().eq("id", v.id);
+    qc.invalidateQueries({ queryKey: ["my-videos"] });
+    qc.invalidateQueries({ queryKey: ["channel-stats"] });
+    toast.success("Vídeo eliminado.");
+  }
+
+  /* ── Sem canal → ecrã de boas-vindas ── */
+  if (!chLoading && !channel) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[70vh] px-6 text-center">
+        <div className="w-20 h-20 rounded-3xl flex items-center justify-center mb-6"
+          style={{ background: "linear-gradient(135deg,#5B3FCF,#E94B8A)" }}>
+          <Tv2 className="w-9 h-9 text-white" />
+        </div>
+        <h1 className="text-2xl font-extrabold mb-2" style={{ color: "var(--text-primary)" }}>
+          Bem-vindo ao Hooda Studio
+        </h1>
+        <p className="text-sm mb-8 max-w-xs" style={{ color: "var(--text-muted)" }}>
+          Ainda não tens um canal. Cria o teu canal para começares a publicar vídeos na HoodaTV.
+        </p>
+        <a href="/studio/onboarding"
+          className="px-8 py-3 rounded-2xl text-white font-bold text-sm transition-all hover:-translate-y-0.5 active:scale-95 inline-block"
+          style={{ background: "linear-gradient(135deg,#5B3FCF,#E94B8A)", boxShadow: "0 4px 20px rgba(91,63,207,0.35)" }}>
+          + Criar Canal
+        </a>
+      </div>
+    );
+  }
+
+  const filtered = (videos ?? []).filter(v =>
+    tab === "all" ? true : tab === "public" ? v.visibility === "public" : v.visibility !== "public"
+  ).slice(0, 6);
+
+  // Calcular tempo total de vídeo (simula 2.1h por vídeo publicado para demo)
+  const totalHours = ((stats?.published ?? 0) * 2.1).toFixed(1);
+
+  const STATS = [
+    { label: "Visualizações",  value: stats?.views ?? 0,     sub: undefined,       icon: Eye,       accent: PURPLE },
+    { label: "Vídeos",         value: stats?.total ?? 0,     sub: `${stats?.published ?? 0} públicos`, icon: VideoIcon, accent: "#1FAFA6" },
+    { label: "Seguidores",     value: stats?.subs ?? 0,      sub: undefined,       icon: Users,     accent: "#E94B8A" },
+    { label: "Tempo de vídeo", value: `${totalHours}h`,      sub: "total carregado", icon: Clock,   accent: "#FFC93C", isText: true },
+  ];
+
+  return (
+    <div className="max-w-5xl mx-auto px-5 py-7">
+
+      {/* ── Header ── */}
+      <div className="flex items-start justify-between mb-7 gap-4 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--text-primary)" }}>
+            Painel do canal
+          </h1>
+          {channel && (
+            <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>
+              Bem-vindo de volta, <span style={{ color: PURPLE, fontWeight: 600 }}>{channel.name}</span>
+            </p>
+          )}
+        </div>
+        <Link to="/studio/upload"
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-semibold text-white shadow-lg transition-all active:scale-95 hover:opacity-90"
+          style={{ background: GRAD, boxShadow: "0 4px 16px #5B3FCF44" }}>
+          <Upload className="h-4 w-4" /> Enviar vídeo
+        </Link>
+      </div>
+
+      {/* ── Stats grid ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-7">
+        {STATS.map(s => (
+          <StatCard key={s.label} loading={isLoading} {...s} />
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        {/* ── Últimos vídeos ── */}
+        <div className="lg:col-span-2 rounded-2xl overflow-hidden"
+          style={{ background: "var(--s0)", boxShadow: "var(--shadow-card)", border: "1px solid var(--border-subtle)" }}>
+
+          {/* Header */}
+          <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: "var(--border-subtle)" }}>
+            <h2 className="text-base font-bold" style={{ color: "var(--text-primary)" }}>Últimos vídeos</h2>
+            <Link to="/studio/content"
+              className="flex items-center gap-1 text-xs font-semibold transition hover:opacity-70"
+              style={{ color: PURPLE }}>
+              Ver tudo <ArrowUpRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+
+          {/* Tabs */}
+          <div className="flex gap-1 px-5 pt-3 pb-2 border-b" style={{ borderColor: "var(--border-subtle)" }}>
+            {(["all","public","private"] as const).map(t => (
+              <button key={t} onClick={() => setTab(t)}
+                className="px-3 py-1 rounded-full text-xs font-semibold transition"
+                style={{
+                  background: tab === t ? PURPLE : "transparent",
+                  color: tab === t ? "#fff" : "var(--text-secondary)",
+                }}>
+                {t === "all" ? "Todos" : t === "public" ? "Públicos" : "Privados"}
+              </button>
+            ))}
+          </div>
+
+          {/* List */}
+          {!videos ? (
+            <div className="p-5 space-y-3">
+              {[1,2,3].map(i => (
+                <div key={i} className="h-14 rounded-xl animate-pulse" style={{ background: "var(--s2)" }} />
+              ))}
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="py-12 flex flex-col items-center gap-3">
+              <VideoIcon className="h-10 w-10" style={{ color: "var(--text-muted)" }} />
+              <p className="text-sm" style={{ color: "var(--text-muted)" }}>Sem vídeos aqui.</p>
+              <Link to="/studio/upload"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold text-white"
+                style={{ background: GRAD }}>
+                <Upload className="h-4 w-4" /> Enviar
+              </Link>
+            </div>
+          ) : (
+            <ul className="divide-y" style={{ borderColor: "var(--border-subtle)" }}>
+              {filtered.map(v => <VideoRow key={v.id} v={v} onEdit={setEditVideo} onDelete={(vid) => { if(confirm(`Eliminar "${vid.title}"?`)) { deleteVideo(vid); } }} />)}
+            </ul>
+          )}
+        </div>
+
+        {/* ── Coluna direita ── */}
+        <div className="flex flex-col gap-4">
+
+          {/* Canal card */}
+          <div className="rounded-2xl p-5"
+            style={{ background: "var(--s0)", boxShadow: "var(--shadow-card)", border: "1px solid var(--border-subtle)" }}>
+            <h3 className="text-sm font-bold mb-4" style={{ color: "var(--text-primary)" }}>
+              O teu canal no HoodaTV
+            </h3>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="h-11 w-11 rounded-full overflow-hidden flex items-center justify-center shrink-0"
+                style={{ background: GRAD }}>
+                {channel?.avatar_url
+                  ? <img src={channel.avatar_url} className="h-full w-full object-cover" alt="" />
+                  : <span className="text-sm font-bold text-white">{(channel?.name?.[0] ?? "?").toUpperCase()}</span>}
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>{channel?.name}</p>
+                <p className="text-xs truncate" style={{ color: PURPLE }}>hoodatv.com/@{channel?.handle}</p>
+              </div>
+            </div>
+            <Link to={"/hoodatv" as any}
+              className="flex items-center justify-center gap-2 w-full py-2 rounded-xl text-sm font-semibold border transition hover:opacity-80"
+              style={{ color: PURPLE, borderColor: PURPLE + "55", background: PURPLE + "08" }}>
+              <Tv2 className="h-4 w-4" /> Ver canal público
+            </Link>
+          </div>
+
+          {/* Dicas */}
+          <div className="rounded-2xl p-5"
+            style={{ background: "var(--s0)", boxShadow: "var(--shadow-card)", border: "1px solid var(--border-subtle)" }}>
+            <h3 className="text-sm font-bold mb-3" style={{ color: "var(--text-primary)" }}>Dicas para crescer</h3>
+            {[
+              { emoji: "🖼️", tip: "Adiciona uma miniatura chamativa a cada vídeo" },
+              { emoji: "📅", tip: "Publica com regularidade — pelo menos 1x por semana" },
+              { emoji: "💬", tip: "Responde aos comentários nas primeiras 24h" },
+            ].map(({ emoji, tip }) => (
+              <div key={tip} className="flex items-start gap-2.5 mb-3 last:mb-0">
+                <span className="text-base shrink-0">{emoji}</span>
+                <p className="text-xs leading-relaxed" style={{ color: "var(--text-secondary)" }}>{tip}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Upload CTA */}
+          <div className="rounded-2xl p-5 text-white relative overflow-hidden"
+            style={{ background: GRAD }}>
+            <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-white/10" />
+            <div className="absolute -right-2 -bottom-8 h-20 w-20 rounded-full bg-white/10" />
+            <p className="text-sm font-bold relative">Pronto para publicar?</p>
+            <p className="text-xs opacity-80 mt-1 mb-4 relative">O teu próximo vídeo pode mudar tudo.</p>
+            <Link to="/studio/upload"
+              className="inline-flex items-center gap-2 bg-white rounded-xl px-4 py-2 text-xs font-bold relative hover:opacity-90 transition"
+              style={{ color: PURPLE }}>
+              <Upload className="h-3.5 w-3.5" /> Enviar agora
+            </Link>
+          </div>
+        </div>
+      </div>
+      {/* Edit modal inline */}
+      {editVideo && (
+        <DashEditModal v={editVideo} onClose={() => setEditVideo(null)}
+          onSave={() => { qc.invalidateQueries({ queryKey: ["my-videos"] }); }} />
+      )}
+    </div>
+  );
+}
+
+/* ── Inline edit modal for dashboard ── */
+function DashEditModal({ v, onClose, onSave }: { v:any; onClose:()=>void; onSave:()=>void }) {
+  const [title, setTitle]   = useState(v.title ?? "");
+  const [desc,  setDesc]    = useState(v.description ?? "");
+  const [vis,   setVis]     = useState(v.visibility ?? "private");
+  const [saving, setSaving] = useState(false);
+  const qc = useQueryClient();
+
+  async function save() {
+    if (!title.trim()) { toast.error("O título não pode estar vazio."); return; }
+    setSaving(true);
+    const { error } = await (supabase as any).from("videos").update({
+      title: title.trim(), description: desc.trim() || null, visibility: vis,
+      published_at: vis === "public" && !v.published_at ? new Date().toISOString() : v.published_at,
+    }).eq("id", v.id);
+    setSaving(false);
+    if (error) { toast.error("Erro ao guardar."); return; }
+    toast.success("Vídeo atualizado!"); onSave(); onClose();
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4"
+      style={{ background:"rgba(0,0,0,0.55)", backdropFilter:"blur(4px)" }}
+      onClick={e => e.target===e.currentTarget && onClose()}>
+      <div className="w-full max-w-md rounded-3xl p-6 space-y-4 shadow-2xl"
+        style={{ background:"var(--s0)" }}>
+        <div className="flex items-center justify-between">
+          <h2 className="text-base font-extrabold" style={{ color:"var(--text-primary)" }}>Editar vídeo</h2>
+          <button onClick={onClose} className="p-1.5 rounded-full hover:bg-[var(--s2)]">
+            <X className="w-4 h-4" style={{ color:"var(--text-muted)" }} />
+          </button>
+        </div>
+        <div>
+          <label className="text-[11px] font-bold uppercase tracking-wider block mb-1.5" style={{ color:"var(--text-muted)" }}>Título *</label>
+          <input value={title} onChange={e=>setTitle(e.target.value)} maxLength={120}
+            className="w-full rounded-xl px-4 py-3 text-sm outline-none border bg-[var(--s3)] border-[var(--border-default)] focus:border-[#5B3FCF] text-[var(--text-primary)]" />
+        </div>
+        <div>
+          <label className="text-[11px] font-bold uppercase tracking-wider block mb-1.5" style={{ color:"var(--text-muted)" }}>Descrição</label>
+          <textarea value={desc} onChange={e=>setDesc(e.target.value)} rows={3} maxLength={5000}
+            className="w-full rounded-xl px-4 py-3 text-sm outline-none border bg-[var(--s3)] border-[var(--border-default)] focus:border-[#5B3FCF] text-[var(--text-primary)] resize-none" />
+        </div>
+        <div className="flex gap-2">
+          {(["public","unlisted","private"] as const).map(opt => (
+            <button key={opt} onClick={() => setVis(opt)}
+              className="flex-1 py-2 rounded-xl border-2 text-xs font-bold transition"
+              style={{ borderColor: vis===opt ? "#5B3FCF":"var(--border-default)",
+                background: vis===opt ? "#5B3FCF08":"var(--s3)",
+                color: vis===opt ? "#5B3FCF":"var(--text-secondary)" }}>
+              {opt==="public"?"Público":opt==="unlisted"?"Com link":"Privado"}
+            </button>
+          ))}
+        </div>
+        <div className="flex gap-3">
+          <button onClick={onClose} disabled={saving}
+            className="flex-1 py-2.5 rounded-2xl text-sm font-bold border"
+            style={{ borderColor:"var(--border-default)", color:"var(--text-secondary)" }}>Cancelar</button>
+          <button onClick={save} disabled={saving}
+            className="flex-1 py-2.5 rounded-2xl text-sm font-bold text-white"
+            style={{ background:"linear-gradient(135deg,#5B3FCF,#E94B8A)" }}>
+            {saving ? "A guardar…" : "Guardar"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

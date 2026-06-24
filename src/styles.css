@@ -4,20 +4,6 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/*
- * Design system definition.
- *
- * The @theme inline block maps CSS custom properties to Tailwind utility
- * classes (e.g. --color-primary -> bg-primary, text-primary).
- *
- * The :root and .dark blocks define the actual color values using oklch.
- * All colors MUST use oklch format.
- *
- * To add a new semantic color:
- * 1. Add the variable to :root (light value) and .dark (dark value)
- * 2. Register it in @theme inline as --color-<name>: var(--<name>)
- */
-
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -61,8 +47,14 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
+/* ═══════════════════════════════════════════════════════
+   HOODA DESIGN SYSTEM — LIGHT MODE
+   Surface hierarchy: s0 (cards) > s1 (page bg) > s2 (subtle inputs)
+   ═══════════════════════════════════════════════════════ */
 :root {
-  --radius: 0.625rem;
+  --radius: 0.75rem;
+
+  /* shadcn tokens */
   --background: oklch(1 0 0);
   --foreground: oklch(0.129 0.042 264.695);
   --card: oklch(1 0 0);
@@ -95,50 +87,781 @@
   --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
   --sidebar-border: oklch(0.929 0.013 255.508);
   --sidebar-ring: oklch(0.704 0.04 256.788);
+
+  /* ── Hooda brand palette ── */
+  --hooda-purple:  #5B3FCF;
+  --hooda-yellow:  #FFC93C;
+  --hooda-pink:    #E94B8A;
+  --hooda-teal:    #1FAFA6;
+  --hooda-orange:  #F26B3A;
+  --hooda-green:   #6BA547;
+
+  /* ── Light surface tokens ── */
+  /* s0 = cards/sheets; s1 = page bg; s2 = inputs/subtle areas */
+  --s0:           #ffffff;
+  --s1:           #f5f5f8;
+  --s2:           #eeeef3;
+  --s3:           #e6e6ed;   /* hover states */
+
+  /* Legacy compat aliases */
+  --surface-0:    var(--s0);
+  --surface-1:    var(--s1);
+  --surface-2:    var(--s2);
+  --bg-card:      var(--s0);
+
+  --border-subtle:  rgba(0,0,0,0.06);
+  --border-default: rgba(0,0,0,0.10);
+  --border-strong:  rgba(0,0,0,0.16);
+  --bg-secondary:   var(--s2);
+  --bg-main:        var(--s1);
+
+  --text-primary:   #0d0d14;
+  --text-secondary: #5a5a6e;
+  --text-muted:     #9090a4;
+  --text-disabled:  #c0c0cc;
+  --danger-bg:      #fee2e2;
+  --danger-text:    #DC2626;
+  --shadow-card:  0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.04);
+  --shadow-modal: 0 8px 40px rgba(0,0,0,0.14);
+  --shadow-drop:  0 2px 8px rgba(0,0,0,0.08);
 }
 
+/* ═══════════════════════════════════════════════════════
+   HOODA DESIGN SYSTEM — DARK MODE
+   Inspired by Discord / X / Telegram / Reddit
+   NOT pure black — layered slate-blue-tinted darks
+   ═══════════════════════════════════════════════════════
+   
+   Hierarchy (darkest → lightest):
+     Backdrop/overlay  #0b0b10
+     Page background   #111118   ← body bg (s1)
+     Elevated surface  #17171f   ← sidebar, bottom nav (s0)
+     Cards / sheets    #1e1e28   ← post cards, modals
+     Input / hover     #252535   ← form fields, hover bg (s2)
+     Subtle dividers   rgba(255,255,255,0.06)
+     Default borders   rgba(255,255,255,0.10)
+   ═══════════════════════════════════════════════════════ */
 .dark {
-  --background: oklch(0.129 0.042 264.695);
-  --foreground: oklch(0.984 0.003 247.858);
-  --card: oklch(0.208 0.042 265.755);
-  --card-foreground: oklch(0.984 0.003 247.858);
-  --popover: oklch(0.208 0.042 265.755);
-  --popover-foreground: oklch(0.984 0.003 247.858);
-  --primary: oklch(0.929 0.013 255.508);
-  --primary-foreground: oklch(0.208 0.042 265.755);
-  --secondary: oklch(0.279 0.041 260.031);
-  --secondary-foreground: oklch(0.984 0.003 247.858);
-  --muted: oklch(0.279 0.041 260.031);
-  --muted-foreground: oklch(0.704 0.04 256.788);
-  --accent: oklch(0.279 0.041 260.031);
-  --accent-foreground: oklch(0.984 0.003 247.858);
-  --destructive: oklch(0.704 0.191 22.216);
-  --destructive-foreground: oklch(0.984 0.003 247.858);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.551 0.027 264.364);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.208 0.042 265.755);
-  --sidebar-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-accent: oklch(0.279 0.041 260.031);
-  --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.551 0.027 264.364);
+  /* shadcn tokens */
+  --background: #111118;
+  --foreground: #e8e8f2;
+  --card: #1e1e28;
+  --card-foreground: #e8e8f2;
+  --popover: #1e1e28;
+  --popover-foreground: #e8e8f2;
+  --primary: #7c63e8;
+  --primary-foreground: #ffffff;
+  --secondary: #252535;
+  --secondary-foreground: #c0c0d8;
+  --muted: #1e1e28;
+  --muted-foreground: #707088;
+  --accent: #252535;
+  --accent-foreground: #c0c0d8;
+  --destructive: #f87171;
+  --destructive-foreground: #fff;
+  --border: rgba(255,255,255,0.10);
+  --input: rgba(255,255,255,0.08);
+  --ring: rgba(91,63,207,0.5);
+  --chart-1: #7c63e8;
+  --chart-2: #34d399;
+  --chart-3: #fbbf24;
+  --chart-4: #f472b6;
+  --chart-5: #60a5fa;
+  --sidebar: #17171f;
+  --sidebar-foreground: #c8c8dc;
+  --sidebar-primary: #7c63e8;
+  --sidebar-primary-foreground: #fff;
+  --sidebar-accent: #252535;
+  --sidebar-accent-foreground: #c8c8dc;
+  --sidebar-border: rgba(255,255,255,0.06);
+  --sidebar-ring: rgba(91,63,207,0.4);
+
+  /* ── Dark surface tokens ── */
+  --s0:           #17171f;   /* elevated: sidebar, bottom nav, sticky bars */
+  --s1:           #111118;   /* page background */
+  --s2:           #1e1e28;   /* cards, sheets, modals */
+  --s3:           #252535;   /* inputs, hover, active bg */
+
+  /* Legacy compat */
+  --surface-0:    var(--s0);
+  --surface-1:    var(--s1);
+  --surface-2:    var(--s2);
+  --bg-card:      var(--s2);
+
+  --border-subtle:  rgba(255,255,255,0.06);
+  --border-default: rgba(255,255,255,0.10);
+  --border-strong:  rgba(255,255,255,0.18);
+  --bg-secondary:   var(--s3);
+  --bg-main:        var(--s1);
+
+  --text-primary:   #e8e8f2;
+  --text-secondary: #9898b0;
+  --text-muted:     #5a5a72;
+  --text-disabled:  #3a3a4a;
+  --danger-bg:      rgba(248,113,113,0.12);
+  --danger-text:    #f87171;
+  --shadow-card:  0 1px 3px rgba(0,0,0,0.5), 0 4px 12px rgba(0,0,0,0.3);
+  --shadow-modal: 0 8px 40px rgba(0,0,0,0.6);
+  --shadow-drop:  0 2px 8px rgba(0,0,0,0.4);
 }
 
+/* ═══════════════════════════════════════════════════════
+   BASE
+   ═══════════════════════════════════════════════════════ */
 @layer base {
-  * {
-    border-color: var(--color-border);
-  }
+  * { border-color: var(--color-border); box-sizing: border-box; }
 
   body {
-    background-color: var(--color-background);
-    color: var(--color-foreground);
+    background-color: var(--s1);
+    color: var(--text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
+}
+
+/* ═══════════════════════════════════════════════════════
+   DARK MODE — TAILWIND CLASS OVERRIDES
+   Maps Tailwind's light utility classes → dark tokens.
+   All !important because we're overriding inline classes.
+   ═══════════════════════════════════════════════════════ */
+
+/* ── Backgrounds ── */
+.dark .bg-white          { background-color: var(--s2) !important; }
+.dark .bg-neutral-50     { background-color: var(--s3) !important; }
+.dark .bg-neutral-100    { background-color: var(--s3) !important; }
+.dark .bg-neutral-200    { background-color: #2e2e40 !important; }
+.dark .bg-neutral-300    { background-color: #36364a !important; }
+.dark .bg-neutral-800    { background-color: #2a2a38 !important; }
+.dark .bg-neutral-900    { background-color: var(--s1) !important; }
+
+/* gray- variant (Tailwind's other grey family — was previously uncovered) */
+.dark .bg-gray-50        { background-color: var(--s3) !important; }
+.dark .bg-gray-100       { background-color: var(--s3) !important; }
+.dark .bg-gray-200       { background-color: #2e2e40 !important; }
+.dark .bg-gray-300       { background-color: #36364a !important; }
+.dark .bg-gray-800       { background-color: #2a2a38 !important; }
+.dark .bg-gray-900       { background-color: var(--s1) !important; }
+.dark .hover\:bg-gray-50:hover  { background-color: var(--s3) !important; }
+.dark .hover\:bg-gray-100:hover { background-color: var(--s3) !important; }
+
+/* Sheet-style (sticky bars, sidebars) */
+.dark .bg-surface-elevated { background-color: var(--s0) !important; }
+
+/* ── Text ── */
+.dark .text-black        { color: var(--text-primary)   !important; }
+.dark .text-neutral-950  { color: var(--text-primary)   !important; }
+.dark .text-neutral-900  { color: var(--text-primary)   !important; }
+.dark .text-neutral-800  { color: #d4d4e8               !important; }
+.dark .text-neutral-700  { color: #b4b4cc               !important; }
+.dark .text-neutral-600  { color: var(--text-secondary) !important; }
+.dark .text-neutral-500  { color: #787890              !important; }
+.dark .text-neutral-400  { color: var(--text-muted)     !important; }
+.dark .text-neutral-300  { color: #606078               !important; }
+
+/* gray- text variant (was previously uncovered) */
+.dark .text-gray-900     { color: var(--text-primary)   !important; }
+.dark .text-gray-800     { color: #d4d4e8                !important; }
+.dark .text-gray-700     { color: #b4b4cc                !important; }
+.dark .text-gray-600     { color: var(--text-secondary)  !important; }
+.dark .text-gray-500     { color: var(--text-muted)      !important; }
+.dark .text-gray-400     { color: var(--text-muted)      !important; }
+.dark .text-gray-300     { color: #606078                !important; }
+
+/* ── Borders ── */
+.dark .border-neutral-50  { border-color: var(--border-subtle)  !important; }
+.dark .border-neutral-100 { border-color: var(--border-subtle)  !important; }
+.dark .border-neutral-200 { border-color: var(--border-default) !important; }
+.dark .border-neutral-300 { border-color: var(--border-strong)  !important; }
+.dark .border-gray-100    { border-color: var(--border-subtle)  !important; }
+.dark .border-gray-200    { border-color: var(--border-default) !important; }
+.dark .border-gray-300    { border-color: var(--border-strong)  !important; }
+.dark .border-b           { border-color: var(--border-subtle)  !important; }
+.dark .border-t           { border-color: var(--border-subtle)  !important; }
+
+/* ── Hover states ── */
+.dark .hover\:bg-neutral-50:hover  { background-color: var(--s3) !important; }
+.dark .hover\:bg-neutral-100:hover { background-color: var(--s3) !important; }
+.dark .hover\:bg-white\/10:hover   { background-color: rgba(255,255,255,0.08) !important; }
+
+/* ── Dividers ── */
+.dark .divide-neutral-100 > * + * { border-color: var(--border-subtle) !important; }
+.dark .divide-y > * + * { border-color: var(--border-subtle) !important; }
+
+/* ── Form inputs ── */
+.dark input:not([type="file"]):not([type="range"]),
+.dark textarea,
+.dark select {
+  background-color: var(--s3) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-default) !important;
+}
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: var(--text-muted) !important;
+}
+.dark input:focus,
+.dark textarea:focus {
+  border-color: var(--hooda-purple) !important;
+  box-shadow: 0 0 0 3px rgba(91,63,207,0.18) !important;
+}
+
+/* ── Shadows — flatten in dark mode ── */
+.dark .shadow-sm  { box-shadow: 0 1px 3px rgba(0,0,0,0.5)  !important; }
+.dark .shadow     { box-shadow: 0 2px 6px rgba(0,0,0,0.5)  !important; }
+.dark .shadow-md  { box-shadow: 0 4px 12px rgba(0,0,0,0.5) !important; }
+.dark .shadow-lg  { box-shadow: 0 8px 20px rgba(0,0,0,0.5) !important; }
+.dark .shadow-xl  { box-shadow: 0 12px 30px rgba(0,0,0,0.6) !important; }
+.dark .shadow-2xl { box-shadow: 0 20px 40px rgba(0,0,0,0.7) !important; }
+
+/* ── Dark-specific surface override (inline style helpers) ── */
+/* Cards built with inline bg-white / hardcoded light hex need to pull from s2/s3 */
+.dark [style*="background: #fff"],
+.dark [style*="background:#fff"],
+.dark [style*="background-color: #fff"],
+.dark [style*="background-color:#fff"],
+.dark [style*="background: white"],
+.dark [style*="background-color: white"],
+.dark [style*="background: #FFFFFF"],
+.dark [style*="background: #ffffff"],
+.dark [style*="background-color: #ffffff"] {
+  background-color: var(--s2) !important;
+}
+
+/* var(--bg-card, white) — modais e cards com fallback white */
+.dark [style*="var(--bg-card,white)"],
+.dark [style*="var(--bg-card, white)"] {
+  background-color: var(--s2) !important;
+}
+
+/* var(--surface-0,#fff) e variantes — fundo de modais e sheets */
+.dark [style*="var(--surface-0,#fff)"],
+.dark [style*="var(--surface-0, #fff)"],
+.dark [style*="var(--surface-0,white)"],
+.dark [style*="var(--surface-0, white)"],
+.dark [style*="var(--surface-0,#ffffff)"],
+.dark [style*="var(--surface-0,#FFFFFF)"] {
+  background-color: var(--s2) !important;
+}
+
+/* var(--surface-0) sem fallback — mesma coisa */
+.dark [style*="var(--surface-0)"] {
+  background-color: var(--s2) !important;
+}
+
+/* bubble de mensagem recebida (background: white hardcoded) */
+.dark [style*="background: white"][style*="color: var(--text-primary)"],
+.dark [style*="background:white"][style*="color: var(--text-primary)"] {
+  background-color: var(--s3) !important;
+}
+
+/* var(--token, #lightFallback) patterns — safe to target because the
+   property name is baked into the CSS var usage itself */
+.dark [style*="var(--text-muted,#888)"],
+.dark [style*="var(--text-muted, #888)"] {
+  color: var(--text-muted) !important;
+}
+.dark [style*="var(--border,#f0f0f0)"],
+.dark [style*="var(--border, #f0f0f0)"],
+.dark [style*="var(--border-subtle,#f0f0f0)"],
+.dark [style*="var(--border-subtle,#e5e5e5)"],
+.dark [style*="var(--border-subtle,#F3F4F6)"] {
+  border-color: var(--border-default) !important;
+}
+.dark [style*="var(--bg-secondary,#f5f5f5)"],
+.dark [style*="var(--bg-secondary, #f5f5f5)"],
+.dark [style*="var(--surface-1,#f5f5f5)"],
+.dark [style*="var(--surface-1,#F9FAFB)"] {
+  background-color: var(--s3) !important;
+}
+.dark [style*="var(--text-primary,#111827)"] {
+  color: var(--text-primary) !important;
+}
+.dark [style*="var(--bg-secondary,#f5f5f5)"],
+.dark [style*="var(--bg-secondary, #f5f5f5)"],
+.dark [style*="var(--surface-1,#f5f5f5)"],
+.dark [style*="var(--surface-1,#F9FAFB)"] {
+  background-color: var(--s3) !important;
+}
+
+/* ── Modals / bottom sheets ──
+   Base (light-mode) background MUST live here, not only in .dark,
+   otherwise these sheets render fully transparent in light mode. ── */
+.hooda-modal-sheet {
+  background-color: var(--s0);
+  border-color: var(--border-subtle);
+}
+.dark .hooda-modal-sheet {
+  background-color: var(--s2) !important;
+  border-color: var(--border-subtle) !important;
+}
+
+/* ── PostCard action bar ── */
+.dark .post-action-bar {
+  border-color: var(--border-subtle) !important;
+}
+
+/* ── Story dots (photo grid) ── */
+.dark .dot-inactive { background: #404058 !important; }
+
+/* ── Chat bubbles from others ── */
+.dark .bubble-incoming {
+  background-color: var(--s3) !important;
+  color: var(--text-primary) !important;
+}
+
+/* ── Reply quoted block ── */
+.dark .reply-quote {
+  background-color: rgba(255,255,255,0.06) !important;
+  border-left-color: var(--hooda-purple) !important;
+}
+.dark .reply-quote p { color: var(--text-muted) !important; }
+
+/* ── Navigation ── */
+.dark nav.hooda-bottom-nav {
+  background-color: var(--s0) !important;
+  border-color: var(--border-subtle) !important;
+}
+.dark .hooda-sidenav {
+  background-color: var(--s0) !important;
+  border-color: var(--border-subtle) !important;
+}
+
+/* ── Sticky header ── */
+.dark .hooda-sticky-header {
+  background-color: rgba(17,17,24,0.88) !important;
+  backdrop-filter: blur(20px) !important;
+  border-color: var(--border-subtle) !important;
+}
+
+/* ── Profile stat cards ── */
+.stat-card {
+  background-color: var(--s0);
+  border-color: var(--border-subtle);
+}
+.dark .stat-card {
+  background-color: var(--s2) !important;
+  border-color: var(--border-subtle) !important;
+}
+
+/* ── Dropdown menus / context menus ──
+   Base (light-mode) background — was missing, leaving dropdowns
+   transparent in light mode since only .dark set a background. ── */
+.hooda-dropdown {
+  background-color: var(--s0);
+  border: 1px solid var(--border-default);
+  box-shadow: var(--shadow-modal);
+}
+.dark .hooda-dropdown {
+  background-color: var(--s2) !important;
+  border: 1px solid var(--border-default) !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6) !important;
+}
+.dark .hooda-dropdown-item:hover {
+  background-color: var(--s3) !important;
+}
+
+/* ── Notification toasts ── */
+.hooda-toast {
+  background-color: var(--s0);
+  border-color: var(--border-default);
+}
+.dark .hooda-toast {
+  background-color: var(--s0) !important;
+  border-color: var(--border-default) !important;
+}
+
+/* ── Follow button in light mode that turns grey ── */
+.dark .btn-follow-active {
+  background-color: var(--s3) !important;
+  color: var(--text-secondary) !important;
+}
+
+/* ── Like/Comment action buttons ── */
+.dark .post-action-btn {
+  color: var(--text-muted) !important;
+}
+.dark .post-action-btn:hover {
+  background-color: var(--s3) !important;
+}
+
+/* ── Sponsored badge ── */
+.dark .badge-ad {
+  background-color: var(--s3) !important;
+  color: var(--text-muted) !important;
+}
+
+/* ── Music bar in post ── */
+.dark .music-bar-post {
+  background-color: var(--s3) !important;
+}
+
+/* ── Post photo carousel dots ── */
+.dark .carousel-dot { background: var(--border-default) !important; }
+.dark .carousel-dot-active { background: var(--hooda-purple) !important; }
+
+/* ── Tab bars (livros, explorar) ── */
+.dark .tab-bar {
+  background-color: var(--s0) !important;
+  border-color: var(--border-subtle) !important;
+}
+.dark .tab-item-active {
+  color: var(--text-primary) !important;
+  border-color: var(--hooda-purple) !important;
+}
+.dark .tab-item-inactive {
+  color: var(--text-muted) !important;
+}
+
+/* ── Empty states ── */
+.dark .empty-state-text { color: var(--text-muted) !important; }
+
+/* ── Share / post-create modal body ── */
+.dark .create-post-modal {
+  background-color: var(--s2) !important;
+}
+.dark .create-post-toolbar {
+  background-color: var(--s3) !important;
+  border-color: var(--border-subtle) !important;
+}
+
+/* ── Edit profile modal ── */
+.dark .edit-profile-modal {
+  background-color: var(--s2) !important;
+}
+
+/* ═══════════════════════════════════════════════════════
+   GLOBAL COMPONENT CLASSES
+   ═══════════════════════════════════════════════════════ */
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+  .skeleton-shimmer {
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.45), transparent);
+    transform: translateX(-100%);
+    animation: skeletonShimmer 1.4s ease-in-out infinite;
+  }
+  .dark .skeleton-shimmer {
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
+  }
+  @keyframes skeletonShimmer {
+    100% { transform: translateX(100%); }
+  }
+}
+
+/* ── hooda-card: universal card class ── */
+.hooda-card {
+  background: var(--s0);
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  transition: box-shadow 0.2s ease;
+}
+.hooda-card:hover {
+  box-shadow: var(--shadow-card);
+}
+
+/* In dark mode, cards are s2 (elevated from page bg s1) */
+.dark .hooda-card {
+  background: var(--s2);
+  border-color: var(--border-subtle);
+  box-shadow: none;
+}
+.dark .hooda-card:hover {
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+}
+
+/* ── Scrollbar: custom thin scrollbar in light/dark ── */
+@media (min-width: 768px) {
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(0,0,0,0.15);
+    border-radius: 999px;
+  }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.25); }
+
+  .dark ::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.10);
+  }
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background: rgba(255,255,255,0.18);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════
+   LAYOUT
+   ═══════════════════════════════════════════════════════ */
+@media (min-width: 1024px) {
+  .hooda-layout {
+    display: grid;
+    grid-template-columns: 260px 1fr 300px;
+    max-width: 1280px;
+    margin: 0 auto;
+    gap: 0;
+    min-height: 100vh;
+  }
+  .hooda-layout-2col {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    max-width: 960px;
+    margin: 0 auto;
+    gap: 0;
+    min-height: 100vh;
+  }
+}
+@media (min-width: 1024px) and (max-width: 1199px) {
+  .hooda-layout { grid-template-columns: 220px 1fr 260px; }
+}
+
+/* ═══════════════════════════════════════════════════════
+   BUTTONS
+   ═══════════════════════════════════════════════════════ */
+.btn-primary {
+  background: var(--hooda-purple);
+  color: #fff;
+  border-radius: 12px;
+  font-weight: 600;
+  transition: all 0.18s ease;
+}
+.btn-primary:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(91,63,207,0.35);
+}
+.btn-primary:active { transform: translateY(0); opacity: 1; }
+
+.btn-ghost {
+  background: transparent;
+  border: 1px solid var(--border-default);
+  border-radius: 12px;
+  font-weight: 500;
+  color: var(--text-primary);
+  transition: all 0.18s ease;
+}
+.btn-ghost:hover { background: var(--s3); }
+.dark .btn-ghost:hover { background: var(--s3); }
+
+/* ═══════════════════════════════════════════════════════
+   ANIMATIONS
+   ═══════════════════════════════════════════════════════ */
+@keyframes floatReaction {
+  0%   { opacity: 0; transform: translateY(0px) scale(0.2); }
+  12%  { opacity: 1; transform: translateY(-14px) scale(1.18); }
+  55%  { opacity: 0.9; }
+  100% { opacity: 0; transform: translateY(-210px) scale(0.6); }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(20px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes chat-bounce {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-4px); }
+}
+
+@keyframes pulse-ring {
+  0%   { box-shadow: 0 0 0 0 rgba(91,63,207,0.4); }
+  70%  { box-shadow: 0 0 0 8px rgba(91,63,207,0); }
+  100% { box-shadow: 0 0 0 0 rgba(91,63,207,0); }
+}
+
+.animate-fade-in-up   { animation: fadeInUp 0.3s ease both; }
+.animate-slide-in-right { animation: slideInRight 0.25s ease both; }
+
+.chat-typing span {
+  display: inline-block;
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--text-muted);
+  animation: chat-bounce 1.2s ease-in-out infinite;
+}
+.chat-typing span:nth-child(2) { animation-delay: 0.2s; }
+.chat-typing span:nth-child(3) { animation-delay: 0.4s; }
+
+/* ── Story animations ── */
+@keyframes storyBounce { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-7px) } }
+@keyframes storyGlow   { 0%,100% { filter: drop-shadow(0 0 3px currentColor) } 50% { filter: drop-shadow(0 0 14px currentColor) drop-shadow(0 0 28px currentColor) } }
+@keyframes storyFade   { from { opacity:0; transform:translateY(8px) } to { opacity:1; transform:translateY(0) } }
+@keyframes storySlide  { from { opacity:0; transform:translateX(-24px) } to { opacity:1; transform:translateX(0) } }
+
+/* ═══════════════════════════════════════════════════════
+   MOTION SYSTEM — fluid, modern transitions
+   Instagram / TikTok / X / Telegram / Discord feel.
+   Single source of truth: duration + easing tokens below.
+   ═══════════════════════════════════════════════════════ */
+:root {
+  --ease-out:   cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-fast:   150ms;
+  --dur-base:   200ms;
+  --dur-slow:   300ms;
+}
+
+/* ── Theme transition (smooth dark/light switch) ──
+   Scoped to color-only properties so layout/transform-driven UI
+   (drag handles, story rings, carousels, sliders, swipe gestures)
+   is never slowed down or fought over by this global rule. */
+body, header, nav, aside, main, section, footer,
+div, span, p, a, button, input, textarea, select, li, ul,
+.hooda-card, .hooda-modal-sheet, .hooda-dropdown, .hooda-toast,
+[class*="bg-"], [class*="text-"], [class*="border-"] {
+  transition-property: background-color, border-color, color, box-shadow;
+  transition-duration: var(--dur-fast);
+  transition-timing-function: var(--ease-out);
+}
+img:not(.hooda-media), video:not(.hooda-media), canvas, svg,
+.animate-spin, .animate-pulse, .animate-bounce, .animate-ping, .skeleton-shimmer {
+  transition: none !important;
+}
+
+/* ── Generic entrance animations (fade / scale / slide) ──
+   Reusable utility classes for modals, cards, dropdowns, tooltips,
+   page content, and any element that should never "pop" into view. */
+@keyframes hoodaFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes hoodaFadeOut {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+@keyframes hoodaScaleIn {
+  from { opacity: 0; transform: scale(0.98); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes hoodaSlideUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes hoodaSlideDown {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(10px); }
+}
+
+.hooda-fade-in   { animation: hoodaFadeIn var(--dur-base) var(--ease-out) both; }
+.hooda-fade-out  { animation: hoodaFadeOut var(--dur-fast) var(--ease-out) both; }
+.hooda-scale-in  { animation: hoodaScaleIn var(--dur-base) var(--ease-out) both; }
+.hooda-slide-up  { animation: hoodaSlideUp var(--dur-slow) var(--ease-out) both; }
+.hooda-slide-down{ animation: hoodaSlideDown var(--dur-fast) var(--ease-out) both; }
+
+/* Stagger helper for lists (feed posts, comments, notifications, search results) */
+.hooda-stagger > * {
+  animation: hoodaSlideUp var(--dur-slow) var(--ease-out) both;
+}
+.hooda-stagger > *:nth-child(1) { animation-delay: 0ms; }
+.hooda-stagger > *:nth-child(2) { animation-delay: 30ms; }
+.hooda-stagger > *:nth-child(3) { animation-delay: 60ms; }
+.hooda-stagger > *:nth-child(4) { animation-delay: 90ms; }
+.hooda-stagger > *:nth-child(5) { animation-delay: 120ms; }
+.hooda-stagger > *:nth-child(n+6) { animation-delay: 150ms; }
+
+/* ── Page transitions (route changes via TanStack Router Outlet) ── */
+@keyframes hoodaPageIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.hooda-page-enter {
+  animation: hoodaPageIn var(--dur-base) var(--ease-out) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .hooda-page-enter { animation: none; }
+}
+
+/* ── Image / video fade-in on load ──
+   Pair with the onLoad/canPlay handlers that toggle this class once
+   media has actually decoded, avoiding any flash-of-unstyled-media. */
+img.hooda-media, video.hooda-media {
+  opacity: 0;
+  transition: opacity var(--dur-slow) var(--ease-out);
+}
+img.hooda-media.is-loaded, video.hooda-media.is-loaded {
+  opacity: 1;
+}
+
+/* ── Skeleton → content cross-fade ──
+   Wrap a skeleton in .hooda-skeleton-wrap and the real content in
+   .hooda-content-wrap (same grid cell) to dissolve between them
+   instead of an abrupt swap. */
+.hooda-skeleton-wrap {
+  animation: hoodaFadeOut var(--dur-base) var(--ease-out) both;
+}
+.hooda-content-wrap {
+  animation: hoodaFadeIn var(--dur-base) var(--ease-out) both;
+}
+
+/* ── Custom modal/dropdown/toast entrance (non-Radix components) ── */
+.hooda-modal-sheet {
+  animation: hoodaScaleIn var(--dur-base) var(--ease-out) both;
+}
+.hooda-dropdown {
+  animation: hoodaScaleIn var(--dur-fast) var(--ease-out) both;
+  transform-origin: top right;
+}
+.hooda-toast {
+  animation: hoodaSlideUp var(--dur-base) var(--ease-out) both;
+}
+
+/* ── Buttons, inputs, cards — micro-interactions ── */
+button, .btn-primary, .btn-ghost, .hooda-card, a {
+  transition-property: background-color, border-color, color, box-shadow, transform, opacity;
+  transition-duration: var(--dur-fast);
+  transition-timing-function: var(--ease-out);
+}
+button:active, .btn-primary:active, .btn-ghost:active {
+  transform: scale(0.97);
+}
+input:not([type="file"]):not([type="range"]), textarea, select {
+  transition-property: background-color, border-color, color, box-shadow;
+  transition-duration: var(--dur-fast);
+  transition-timing-function: var(--ease-out);
+}
+
+/* ── Radix / shadcn primitives (Dialog, Sheet, Dropdown, Popover, Tooltip) ──
+   tw-animate-css drives the actual animate-in/out keyframes through the
+   --tw-duration / --tw-ease custom properties; setting them globally here
+   re-times every overlay to the Hooda motion tokens instead of Tailwind's
+   default 150-500ms, so opens/closes feel consistent and snappy app-wide. */
+:root, .dark {
+  --tw-duration: 200ms;
+  --tw-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+#lovable-badge { display: none !important; }
+
+/* ── BottomNav — sempre fixa, nunca se move com scroll ── */
+nav.hooda-bottom-nav {
+  position: fixed !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 40 !important;
+  transform: none !important;
+  will-change: auto !important;
+}
+/* Espaço reservado no fim de cada página para a BottomNav não tapar conteúdo */
+@media (max-width: 1023px) {
+  .hooda-page-enter {
+    padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+}
+
+/* ── Typing indicator dots (DM chat) ── */
+@keyframes typing-bounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30%            { transform: translateY(-5px); opacity: 1; }
 }
