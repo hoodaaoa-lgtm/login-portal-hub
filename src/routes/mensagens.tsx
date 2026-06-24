@@ -2276,6 +2276,23 @@ function ChatPanel({ myId, contact, onBack }: {
     };
   }, [contact.conversationId, myId]);
 
+  // ── Mobile: ao voltar a focar o separador, refrescar mensagens ──
+  // (Browsers móveis suspendem o WebSocket quando a app vai para background.)
+  useEffect(() => {
+    if (!contact.conversationId) return;
+    const onVisible = () => {
+      if (document.visibilityState === "visible") {
+        loadMsgs();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onVisible);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onVisible);
+    };
+  }, [contact.conversationId, loadMsgs]);
+
   // ── Limpar badge imediatamente ao abrir a conversa ──
   useEffect(() => {
     if (!contact.conversationId) return;
