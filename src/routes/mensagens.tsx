@@ -883,11 +883,11 @@ function MediaProgressRing({ pct, size = 40, color = "#fff" }: { pct?: number; s
 }
 
 // ── Audio Player — estilo WhatsApp ──
-function AudioMsg({ url, isMe }: { url: string; isMe: boolean }) {
+function AudioMsg({ url, isMe, knownDur }: { url: string; isMe: boolean; knownDur?: number }) {
   const [playing, setPlaying]     = useState(false);
   const [progress, setProgress]   = useState(0);   // 0-100
   const [cur, setCur]             = useState(0);
-  const [dur, setDur]             = useState(0);
+  const [dur, setDur]             = useState(knownDur ?? 0);
   const [speed, setSpeed]         = useState(1);
   const [loaded, setLoaded]       = useState(false);
   const audioRef  = useRef<HTMLAudioElement>(null);
@@ -939,13 +939,24 @@ function AudioMsg({ url, isMe }: { url: string; isMe: boolean }) {
       borderRadius: isMe ? "12px 2px 12px 12px" : "2px 12px 12px 12px",
       boxShadow: "0 1px 2px rgba(0,0,0,0.13)",
     }}>
-      <audio ref={audioRef} src={url} preload="metadata"
-        onLoadedMetadata={e => { setDur((e.target as HTMLAudioElement).duration); setLoaded(true); }}
+      <audio ref={audioRef} src={url} preload="metadata" crossOrigin="anonymous"
+        onLoadedMetadata={e => {
+          const a = e.target as HTMLAudioElement;
+          const d = a.duration;
+          if (isFinite(d) && d > 0) { setDur(d); setLoaded(true); }
+          else { setLoaded(true); } // duração indisponível mas áudio carregou
+        }}
+        onCanPlay={() => { if (!loaded) setLoaded(true); }}
         onTimeUpdate={e => {
           const a = e.target as HTMLAudioElement;
-          if (a.duration) { setProgress(a.currentTime / a.duration * 100); setCur(a.currentTime); }
+          if (a.duration && isFinite(a.duration)) {
+            setProgress(a.currentTime / a.duration * 100);
+            setCur(a.currentTime);
+            if (!dur || !isFinite(dur)) setDur(a.duration);
+          }
         }}
-        onEnded={() => { setPlaying(false); setProgress(0); setCur(0); }} />
+        onEnded={() => { setPlaying(false); setProgress(0); setCur(0); }}
+        onError={() => { setLoaded(true); toast.error("Erro ao carregar áudio"); }} />
 
       {/* Botão play/pause — WhatsApp style */}
       <button onClick={toggle} style={{
@@ -1719,7 +1730,7 @@ function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit
             )}
 
             {/* Audio */}
-            {m.type === "audio" && m.mediaUrl && <AudioMsg url={m.mediaUrl} isMe={isMe} />}
+            {m.type === "audio" && m.mediaUrl && <AudioMsg url={m.mediaUrl} isMe={isMe} knownDur={m.duration} />}
 
             {/* File */}
             {m.type === "file" && m.mediaUrl && (
@@ -2237,6 +2248,7 @@ function ChatPanel({ myId, contact, onBack }: {
         } catch { return false; }
       })(),
       deliveryStatus: r.status === "read" ? "read" : "sent",
+      duration: r.duration ?? undefined,
       reactions: r.reactions ?? {},
       myReaction: (r.reactions ?? {})[myId] ?? undefined,
     };
@@ -2523,7 +2535,7 @@ function ChatPanel({ myId, contact, onBack }: {
     type: MsgType = "text",
     mediaUrl?: string,
     replyToId?: string,
-    editState?: MediaEditState | null,
+    duration?: number,
     viewOnce = false,
   ) {
     if (sending || uploading) return;
@@ -2537,7 +2549,7 @@ function ChatPanel({ myId, contact, onBack }: {
     const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2)}`;
     const localMsg: Message = {
       id: tempId, senderId: myId, text: t, type,
-      mediaUrl, time: new Date().toLocaleTimeString("pt-PT",{hour:"2-digit",minute:"2-digit"}),
+      mediaUrl, duration, time: new Date().toLocaleTimeString("pt-PT",{hour:"2-digit",minute:"2-digit"}),
       status: "sent", replyTo: replyToId ?? replyTo?.id,
       deliveryStatus: "sending", viewOnce,
     };
@@ -2566,6 +2578,7 @@ function ChatPanel({ myId, contact, onBack }: {
         message_type: type,
         reply_to: replyToId ?? replyTo?.id ?? null,
         view_once: viewOnce,
+        duration: duration ?? null,
       }).select("id").single();
 
       if (error) {
@@ -2602,7 +2615,7 @@ function ChatPanel({ myId, contact, onBack }: {
   async function sendViewOnce(file: File, type: "image"|"video") {
     setShowAttach(false);
     const url = await uploadFile(file, type === "image" ? "images" : "videos");
-    if (url) await send("", type, url, undefined, null, true);
+    if (url) await send("", type, url, undefined, undefined, true);
   }
 
   // ── Media queue ──
@@ -2715,7 +2728,7 @@ function ChatPanel({ myId, contact, onBack }: {
     // Para vídeo, editState é guardado como metadado (filtros aplicados via CSS na visualização)
     // Para imagem com Canvas flatten, editState é null (edições já estão nos pixels)
     const editMeta = item.type === "video" ? item.edit : null;
-    if (url) await send(item.caption, item.type, url, undefined, editMeta);
+    if (url) await send(item.caption, item.type, url, undefined, undefined);
 
     const nextIdx = mediaQueueIdx + 1;
     if (nextIdx < mediaSendQueue.length) { setMediaQueueIdx(nextIdx); }
@@ -2755,31 +2768,26 @@ function ChatPanel({ myId, contact, onBack }: {
         if (e.data && e.data.size > 0) audioChunksRef.current.push(e.data);
       };
 
+      let recordSecsAtStop = 0;
       mr.onstop = () => {
         stream.getTracks().forEach(t => t.stop());
         setRecording(false);
         if (recordTimerRef.current) clearInterval(recordTimerRef.current);
-        setRecordSecs(0);
+        // capturar antes de resetar
+        setRecordSecs(s => { recordSecsAtStop = s; return 0; });
         const blob = new Blob(audioChunksRef.current, { type: mimeType });
         if (blob.size < 500) { toast.error("Gravação muito curta"); return; }
         const blobUrl = URL.createObjectURL(blob);
-        setAudioPreview({ blob, url: blobUrl, dur: 0 });
+        // Usar recordSecs como duração real — metadata do WebM gravado ao vivo
+        // devolve Infinity ou NaN na maioria dos browsers
+        const realDur = recordSecsAtStop > 0 ? recordSecsAtStop : 1;
+        setAudioPreview({ blob, url: blobUrl, dur: realDur });
         setTrimStart(0); setTrimEnd(100);
         setPreviewPos(0); setPreviewPlaying(false);
         setWaveform(Array.from({ length: 40 }, (_, i) => {
           const bell = Math.sin((i / 39) * Math.PI) * 45;
           return Math.max(10, Math.min(90, 22 + bell + ((i * 37) % 30)));
         }));
-        // calcular duração depois de criar o blob
-        const tmp = new Audio(blobUrl);
-        tmp.onloadedmetadata = () => {
-          if (isFinite(tmp.duration) && tmp.duration > 0)
-            setAudioPreview(p => p ? { ...p, dur: tmp.duration } : p);
-        };
-        setTimeout(() => {
-          if (tmp.duration && isFinite(tmp.duration))
-            setAudioPreview(p => p ? { ...p, dur: tmp.duration } : p);
-        }, 800);
       };
 
       // timeslice de 250ms — garante que todos os chunks são capturados
@@ -2841,12 +2849,14 @@ function ChatPanel({ myId, contact, onBack }: {
 
   async function sendAudioPreview() {
     if (!audioPreview) return;
-    // Se há corte real, usar o blob original (browser não suporta trim de webm sem ffmpeg)
-    // Enviamos o blob completo mas com metadata de trim — suficiente para o caso de uso
-    const file = new File([audioPreview.blob], `audio-${Date.now()}.webm`, { type: "audio/webm" });
+    // Usar o tipo MIME real do blob gravado (webm, ogg, etc.)
+    const blobType = audioPreview.blob.type || "audio/webm";
+    const ext = blobType.includes("ogg") ? "ogg" : blobType.includes("mp4") ? "m4a" : "webm";
+    const file = new File([audioPreview.blob], `audio-${Date.now()}.${ext}`, { type: blobType });
+    const dur = audioPreview.dur;
     discardPreview();
     const url = await uploadFile(file, "audio");
-    if (url) await send("🎤 Áudio", "audio", url);
+    if (url) await send("🎤 Áudio", "audio", url, undefined, dur);
   }
 
   // ── Media msgs for lightbox ──
