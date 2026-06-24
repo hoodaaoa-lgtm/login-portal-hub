@@ -301,7 +301,7 @@ function ExplorePage() {
       const q = query.trim();
       const [{ data: ps }, { data: bs }] = await Promise.all([
         supabase.from("profiles").select("id,username,full_name,bio,avatar_url").ilike("username", `%${q}%`).limit(8),
-        supabase.from("books").select("id,user_id,title,status,progress").ilike("title", `%${q}%`).limit(6),
+        supabase.from("stories_books").select("id,author_id,title,status").ilike("title", `%${q}%`).limit(6),
       ]);
       setProfiles((ps as SearchProfile[]) ?? []);
       setBooks((bs as unknown as SearchBook[]) ?? []);
