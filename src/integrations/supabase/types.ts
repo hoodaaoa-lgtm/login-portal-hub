@@ -1165,13 +1165,76 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      profiles_public: {
+        Row: {
+          age: number | null
+          avatar_color: string | null
+          avatar_url: string | null
+          bio: string | null
+          cover_url: string | null
+          created_at: string | null
+          e2ee_public_key: string | null
+          full_name: string | null
+          id: string | null
+          is_online: boolean | null
+          is_private: boolean | null
+          last_seen: string | null
+          location: string | null
+          msg_permission: string | null
+          updated_at: string | null
+          username: string | null
+          website: string | null
+        }
+        Insert: {
+          age?: number | null
+          avatar_color?: string | null
+          avatar_url?: string | null
+          bio?: string | null
+          cover_url?: string | null
+          created_at?: string | null
+          e2ee_public_key?: string | null
+          full_name?: string | null
+          id?: string | null
+          is_online?: boolean | null
+          is_private?: boolean | null
+          last_seen?: string | null
+          location?: string | null
+          msg_permission?: string | null
+          updated_at?: string | null
+          username?: string | null
+          website?: string | null
+        }
+        Update: {
+          age?: number | null
+          avatar_color?: string | null
+          avatar_url?: string | null
+          bio?: string | null
+          cover_url?: string | null
+          created_at?: string | null
+          e2ee_public_key?: string | null
+          full_name?: string | null
+          id?: string | null
+          is_online?: boolean | null
+          is_private?: boolean | null
+          last_seen?: string | null
+          location?: string | null
+          msg_permission?: string | null
+          updated_at?: string | null
+          username?: string | null
+          website?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       cleanup_expired_stories: { Args: never; Returns: undefined }
       create_conversation_with_participants: {
         Args: { p_my_id: string; p_other_id: string }
         Returns: string
+      }
+      increment_library_book_counter: {
+        Args: { p_book_id: string; p_counter: string }
+        Returns: undefined
       }
       is_conversation_participant: {
         Args: { p_conversation_id: string; p_user_id: string }
