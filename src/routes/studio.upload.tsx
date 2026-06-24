@@ -185,10 +185,10 @@ function UploadPage() {
         const tExt  = thumbFile.name.split(".").pop() ?? "jpg";
         const tPath = `${uid}/${videoId}-thumb.${tExt}`;
         const { error: tErr } = await supabase.storage
-          .from("videos")
+          .from("thumbnails")
           .upload(tPath, thumbFile, { cacheControl: "3600", upsert: false, contentType: thumbFile.type });
         if (!tErr) {
-          const { data: tUrl } = supabase.storage.from("videos").getPublicUrl(tPath);
+          const { data: tUrl } = supabase.storage.from("thumbnails").getPublicUrl(tPath);
           thumbnailUrl = tUrl.publicUrl;
         }
       }

@@ -91,6 +91,27 @@ GROUP BY c.id;
 GRANT SELECT ON public.channel_stats_view TO authenticated;
 
 -- ── Realtime ───────────────────────────────────────────────
-ALTER PUBLICATION supabase_realtime ADD TABLE public.videos;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.channel_follows;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.video_views;
+-- Adiciona tabelas ao realtime apenas se ainda não estiverem na publicação
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime' AND tablename = 'videos'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.videos;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime' AND tablename = 'channel_follows'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.channel_follows;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime' AND tablename = 'video_views'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.video_views;
+  END IF;
+END $$;

@@ -111,9 +111,9 @@ function OnboardingPage() {
   async function uploadImg(file: File, path: string) {
     const ext  = file.name.split(".").pop() ?? "jpg";
     const full = `${path}.${ext}`;
-    const { error } = await supabase.storage.from("channel-media").upload(full, file, { upsert: true });
-    if (error) throw error;
-    const { data } = supabase.storage.from("channel-media").getPublicUrl(full);
+    const { error } = await supabase.storage.from("channel-assets").upload(full, file, { upsert: true });
+    if (error) { console.error("uploadImg:", error); return null; }
+    const { data } = supabase.storage.from("channel-assets").getPublicUrl(full);
     return data.publicUrl;
   }
 
