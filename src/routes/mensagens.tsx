@@ -1903,23 +1903,28 @@ function ChatPanel({ myId, contact, onBack }: {
     if (!myId || !contact.conversationId) return;
     (async () => {
       try {
-        // Confirmações de leitura + última vez ativo (perfil)
-        const { data: prof } = await (db as any).from("profiles")
+        const { data: prof, error: profErr } = await (db as any).from("profiles")
           .select("read_receipts_off, hide_last_seen")
           .eq("id", myId).maybeSingle();
-        console.log("[prefs] loaded from DB:", prof);
-        if (prof) {
+        if (profErr) {
+          console.error("[prefs] ERRO ao carregar perfil:", profErr.message);
+        } else if (prof) {
           setReadReceipts(!prof.read_receipts_off);
           setShowLastSeen(!prof.hide_last_seen);
         }
-        // Silenciado (tabela muted_conversations)
-        const { data: muted } = await db.from("muted_conversations")
+        const { data: muted, error: mutedErr } = await db.from("muted_conversations")
           .select("muted")
           .eq("user_id", myId)
           .eq("conversation_id", contact.conversationId)
           .maybeSingle();
-        if (muted) setMutedConv(!!muted.muted);
-      } catch (e) { console.warn("[prefs] erro ao carregar preferências:", e); }
+        if (mutedErr) {
+          console.error("[prefs] ERRO muted_conversations:", mutedErr.message);
+        } else if (muted) {
+          setMutedConv(!!muted.muted);
+        }
+      } catch (e) {
+        console.error("[prefs] Exceção ao carregar preferências:", e);
+      }
     })();
   }, [myId, contact.conversationId]);
 
@@ -1927,7 +1932,7 @@ function ChatPanel({ myId, contact, onBack }: {
     const next = !readReceipts;
     setReadReceipts(next);
     setShowChatMenu(false);
-    // usar supabase diretamente com cast para contornar tipos gerados desatualizados
+    try { localStorage.setItem(`hooda_read_receipts_${contact.conversationId}`, next ? "on" : "off"); } catch {}
     const { error } = await (db as any).from("profiles")
       .update({ read_receipts_off: !next })
       .eq("id", myId);
@@ -1935,11 +1940,8 @@ function ChatPanel({ myId, contact, onBack }: {
       console.error("[prefs] toggleReadReceipts error:", error);
       toast.error("Erro ao guardar: " + error.message);
       setReadReceipts(!next);
+      try { localStorage.setItem(`hooda_read_receipts_${contact.conversationId}`, (!next) ? "on" : "off"); } catch {}
     } else {
-      // confirmar que foi mesmo guardado
-      const { data: check } = await (db as any).from("profiles")
-        .select("read_receipts_off").eq("id", myId).maybeSingle();
-      console.log("[prefs] read_receipts_off after save:", check?.read_receipts_off);
       toast(next ? "✓ Confirmações de leitura ativadas" : "✓ Confirmações de leitura desativadas");
     }
   }
@@ -1948,6 +1950,7 @@ function ChatPanel({ myId, contact, onBack }: {
     const next = !showLastSeen;
     setShowLastSeen(next);
     setShowChatMenu(false);
+    try { localStorage.setItem(`hooda_last_seen_${contact.conversationId}`, next ? "on" : "off"); } catch {}
     const { error } = await (db as any).from("profiles")
       .update({ hide_last_seen: !next })
       .eq("id", myId);
@@ -1955,10 +1958,8 @@ function ChatPanel({ myId, contact, onBack }: {
       console.error("[prefs] toggleLastSeen error:", error);
       toast.error("Erro ao guardar: " + error.message);
       setShowLastSeen(!next);
+      try { localStorage.setItem(`hooda_last_seen_${contact.conversationId}`, (!next) ? "on" : "off"); } catch {}
     } else {
-      const { data: check } = await (db as any).from("profiles")
-        .select("hide_last_seen").eq("id", myId).maybeSingle();
-      console.log("[prefs] hide_last_seen after save:", check?.hide_last_seen);
       toast(next ? "✓ Última vez ativo visível" : "✓ Última vez ativo oculta");
     }
   }
@@ -1967,15 +1968,23 @@ function ChatPanel({ myId, contact, onBack }: {
     const next = !mutedConv;
     setMutedConv(next);
     setShowChatMenu(false);
-    const { error } = await db.from("muted_conversations").upsert(
-      { user_id: myId, conversation_id: contact.conversationId, muted: next },
-      { onConflict: "user_id,conversation_id" }
-    );
-    if (error) {
-      toast.error("Erro ao guardar: " + error.message);
-      setMutedConv(!next); // reverter
-    } else {
-      toast(next ? "🔕 Conversa silenciada" : "🔔 Notificações ativadas");
+    try {
+      const { error } = await db.from("muted_conversations").upsert(
+        { user_id: myId, conversation_id: contact.conversationId, muted: next },
+        { onConflict: "user_id,conversation_id" }
+      );
+      if (error) {
+        console.error("[toggleMute] erro:", error.message);
+        toast.error("Erro ao guardar: " + error.message);
+        setMutedConv(!next);
+      } else {
+        try { localStorage.setItem(`hooda_muted_${contact.conversationId}`, next ? "on" : "off"); } catch {}
+        toast(next ? "🔕 Conversa silenciada" : "🔔 Notificações ativadas");
+      }
+    } catch (e: any) {
+      console.error("[toggleMute] exceção:", e);
+      toast.error("Erro inesperado: " + (e?.message ?? e));
+      setMutedConv(!next);
     }
   }
 
