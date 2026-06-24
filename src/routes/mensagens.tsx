@@ -247,7 +247,7 @@ function AddContactModal({ myId, onClose, onAdd, existingContacts }: {
           full_name: p.full_name || p.username || "?",
           avatar_url: p.avatar_url || null,
           color: colorFor(p.username || p.id),
-          is_online: false,
+          is_online: !!p.is_online,
           last_seen: new Date().toISOString(),
           msg_permission: p.msg_permission || "todos",
         }));
@@ -706,11 +706,13 @@ const CHAT_GIFS = [
 ];
 
 // ── ChatPicker — idêntico ao da comunidade ──
-function ChatPicker({ tab, setTab, emojiSearch, setEmojiSearch, gifSearch, setGifSearch, onEmoji, onSticker, onGif }: {
+function ChatPicker({ tab, setTab, emojiSearch, setEmojiSearch, gifSearch, setGifSearch, gifs, gifLoading, onEmoji, onSticker, onGif }: {
   tab: "emoji" | "gif" | "sticker";
   setTab: (t: "emoji" | "gif" | "sticker") => void;
   emojiSearch: string; setEmojiSearch: (s: string) => void;
   gifSearch: string; setGifSearch: (s: string) => void;
+  gifs: {id: string; url: string}[];
+  gifLoading: boolean;
   onEmoji: (e: string) => void;
   onSticker: (s: string) => void;
   onGif: (url: string) => void;
@@ -780,14 +782,15 @@ function ChatPicker({ tab, setTab, emojiSearch, setEmojiSearch, gifSearch, setGi
             </div>
           </div>
           <div className="grid grid-cols-3 gap-1 px-2 pb-2 overflow-y-auto" style={{ maxHeight: 180 }}>
-            {CHAT_GIFS.map(gif => (
-              <button key={gif.id} onClick={() => onGif(gif.url)}
+            {gifLoading && <div className="col-span-3 text-center py-4 text-xs" style={{ color: "rgba(255,255,255,0.5)" }}>A carregar...</div>}
+            {!gifLoading && (gifs.length > 0 ? gifs : CHAT_GIFS).map((gif, i) => (
+              <button key={gif.id ?? i} onClick={() => onGif(gif.url)}
                 className="relative rounded-xl overflow-hidden active:scale-95 transition-all"
                 style={{ aspectRatio: "4/3", background: CHAT_INPUT_BG }}>
-                <img src={gif.url} alt={gif.label} className="w-full h-full object-cover"
+                <img src={gif.url} alt={(gif as any).label ?? "gif"} className="w-full h-full object-cover"
                   onError={e => { (e.currentTarget.parentElement as HTMLElement).style.opacity = "0.4"; }} />
-                <div className="absolute bottom-0 inset-x-0 text-center text-[9px] font-bold text-white py-0.5"
-                  style={{ background: "linear-gradient(transparent,rgba(0,0,0,0.7))" }}>{gif.label}</div>
+                {(gif as any).label && <div className="absolute bottom-0 inset-x-0 text-center text-[9px] font-bold text-white py-0.5"
+                  style={{ background: "linear-gradient(transparent,rgba(0,0,0,0.7))" }}>{(gif as any).label}</div>}
               </button>
             ))}
           </div>
@@ -832,6 +835,10 @@ type Message = {
   edited?: boolean;
   /** Estado de entrega */
   deliveryStatus?: "sending" | "sent" | "read";
+  /** Reações: {emoji: count} */
+  reactions?: Record<string, number>;
+  /** A minha reação */
+  myReaction?: string;
 };
 
 // Prefixo usado para embutir a edição (filtro/recorte/texto/stickers) aplicada na
@@ -1197,11 +1204,12 @@ function ChatMediaSendPreview({ item, onCancel, onSend, sending }: {
 // cheio, com header (avatar+nome, hora, zoom, encaminhar, favorito, emoji,
 // download, mais opções, fechar), setas ‹ › para navegar entre as mídias da
 // conversa, e uma tira de miniaturas em baixo com a atual destacada a verde.
-function ChatMediaLightbox({ items, index, onIndexChange, onClose, contact, myId }: {
+function ChatMediaLightbox({ items, index, onIndexChange, onClose, onReact, contact, myId }: {
   items: Message[];
   index: number;
   onIndexChange: (i: number) => void;
   onClose: () => void;
+  onReact?: (msgId: string, emoji: string) => void;
   contact: Contact;
   myId: string;
 }) {
@@ -1289,9 +1297,8 @@ function ChatMediaLightbox({ items, index, onIndexChange, onClose, contact, myId
   }
 
   function handleReact(emoji: string) {
-    setReactions(r => ({ ...r, [displayItem.id]: emoji }));
     setShowReact(false);
-    toast(`Reagiste com ${emoji}`);
+    onReact?.(displayItem.id, emoji);
   }
 
   function handleZoomToggle() {
@@ -1582,7 +1589,7 @@ function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit
   contact: Contact; myId: string; mediaMsgs: Message[];
   onReply: () => void; onEdit: () => void;
   onDeleteForMe: () => void; onDeleteForEveryone: () => void;
-  onReact?: (emoji: string) => void; onRetry?: () => void;
+  onReact?: (msgId: string, emoji: string) => void; onRetry?: () => void;
   onOpenViewOnce: () => void; onOpenLightbox: () => void;
   uploadPct?: number; readReceipts?: boolean;
 }) {
@@ -1987,6 +1994,55 @@ function ChatPanel({ myId, contact, onBack }: {
     }
   }
 
+  // ── Reações reais (DB) ──
+  async function handleReact(msgId: string, emoji: string) {
+    if (!myId) return;
+    try {
+      const { data: existing } = await (db as any)
+        .from("message_reactions")
+        .select("id,emoji")
+        .eq("message_id", msgId)
+        .eq("user_id", myId)
+        .maybeSingle();
+      if (existing) {
+        if (existing.emoji === emoji) {
+          // toggle off
+          await (db as any).from("message_reactions").delete().eq("id", existing.id);
+          setMsgs(prev => prev.map(m => {
+            if (m.id !== msgId) return m;
+            const r = { ...(m.reactions ?? {}) };
+            r[emoji] = Math.max(0, (r[emoji] ?? 1) - 1);
+            if (r[emoji] === 0) delete r[emoji];
+            return { ...m, reactions: r, myReaction: undefined };
+          }));
+        } else {
+          // mudar emoji
+          await (db as any).from("message_reactions").update({ emoji }).eq("id", existing.id);
+          setMsgs(prev => prev.map(m => {
+            if (m.id !== msgId) return m;
+            const r = { ...(m.reactions ?? {}) };
+            r[existing.emoji] = Math.max(0, (r[existing.emoji] ?? 1) - 1);
+            if (r[existing.emoji] === 0) delete r[existing.emoji];
+            r[emoji] = (r[emoji] ?? 0) + 1;
+            return { ...m, reactions: r, myReaction: emoji };
+          }));
+        }
+      } else {
+        await (db as any).from("message_reactions").insert({ message_id: msgId, user_id: myId, emoji });
+        setMsgs(prev => prev.map(m => {
+          if (m.id !== msgId) return m;
+          const r = { ...(m.reactions ?? {}) };
+          r[emoji] = (r[emoji] ?? 0) + 1;
+          return { ...m, reactions: r, myReaction: emoji };
+        }));
+      }
+    } catch (e) {
+      console.error("[react] erro:", e);
+      toast.error("Erro ao reagir");
+    }
+  }
+
+
   function clearConversation() {
     setShowChatMenu(false);
     setChatConfirm({
@@ -2055,9 +2111,13 @@ function ChatPanel({ myId, contact, onBack }: {
       .then((res: any) => setIAmBlockedBy(!!res.data));
 
     // Realtime: ouvir alterações de bloqueio em ambos os sentidos
-    const ch = db.channel(`blocks-${myId}-${contact.id}`)
+    const chName = `blocks-${myId}-${contact.id}`;
+    // Remover canal anterior se existir (evita erro "cannot add callbacks after subscribe")
+    const existing = (db as any).getChannels?.().find?.((c: any) => c.topic === `realtime:${chName}`);
+    if (existing) db.removeChannel(existing);
+    const ch = db.channel(chName)
       .on("postgres_changes",
-        { event: "*", schema: "public", table: "blocked_users" },
+        { event: "*", schema: "public", table: "blocked_users", filter: `blocker_id=eq.${myId}` },
         (payload: any) => {
           const row = payload.new ?? payload.old;
           if (!row) return;
@@ -2177,6 +2237,8 @@ function ChatPanel({ myId, contact, onBack }: {
         } catch { return false; }
       })(),
       deliveryStatus: r.status === "read" ? "read" : "sent",
+      reactions: r.reactions ?? {},
+      myReaction: (r.reactions ?? {})[myId] ?? undefined,
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [myId, decrypt]);
@@ -2211,7 +2273,28 @@ function ChatPanel({ myId, contact, onBack }: {
     console.log("[loadMsgs] Rows recebidos:", data?.length ?? 0);
     if (data?.length) console.log("[loadMsgs] Primeira row:", JSON.stringify(data[0]));
     if (!data) return;
-    const parsed = await Promise.all(data.map(parseRow));
+
+    // Carregar reações para todas as mensagens desta conversa
+    const msgIds = data.map((r: any) => r.id);
+    let reactionsMap: Record<string, { emoji: string; user_id: string }[]> = {};
+    if (msgIds.length > 0) {
+      const { data: rxData } = await (db as any).from("message_reactions")
+        .select("message_id,emoji,user_id")
+        .in("message_id", msgIds);
+      for (const rx of rxData ?? []) {
+        if (!reactionsMap[rx.message_id]) reactionsMap[rx.message_id] = [];
+        reactionsMap[rx.message_id].push(rx);
+      }
+    }
+    // Enriquecer rows com reactions antes de parseRow
+    const enriched = data.map((r: any) => {
+      const rxList = reactionsMap[r.id] ?? [];
+      const counts: Record<string, number> = {};
+      for (const rx of rxList) counts[rx.emoji] = (counts[rx.emoji] ?? 0) + 1;
+      const myRx = rxList.find((rx: any) => rx.user_id === myId);
+      return { ...r, reactions: counts, myReaction: myRx?.emoji };
+    });
+    const parsed = await Promise.all(enriched.map(parseRow));
     // Filtrar localmente as apagadas para todos (caso a RLS ainda não esteja actualizada)
     const visible = parsed.filter((m: any) => !m.deletedForAll);
     setMsgs(visible);
@@ -2339,7 +2422,10 @@ function ChatPanel({ myId, contact, onBack }: {
   // ── Broadcast: presença + "está a escrever" ──
   useEffect(() => {
     if (!contact.conversationId || !myId) return;
-    const ch = db.channel(`typing-${contact.conversationId}`, {
+    const typingChName = `typing-${contact.conversationId}`;
+    const existingTyping = (db as any).getChannels?.().find?.((c: any) => c.topic === `realtime:${typingChName}`);
+    if (existingTyping) db.removeChannel(existingTyping);
+    const ch = db.channel(typingChName, {
       config: { broadcast: { self: false } },
     });
     broadcastChRef.current = ch;
@@ -2935,6 +3021,7 @@ function ChatPanel({ myId, contact, onBack }: {
                 const idx = mediaMsgs.findIndex(x => x.id === merged.id);
                 if (idx !== -1) setLightboxIndex(idx);
               }}
+              onReact={handleReact}
               onRetry={() => retryMsg(merged)}
               uploadPct={uploadPct}
               readReceipts={readReceipts}
@@ -2992,6 +3079,7 @@ function ChatPanel({ myId, contact, onBack }: {
           tab={pickerTab} setTab={setPickerTab}
           emojiSearch={emojiSearch} setEmojiSearch={setEmojiSearch}
           gifSearch={gifSearch} setGifSearch={setGifSearch}
+          gifs={gifs} gifLoading={gifLoading}
           onEmoji={e => { setInput(p => p + e); inputRef.current?.focus(); }}
           onSticker={s => send(s, "sticker")}
           onGif={url => send("GIF", "image", url)}
@@ -3290,6 +3378,7 @@ function ChatPanel({ myId, contact, onBack }: {
       {lightboxIndex !== null && mediaMsgs[lightboxIndex] && (
         <ChatMediaLightbox items={mediaMsgs} index={lightboxIndex}
           onIndexChange={setLightboxIndex} onClose={() => setLightboxIndex(null)}
+          onReact={handleReact}
           contact={contact} myId={myId} />
       )}
 
@@ -3520,7 +3609,7 @@ function MensagensPage() {
 
       const { data: profiles } = await db
         .from("profiles")
-        .select("id,username,full_name,avatar_url")
+        .select("id,username,full_name,avatar_url,is_online")
         .in("id", otherIds as any);
 
       const allMsgs: any[] = allMsgsResult.data ?? [];
