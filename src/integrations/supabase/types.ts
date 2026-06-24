@@ -1173,6 +1173,10 @@ export type Database = {
         Args: { p_my_id: string; p_other_id: string }
         Returns: string
       }
+      is_conversation_participant: {
+        Args: { p_conversation_id: string; p_user_id: string }
+        Returns: boolean
+      }
       mark_view_once_opened: {
         Args: { p_msg_id: string; p_user_id: string }
         Returns: undefined
