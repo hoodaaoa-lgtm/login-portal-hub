@@ -3703,6 +3703,22 @@ function MensagensPage() {
     return () => { supabase.removeChannel(ch); };
   }, [myId, contacts, contactsQuery]);
 
+  // Mobile: refrescar lista de conversas quando o separador volta a estar visível
+  useEffect(() => {
+    if (!myId) return;
+    const onVisible = () => {
+      if (document.visibilityState === "visible") {
+        contactsQuery.refetch();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onVisible);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onVisible);
+    };
+  }, [myId, contactsQuery]);
+
   // Guardar a conversa ativa globalmente para a notificação saber se deve aparecer
   useEffect(() => {
     (window as any).__hoodalActiveConvId__ = active?.conversationId ?? null;
