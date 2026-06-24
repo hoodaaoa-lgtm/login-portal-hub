@@ -303,7 +303,7 @@ function SectionMembros({ community, myUserId, onSelectMember }: {
 
     if (error) { toast.error("Erro ao carregar membros"); setLoading(false); return; }
     const memberRows = data || [];
-    const ids = [...new Set(memberRows.map((r: any) => r.user_id).filter(Boolean))];
+    const ids = [...new Set(memberRows.map((r: any) => r.user_id).filter(Boolean))] as string[];
     let profilesById: Record<string, any> = {};
     if (ids.length) {
       const { data: profs, error: profErr } = await supabase
