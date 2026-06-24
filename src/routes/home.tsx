@@ -190,15 +190,27 @@ function fmt(s: number) {
 function MusicLibrary({ onSelect, onClose }: { onSelect: (s: Song) => void; onClose: () => void }) {
   const [songs, setSongs] = useState<Song[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [preview, setPreview] = useState<{ id: string; audio: HTMLAudioElement } | null>(null);
 
-  useEffect(() => {
+  const load = React.useCallback(() => {
+    setLoading(true);
+    setError(null);
     fetchMusic({ data: { limit: 50 } })
-      .then((r) => setSongs((r.library ?? []) as Song[]))
-      .catch(() => setSongs([]))
+      .then((r) => {
+        const lib = (r.library ?? []) as Song[];
+        setSongs(lib);
+        if (lib.length === 0) setError("Biblioteca musical vazia.");
+      })
+      .catch((e) => {
+        setSongs([]);
+        setError(e instanceof Error ? e.message : "Não foi possível carregar a biblioteca musical.");
+      })
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => { load(); }, [load]);
 
   function togglePreview(song: Song) {
     if (preview?.id === song.id) { preview.audio.pause(); setPreview(null); return; }
@@ -233,6 +245,18 @@ function MusicLibrary({ onSelect, onClose }: { onSelect: (s: Song) => void; onCl
             <div className="flex justify-center py-12">
               <div className="h-6 w-6 rounded-full border-2 border-[#5B3FCF] border-t-transparent animate-spin" />
             </div>
+          ) : error && songs.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 px-6 text-center gap-3">
+              <Music className="h-10 w-10 text-white/20" />
+              <p className="text-white/70 text-sm">{error}</p>
+              <button onClick={load}
+                className="text-xs font-bold px-4 py-2 rounded-full text-white"
+                style={{ background: "#5B3FCF" }}>
+                Tentar novamente
+              </button>
+            </div>
+          ) : list.length === 0 ? (
+            <div className="py-12 text-center text-white/40 text-sm">Sem resultados para "{query}".</div>
           ) : list.map((song) => (
             <div key={song.id} className="flex items-center gap-3 px-4 py-3">
               <div className="h-11 w-11 rounded-xl overflow-hidden flex-shrink-0 bg-white/10">
