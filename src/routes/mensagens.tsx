@@ -2043,13 +2043,17 @@ function ChatPanel({ myId, contact, onBack }: {
   }
 
   const [isBlocked, setIsBlocked] = useState(false);
+  const [iAmBlockedBy, setIAmBlockedBy] = useState(false);
 
-  // Verificar se está bloqueado ao montar
+  // Verificar bloqueios (eu→contacto e contacto→eu) ao montar
   useEffect(() => {
     if (!myId || !contact.id) return;
     db.from("blocked_users")
       .select("blocker_id").eq("blocker_id", myId).eq("blocked_id", contact.id).maybeSingle()
       .then((res: any) => setIsBlocked(!!res.data));
+    db.from("blocked_users")
+      .select("blocker_id").eq("blocker_id", contact.id).eq("blocked_id", myId).maybeSingle()
+      .then((res: any) => setIAmBlockedBy(!!res.data));
   }, [myId, contact.id]);
 
   // ── Edit / Delete / ViewOnce ──
@@ -2395,6 +2399,8 @@ function ChatPanel({ myId, contact, onBack }: {
     viewOnce = false,
   ) {
     if (sending || uploading) return;
+    if (isBlocked) { toast.error(`Desbloqueia @${contact.username} para enviar mensagens.`); return; }
+    if (iAmBlockedBy) { toast.error("Não é possível enviar mensagens a este utilizador."); return; }
     const t = text.trim();
     if (!t && !mediaUrl) return;
     setSending(true);
@@ -2855,6 +2861,16 @@ function ChatPanel({ myId, contact, onBack }: {
             style={{ background:"#dc2626" }}>
             Desbloquear
           </button>
+        </div>
+      )}
+      {!isBlocked && iAmBlockedBy && (
+        <div className="shrink-0 flex items-center gap-3 px-4 py-3 border-b"
+          style={{ background:"#fef3c7", borderColor:"#fcd34d" }}>
+          <UserX className="h-5 w-5 shrink-0 text-amber-600" />
+          <div className="flex-1">
+            <p className="text-sm font-bold text-amber-700">Não podes enviar mensagens</p>
+            <p className="text-xs text-amber-600">@{contact.username} bloqueou-te. As tuas mensagens não serão entregues.</p>
+          </div>
         </div>
       )}
 
