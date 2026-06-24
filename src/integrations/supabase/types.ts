@@ -198,18 +198,21 @@ export type Database = {
       community_members: {
         Row: {
           community_id: string
+          id: string
           joined_at: string
           role: string
           user_id: string
         }
         Insert: {
           community_id: string
+          id?: string
           joined_at?: string
           role?: string
           user_id: string
         }
         Update: {
           community_id?: string
+          id?: string
           joined_at?: string
           role?: string
           user_id?: string
