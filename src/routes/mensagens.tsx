@@ -2861,6 +2861,16 @@ function ChatPanel({ myId, contact, onBack }: {
           </button>
         </div>
       )}
+      {!isBlocked && iAmBlockedBy && (
+        <div className="shrink-0 flex items-center gap-3 px-4 py-3 border-b"
+          style={{ background:"#fef3c7", borderColor:"#fcd34d" }}>
+          <UserX className="h-5 w-5 shrink-0 text-amber-600" />
+          <div className="flex-1">
+            <p className="text-sm font-bold text-amber-700">Não podes enviar mensagens</p>
+            <p className="text-xs text-amber-600">@{contact.username} bloqueou-te. As tuas mensagens não serão entregues.</p>
+          </div>
+        </div>
+      )}
 
       {/* ── MESSAGES ── */}
       <div className="flex-1 overflow-y-auto scroll-smooth" onScroll={onScroll}>
