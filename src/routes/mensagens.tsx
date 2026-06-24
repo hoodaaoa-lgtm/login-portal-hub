@@ -2045,7 +2045,7 @@ function ChatPanel({ myId, contact, onBack }: {
   const [isBlocked, setIsBlocked] = useState(false);
   const [iAmBlockedBy, setIAmBlockedBy] = useState(false);
 
-  // Verificar bloqueios (eu→contacto e contacto→eu) ao montar
+  // Verificar bloqueios (eu→contacto e contacto→eu) ao montar + tempo real
   useEffect(() => {
     if (!myId || !contact.id) return;
     db.from("blocked_users")
@@ -2054,7 +2054,33 @@ function ChatPanel({ myId, contact, onBack }: {
     db.from("blocked_users")
       .select("blocker_id").eq("blocker_id", contact.id).eq("blocked_id", myId).maybeSingle()
       .then((res: any) => setIAmBlockedBy(!!res.data));
-  }, [myId, contact.id]);
+
+    // Realtime: ouvir alterações de bloqueio em ambos os sentidos
+    const ch = db.channel(`blocks-${myId}-${contact.id}`)
+      .on("postgres_changes",
+        { event: "*", schema: "public", table: "blocked_users" },
+        (payload: any) => {
+          const row = payload.new ?? payload.old;
+          if (!row) return;
+          // eu bloqueei o contacto (ou desbloqueei)
+          if (row.blocker_id === myId && row.blocked_id === contact.id) {
+            setIsBlocked(payload.eventType !== "DELETE");
+          }
+          // o contacto bloqueou-me (ou desbloqueou)
+          if (row.blocker_id === contact.id && row.blocked_id === myId) {
+            const nowBlocked = payload.eventType !== "DELETE";
+            setIAmBlockedBy(nowBlocked);
+            if (nowBlocked) {
+              toast.error(`Foste bloqueado por @${contact.username}. Já não podes enviar mensagens.`);
+            } else {
+              toast.success(`@${contact.username} desbloqueou-te.`);
+            }
+          }
+        })
+      .subscribe();
+    return () => { db.removeChannel(ch); };
+  }, [myId, contact.id, contact.username]);
+
 
   // ── Edit / Delete / ViewOnce ──
   const [editingMsgId,   setEditingMsgId]   = useState<string|null>(null);
