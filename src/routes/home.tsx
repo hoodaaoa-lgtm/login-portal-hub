@@ -587,7 +587,12 @@ function StoryCreator({ onClose, onPublish }: {
             { m: "audio" as CreatorMode,  icon: <Music     className="h-6 w-6 text-white" />, grad: "linear-gradient(135deg,#1FAFA6,#6BA547)", title: "Áudio", sub: "Partilha um momento sonoro" },
           ].map((item) => (
             <button key={item.m}
-              onClick={() => { setMode(item.m); setTab("bg"); if (item.m === "text") setShowTextPanel(true); }}
+              onClick={() => {
+                setMode(item.m);
+                setTab(item.m === "audio" ? "music" : "bg");
+                if (item.m === "text") setShowTextPanel(true);
+                if (item.m === "audio") setShowMusicLib(true);
+              }}
               className="flex items-center gap-4 border border-white/10 rounded-2xl p-5 transition active:scale-95"
               style={{ background: "rgba(255,255,255,0.04)" }}>
               <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: item.grad }}>{item.icon}</div>
