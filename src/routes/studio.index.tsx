@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { myChannelQuery, channelStatsQuery, myVideosQuery } from "@/lib/channel-queries";
 import {
   Eye, Video as VideoIcon, Upload, ArrowUpRight, TrendingUp,
-  Clock, Users, PlayCircle, MoreVertical, Globe, Lock, Tv2,
+  Clock, Users, PlayCircle, MoreVertical, Globe, Lock, Tv2, X,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { pt } from "date-fns/locale";
