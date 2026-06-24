@@ -3494,6 +3494,7 @@ function MensagensPage() {
             return c;
           })(),
           lastTime: lastMsg ? timeAgo(lastMsg.created_at) : "",
+          lastTimestamp: lastMsg ? new Date(lastMsg.created_at).getTime() : 0,
           unread: unreadMap[convId] ?? 0,
         });
       }
