@@ -2696,8 +2696,8 @@ function ChatPanel({ myId, contact, onBack }: {
         }, 800);
       };
 
-      // SEM timeslice — dados coletados todos no stop via requestData
-      mr.start();
+      // timeslice de 250ms — garante que todos os chunks são capturados
+      mr.start(250);
       setRecording(true);
       setRecordSecs(0);
       recordTimerRef.current = setInterval(() => setRecordSecs(s => s + 1), 1000);
@@ -2710,9 +2710,7 @@ function ChatPanel({ myId, contact, onBack }: {
   function stopRecording() {
     const mr = mediaRecorderRef.current;
     if (!mr || mr.state === "inactive") return;
-    // pedir dados finais antes de parar
-    try { mr.requestData(); } catch {}
-    mr.stop();
+    mr.stop(); // com timeslice ativo, onstop recebe os dados todos automaticamente
     if (recordTimerRef.current) clearInterval(recordTimerRef.current);
   }
 
