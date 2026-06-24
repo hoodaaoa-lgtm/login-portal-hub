@@ -3195,12 +3195,17 @@ function ChatPanel({ myId, contact, onBack }: {
       )}
 
       {/* ── INPUT BAR estilo WhatsApp ── */}
-      {isBlocked ? (
+      {(isBlocked || iAmBlockedBy) ? (
         <div className="flex items-center justify-center px-4 py-4 shrink-0 border-t"
           style={{ background:"var(--s2)", borderColor:"var(--border-default)" }}>
-          <p className="text-sm" style={{ color:"var(--text-muted)" }}>Não podes enviar mensagens a este utilizador.</p>
+          <p className="text-sm text-center" style={{ color:"var(--text-muted)" }}>
+            {isBlocked
+              ? "Bloqueaste este utilizador. Desbloqueia para enviar mensagens."
+              : `@${contact.username} bloqueou-te. Não podes enviar mensagens.`}
+          </p>
         </div>
       ) : (
+
       <div className="flex items-end gap-2 px-2 py-2 shrink-0"
         style={{ background:"var(--s0,#f0ece8)" }}>
         {/* Botão anexo */}
