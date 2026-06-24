@@ -2832,6 +2832,7 @@ function ChatPanel({ myId, contact, onBack }: {
       a.currentTime = (audioPreview.dur * startPct);
       a.ontimeupdate = () => {
         const pct = a.currentTime / audioPreview.dur * 100;
+        console.log("pct:", pct.toFixed(2), "| trimEnd:", trimEnd, "| endPct*100:", endPct * 100);
         setPreviewPos(pct);
         if (pct >= endPct * 100) { a.pause(); setPreviewPlaying(false); setPreviewPos(trimStart); }
       };
@@ -2843,7 +2844,11 @@ function ChatPanel({ myId, contact, onBack }: {
       const a = previewAudioRef.current;
       const startPct = trimStart / 100;
       if (previewPos < trimStart || previewPos > trimEnd) a.currentTime = audioPreview.dur * startPct;
-      a.play().catch(() => {}); setPreviewPlaying(true);
+      a.play().catch((err) => {
+        console.error("Erro ao reproduzir áudio:", err);
+        toast.error("Não foi possível reproduzir o áudio");
+        setPreviewPlaying(false);
+      }); setPreviewPlaying(true);
     }
   }
 
@@ -2852,10 +2857,17 @@ function ChatPanel({ myId, contact, onBack }: {
     // Usar o tipo MIME real do blob gravado (webm, ogg, etc.)
     const blobType = audioPreview.blob.type || "audio/webm";
     const ext = blobType.includes("ogg") ? "ogg" : blobType.includes("mp4") ? "m4a" : "webm";
+    console.log("audioPreview.blob:", audioPreview.blob);
+    console.log("blob.size:", audioPreview.blob.size, "| blob.type:", audioPreview.blob.type);
+    if (audioPreview.blob.size === 0) {
+      toast.error("Áudio vazio — tenta gravar de novo");
+      return;
+    }
     const file = new File([audioPreview.blob], `audio-${Date.now()}.${ext}`, { type: blobType });
     const dur = audioPreview.dur;
     discardPreview();
     const url = await uploadFile(file, "audio");
+    console.log("URL do áudio após upload:", url);
     if (url) await send("🎤 Áudio", "audio", url, undefined, dur);
   }
 
