@@ -1173,6 +1173,19 @@ export type Database = {
         Args: { p_my_id: string; p_other_id: string }
         Returns: string
       }
+      get_my_profile_private: {
+        Args: never
+        Returns: {
+          hide_last_seen: boolean
+          notification_prefs: Json
+          phone_number: string
+          read_receipts_off: boolean
+        }[]
+      }
+      increment_library_book_counter: {
+        Args: { p_book_id: string; p_counter: string }
+        Returns: undefined
+      }
       is_conversation_participant: {
         Args: { p_conversation_id: string; p_user_id: string }
         Returns: boolean
