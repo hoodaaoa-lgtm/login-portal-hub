@@ -102,8 +102,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:site", content: "@Lovable" },
       { name: "twitter:title", content: "hooda" },
       { name: "twitter:description", content: "Hooda Login Portal provides a modern, minimalist interface for accessing the Hooda social platform." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/8f66fd3f-328d-46a3-9763-67f12a46e23e/id-preview-8cfa7271--5dae22c7-1191-49ea-8a1e-7c9fecc86ff9.lovable.app-1781647095705.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/8f66fd3f-328d-46a3-9763-67f12a46e23e/id-preview-8cfa7271--5dae22c7-1191-49ea-8a1e-7c9fecc86ff9.lovable.app-1781647095705.png" },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/0f280a33-cfec-44e1-9c4c-4607a8a066e3" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/0f280a33-cfec-44e1-9c4c-4607a8a066e3" },
     ],
     links: [
       {
