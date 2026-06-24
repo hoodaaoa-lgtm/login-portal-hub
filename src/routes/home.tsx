@@ -868,7 +868,7 @@ function StoryCreator({ onClose, onPublish }: {
             </button>
           ))}
         </div>
-        <div className="overflow-y-auto" style={{ maxHeight: "190px" }}>
+        <div className="overflow-y-auto no-scrollbar" style={{ maxHeight: "190px" }}>
           {tab === "bg" && (
             <div className="p-3">
               <p className="text-white/40 text-[10px] font-semibold uppercase tracking-wider mb-2">Temas</p>
