@@ -1903,9 +1903,8 @@ function ChatPanel({ myId, contact, onBack }: {
     if (!myId || !contact.conversationId) return;
     (async () => {
       try {
-        const { data: prof, error: profErr } = await (db as any).from("profiles")
-          .select("read_receipts_off, hide_last_seen")
-          .eq("id", myId).maybeSingle();
+        const { data: profRows, error: profErr } = await (db as any).rpc("get_my_profile_private");
+        const prof = profRows?.[0] ?? null;
         if (profErr) {
           console.error("[prefs] ERRO ao carregar perfil:", profErr.message);
         } else if (prof) {
