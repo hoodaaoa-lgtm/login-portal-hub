@@ -2043,13 +2043,17 @@ function ChatPanel({ myId, contact, onBack }: {
   }
 
   const [isBlocked, setIsBlocked] = useState(false);
+  const [iAmBlockedBy, setIAmBlockedBy] = useState(false);
 
-  // Verificar se está bloqueado ao montar
+  // Verificar bloqueios (eu→contacto e contacto→eu) ao montar
   useEffect(() => {
     if (!myId || !contact.id) return;
     db.from("blocked_users")
       .select("blocker_id").eq("blocker_id", myId).eq("blocked_id", contact.id).maybeSingle()
       .then((res: any) => setIsBlocked(!!res.data));
+    db.from("blocked_users")
+      .select("blocker_id").eq("blocker_id", contact.id).eq("blocked_id", myId).maybeSingle()
+      .then((res: any) => setIAmBlockedBy(!!res.data));
   }, [myId, contact.id]);
 
   // ── Edit / Delete / ViewOnce ──
