@@ -184,11 +184,11 @@ function SettingsModal({ onClose }: { onClose: () => void }) {
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(4px)" }}
+      style={{ background: "rgba(0,0,0,0.55)" }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
 
       <div className="w-full max-w-lg rounded-3xl flex flex-col overflow-hidden"
-        style={{ background: "var(--s0)", boxShadow: "0 24px 64px rgba(0,0,0,0.25)", maxHeight: "90vh" }}>
+        style={{ background: "var(--s0)", boxShadow: "0 8px 32px rgba(0,0,0,0.2)", maxHeight: "90vh" }}>
 
         {/* Header */}
         <div className="flex items-center gap-3 px-6 py-4 border-b shrink-0"
