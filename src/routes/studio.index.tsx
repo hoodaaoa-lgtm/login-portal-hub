@@ -1,17 +1,24 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { myChannelQuery, channelStatsQuery, myVideosQuery } from "@/lib/channel-queries";
+import {
+  myChannelQuery, channelStatsQuery, myVideosQuery,
+  dailyViewsQuery, viewsByCountryQuery, topVideosQuery,
+} from "@/lib/channel-queries";
 import {
   Eye, Video as VideoIcon, Upload, ArrowUpRight, TrendingUp,
-  Clock, Users, PlayCircle, MoreVertical, Globe, Lock, Tv2, X,
+  Clock, Users, PlayCircle, MoreVertical, Globe, Lock, Tv2,
+  X, Activity, BarChart2, Map,
 } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import {
+  AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
+} from "recharts";
+import { formatDistanceToNow, format } from "date-fns";
 import { pt } from "date-fns/locale";
-import { useState } from "react";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/studio/")({
+export const Route = createFileRoute("/studio/")(  {
   head: () => ({ meta: [{ title: "Painel — Hooda Studio" }] }),
   component: DashboardPage,
 });
@@ -19,9 +26,9 @@ export const Route = createFileRoute("/studio/")({
 const PURPLE = "#5B3FCF";
 const GRAD   = "linear-gradient(135deg,#5B3FCF,#E94B8A)";
 
-/* ── Stat card ── */
-function StatCard({ label, value, sub, icon: Icon, accent, loading }: {
-  label: string; value: string | number; sub?: string;
+/* ── Stat card ─────────────────────────────────────────── */
+function StatCard({ label, value, sub, subColor, icon: Icon, accent, loading }: {
+  label: string; value: string | number; sub?: string; subColor?: string;
   icon: React.ElementType; accent: string; loading?: boolean;
 }) {
   return (
@@ -29,8 +36,7 @@ function StatCard({ label, value, sub, icon: Icon, accent, loading }: {
       style={{ background: "var(--s0)", boxShadow: "var(--shadow-card)", border: "1px solid var(--border-subtle)" }}>
       <div className="flex items-center justify-between">
         <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>{label}</span>
-        <div className="h-8 w-8 rounded-xl flex items-center justify-center"
-          style={{ background: accent + "18" }}>
+        <div className="h-8 w-8 rounded-xl flex items-center justify-center" style={{ background: accent + "18" }}>
           <Icon className="h-4 w-4" style={{ color: accent }} />
         </div>
       </div>
@@ -40,31 +46,44 @@ function StatCard({ label, value, sub, icon: Icon, accent, loading }: {
             {typeof value === "number" ? value.toLocaleString("pt-PT") : value}
           </div>
       }
-      {sub && <p className="text-xs flex items-center gap-1" style={{ color: "#6BA547" }}>
+      {sub && <p className="text-xs flex items-center gap-1" style={{ color: subColor ?? "#6BA547" }}>
         <TrendingUp className="h-3 w-3" />{sub}
       </p>}
-      {/* decorative circle */}
-      <div className="absolute -right-4 -bottom-4 h-20 w-20 rounded-full opacity-[0.06]"
-        style={{ background: accent }} />
+      <div className="absolute -right-4 -bottom-4 h-20 w-20 rounded-full opacity-[0.06]" style={{ background: accent }} />
     </div>
   );
 }
 
-/* ── Video row ── */
-function VideoRow({ v, onEdit, onDelete }: { v: any; onEdit: (v:any)=>void; onDelete: (v:any)=>void }) {
+/* ── Mini bar (para país) ─────────────────────────────── */
+function CountryBar({ country, views, max }: { country: string; views: number; max: number }) {
+  const pct = max > 0 ? Math.round((views / max) * 100) : 0;
+  return (
+    <div className="flex items-center gap-3">
+      <span className="text-sm w-6 text-center">{flagEmoji(country)}</span>
+      <div className="flex-1">
+        <div className="flex justify-between text-xs mb-1">
+          <span style={{ color: "var(--text-primary)" }}>{COUNTRY_NAMES[country] ?? country}</span>
+          <span style={{ color: "var(--text-muted)" }}>{views.toLocaleString("pt-PT")}</span>
+        </div>
+        <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "var(--s3)" }}>
+          <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: GRAD }} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Video row ─────────────────────────────────────────── */
+function VideoRow({ v, onEdit, onDelete }: { v: any; onEdit: (v: any) => void; onDelete: (v: any) => void }) {
   const [menu, setMenu] = useState(false);
   const isPublic = v.visibility === "public";
   return (
     <li className="flex items-center gap-4 px-5 py-3 transition-colors hover:bg-[var(--s1)] group">
-      {/* Thumbnail */}
-      <div className="h-12 w-[86px] rounded-xl overflow-hidden shrink-0 flex items-center justify-center"
-        style={{ background: "var(--s2)" }}>
+      <div className="h-12 w-[86px] rounded-xl overflow-hidden shrink-0 flex items-center justify-center" style={{ background: "var(--s2)" }}>
         {v.thumbnail_url
           ? <img src={v.thumbnail_url} alt="" className="h-full w-full object-cover" />
           : <PlayCircle className="h-5 w-5" style={{ color: "var(--text-muted)" }} />}
       </div>
-
-      {/* Info */}
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>{v.title}</p>
         <p className="text-xs mt-0.5 flex items-center gap-1.5" style={{ color: "var(--text-muted)" }}>
@@ -73,11 +92,10 @@ function VideoRow({ v, onEdit, onDelete }: { v: any; onEdit: (v:any)=>void; onDe
             {isPublic ? "Público" : "Privado"}
           </span>
           · {Number(v.views_count ?? 0).toLocaleString("pt-PT")} vistas
+          {v.duration_seconds && <> · {fmtDuration(v.duration_seconds)}</>}
           {v.created_at && <> · {formatDistanceToNow(new Date(v.created_at), { locale: pt, addSuffix: true })}</>}
         </p>
       </div>
-
-      {/* Menu */}
       <div className="relative shrink-0">
         <button onClick={() => setMenu(m => !m)}
           className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition"
@@ -89,23 +107,23 @@ function VideoRow({ v, onEdit, onDelete }: { v: any; onEdit: (v:any)=>void; onDe
         {menu && (
           <div className="absolute right-0 top-full mt-1 rounded-xl shadow-lg z-10 overflow-hidden min-w-[140px] border"
             style={{ background: "var(--s0)", borderColor: "var(--border-default)" }}>
-                <button onClick={() => { setMenu(false); onEdit(v); }}
-                className="w-full text-left px-4 py-2.5 text-sm transition hover:bg-[var(--s1)]"
-                style={{ color: "var(--text-primary)" }}>
-                Editar
-              </button>
-              <a href={`/hoodatv`}
-                className="w-full block text-left px-4 py-2.5 text-sm transition hover:bg-[var(--s1)]"
-                style={{ color: "var(--text-primary)" }}
-                onClick={() => setMenu(false)}>
-                Ver na HoodaTV
-              </a>
-              <div style={{ height:1, background:"var(--border-subtle)" }} />
-              <button onClick={() => { setMenu(false); onDelete(v); }}
-                className="w-full text-left px-4 py-2.5 text-sm transition hover:bg-red-50"
-                style={{ color: "#E94B8A" }}>
-                Eliminar
-              </button>
+            <button onClick={() => { setMenu(false); onEdit(v); }}
+              className="w-full text-left px-4 py-2.5 text-sm transition hover:bg-[var(--s1)]"
+              style={{ color: "var(--text-primary)" }}>
+              Editar
+            </button>
+            <a href="/hoodatv"
+              className="w-full block text-left px-4 py-2.5 text-sm transition hover:bg-[var(--s1)]"
+              style={{ color: "var(--text-primary)" }}
+              onClick={() => setMenu(false)}>
+              Ver na HoodaTV
+            </a>
+            <div style={{ height: 1, background: "var(--border-subtle)" }} />
+            <button onClick={() => { setMenu(false); onDelete(v); }}
+              className="w-full text-left px-4 py-2.5 text-sm transition hover:bg-red-50"
+              style={{ color: "#E94B8A" }}>
+              Eliminar
+            </button>
           </div>
         )}
       </div>
@@ -113,31 +131,46 @@ function VideoRow({ v, onEdit, onDelete }: { v: any; onEdit: (v:any)=>void; onDe
   );
 }
 
-/* ── Dashboard ── */
+/* ── Dashboard ─────────────────────────────────────────── */
 export default function DashboardPage() {
   const qc = useQueryClient();
   const { data: channel, isLoading: chLoading } = useQuery(myChannelQuery());
   const { data: stats, isLoading } = useQuery(channelStatsQuery(channel?.id));
-  const { data: videos } = useQuery(myVideosQuery(channel?.id));
-  const [tab, setTab]           = useState<"all" | "public" | "private">("all");
-  const [editVideo, setEditVideo] = useState<any|null>(null);
+  const { data: videos }           = useQuery(myVideosQuery(channel?.id));
+  const { data: dailyViews }       = useQuery(dailyViewsQuery(channel?.id));
+  const { data: countryData }      = useQuery(viewsByCountryQuery(channel?.id));
+  const { data: topVideos }        = useQuery(topVideosQuery(channel?.id));
 
-  async function deleteVideo(v: any) {
-    if (v.video_path) {
-      await supabase.storage.from("videos").remove([v.video_path]);
-    }
-    await (supabase as any).from("videos").delete().eq("id", v.id);
-    qc.invalidateQueries({ queryKey: ["my-videos"] });
-    qc.invalidateQueries({ queryKey: ["channel-stats"] });
-    toast.success("Vídeo eliminado.");
-  }
+  const [tab,       setTab]       = useState<"all" | "public" | "private">("all");
+  const [editVideo, setEditVideo] = useState<any | null>(null);
+  const [liveCount, setLiveCount] = useState<number>(0);
 
-  /* ── Sem canal → ecrã de boas-vindas ── */
+  /* Realtime — novos vídeos e views */
+  useEffect(() => {
+    if (!channel?.id) return;
+    const ch = supabase
+      .channel(`studio-realtime-${channel.id}`)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "videos",
+          filter: `channel_id=eq.${channel.id}` }, () => {
+        qc.invalidateQueries({ queryKey: ["my-videos"] });
+        qc.invalidateQueries({ queryKey: ["channel-stats"] });
+        toast.success("Novo vídeo detectado!", { icon: "🎬" });
+      })
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "video_views",
+          filter: `channel_id=eq.${channel.id}` }, () => {
+        setLiveCount(n => n + 1);
+        qc.invalidateQueries({ queryKey: ["channel-stats"] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [channel?.id, qc]);
+
+  /* Sem canal */
   if (!chLoading && !channel) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[70vh] px-6 text-center">
         <div className="w-20 h-20 rounded-3xl flex items-center justify-center mb-6"
-          style={{ background: "linear-gradient(135deg,#5B3FCF,#E94B8A)" }}>
+          style={{ background: GRAD }}>
           <Tv2 className="w-9 h-9 text-white" />
         </div>
         <h1 className="text-2xl font-extrabold mb-2" style={{ color: "var(--text-primary)" }}>
@@ -148,7 +181,7 @@ export default function DashboardPage() {
         </p>
         <a href="/studio/onboarding"
           className="px-8 py-3 rounded-2xl text-white font-bold text-sm transition-all hover:-translate-y-0.5 active:scale-95 inline-block"
-          style={{ background: "linear-gradient(135deg,#5B3FCF,#E94B8A)", boxShadow: "0 4px 20px rgba(91,63,207,0.35)" }}>
+          style={{ background: GRAD, boxShadow: "0 4px 20px rgba(91,63,207,0.35)" }}>
           + Criar Canal
         </a>
       </div>
@@ -159,20 +192,39 @@ export default function DashboardPage() {
     tab === "all" ? true : tab === "public" ? v.visibility === "public" : v.visibility !== "public"
   ).slice(0, 6);
 
-  // Calcular tempo total de vídeo (simula 2.1h por vídeo publicado para demo)
-  const totalHours = ((stats?.published ?? 0) * 2.1).toFixed(1);
+  const totalHours = stats?.total_duration_seconds
+    ? (stats.total_duration_seconds / 3600).toFixed(1)
+    : ((stats?.published ?? 0) * 2.1).toFixed(1);
+
+  const maxCountry = countryData?.[0]?.views ?? 1;
 
   const STATS = [
-    { label: "Visualizações",  value: stats?.views ?? 0,     sub: undefined,       icon: Eye,       accent: PURPLE },
-    { label: "Vídeos",         value: stats?.total ?? 0,     sub: `${stats?.published ?? 0} públicos`, icon: VideoIcon, accent: "#1FAFA6" },
-    { label: "Seguidores",     value: stats?.subs ?? 0,      sub: undefined,       icon: Users,     accent: "#E94B8A" },
-    { label: "Tempo de vídeo", value: `${totalHours}h`,      sub: "total carregado", icon: Clock,   accent: "#FFC93C", isText: true },
+    { label: "Visualizações totais", value: stats?.views ?? 0, sub: `+${stats?.views_24h ?? 0} hoje`, icon: Eye, accent: PURPLE },
+    { label: "Vistas 7 dias",        value: stats?.views_7d ?? 0, sub: `${stats?.views_28d ?? 0} em 28 dias`, icon: BarChart2, accent: "#1FAFA6" },
+    { label: "Seguidores",           value: stats?.subs ?? 0, sub: `+${stats?.subs_gained_28d ?? 0} este mês`, icon: Users, accent: "#E94B8A" },
+    { label: "Tempo de vídeo",       value: `${totalHours}h`, sub: "total carregado", icon: Clock, accent: "#FFC93C" },
+    { label: "Em directo agora",     value: liveCount, sub: "vistas nesta sessão", icon: Activity, accent: "#10b981" },
+    { label: "Retenção média",       value: `${stats?.avg_watch_pct ?? 0}%`, sub: "tempo médio assistido", icon: PlayCircle, accent: "#F97316" },
+    { label: "Vídeos publicados",    value: stats?.published ?? 0, sub: `${stats?.total ?? 0} total`, icon: VideoIcon, accent: "#8B5CF6" },
+    { label: "Vistas 24h",           value: stats?.views_24h ?? 0, sub: "últimas 24 horas", icon: TrendingUp, accent: "#EC4899" },
   ];
 
-  return (
-    <div className="max-w-5xl mx-auto px-5 py-7">
+  /* Tooltip chart */
+  const ChartTooltip = ({ active, payload, label }: any) => {
+    if (!active || !payload?.length) return null;
+    return (
+      <div className="rounded-xl px-3 py-2 shadow-lg text-xs"
+        style={{ background: "var(--s0)", border: "1px solid var(--border-subtle)", color: "var(--text-primary)" }}>
+        <p className="font-bold mb-0.5">{label ? format(new Date(label), "d MMM", { locale: pt }) : ""}</p>
+        <p>{payload[0]?.value?.toLocaleString("pt-PT")} vistas</p>
+      </div>
+    );
+  };
 
-      {/* ── Header ── */}
+  return (
+    <div className="max-w-6xl mx-auto px-5 py-7">
+
+      {/* Header */}
       <div className="flex items-start justify-between mb-7 gap-4 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--text-primary)" }}>
@@ -181,6 +233,13 @@ export default function DashboardPage() {
           {channel && (
             <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>
               Bem-vindo de volta, <span style={{ color: PURPLE, fontWeight: 600 }}>{channel.name}</span>
+              {liveCount > 0 && (
+                <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold text-white"
+                  style={{ background: "#10b981" }}>
+                  <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
+                  {liveCount} em directo
+                </span>
+              )}
             </p>
           )}
         </div>
@@ -191,49 +250,96 @@ export default function DashboardPage() {
         </Link>
       </div>
 
-      {/* ── Stats grid ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-7">
-        {STATS.map(s => (
-          <StatCard key={s.label} loading={isLoading} {...s} />
-        ))}
+      {/* Stats grid — 4+4 */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-7">
+        {STATS.slice(0, 4).map(s => <StatCard key={s.label} loading={isLoading} {...s} />)}
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-7">
+        {STATS.slice(4).map(s => <StatCard key={s.label} loading={isLoading} {...s} />)}
       </div>
 
+      {/* Chart + Country */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-7">
+
+        {/* Views chart */}
+        <div className="lg:col-span-2 rounded-2xl p-5"
+          style={{ background: "var(--s0)", boxShadow: "var(--shadow-card)", border: "1px solid var(--border-subtle)" }}>
+          <div className="flex items-center justify-between mb-5">
+            <h2 className="text-base font-bold" style={{ color: "var(--text-primary)" }}>Visualizações — últimos 28 dias</h2>
+            <Link to="/studio/analytics" className="flex items-center gap-1 text-xs font-semibold hover:opacity-70" style={{ color: PURPLE }}>
+              Ver análises <ArrowUpRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+          {!dailyViews ? (
+            <div className="h-48 rounded-xl animate-pulse" style={{ background: "var(--s2)" }} />
+          ) : (
+            <ResponsiveContainer width="100%" height={180}>
+              <AreaChart data={dailyViews} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="grad1" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={PURPLE} stopOpacity={0.3} />
+                    <stop offset="95%" stopColor={PURPLE} stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" />
+                <XAxis dataKey="day" tickFormatter={d => format(new Date(d), "d/M")}
+                  tick={{ fontSize: 10, fill: "var(--text-muted)" }} interval={6} />
+                <YAxis tick={{ fontSize: 10, fill: "var(--text-muted)" }} allowDecimals={false} />
+                <Tooltip content={<ChartTooltip />} />
+                <Area type="monotone" dataKey="views" stroke={PURPLE} strokeWidth={2}
+                  fill="url(#grad1)" dot={false} activeDot={{ r: 4, fill: PURPLE }} />
+              </AreaChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+
+        {/* País */}
+        <div className="rounded-2xl p-5"
+          style={{ background: "var(--s0)", boxShadow: "var(--shadow-card)", border: "1px solid var(--border-subtle)" }}>
+          <div className="flex items-center gap-2 mb-4">
+            <Map className="h-4 w-4" style={{ color: PURPLE }} />
+            <h2 className="text-base font-bold" style={{ color: "var(--text-primary)" }}>Espectadores por país</h2>
+          </div>
+          {!countryData || countryData.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <Globe className="h-10 w-10 mb-3" style={{ color: "var(--text-muted)" }} />
+              <p className="text-sm" style={{ color: "var(--text-muted)" }}>Sem dados de localização ainda.</p>
+              <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>Os países aparecem após as primeiras vistas.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {countryData.map(r => (
+                <CountryBar key={r.country} country={r.country} views={r.views} max={maxCountry} />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Vídeos + coluna direita */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-        {/* ── Últimos vídeos ── */}
+        {/* Últimos vídeos */}
         <div className="lg:col-span-2 rounded-2xl overflow-hidden"
           style={{ background: "var(--s0)", boxShadow: "var(--shadow-card)", border: "1px solid var(--border-subtle)" }}>
-
-          {/* Header */}
           <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: "var(--border-subtle)" }}>
             <h2 className="text-base font-bold" style={{ color: "var(--text-primary)" }}>Últimos vídeos</h2>
-            <Link to="/studio/content"
-              className="flex items-center gap-1 text-xs font-semibold transition hover:opacity-70"
-              style={{ color: PURPLE }}>
+            <Link to="/studio/content" className="flex items-center gap-1 text-xs font-semibold hover:opacity-70" style={{ color: PURPLE }}>
               Ver tudo <ArrowUpRight className="h-3.5 w-3.5" />
             </Link>
           </div>
-
-          {/* Tabs */}
           <div className="flex gap-1 px-5 pt-3 pb-2 border-b" style={{ borderColor: "var(--border-subtle)" }}>
-            {(["all","public","private"] as const).map(t => (
+            {(["all", "public", "private"] as const).map(t => (
               <button key={t} onClick={() => setTab(t)}
                 className="px-3 py-1 rounded-full text-xs font-semibold transition"
-                style={{
-                  background: tab === t ? PURPLE : "transparent",
-                  color: tab === t ? "#fff" : "var(--text-secondary)",
-                }}>
+                style={{ background: tab === t ? PURPLE : "transparent", color: tab === t ? "#fff" : "var(--text-secondary)" }}>
                 {t === "all" ? "Todos" : t === "public" ? "Públicos" : "Privados"}
               </button>
             ))}
           </div>
-
-          {/* List */}
           {!videos ? (
             <div className="p-5 space-y-3">
-              {[1,2,3].map(i => (
-                <div key={i} className="h-14 rounded-xl animate-pulse" style={{ background: "var(--s2)" }} />
-              ))}
+              {[1, 2, 3].map(i => <div key={i} className="h-14 rounded-xl animate-pulse" style={{ background: "var(--s2)" }} />)}
             </div>
           ) : filtered.length === 0 ? (
             <div className="py-12 flex flex-col items-center gap-3">
@@ -247,30 +353,52 @@ export default function DashboardPage() {
             </div>
           ) : (
             <ul className="divide-y" style={{ borderColor: "var(--border-subtle)" }}>
-              {filtered.map(v => <VideoRow key={v.id} v={v} onEdit={setEditVideo} onDelete={(vid) => { if(confirm(`Eliminar "${vid.title}"?`)) { deleteVideo(vid); } }} />)}
+              {filtered.map(v => <VideoRow key={v.id} v={v} onEdit={setEditVideo}
+                onDelete={vid => { if (confirm(`Eliminar "${vid.title}"?`)) deleteVideo(vid); }} />)}
             </ul>
           )}
         </div>
 
-        {/* ── Coluna direita ── */}
+        {/* Coluna direita */}
         <div className="flex flex-col gap-4">
+
+          {/* Top vídeos */}
+          {topVideos && topVideos.length > 0 && (
+            <div className="rounded-2xl p-5"
+              style={{ background: "var(--s0)", boxShadow: "var(--shadow-card)", border: "1px solid var(--border-subtle)" }}>
+              <h3 className="text-sm font-bold mb-4" style={{ color: "var(--text-primary)" }}>🏆 Top vídeos</h3>
+              <div className="space-y-3">
+                {topVideos.map((v, i) => (
+                  <div key={v.id} className="flex items-center gap-3">
+                    <span className="text-xs font-bold w-5 text-center shrink-0" style={{ color: "var(--text-muted)" }}>{i + 1}</span>
+                    <div className="h-9 w-16 rounded-lg overflow-hidden shrink-0 flex items-center justify-center" style={{ background: "var(--s2)" }}>
+                      {v.thumbnail_url
+                        ? <img src={v.thumbnail_url} className="h-full w-full object-cover" alt="" />
+                        : <PlayCircle className="h-4 w-4" style={{ color: "var(--text-muted)" }} />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold truncate" style={{ color: "var(--text-primary)" }}>{v.title}</p>
+                      <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>{(v.views_count ?? 0).toLocaleString("pt-PT")} vistas</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Canal card */}
           <div className="rounded-2xl p-5"
             style={{ background: "var(--s0)", boxShadow: "var(--shadow-card)", border: "1px solid var(--border-subtle)" }}>
-            <h3 className="text-sm font-bold mb-4" style={{ color: "var(--text-primary)" }}>
-              O teu canal no HoodaTV
-            </h3>
+            <h3 className="text-sm font-bold mb-4" style={{ color: "var(--text-primary)" }}>O teu canal no HoodaTV</h3>
             <div className="flex items-center gap-3 mb-4">
-              <div className="h-11 w-11 rounded-full overflow-hidden flex items-center justify-center shrink-0"
-                style={{ background: GRAD }}>
+              <div className="h-11 w-11 rounded-full overflow-hidden flex items-center justify-center shrink-0" style={{ background: GRAD }}>
                 {channel?.avatar_url
                   ? <img src={channel.avatar_url} className="h-full w-full object-cover" alt="" />
                   : <span className="text-sm font-bold text-white">{(channel?.name?.[0] ?? "?").toUpperCase()}</span>}
               </div>
               <div className="min-w-0">
                 <p className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>{channel?.name}</p>
-                <p className="text-xs truncate" style={{ color: PURPLE }}>hoodatv.com/@{channel?.handle}</p>
+                <p className="text-xs truncate" style={{ color: PURPLE }}>@{channel?.handle}</p>
               </div>
             </div>
             <Link to={"/hoodatv" as any}
@@ -280,25 +408,8 @@ export default function DashboardPage() {
             </Link>
           </div>
 
-          {/* Dicas */}
-          <div className="rounded-2xl p-5"
-            style={{ background: "var(--s0)", boxShadow: "var(--shadow-card)", border: "1px solid var(--border-subtle)" }}>
-            <h3 className="text-sm font-bold mb-3" style={{ color: "var(--text-primary)" }}>Dicas para crescer</h3>
-            {[
-              { emoji: "🖼️", tip: "Adiciona uma miniatura chamativa a cada vídeo" },
-              { emoji: "📅", tip: "Publica com regularidade — pelo menos 1x por semana" },
-              { emoji: "💬", tip: "Responde aos comentários nas primeiras 24h" },
-            ].map(({ emoji, tip }) => (
-              <div key={tip} className="flex items-start gap-2.5 mb-3 last:mb-0">
-                <span className="text-base shrink-0">{emoji}</span>
-                <p className="text-xs leading-relaxed" style={{ color: "var(--text-secondary)" }}>{tip}</p>
-              </div>
-            ))}
-          </div>
-
           {/* Upload CTA */}
-          <div className="rounded-2xl p-5 text-white relative overflow-hidden"
-            style={{ background: GRAD }}>
+          <div className="rounded-2xl p-5 text-white relative overflow-hidden" style={{ background: GRAD }}>
             <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-white/10" />
             <div className="absolute -right-2 -bottom-8 h-20 w-20 rounded-full bg-white/10" />
             <p className="text-sm font-bold relative">Pronto para publicar?</p>
@@ -311,20 +422,28 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
-      {/* Edit modal inline */}
+
       {editVideo && (
         <DashEditModal v={editVideo} onClose={() => setEditVideo(null)}
           onSave={() => { qc.invalidateQueries({ queryKey: ["my-videos"] }); }} />
       )}
     </div>
   );
+
+  async function deleteVideo(v: any) {
+    if (v.video_path) await supabase.storage.from("videos").remove([v.video_path]);
+    await (supabase as any).from("videos").delete().eq("id", v.id);
+    qc.invalidateQueries({ queryKey: ["my-videos"] });
+    qc.invalidateQueries({ queryKey: ["channel-stats"] });
+    toast.success("Vídeo eliminado.");
+  }
 }
 
-/* ── Inline edit modal for dashboard ── */
-function DashEditModal({ v, onClose, onSave }: { v:any; onClose:()=>void; onSave:()=>void }) {
-  const [title, setTitle]   = useState(v.title ?? "");
-  const [desc,  setDesc]    = useState(v.description ?? "");
-  const [vis,   setVis]     = useState(v.visibility ?? "private");
+/* ── Edit Modal ─────────────────────────────────────────── */
+function DashEditModal({ v, onClose, onSave }: { v: any; onClose: () => void; onSave: () => void }) {
+  const [title,  setTitle]  = useState(v.title ?? "");
+  const [desc,   setDesc]   = useState(v.description ?? "");
+  const [vis,    setVis]    = useState(v.visibility ?? "private");
   const [saving, setSaving] = useState(false);
   const qc = useQueryClient();
 
@@ -342,44 +461,41 @@ function DashEditModal({ v, onClose, onSave }: { v:any; onClose:()=>void; onSave
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4"
-      style={{ background:"rgba(0,0,0,0.55)", backdropFilter:"blur(4px)" }}
-      onClick={e => e.target===e.currentTarget && onClose()}>
-      <div className="w-full max-w-md rounded-3xl p-6 space-y-4 shadow-2xl"
-        style={{ background:"var(--s0)" }}>
+      style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(4px)" }}
+      onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="w-full max-w-md rounded-3xl p-6 space-y-4 shadow-2xl" style={{ background: "var(--s0)" }}>
         <div className="flex items-center justify-between">
-          <h2 className="text-base font-extrabold" style={{ color:"var(--text-primary)" }}>Editar vídeo</h2>
+          <h2 className="text-base font-extrabold" style={{ color: "var(--text-primary)" }}>Editar vídeo</h2>
           <button onClick={onClose} className="p-1.5 rounded-full hover:bg-[var(--s2)]">
-            <X className="w-4 h-4" style={{ color:"var(--text-muted)" }} />
+            <X className="w-4 h-4" style={{ color: "var(--text-muted)" }} />
           </button>
         </div>
         <div>
-          <label className="text-[11px] font-bold uppercase tracking-wider block mb-1.5" style={{ color:"var(--text-muted)" }}>Título *</label>
-          <input value={title} onChange={e=>setTitle(e.target.value)} maxLength={120}
+          <label className="text-[11px] font-bold uppercase tracking-wider block mb-1.5" style={{ color: "var(--text-muted)" }}>Título *</label>
+          <input value={title} onChange={e => setTitle(e.target.value)} maxLength={120}
             className="w-full rounded-xl px-4 py-3 text-sm outline-none border bg-[var(--s3)] border-[var(--border-default)] focus:border-[#5B3FCF] text-[var(--text-primary)]" />
         </div>
         <div>
-          <label className="text-[11px] font-bold uppercase tracking-wider block mb-1.5" style={{ color:"var(--text-muted)" }}>Descrição</label>
-          <textarea value={desc} onChange={e=>setDesc(e.target.value)} rows={3} maxLength={5000}
+          <label className="text-[11px] font-bold uppercase tracking-wider block mb-1.5" style={{ color: "var(--text-muted)" }}>Descrição</label>
+          <textarea value={desc} onChange={e => setDesc(e.target.value)} rows={3} maxLength={5000}
             className="w-full rounded-xl px-4 py-3 text-sm outline-none border bg-[var(--s3)] border-[var(--border-default)] focus:border-[#5B3FCF] text-[var(--text-primary)] resize-none" />
         </div>
         <div className="flex gap-2">
-          {(["public","unlisted","private"] as const).map(opt => (
+          {(["public", "unlisted", "private"] as const).map(opt => (
             <button key={opt} onClick={() => setVis(opt)}
               className="flex-1 py-2 rounded-xl border-2 text-xs font-bold transition"
-              style={{ borderColor: vis===opt ? "#5B3FCF":"var(--border-default)",
-                background: vis===opt ? "#5B3FCF08":"var(--s3)",
-                color: vis===opt ? "#5B3FCF":"var(--text-secondary)" }}>
-              {opt==="public"?"Público":opt==="unlisted"?"Com link":"Privado"}
+              style={{ borderColor: vis === opt ? "#5B3FCF" : "var(--border-default)", background: vis === opt ? "#5B3FCF08" : "var(--s3)", color: vis === opt ? "#5B3FCF" : "var(--text-secondary)" }}>
+              {opt === "public" ? "Público" : opt === "unlisted" ? "Com link" : "Privado"}
             </button>
           ))}
         </div>
         <div className="flex gap-3">
           <button onClick={onClose} disabled={saving}
             className="flex-1 py-2.5 rounded-2xl text-sm font-bold border"
-            style={{ borderColor:"var(--border-default)", color:"var(--text-secondary)" }}>Cancelar</button>
+            style={{ borderColor: "var(--border-default)", color: "var(--text-secondary)" }}>Cancelar</button>
           <button onClick={save} disabled={saving}
             className="flex-1 py-2.5 rounded-2xl text-sm font-bold text-white"
-            style={{ background:"linear-gradient(135deg,#5B3FCF,#E94B8A)" }}>
+            style={{ background: "linear-gradient(135deg,#5B3FCF,#E94B8A)" }}>
             {saving ? "A guardar…" : "Guardar"}
           </button>
         </div>
@@ -387,3 +503,21 @@ function DashEditModal({ v, onClose, onSave }: { v:any; onClose:()=>void; onSave
     </div>
   );
 }
+
+/* ── Helpers ─────────────────────────────────────────────── */
+function fmtDuration(s: number) {
+  const m = Math.floor(s / 60), sec = s % 60;
+  if (s >= 3600) return `${Math.floor(s/3600)}h ${Math.floor((s%3600)/60)}m`;
+  return `${m}:${String(sec).padStart(2,"0")}`;
+}
+
+function flagEmoji(code: string) {
+  if (!code || code.length !== 2) return "🌐";
+  return String.fromCodePoint(...[...code.toUpperCase()].map(c => 0x1F1E6 + c.charCodeAt(0) - 65));
+}
+
+const COUNTRY_NAMES: Record<string, string> = {
+  AO:"Angola", PT:"Portugal", BR:"Brasil", US:"EUA", GB:"Reino Unido",
+  FR:"França", DE:"Alemanha", ES:"Espanha", MZ:"Moçambique", CV:"Cabo Verde",
+  GW:"Guiné-Bissau", ST:"S. Tomé e Príncipe", TL:"Timor-Leste",
+};

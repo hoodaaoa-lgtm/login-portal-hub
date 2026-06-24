@@ -23,6 +23,7 @@ import { Route as UUsernameRouteImport } from './routes/u.$username'
 import { Route as StudioUploadRouteImport } from './routes/studio.upload'
 import { Route as StudioOnboardingRouteImport } from './routes/studio.onboarding'
 import { Route as StudioContentRouteImport } from './routes/studio.content'
+import { Route as StudioAnalyticsRouteImport } from './routes/studio.analytics'
 import { Route as AuthBridgeRouteImport } from './routes/auth.bridge'
 
 const StudioRoute = StudioRouteImport.update({
@@ -95,6 +96,11 @@ const StudioContentRoute = StudioContentRouteImport.update({
   path: '/content',
   getParentRoute: () => StudioRoute,
 } as any)
+const StudioAnalyticsRoute = StudioAnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
+  getParentRoute: () => StudioRoute,
+} as any)
 const AuthBridgeRoute = AuthBridgeRouteImport.update({
   id: '/auth/bridge',
   path: '/auth/bridge',
@@ -115,6 +121,7 @@ export interface FileRoutesByFullPath {
   '/studio/content': typeof StudioContentRoute
   '/studio/onboarding': typeof StudioOnboardingRoute
   '/studio/upload': typeof StudioUploadRoute
+  '/studio/analytics': typeof StudioAnalyticsRoute
   '/u/$username': typeof UUsernameRoute
   '/studio/': typeof StudioIndexRoute
 }
@@ -131,6 +138,7 @@ export interface FileRoutesByTo {
   '/studio/content': typeof StudioContentRoute
   '/studio/onboarding': typeof StudioOnboardingRoute
   '/studio/upload': typeof StudioUploadRoute
+  '/studio/analytics': typeof StudioAnalyticsRoute
   '/u/$username': typeof UUsernameRoute
   '/studio': typeof StudioIndexRoute
 }
@@ -149,6 +157,7 @@ export interface FileRoutesById {
   '/studio/content': typeof StudioContentRoute
   '/studio/onboarding': typeof StudioOnboardingRoute
   '/studio/upload': typeof StudioUploadRoute
+  '/studio/analytics': typeof StudioAnalyticsRoute
   '/u/$username': typeof UUsernameRoute
   '/studio/': typeof StudioIndexRoute
 }
@@ -168,6 +177,7 @@ export interface FileRouteTypes {
     | '/studio/content'
     | '/studio/onboarding'
     | '/studio/upload'
+    | '/studio/analytics'
     | '/u/$username'
     | '/studio/'
   fileRoutesByTo: FileRoutesByTo
@@ -184,6 +194,7 @@ export interface FileRouteTypes {
     | '/studio/content'
     | '/studio/onboarding'
     | '/studio/upload'
+    | '/studio/analytics'
     | '/u/$username'
     | '/studio'
   id:
@@ -201,6 +212,7 @@ export interface FileRouteTypes {
     | '/studio/content'
     | '/studio/onboarding'
     | '/studio/upload'
+    | '/studio/analytics'
     | '/u/$username'
     | '/studio/'
   fileRoutesById: FileRoutesById
@@ -319,6 +331,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StudioContentRouteImport
       parentRoute: typeof StudioRoute
     }
+    '/studio/analytics': {
+      id: '/studio/analytics'
+      path: '/analytics'
+      fullPath: '/studio/analytics'
+      preLoaderRoute: typeof StudioAnalyticsRouteImport
+      parentRoute: typeof StudioRoute
+    }
     '/auth/bridge': {
       id: '/auth/bridge'
       path: '/auth/bridge'
@@ -331,6 +350,7 @@ declare module '@tanstack/react-router' {
 
 interface StudioRouteChildren {
   StudioContentRoute: typeof StudioContentRoute
+  StudioAnalyticsRoute: typeof StudioAnalyticsRoute
   StudioOnboardingRoute: typeof StudioOnboardingRoute
   StudioUploadRoute: typeof StudioUploadRoute
   StudioIndexRoute: typeof StudioIndexRoute
@@ -338,6 +358,7 @@ interface StudioRouteChildren {
 
 const StudioRouteChildren: StudioRouteChildren = {
   StudioContentRoute: StudioContentRoute,
+  StudioAnalyticsRoute: StudioAnalyticsRoute,
   StudioOnboardingRoute: StudioOnboardingRoute,
   StudioUploadRoute: StudioUploadRoute,
   StudioIndexRoute: StudioIndexRoute,

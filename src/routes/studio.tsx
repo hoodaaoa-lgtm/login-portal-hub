@@ -3,26 +3,20 @@ import { useQuery } from "@tanstack/react-query";
 import { myChannelQuery } from "@/lib/channel-queries";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  LayoutDashboard, Video, Upload, Settings, HelpCircle,
-  LogOut, ArrowLeft, Menu, X, BarChart2, Tv2,
+  LayoutDashboard, Video, Upload, Settings,
+  HelpCircle, LogOut, ArrowLeft, Menu, X, BarChart2, Tv2,
 } from "lucide-react";
 import { useState } from "react";
-import { toast } from "sonner";
 
 export const Route = createFileRoute("/studio")({
   component: StudioLayout,
 });
 
 const NAV = [
-  { to: "/studio",         label: "Painel",       icon: LayoutDashboard, exact: true },
-  { to: "/studio/content", label: "Conteúdo",      icon: Video },
-  { to: "/studio/upload",  label: "Enviar vídeo",  icon: Upload },
-];
-
-const BOTTOM_NAV = [
-  { label: "Análises",    icon: BarChart2 },
-  { label: "Definições",  icon: Settings },
-  { label: "Ajuda",       icon: HelpCircle },
+  { to: "/studio",           label: "Painel",        icon: LayoutDashboard, exact: true },
+  { to: "/studio/content",   label: "Conteúdo",      icon: Video },
+  { to: "/studio/upload",    label: "Enviar vídeo",  icon: Upload },
+  { to: "/studio/analytics", label: "Análises",      icon: BarChart2 },
 ];
 
 function StudioLayout() {
@@ -46,7 +40,7 @@ function StudioLayout() {
   return (
     <div className="min-h-screen flex flex-col" style={{ background: "var(--s1)" }}>
 
-      {/* ── Top header ── */}
+      {/* Top header */}
       <header className="h-14 sticky top-0 z-40 flex items-center px-4 gap-3 border-b"
         style={{ background: "var(--s0)", borderColor: "var(--border-default)" }}>
 
@@ -55,7 +49,6 @@ function StudioLayout() {
           {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>
 
-        {/* Logo */}
         <Link to="/studio" className="flex items-center gap-2 shrink-0 select-none">
           <div className="h-8 w-8 rounded-xl flex items-center justify-center"
             style={{ background: "linear-gradient(135deg,#5B3FCF,#E94B8A)" }}>
@@ -68,7 +61,6 @@ function StudioLayout() {
 
         <div className="flex-1" />
 
-        {/* Back to Hooda */}
         <Link to="/home"
           className="hidden sm:flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-full transition"
           style={{ color: "var(--text-secondary)" }}
@@ -95,11 +87,11 @@ function StudioLayout() {
 
       <div className="flex flex-1">
 
-        {/* ── Sidebar ── */}
+        {/* Sidebar */}
         <aside className={`${open ? "flex" : "hidden"} md:flex w-56 shrink-0 flex-col border-r sticky top-14 h-[calc(100vh-56px)]`}
           style={{ background: "var(--s0)", borderColor: "var(--border-default)" }}>
 
-          {/* Channel card */}
+          {/* Canal card */}
           <div className="px-4 py-5 border-b" style={{ borderColor: "var(--border-subtle)" }}>
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-full overflow-hidden flex items-center justify-center shrink-0"
@@ -138,21 +130,24 @@ function StudioLayout() {
             })}
           </nav>
 
-          {/* Bottom nav */}
+          {/* Bottom — links reais (sem "em breve") */}
           <div className="border-t py-2" style={{ borderColor: "var(--border-subtle)" }}>
-            {BOTTOM_NAV.map(({ label, icon: Icon }) => (
-              <button key={label}
-                onClick={() => toast.info(`${label} — em breve!`)}
-                className="flex items-center gap-3 mx-2 px-3 py-2.5 rounded-xl text-sm w-full text-left transition hover:bg-[var(--s2)]"
-                style={{ color: "var(--text-muted)" }}>
-                <Icon className="h-4 w-4 shrink-0" />
-                {label}
-              </button>
-            ))}
+            <Link to={"/perfil" as any} onClick={() => setOpen(false)}
+              className="flex items-center gap-3 mx-2 px-3 py-2.5 rounded-xl text-sm w-full text-left transition hover:bg-[var(--s2)]"
+              style={{ color: "var(--text-muted)" }}>
+              <Settings className="h-4 w-4 shrink-0" />
+              Definições de perfil
+            </Link>
+            <a href="mailto:suporte@hooda.app"
+              className="flex items-center gap-3 mx-2 px-3 py-2.5 rounded-xl text-sm w-full text-left transition hover:bg-[var(--s2)]"
+              style={{ color: "var(--text-muted)" }}>
+              <HelpCircle className="h-4 w-4 shrink-0" />
+              Ajuda / Suporte
+            </a>
           </div>
         </aside>
 
-        {/* ── Page content ── */}
+        {/* Conteúdo */}
         <main className="flex-1 min-w-0 overflow-y-auto">
           <Outlet />
         </main>
