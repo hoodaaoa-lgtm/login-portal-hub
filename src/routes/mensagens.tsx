@@ -2196,20 +2196,24 @@ function ChatPanel({ myId, contact, onBack }: {
     if (!contact.conversationId) return;
     loadMsgs();
 
-    const ch = db.channel(`dm-${contact.conversationId}-${Date.now()}`)
+    const ch = db.channel(`dm-${contact.conversationId}`)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages", filter: `conversation_id=eq.${contact.conversationId}` },
         async (payload: any) => {
           const m = await parseRow(payload.new);
           setMsgs(prev => {
-            // ignorar se já existe (optimistic)
-            if (prev.some(x => x.id === m.id || x.id.startsWith("temp-") && x.text === m.text && x.senderId === m.senderId)) {
-              // substituir temp pelo id real
-              const hasTemp = prev.some(x => x.id.startsWith("temp-") && x.senderId === m.senderId && x.type === m.type);
-              if (hasTemp) {
-                const n = prev.map(x => x.id.startsWith("temp-") && x.senderId === m.senderId && x.type === m.type ? { ...x, id: m.id, deliveryStatus: "sent" as const } : x);
-                saveCache(n); return n;
-              }
-              return prev;
+            // já existe com o id real → nada a fazer
+            if (prev.some(x => x.id === m.id)) return prev;
+            // tentar fazer match com um optimistic temp do mesmo sender+tipo, próximo no tempo
+            const tempMatch = prev.find(x =>
+              x.id.startsWith("temp-") &&
+              x.senderId === m.senderId &&
+              x.type === m.type &&
+              Math.abs(new Date(m.time).getTime() - new Date(x.time).getTime()) < 10000
+            );
+            if (tempMatch) {
+              const n = prev.map(x => x.id === tempMatch.id ? { ...x, id: m.id, deliveryStatus: "sent" as const } : x);
+              saveCache(n);
+              return n;
             }
             const next = [...prev, m];
             saveCache(next);
