@@ -1,46 +1,71 @@
 /**
- * Cloudflare Stream — upload directo via TUS resumível
- * Documentação: https://developers.cloudflare.com/stream/uploading-videos/upload-video-file/
+ * Cloudflare Stream — upload via Supabase Edge Function (proxy seguro)
+ * O token do Cloudflare fica nos Secrets do Supabase, nunca exposto no browser.
  */
 
-const CF_ACCOUNT_ID  = import.meta.env.VITE_CF_ACCOUNT_ID  as string;
-const CF_STREAM_TOKEN = import.meta.env.VITE_CF_STREAM_TOKEN as string;
-const CF_STREAM_DOMAIN = import.meta.env.VITE_CF_STREAM_DOMAIN as string;
+import { supabase } from "@/integrations/supabase/client";
+
+const CF_STREAM_DOMAIN = "customer-k3jvmk0ans7znle7.cloudflarestream.com";
 
 export interface StreamUploadResult {
-  uid: string;          // ID único do vídeo no Cloudflare Stream
-  playbackUrl: string;  // URL HLS para reprodução
-  embedUrl: string;     // URL do player iframe
-  thumbnailUrl: string; // Thumbnail automática gerada pelo Stream
+  uid: string;
+  playbackUrl: string;
+  embedUrl: string;
+  thumbnailUrl: string;
 }
 
 /**
- * Faz upload de um vídeo directamente para o Cloudflare Stream via TUS.
- * Suporta ficheiros grandes (sem limite prático).
+ * Pede à Edge Function um URL de upload TUS e depois
+ * faz o upload directo do browser para o Cloudflare Stream.
  */
 export async function uploadToCloudflareStream(
   file: File,
   meta: { title: string; channelId: string; userId: string },
   onProgress: (pct: number) => void,
 ): Promise<StreamUploadResult> {
-  // 1 — Importa tus-js-client (já instalado no projecto)
+  // 1 — Pede o URL de upload à Edge Function (token fica no servidor)
+  const { data: { session } } = await supabase.auth.getSession();
+
+  const metadataB64 = btoa(
+    `name ${btoa(meta.title)},filetype ${btoa(file.type)},channelId ${btoa(meta.channelId)},userId ${btoa(meta.userId)}`
+  );
+
+  const supabaseUrl: string =
+    (import.meta as any).env?.VITE_SUPABASE_URL ||
+    (supabase as any).supabaseUrl ||
+    "";
+
+  const edgeRes = await fetch(
+    `${supabaseUrl}/functions/v1/cloudflare-stream-upload`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${session?.access_token}`,
+        apikey: (import.meta as any).env?.VITE_SUPABASE_PUBLISHABLE_KEY || "",
+        "Tus-Resumable": "1.0.0",
+        "Upload-Length": String(file.size),
+        "Upload-Metadata": metadataB64,
+      },
+    }
+  );
+
+  if (!edgeRes.ok) {
+    const err = await edgeRes.text();
+    throw new Error(`Edge Function falhou: ${err}`);
+  }
+
+  const { uploadUrl, uid: initialUid } = await edgeRes.json();
+
+  if (!uploadUrl) throw new Error("Edge Function não devolveu URL de upload.");
+
+  // 2 — Faz o upload TUS directo para o Cloudflare (usando o URL obtido)
   const tus = await import("tus-js-client");
 
   return new Promise((resolve, reject) => {
     const upload = new tus.Upload(file, {
-      endpoint: `https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/stream`,
+      uploadUrl,                          // URL já autenticado pelo servidor
       retryDelays: [0, 1000, 3000, 5000, 10000],
-      chunkSize: 50 * 1024 * 1024, // 50 MB por chunk
-      headers: {
-        Authorization: `Bearer ${CF_STREAM_TOKEN}`,
-      },
-      metadata: {
-        name:      meta.title,
-        filetype:  file.type,
-        // Metadados personalizados para identificar canal/dono
-        channelId: meta.channelId,
-        userId:    meta.userId,
-      },
+      chunkSize: 50 * 1024 * 1024,
       onError(err) {
         reject(new Error((err as any).message ?? "Upload para Cloudflare Stream falhou."));
       },
@@ -48,9 +73,8 @@ export async function uploadToCloudflareStream(
         onProgress(Math.round((bytesUploaded / bytesTotal) * 100));
       },
       onSuccess() {
-        // O UID está no header Location devolvido pelo Cloudflare
         const location = (upload as any).url as string ?? "";
-        const uid = location.split("/").pop() ?? "";
+        const uid = initialUid || location.split("/").pop() ?? "";
 
         if (!uid) {
           reject(new Error("Não foi possível obter o UID do vídeo após o upload."));
@@ -66,45 +90,18 @@ export async function uploadToCloudflareStream(
       },
     });
 
-    upload.findPreviousUploads().then(prev => {
-      if (prev.length) upload.resumeFromPreviousUpload(prev[0]);
-      upload.start();
-    }).catch(() => upload.start());
+    upload.start();
   });
 }
 
-/**
- * Devolve o URL do player iframe para embedar no site.
- */
 export function getStreamPlayerUrl(uid: string): string {
   return `https://${CF_STREAM_DOMAIN}/${uid}/iframe`;
 }
 
-/**
- * Devolve o URL da thumbnail automática.
- */
 export function getStreamThumbnailUrl(uid: string, timeSeconds = 0): string {
   return `https://${CF_STREAM_DOMAIN}/${uid}/thumbnails/thumbnail.jpg?time=${timeSeconds}s`;
 }
 
-/**
- * Devolve o URL HLS para reprodução directa (video element).
- */
 export function getStreamPlaybackUrl(uid: string): string {
   return `https://${CF_STREAM_DOMAIN}/${uid}/manifest/video.m3u8`;
-}
-
-/**
- * Apaga um vídeo do Cloudflare Stream.
- * Nota: deve ser chamado de um backend seguro em produção.
- */
-export async function deleteFromCloudflareStream(uid: string): Promise<void> {
-  const res = await fetch(
-    `https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/stream/${uid}`,
-    {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${CF_STREAM_TOKEN}` },
-    }
-  );
-  if (!res.ok) throw new Error(`Falha ao apagar vídeo: ${res.status}`);
 }
