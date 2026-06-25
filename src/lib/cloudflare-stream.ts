@@ -3,9 +3,9 @@
  * Documentação: https://developers.cloudflare.com/stream/uploading-videos/upload-video-file/
  */
 
-const CF_ACCOUNT_ID    = "f62aa982df80e70cdd8cbbf99f6ad2e0";
-const CF_STREAM_TOKEN  = "cfk_Orv366VEYmS2FXO6t71fwbafUd9exesesvWqHqjn6a5b2de6";
-const CF_STREAM_DOMAIN = "customer-k3jvmk0ans7znle7.cloudflarestream.com";
+const CF_ACCOUNT_ID  = import.meta.env.VITE_CF_ACCOUNT_ID  as string;
+const CF_STREAM_TOKEN = import.meta.env.VITE_CF_STREAM_TOKEN as string;
+const CF_STREAM_DOMAIN = import.meta.env.VITE_CF_STREAM_DOMAIN as string;
 
 export interface StreamUploadResult {
   uid: string;          // ID único do vídeo no Cloudflare Stream
