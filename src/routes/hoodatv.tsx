@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Outlet, useRouterState } from "@tanstack/react-router";
 import { BottomNav, SideNav, PageWrapper } from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -385,6 +385,10 @@ type FilterKey = typeof FILTERS[number]["key"];
    MAIN PAGE
 ══════════════════════════════════ */
 function HoodaTVPage() {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  // Se estiver numa rota filha (ex: /hoodatv/canal/xyz), renderiza só o Outlet
+  if (pathname !== "/hoodatv") return <Outlet />;
+
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<FilterKey>("alta");
 
