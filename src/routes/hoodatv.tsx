@@ -276,7 +276,7 @@ function VideoCard({ v, rank }: { v: any; rank?: number }) {
   return (
     <div className="group cursor-pointer" onClick={() => navigate({ to: "/hoodatv/watch/$id", params: { id: v.id } })}>
       {/* Thumbnail */}
-      <div className="relative rounded-xl overflow-hidden mb-3" style={{ aspectRatio: "16/9", background: "var(--s3)" }}
+      <div className="relative rounded-2xl overflow-hidden mb-3 shadow-sm" style={{ aspectRatio: "16/9", background: "var(--s3)" }}
         onContextMenu={e => e.preventDefault()}>
         {v.thumbnail_url
           ? <img src={v.thumbnail_url} alt={v.title} loading="lazy"
@@ -288,23 +288,24 @@ function VideoCard({ v, rank }: { v: any; rank?: number }) {
 
         {/* Duração */}
         {v.duration_seconds && (
-          <span className="absolute bottom-2 right-2 text-[11px] font-bold text-white px-1.5 py-0.5 rounded-md z-10"
-            style={{ background: "rgba(0,0,0,0.82)" }}>
+          <span className="absolute bottom-2.5 right-2.5 text-[11px] font-bold text-white px-2 py-0.5 rounded-md z-10"
+            style={{ background: "rgba(0,0,0,0.85)", letterSpacing: "0.02em" }}>
             {fmtDur(v.duration_seconds)}
           </span>
         )}
 
         {/* Rank badge */}
         {rank !== undefined && rank < 3 && (
-          <div className="absolute top-2 left-2 w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black text-white shadow-lg z-10"
+          <div className="absolute top-2.5 left-2.5 w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black text-white shadow-lg z-10"
             style={{ background: rank === 0 ? "#FFC93C" : rank === 1 ? "#aaa" : "#cd7f32" }}>
             {rank + 1}
           </div>
         )}
 
         {/* Hover play overlay */}
-        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200">
-          <div className="w-12 h-12 rounded-full flex items-center justify-center shadow-2xl"
+        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200"
+          style={{ background: "rgba(0,0,0,0.18)" }}>
+          <div className="w-13 h-13 w-12 h-12 rounded-full flex items-center justify-center shadow-2xl"
             style={{ background: "rgba(255,255,255,0.92)" }}>
             <Play className="w-5 h-5 ml-0.5" style={{ color: P }} />
           </div>
@@ -312,7 +313,7 @@ function VideoCard({ v, rank }: { v: any; rank?: number }) {
       </div>
 
       {/* Meta — estilo YouTube */}
-      <div className="flex gap-2.5">
+      <div className="flex gap-3">
         {/* Avatar canal */}
         <div
           className="w-9 h-9 rounded-full shrink-0 overflow-hidden flex items-center justify-center text-white text-sm font-bold cursor-pointer mt-0.5"
@@ -324,11 +325,11 @@ function VideoCard({ v, rank }: { v: any; rank?: number }) {
         {/* Título + info + três pontinhos */}
         <div className="flex-1 min-w-0 flex items-start gap-1">
           <div className="flex-1 min-w-0">
-            <p className="text-[13.5px] font-semibold leading-[1.35] line-clamp-2 mb-0.5"
+            <p className="text-[13.5px] font-semibold leading-[1.35] line-clamp-2 mb-1"
               style={{ color: "var(--text-primary)" }}>
               {v.title?.replace(/\b\d{10,}\b/g, "").replace(/@\S+/g, "").trim()}
             </p>
-            <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>
+            <p className="text-[12px] font-medium" style={{ color: "var(--text-muted)" }}>
               {ch?.name ?? "Canal"}
             </p>
             <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>
@@ -336,7 +337,7 @@ function VideoCard({ v, rank }: { v: any; rank?: number }) {
             </p>
           </div>
           {/* Três pontinhos */}
-          <div className="shrink-0 -mt-0.5">
+          <div className="shrink-0 -mt-1">
             <VideoMenu v={v} />
           </div>
         </div>
@@ -482,45 +483,45 @@ function HoodaTVMain() {
 
         {/* ── HEADER ── */}
         <div className="sticky top-0 z-40"
-          style={{ background: "rgba(var(--s1-rgb,250,250,252),.96)", backdropFilter: "blur(24px)", borderBottom: "1px solid var(--border-subtle)" }}>
+          style={{ background: "rgba(var(--s1-rgb,250,250,252),.97)", backdropFilter: "blur(28px)", borderBottom: "1px solid var(--border-subtle)" }}>
 
-          {/* Barra de pesquisa compacta */}
-          <div className="px-4 pt-4 pb-3 flex items-center gap-3">
-            <div className="relative flex items-center" style={{ width: "min(320px, 55%)" }}>
-              <Search className="absolute left-3.5 w-4 h-4 pointer-events-none" style={{ color: "var(--text-muted)" }} />
+          {/* Pesquisa centrada */}
+          <div className="flex justify-center px-4 pt-5 pb-4">
+            <div className="relative w-full max-w-xl">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 pointer-events-none" style={{ color: "var(--text-muted)" }} />
               <input
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                placeholder="Pesquisar…"
-                className="w-full h-9 pl-10 pr-9 rounded-xl text-sm outline-none transition-all"
+                placeholder="Pesquisar vídeos e canais…"
+                className="w-full h-11 pl-11 pr-10 rounded-full text-sm outline-none transition-all"
                 style={{
                   background: "var(--s2)",
                   border: `1.5px solid ${search ? P : "var(--border-default)"}`,
                   color: "var(--text-primary)",
-                  boxShadow: search ? `0 0 0 3px ${P}18` : "none",
+                  boxShadow: search ? `0 0 0 4px ${P}16` : "0 1px 4px rgba(0,0,0,0.06)",
                 }}
               />
               {search && (
                 <button onClick={() => setSearch("")}
-                  className="absolute right-2 w-5 h-5 rounded-full flex items-center justify-center transition hover:opacity-70"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full flex items-center justify-center transition hover:opacity-70"
                   style={{ background: "var(--s3)" }}>
-                  <X className="w-3 h-3" style={{ color: "var(--text-muted)" }} />
+                  <X className="w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} />
                 </button>
               )}
             </div>
           </div>
 
-          {/* Filter pills */}
+          {/* Filter pills centrados */}
           {!search && (
-            <div className="flex gap-2 px-4 pb-3 overflow-x-auto no-scrollbar">
+            <div className="flex justify-center gap-2 px-4 pb-4 overflow-x-auto no-scrollbar">
               {FILTERS.map(f => {
                 const active = filter === f.key;
                 return (
                   <button key={f.key} onClick={() => setFilter(f.key)}
-                    className="shrink-0 flex items-center gap-1.5 px-4 h-8 rounded-full text-[13px] font-semibold transition-all duration-200 active:scale-95"
+                    className="shrink-0 flex items-center gap-2 px-5 h-9 rounded-full text-[13.5px] font-semibold transition-all duration-200 active:scale-95"
                     style={active
-                      ? { background: f.accent, color: "#fff", boxShadow: `0 4px 14px ${f.accent}55` }
-                      : { background: "var(--s2)", color: "var(--text-secondary)", border: "1px solid var(--border-subtle)" }}>
+                      ? { background: f.accent, color: "#fff", boxShadow: `0 4px 16px ${f.accent}50` }
+                      : { background: "var(--s0)", color: "var(--text-secondary)", border: "1.5px solid var(--border-default)" }}>
                     {f.icon} {f.label}
                   </button>
                 );
@@ -529,19 +530,19 @@ function HoodaTVMain() {
           )}
         </div>
 
-        <div className="max-w-6xl mx-auto px-4 py-6 space-y-10">
+        <div className="max-w-6xl mx-auto px-6 py-8 space-y-10">
 
           {/* ══ SEARCH RESULTS ══ */}
           {search && (
             <section>
-              <p className="text-sm font-semibold mb-5" style={{ color: "var(--text-muted)" }}>
+              <p className="text-sm font-semibold mb-6" style={{ color: "var(--text-muted)" }}>
                 {searchVideos.length > 0
                   ? `${searchVideos.length} resultado${searchVideos.length !== 1 ? "s" : ""} para "${search}"`
                   : `Sem resultados para "${search}"`}
               </p>
               {searchVideos.length > 0
                 ? <Grid>{searchVideos.map((v: any) => <VideoCard key={v.id} v={v} />)}</Grid>
-                : <Empty msg={`Tenta pesquisar algo diferente.`} />}
+                : <Empty msg="Tenta pesquisar algo diferente." />}
             </section>
           )}
 
@@ -549,7 +550,7 @@ function HoodaTVMain() {
           {!search && (filter === "ti" || filter === "alta") && (
             <section>
               {loadingVideos
-                ? <Grid>{Array.from({length: 8}).map((_, i) => <VSkel key={i} />)}</Grid>
+                ? <Grid>{Array.from({length: 9}).map((_, i) => <VSkel key={i} />)}</Grid>
                 : !showVideos?.length && !recent?.length
                   ? <Empty msg="Ainda não há vídeos publicados." />
                   : <Grid>
@@ -566,7 +567,7 @@ function HoodaTVMain() {
           {/* ══ CANAIS ══ */}
           {!search && filter === "canais" && (
             <section>
-              <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center justify-between mb-6">
                 <div>
                   <h2 className="text-lg font-extrabold tracking-tight" style={{ color: "var(--text-primary)" }}>Canais</h2>
                   <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>Descobre criadores da Hooda</p>
