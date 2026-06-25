@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import * as tus from "tus-js-client";
+import { uploadToCloudflareStream, getStreamThumbnailUrl } from "@/lib/cloudflare-stream";
 
 export const Route = createFileRoute("/studio/upload")({
   head: () => ({ meta: [{ title: "Enviar vídeo — Hooda Studio" }] }),
@@ -192,23 +193,22 @@ function UploadPage() {
       const { data: ud } = await supabase.auth.getUser();
       const uid     = ud.user!.id;
       const videoId = crypto.randomUUID();
-      const ext     = videoFile.name.split(".").pop() ?? "mp4";
-      const videoPath = `${uid}/${videoId}.${ext}`;
 
       /* 1 — Duração (já detectada, ou detecta agora) */
       const duration = detectedDur ?? await getVideoDuration(videoFile);
 
-      /* 2 — Upload do vídeo com progresso real */
-      const isBig = videoFile.size > MAX_VIDEO_FREE;
+      /* 2 — Upload directo para Cloudflare Stream via TUS */
       setProgress(5);
-      setProgLabel(isBig ? "A enviar em partes (ficheiro grande)…" : "A enviar o vídeo…");
-      await uploadVideo("videos", videoPath, videoFile, videoFile.type, pct => {
-        setProgress(5 + Math.round(pct * 0.60)); /* 5%→65% */
-      });
-      setProgress(65); setProgLabel("A processar o vídeo…");
+      setProgLabel("A enviar para Cloudflare Stream…");
+      const streamResult = await uploadToCloudflareStream(
+        videoFile,
+        { title: title.trim(), channelId: channel.id, userId: uid },
+        pct => setProgress(5 + Math.round(pct * 0.70)), /* 5%→75% */
+      );
+      setProgress(75); setProgLabel("A processar o vídeo…");
 
-      /* 3 — Thumbnail */
-      let thumbnailUrl: string | null = null;
+      /* 3 — Thumbnail: usa a do utilizador ou a gerada automaticamente pelo Stream */
+      let thumbnailUrl: string = streamResult.thumbnailUrl;
       if (thumbFile) {
         setProgLabel("A enviar miniatura…");
         const tExt  = thumbFile.name.split(".").pop() ?? "jpg";
@@ -221,30 +221,33 @@ function UploadPage() {
           thumbnailUrl = tUrl.publicUrl;
         }
       }
-      setProgress(80); setProgLabel("A guardar informações…");
+      setProgress(85); setProgLabel("A guardar informações…");
 
-      /* 4 — Inserir na DB */
+      /* 4 — Inserir na DB com campos do Cloudflare Stream */
       const isScheduled = visibility === "scheduled";
       const publishedAt = isScheduled
         ? (scheduledAt ? new Date(scheduledAt).toISOString() : null)
         : (visibility === "public" ? new Date().toISOString() : null);
 
       const { error: iErr } = await (supabase as any).from("videos").insert({
-        id:           videoId,
-        channel_id:   channel.id,
-        owner_id:     uid,
-        title:        title.trim(),
-        description:  description.trim() || null,
-        video_path:   videoPath,
-        thumbnail_url: thumbnailUrl,
+        id:               videoId,
+        channel_id:       channel.id,
+        owner_id:         uid,
+        title:            title.trim(),
+        description:      description.trim() || null,
+        video_path:       null,                    // já não usamos Supabase Storage para vídeos
+        cf_stream_uid:    streamResult.uid,
+        cf_stream_url:    streamResult.playbackUrl,
+        cf_embed_url:     streamResult.embedUrl,
+        thumbnail_url:    thumbnailUrl,
         duration_seconds: duration,
-        file_size:    videoFile.size,
-        tags:         tags.length ? tags : null,
-        status:       isScheduled ? "processing" : "published",
-        visibility:   isScheduled ? "private" : visibility as any,
-        published_at: publishedAt,
-        views_count:  0,
-        likes_count:  0,
+        file_size:        videoFile.size,
+        tags:             tags.length ? tags : null,
+        status:           isScheduled ? "processing" : "published",
+        visibility:       isScheduled ? "private" : visibility as any,
+        published_at:     publishedAt,
+        views_count:      0,
+        likes_count:      0,
       });
 
       if (iErr) throw iErr;

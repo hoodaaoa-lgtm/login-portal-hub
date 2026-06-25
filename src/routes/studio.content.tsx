@@ -11,6 +11,7 @@ import { format } from "date-fns";
 import { pt } from "date-fns/locale";
 import { useState } from "react";
 import { toast } from "sonner";
+import { deleteFromCloudflareStream } from "@/lib/cloudflare-stream";
 
 export const Route = createFileRoute("/studio/content")({
   head: () => ({ meta: [{ title: "Conteúdo — Hooda Studio" }] }),
@@ -148,7 +149,10 @@ function ContentPage() {
 
   /* ── Delete ── */
   const remove = useMutation({
-    mutationFn: async (v: { id: string; video_path: string | null }) => {
+    mutationFn: async (v: { id: string; video_path: string | null; cf_stream_uid: string | null }) => {
+      if (v.cf_stream_uid) {
+        try { await deleteFromCloudflareStream(v.cf_stream_uid); } catch (_) {}
+      }
       if (v.video_path) {
         await supabase.storage.from("videos").remove([v.video_path]);
       }
@@ -337,7 +341,7 @@ function ContentPage() {
                           onClick={() => {
                             setDeleting(v.id);
                             setOpenMenu(null);
-                            remove.mutate({ id: v.id, video_path: v.video_path });
+                            remove.mutate({ id: v.id, video_path: v.video_path, cf_stream_uid: (v as any).cf_stream_uid ?? null });
                           }}
                           className="w-full flex items-center gap-2.5 px-4 py-3 text-sm transition hover:bg-red-50"
                           style={{ color: "#E94B8A" }}>

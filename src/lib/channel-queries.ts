@@ -22,6 +22,9 @@ export type Video = {
   title: string;
   description: string | null;
   video_path: string | null;
+  cf_stream_uid: string | null;
+  cf_stream_url: string | null;
+  cf_embed_url: string | null;
   thumbnail_url: string | null;
   duration_seconds: number | null;
   status: "processing" | "published" | "failed";

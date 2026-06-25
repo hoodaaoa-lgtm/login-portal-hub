@@ -17,6 +17,7 @@ import {
 import { formatDistanceToNow, format } from "date-fns";
 import { pt } from "date-fns/locale";
 import { toast } from "sonner";
+import { deleteFromCloudflareStream } from "@/lib/cloudflare-stream";
 
 export const Route = createFileRoute("/studio/")(  {
   head: () => ({ meta: [{ title: "Painel — Hooda Studio" }] }),
@@ -431,6 +432,9 @@ export default function DashboardPage() {
   );
 
   async function deleteVideo(v: any) {
+    if (v.cf_stream_uid) {
+      try { await deleteFromCloudflareStream(v.cf_stream_uid); } catch (_) {}
+    }
     if (v.video_path) await supabase.storage.from("videos").remove([v.video_path]);
     await (supabase as any).from("videos").delete().eq("id", v.id);
     qc.invalidateQueries({ queryKey: ["my-videos"] });
