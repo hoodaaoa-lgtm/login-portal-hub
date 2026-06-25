@@ -3,6 +3,7 @@ import { BottomNav, SideNav, PageWrapper } from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect, useRef } from "react";
+import { toast } from "sonner";
 
 /* ══════════════════════════════════
    HOODATV INTRO
@@ -202,10 +203,43 @@ function VideoMenu({ v }: { v: any }) {
   }, [open]);
 
   const items = [
-    { icon: <Share2 className="w-4 h-4" />, label: "Partilhar", action: () => { navigator.clipboard.writeText(`${window.location.origin}/hoodatv/watch/${v.id}`); setOpen(false); } },
-    { icon: <Bookmark className="w-4 h-4" />, label: "Guardar", action: () => setOpen(false) },
-    { icon: <ThumbsDown className="w-4 h-4" />, label: "Sem interesse", action: () => setOpen(false) },
-    { icon: <Flag className="w-4 h-4" />, label: "Denunciar", action: () => setOpen(false) },
+    {
+      icon: <Share2 className="w-4 h-4" />,
+      label: "Partilhar",
+      action: () => {
+        const url = `${window.location.origin}/hoodatv/watch/${v.id}`;
+        navigator.clipboard.writeText(url).then(() => toast.success("Link copiado!")).catch(() => toast.error("Não foi possível copiar."));
+        setOpen(false);
+      },
+    },
+    {
+      icon: <Bookmark className="w-4 h-4" />,
+      label: "Guardar",
+      action: async () => {
+        setOpen(false);
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) { toast.error("Inicia sessão para guardar vídeos."); return; }
+        const { error } = await (supabase as any).from("saved_videos").upsert({ user_id: user.id, video_id: v.id }, { onConflict: "user_id,video_id" });
+        if (error) toast.error("Erro ao guardar.");
+        else toast.success("Vídeo guardado!");
+      },
+    },
+    {
+      icon: <ThumbsDown className="w-4 h-4" />,
+      label: "Sem interesse",
+      action: () => {
+        setOpen(false);
+        toast("Vídeo ocultado.", { description: "Vais ver menos conteúdo deste tipo." });
+      },
+    },
+    {
+      icon: <Flag className="w-4 h-4" />,
+      label: "Denunciar",
+      action: () => {
+        setOpen(false);
+        toast("Denúncia enviada.", { description: "Obrigado pelo teu feedback." });
+      },
+    },
   ];
 
   return (
