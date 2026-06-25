@@ -13,6 +13,14 @@
       server: { entry: "server" },
     },
     vite: {
+      resolve: {
+        alias: {
+          // workerd's `fs` polyfill is frozen, so graceful-fs's gracefulify()
+          // throws at module init and crashes every SSR request. Replace it
+          // with a thin stub for both client and SSR bundles.
+          "graceful-fs": new URL("./src/shims/graceful-fs.js", import.meta.url).pathname,
+        },
+      },
       build: {
         // Split output into smaller chunks — navegadores só descarregam o que precisam
         rollupOptions: {

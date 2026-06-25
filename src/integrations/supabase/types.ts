@@ -1240,6 +1240,9 @@ export type Database = {
       videos: {
         Row: {
           category: string | null
+          cf_embed_url: string | null
+          cf_stream_uid: string | null
+          cf_stream_url: string | null
           channel_id: string
           comments_count: number
           created_at: string
@@ -1260,6 +1263,9 @@ export type Database = {
         }
         Insert: {
           category?: string | null
+          cf_embed_url?: string | null
+          cf_stream_uid?: string | null
+          cf_stream_url?: string | null
           channel_id: string
           comments_count?: number
           created_at?: string
@@ -1280,6 +1286,9 @@ export type Database = {
         }
         Update: {
           category?: string | null
+          cf_embed_url?: string | null
+          cf_stream_uid?: string | null
+          cf_stream_url?: string | null
           channel_id?: string
           comments_count?: number
           created_at?: string
