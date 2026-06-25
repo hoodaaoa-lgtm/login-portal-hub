@@ -713,6 +713,7 @@ function WatchPage() {
   const qc = useQueryClient();
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const { data: video, isLoading } = useVideo(id);
   const ch = video?.channels;
@@ -736,6 +737,7 @@ function WatchPage() {
   const [muted, setMuted]             = useState(false);
   const [quality, setQuality]         = useState<number | "auto">("auto");
   const [availableHeights, setAvailableHeights] = useState<number[]>([]);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [showNerdStats, setShowNerdStats] = useState(false);
   const [nerdStats, setNerdStats] = useState<{
     videoId: string; viewport: string; currentRes: string; optimalRes: string;
@@ -748,6 +750,15 @@ function WatchPage() {
   /* ── Detectar suporte PiP ── */
   useEffect(() => {
     setHasPiP(document.pictureInPictureEnabled ?? false);
+  }, []);
+
+  /* ── Monitorar mudanças de fullscreen ── */
+  useEffect(() => {
+    function onFsChange() {
+      setIsFullscreen(!!document.fullscreenElement);
+    }
+    document.addEventListener("fullscreenchange", onFsChange);
+    return () => document.removeEventListener("fullscreenchange", onFsChange);
   }, []);
 
   /* ── Restaurar posição guardada ── */
@@ -1086,7 +1097,7 @@ function WatchPage() {
           <div className="space-y-4">
 
             {/* Player */}
-            <div className="w-full aspect-video rounded-2xl overflow-hidden bg-black relative group"
+            <div ref={containerRef} className="w-full aspect-video rounded-2xl overflow-hidden bg-black relative group"
               style={{ boxShadow: "0 8px 32px rgba(0,0,0,0.18)" }}>
               {playerUrl ? (
                 <>
@@ -1169,7 +1180,7 @@ function WatchPage() {
                   )}
 
                   {/* Controles personalizados */}
-                  <div className="absolute bottom-0 left-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                  <div className={`absolute bottom-0 left-0 right-0 transition-opacity duration-200 ${isFullscreen ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
                     style={{ background: "linear-gradient(transparent, rgba(0,0,0,0.85))", paddingBottom: "8px" }}>
 
                     {/* Barra de progresso */}
@@ -1245,7 +1256,12 @@ function WatchPage() {
                       </div>
 
                       {/* Fullscreen */}
-                      <button onClick={() => { const el = videoRef.current; if (el) { if (document.fullscreenElement) document.exitFullscreen(); else el.requestFullscreen(); } }}
+                      <button onClick={() => {
+                          const el = containerRef.current;
+                          if (!el) return;
+                          if (document.fullscreenElement) document.exitFullscreen();
+                          else el.requestFullscreen();
+                        }}
                         className="w-9 h-9 flex items-center justify-center rounded-full transition hover:bg-white/10 text-white">
                         <Maximize className="w-4 h-4" />
                       </button>
