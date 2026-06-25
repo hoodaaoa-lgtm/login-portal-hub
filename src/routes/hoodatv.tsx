@@ -5,12 +5,11 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect, useRef } from "react";
 
 /* ══════════════════════════════════
-   HOODATV INTRO (Netflix-style, uma vez por sessão)
+   HOODATV INTRO — Opção B (letras caem do topo + TV gradiente)
 ══════════════════════════════════ */
 const INTRO_KEY      = "hoodatv_intro_seen";
-const INTRO_DURATION = 3200;
+const INTRO_DURATION = 3000;
 
-// "Hooda" colorido + "TV" em cinza escuro
 const HOODA_LETTERS = [
   { char: "H", color: "#5B3FCF" },
   { char: "o", color: "#F26B3A" },
@@ -18,155 +17,120 @@ const HOODA_LETTERS = [
   { char: "d", color: "#6BA547" },
   { char: "a", color: "#E94B8A" },
 ];
-const TV_LETTERS = [
-  { char: "T", color: "#1a1a2e" },
-  { char: "V", color: "#1a1a2e" },
-];
-const ALL_LETTERS = [...HOODA_LETTERS, ...TV_LETTERS];
+const DOT_COLORS = ["#5B3FCF","#F26B3A","#1FAFA6","#6BA547","#E94B8A"];
 
 function HoodaTVIntro({ onDone }: { onDone: () => void }) {
-  const [phase, setPhase] = useState<"enter" | "pulse" | "tagline" | "exit">("enter");
-  const [visible, setVisible] = useState<boolean[]>(Array(ALL_LETTERS.length).fill(false));
-  const [tagline, setTagline] = useState(false);
+  const [letterIn,  setLetterIn]  = useState<boolean[]>(Array(5).fill(false));
+  const [tvIn,      setTvIn]      = useState(false);
+  const [dotsIn,    setDotsIn]    = useState<boolean[]>(Array(5).fill(false));
+  const [exiting,   setExiting]   = useState(false);
 
   useEffect(() => {
     const t: ReturnType<typeof setTimeout>[] = [];
 
-    // Letras entram uma a uma
-    ALL_LETTERS.forEach((_, i) => {
+    // Letras caem uma a uma do topo
+    HOODA_LETTERS.forEach((_, i) => {
       t.push(setTimeout(() => {
-        setVisible(prev => { const n = [...prev]; n[i] = true; return n; });
-      }, 350 + i * 110));
+        setLetterIn(prev => { const n = [...prev]; n[i] = true; return n; });
+      }, 200 + i * 130));
     });
 
-    // Pulse
-    t.push(setTimeout(() => setPhase("pulse"), 350 + ALL_LETTERS.length * 110 + 150));
+    // TV aparece com gradiente
+    t.push(setTimeout(() => setTvIn(true), 200 + 5 * 130 + 80));
 
-    // Tagline aparece
-    t.push(setTimeout(() => { setPhase("tagline"); setTagline(true); }, 350 + ALL_LETTERS.length * 110 + 500));
+    // Dots surgem um a um
+    DOT_COLORS.forEach((_, i) => {
+      t.push(setTimeout(() => {
+        setDotsIn(prev => { const n = [...prev]; n[i] = true; return n; });
+      }, 200 + 5 * 130 + 400 + i * 80));
+    });
 
     // Exit
-    t.push(setTimeout(() => setPhase("exit"), INTRO_DURATION - 600));
-
-    // Fim
+    t.push(setTimeout(() => setExiting(true), INTRO_DURATION - 600));
     t.push(setTimeout(() => onDone(), INTRO_DURATION));
 
     return () => t.forEach(clearTimeout);
   }, [onDone]);
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        top: 0, left: 0, right: 0, bottom: 0,
-        zIndex: 9999,
-        background: "#ffffff",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        opacity: phase === "exit" ? 0 : 1,
-        transition: phase === "exit" ? "opacity 0.6s ease-in" : "none",
-        pointerEvents: phase === "exit" ? "none" : "all",
-      }}
-    >
-      {/* Logo HoodaTV */}
+    <div style={{
+      position: "fixed",
+      top: 0, left: 0, right: 0, bottom: 0,
+      zIndex: 9999,
+      background: "#ffffff",
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      justifyContent: "center",
+      opacity: exiting ? 0 : 1,
+      transition: exiting ? "opacity 0.6s ease-in" : "none",
+      pointerEvents: exiting ? "none" : "all",
+    }}>
+
+      {/* Logo */}
       <div style={{ display: "flex", alignItems: "baseline", gap: 0 }}>
-        {/* Hooda */}
+
+        {/* Hooda — letras caem do topo com rotate */}
         {HOODA_LETTERS.map((l, i) => (
-          <span
-            key={i}
-            style={{
-              display: "inline-block",
-              fontFamily: '"Nunito", "Quicksand", system-ui, sans-serif',
-              fontSize: "clamp(3rem, 11vw, 6.5rem)",
-              fontWeight: 900,
-              lineHeight: 1,
-              color: l.color,
-              opacity: visible[i] ? 1 : 0,
-              transform: visible[i]
-                ? phase === "pulse" || phase === "tagline"
-                  ? `scale(1.10) translateY(-4px)`
-                  : "scale(1) translateY(0)"
-                : "scale(0.3) translateY(50px)",
-              transition: visible[i]
-                ? phase === "pulse" || phase === "tagline"
-                  ? `transform 0.4s cubic-bezier(0.34,1.56,0.64,1) ${i * 0.035}s`
-                  : "transform 0.45s cubic-bezier(0.34,1.56,0.64,1), opacity 0.4s ease"
-                : "none",
-              textShadow: visible[i] ? `0 0 32px ${l.color}66, 0 4px 18px ${l.color}33` : "none",
-              letterSpacing: "-0.02em",
-            }}
-          >
+          <span key={i} style={{
+            display: "inline-block",
+            fontFamily: '"Nunito", "Quicksand", system-ui, sans-serif',
+            fontWeight: 900,
+            fontSize: "clamp(3.2rem, 11vw, 6rem)",
+            lineHeight: 1,
+            letterSpacing: "-0.02em",
+            color: l.color,
+            opacity: letterIn[i] ? 1 : 0,
+            transform: letterIn[i]
+              ? "translateY(0) rotate(0deg)"
+              : "translateY(-80px) rotate(-8deg)",
+            transition: letterIn[i]
+              ? `opacity 0.45s ease, transform 0.5s cubic-bezier(0.34,1.56,0.64,1)`
+              : "none",
+          }}>
             {l.char}
           </span>
         ))}
 
-        {/* TV — mais pequeno, bold, escuro */}
-        <span style={{ display: "inline-flex", alignItems: "baseline", marginLeft: "6px" }}>
-          {TV_LETTERS.map((l, j) => {
-            const i = HOODA_LETTERS.length + j;
-            return (
-              <span
-                key={j}
-                style={{
-                  display: "inline-block",
-                  fontFamily: '"Nunito", "Quicksand", system-ui, sans-serif',
-                  fontSize: "clamp(1.4rem, 4.5vw, 2.8rem)",
-                  fontWeight: 900,
-                  lineHeight: 1,
-                  color: l.color,
-                  opacity: visible[i] ? 1 : 0,
-                  transform: visible[i]
-                    ? phase === "pulse" || phase === "tagline"
-                      ? "scale(1.10) translateY(-4px)"
-                      : "scale(1) translateY(0)"
-                    : "scale(0.3) translateY(40px)",
-                  transition: visible[i]
-                    ? phase === "pulse" || phase === "tagline"
-                      ? `transform 0.4s cubic-bezier(0.34,1.56,0.64,1) ${i * 0.035}s`
-                      : "transform 0.45s cubic-bezier(0.34,1.56,0.64,1), opacity 0.4s ease"
-                    : "none",
-                  letterSpacing: "0.05em",
-                  marginBottom: "0.15em",
-                }}
-              >
-                {l.char}
-              </span>
-            );
-          })}
+        {/* TV — cápsula com gradiente roxo→rosa */}
+        <span style={{
+          display: "inline-block",
+          fontFamily: '"Nunito", "Quicksand", system-ui, sans-serif',
+          fontWeight: 900,
+          fontSize: "clamp(1.1rem, 3.5vw, 1.8rem)",
+          letterSpacing: "0.18em",
+          color: "#fff",
+          background: "linear-gradient(135deg, #5B3FCF, #E94B8A)",
+          padding: "5px 12px 7px",
+          borderRadius: "8px",
+          marginLeft: "10px",
+          marginBottom: "clamp(6px, 1.5vw, 12px)",
+          opacity: tvIn ? 1 : 0,
+          transform: tvIn ? "scale(1)" : "scale(0)",
+          transition: tvIn
+            ? "opacity 0.4s ease, transform 0.5s cubic-bezier(0.34,1.56,0.64,1)"
+            : "none",
+        }}>
+          TV
         </span>
       </div>
 
-      {/* Tagline */}
-      <div
-        style={{
-          marginTop: "18px",
-          opacity: tagline ? 1 : 0,
-          transform: tagline ? "translateY(0)" : "translateY(12px)",
-          transition: "opacity 0.5s ease, transform 0.5s ease",
-          fontSize: "clamp(0.75rem, 2vw, 0.95rem)",
-          fontWeight: 600,
-          letterSpacing: "0.18em",
-          textTransform: "uppercase",
-          color: "#9ca3af",
-          fontFamily: '"Nunito", system-ui, sans-serif',
-        }}
-      >
-        O teu canal. A tua história.
+      {/* Dots coloridos */}
+      <div style={{ display: "flex", gap: "8px", marginTop: "22px" }}>
+        {DOT_COLORS.map((color, i) => (
+          <span key={i} style={{
+            width: "8px", height: "8px",
+            borderRadius: "50%",
+            background: color,
+            display: "inline-block",
+            opacity: dotsIn[i] ? 1 : 0,
+            transform: dotsIn[i] ? "scale(1)" : "scale(0)",
+            transition: dotsIn[i]
+              ? "opacity 0.3s ease, transform 0.4s cubic-bezier(0.34,1.56,0.64,1)"
+              : "none",
+          }} />
+        ))}
       </div>
-
-      {/* Barra decorativa */}
-      <div
-        style={{
-          marginTop: "28px",
-          height: "3px",
-          width: tagline ? "120px" : "0px",
-          borderRadius: "999px",
-          background: "linear-gradient(90deg,#5B3FCF,#E94B8A,#F26B3A)",
-          transition: "width 0.7s cubic-bezier(0.34,1.56,0.64,1) 0.1s",
-        }}
-      />
     </div>
   );
 }
