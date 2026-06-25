@@ -910,12 +910,6 @@ function WatchPage() {
           {speed !== 1 && (
             <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ background: `${P}20`, color: P }}>{speed}x</span>
           )}
-          {/* Botão 3 pontinhos */}
-          <button onClick={() => setShowMenu(true)}
-            className="w-9 h-9 rounded-full flex items-center justify-center transition hover:bg-[var(--s3)]"
-            style={{ color: "var(--text-primary)" }}>
-            <MoreVertical className="w-5 h-5" />
-          </button>
         </div>
 
         <div className="max-w-7xl mx-auto px-4 py-4 lg:grid lg:grid-cols-[1fr_360px] lg:gap-6">
@@ -924,7 +918,7 @@ function WatchPage() {
           <div className="space-y-4">
 
             {/* Player */}
-            <div className="w-full aspect-video rounded-2xl overflow-hidden bg-black relative"
+            <div className="w-full aspect-video rounded-2xl overflow-hidden bg-black relative group"
               style={{ boxShadow: "0 8px 32px rgba(0,0,0,0.18)" }}>
               {playerUrl ? (
                 <>
@@ -949,6 +943,13 @@ function WatchPage() {
                       <div className="w-12 h-12 rounded-full border-4 border-white/20 border-t-white animate-spin" />
                     </div>
                   )}
+                  {/* Botão ⋮ dentro do player */}
+                  <button
+                    onClick={() => setShowMenu(true)}
+                    className="absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center transition-all opacity-0 group-hover:opacity-100"
+                    style={{ background: "rgba(0,0,0,0.55)", color: "#fff", backdropFilter: "blur(4px)" }}>
+                    <MoreVertical className="w-5 h-5" />
+                  </button>
                 </>
               ) : hasEmbed ? (
                 <iframe src={`${video.cf_embed_url}?autoplay=true`} className="w-full h-full"
