@@ -228,10 +228,9 @@ function AuthGate({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const isPublicRoute = PUBLIC_ROUTES.has(pathname);
 
-  const needsSplash =
-    initializing ||
-    (status === "unauthenticated" && !isPublicRoute) ||
-    (status === "authenticated" && isPublicRoute && pathname !== "/reset-password");
+  // O splash só aparece durante o boot inicial da app (primeira verificação de sessão).
+  // Redirects por autenticação não precisam de splash — fazem-no silenciosamente.
+  const needsSplash = initializing;
 
   // Keep the splash mounted slightly past the moment it's no longer
   // strictly needed, so it can fade out instead of disappearing instantly.
