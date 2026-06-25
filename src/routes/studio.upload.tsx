@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import * as tus from "tus-js-client";
-import { uploadToCloudflareStream, getStreamThumbnailUrl } from "@/lib/cloudflare-stream";
+
 
 export const Route = createFileRoute("/studio/upload")({
   head: () => ({ meta: [{ title: "Enviar vídeo — Hooda Studio" }] }),
@@ -194,21 +194,27 @@ function UploadPage() {
       const uid     = ud.user!.id;
       const videoId = crypto.randomUUID();
 
-      /* 1 — Duração (já detectada, ou detecta agora) */
+      /* 1 — Duração */
       const duration = detectedDur ?? await getVideoDuration(videoFile);
 
-      /* 2 — Upload directo para Cloudflare Stream via TUS */
+      /* 2 — Upload do vídeo para Supabase Storage */
       setProgress(5);
-      setProgLabel("A enviar para Cloudflare Stream…");
-      const streamResult = await uploadToCloudflareStream(
-        videoFile,
-        { title: title.trim(), channelId: channel.id, userId: uid },
-        pct => setProgress(5 + Math.round(pct * 0.70)), /* 5%→75% */
-      );
-      setProgress(75); setProgLabel("A processar o vídeo…");
+      setProgLabel("A enviar vídeo…");
+      const vExt  = videoFile.name.split(".").pop() ?? "mp4";
+      const vPath = `${uid}/${videoId}.${vExt}`;
 
-      /* 3 — Thumbnail: usa a do utilizador ou a gerada automaticamente pelo Stream */
-      let thumbnailUrl: string = streamResult.thumbnailUrl;
+      if (videoFile.size <= MAX_VIDEO_FREE) {
+        await uploadSimple("videos", vPath, videoFile, videoFile.type, pct => setProgress(5 + Math.round(pct * 0.70)));
+      } else {
+        await uploadTUS("videos", vPath, videoFile, videoFile.type, pct => setProgress(5 + Math.round(pct * 0.70)));
+      }
+
+      setProgress(78); setProgLabel("A obter URL do vídeo…");
+      const { data: vUrl } = supabase.storage.from("videos").getPublicUrl(vPath);
+      const videoUrl = vUrl.publicUrl;
+
+      /* 3 — Thumbnail */
+      let thumbnailUrl: string | null = null;
       if (thumbFile) {
         setProgLabel("A enviar miniatura…");
         const tExt  = thumbFile.name.split(".").pop() ?? "jpg";
@@ -221,34 +227,30 @@ function UploadPage() {
           thumbnailUrl = tUrl.publicUrl;
         }
       }
-      setProgress(85); setProgLabel("A guardar informações…");
+      setProgress(88); setProgLabel("A guardar informações…");
 
-      /* 4 — Inserir na DB com campos do Cloudflare Stream */
+      /* 4 — Inserir na DB */
       const isScheduled = visibility === "scheduled";
       const publishedAt = isScheduled
         ? (scheduledAt ? new Date(scheduledAt).toISOString() : null)
         : (visibility === "public" ? new Date().toISOString() : null);
 
-      const { error: iErr } = await (supabase as any).from("videos").insert({
+      const { error: iErr } = await supabase.from("videos").insert({
         id:               videoId,
         channel_id:       channel.id,
         owner_id:         uid,
         title:            title.trim(),
         description:      description.trim() || null,
-        video_path:       null,                    // já não usamos Supabase Storage para vídeos
-        cf_stream_uid:    streamResult.uid,
-        cf_stream_url:    streamResult.playbackUrl,
-        cf_embed_url:     streamResult.embedUrl,
+        video_path:       videoUrl,
         thumbnail_url:    thumbnailUrl,
         duration_seconds: duration,
-        file_size:        videoFile.size,
         tags:             tags.length ? tags : null,
         status:           isScheduled ? "processing" : "published",
         visibility:       isScheduled ? "private" : visibility as any,
         published_at:     publishedAt,
         views_count:      0,
         likes_count:      0,
-      });
+      } as any);
 
       if (iErr) throw iErr;
 
