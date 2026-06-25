@@ -174,14 +174,15 @@ const avatarColor = (name: string) => AVATAR_COLORS[(name?.charCodeAt(0) ?? 0) %
 /* ── Skeleton ── */
 function VSkel() {
   return (
-    <div className="animate-pulse">
-      <div className="rounded-xl mb-3" style={{ aspectRatio: "16/9", background: "var(--s3)" }} />
-      <div className="flex gap-2.5">
+    <div className="animate-pulse rounded-2xl overflow-hidden"
+      style={{ background: "var(--s0)", border: "1px solid var(--border-subtle)" }}>
+      <div style={{ aspectRatio: "16/9", background: "var(--s3)" }} />
+      <div className="flex gap-2.5 p-3">
         <div className="w-9 h-9 rounded-full shrink-0" style={{ background: "var(--s3)" }} />
         <div className="flex-1 space-y-2 pt-0.5">
           <div className="h-3.5 rounded-full" style={{ background: "var(--s3)", width: "90%" }} />
-          <div className="h-3 rounded-full" style={{ background: "var(--s3)", width: "60%" }} />
-          <div className="h-3 rounded-full" style={{ background: "var(--s3)", width: "45%" }} />
+          <div className="h-3 rounded-full" style={{ background: "var(--s3)", width: "55%" }} />
+          <div className="h-3 rounded-full" style={{ background: "var(--s3)", width: "40%" }} />
         </div>
       </div>
     </div>
@@ -274,17 +275,28 @@ function VideoCard({ v, rank }: { v: any; rank?: number }) {
   const bg = avatarColor(ch?.name ?? "");
 
   return (
-    <div className="group cursor-pointer" onClick={() => navigate({ to: "/hoodatv/watch/$id", params: { id: v.id } })}>
+    <div
+      className="group cursor-pointer rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+      style={{
+        background: "var(--s0)",
+        border: "1px solid var(--border-subtle)",
+        boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+      }}
+      onClick={() => navigate({ to: "/hoodatv/watch/$id", params: { id: v.id } })}
+    >
       {/* Thumbnail */}
-      <div className="relative rounded-2xl overflow-hidden mb-3 shadow-sm" style={{ aspectRatio: "16/9", background: "var(--s3)" }}
+      <div className="relative overflow-hidden" style={{ aspectRatio: "16/9", background: `linear-gradient(135deg, ${bg}33, ${bg}11)` }}
         onContextMenu={e => e.preventDefault()}>
         {v.thumbnail_url
           ? <img src={v.thumbnail_url} alt={v.title} loading="lazy"
               onContextMenu={e => e.preventDefault()}
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.04]" />
-          : <div className="w-full h-full flex items-center justify-center" style={{ background: `${bg}18` }}>
-              <Play className="w-12 h-12" style={{ color: bg, opacity: 0.4 }} />
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.06]" />
+          : <div className="w-full h-full flex flex-col items-center justify-center gap-2">
+              <Play className="w-12 h-12 opacity-30" style={{ color: bg }} />
             </div>}
+
+        {/* Gradiente bottom */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
         {/* Duração */}
         {v.duration_seconds && (
@@ -303,40 +315,40 @@ function VideoCard({ v, rank }: { v: any; rank?: number }) {
         )}
 
         {/* Hover play overlay */}
-        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200"
-          style={{ background: "rgba(0,0,0,0.18)" }}>
-          <div className="w-13 h-13 w-12 h-12 rounded-full flex items-center justify-center shadow-2xl"
+        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200">
+          <div className="w-12 h-12 rounded-full flex items-center justify-center shadow-2xl backdrop-blur-sm"
             style={{ background: "rgba(255,255,255,0.92)" }}>
-            <Play className="w-5 h-5 ml-0.5" style={{ color: P }} />
+            <Play className="w-5 h-5 ml-0.5" style={{ color: P }} fill={P} />
           </div>
         </div>
       </div>
 
-      {/* Meta — estilo YouTube */}
-      <div className="flex gap-3">
+      {/* Meta */}
+      <div className="flex gap-3 p-3">
         {/* Avatar canal */}
         <div
-          className="w-9 h-9 rounded-full shrink-0 overflow-hidden flex items-center justify-center text-white text-sm font-bold cursor-pointer mt-0.5"
-          style={{ background: bg }}
+          className="w-9 h-9 rounded-full shrink-0 overflow-hidden flex items-center justify-center text-white text-sm font-bold cursor-pointer mt-0.5 ring-2"
+          style={{ background: bg, ringColor: `${bg}33` }}
           onClick={e => { e.stopPropagation(); if (ch?.handle) navigate({ to: "/hoodatv/canal/$handle", params: { handle: ch.handle } }); }}>
           {ch?.avatar_url ? <img src={ch.avatar_url} alt="" className="w-full h-full object-cover" /> : (ch?.name?.[0] ?? "?").toUpperCase()}
         </div>
 
-        {/* Título + info + três pontinhos */}
+        {/* Título + info */}
         <div className="flex-1 min-w-0 flex items-start gap-1">
           <div className="flex-1 min-w-0">
             <p className="text-[13.5px] font-semibold leading-[1.35] line-clamp-2 mb-1"
               style={{ color: "var(--text-primary)" }}>
               {v.title?.replace(/\b\d{10,}\b/g, "").replace(/@\S+/g, "").trim()}
             </p>
-            <p className="text-[12px] font-medium" style={{ color: "var(--text-muted)" }}>
+            <p className="text-[12px] font-medium hover:underline cursor-pointer"
+              style={{ color: P }}
+              onClick={e => { e.stopPropagation(); if (ch?.handle) navigate({ to: "/hoodatv/canal/$handle", params: { handle: ch.handle } }); }}>
               {ch?.name ?? "Canal"}
             </p>
-            <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>
+            <p className="text-[11px] mt-0.5" style={{ color: "var(--text-muted)" }}>
               {fmtV(Number(v.views_count ?? 0))} visualizações · {timeAgo(v.published_at ?? v.created_at)}
             </p>
           </div>
-          {/* Três pontinhos */}
           <div className="shrink-0 -mt-1">
             <VideoMenu v={v} />
           </div>
@@ -632,7 +644,7 @@ function HoodaTVMain() {
 }
 
 function Grid({ children }: { children: React.ReactNode }) {
-  return <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-8">{children}</div>;
+  return <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">{children}</div>;
 }
 
 function Empty({ msg, icon }: { msg: string; icon?: React.ReactNode }) {
