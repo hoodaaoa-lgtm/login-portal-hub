@@ -391,9 +391,11 @@ type FilterKey = typeof FILTERS[number]["key"];
 ══════════════════════════════════ */
 function HoodaTVPage() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  // Se estiver numa rota filha (ex: /hoodatv/canal/xyz), renderiza só o Outlet
   if (pathname !== "/hoodatv") return <Outlet />;
+  return <HoodaTVMain />;
+}
 
+function HoodaTVMain() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<FilterKey>("alta");
 

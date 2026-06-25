@@ -84,7 +84,7 @@ function useChannelStats(channelId: string | undefined) {
     queryFn: async () => {
       if (!channelId) return { subs: 0, totalViews: 0, videoCount: 0 };
       const [followRes, videoRes] = await Promise.all([
-        (supabase as any).from("follows").select("id", { count: "exact", head: true }).eq("following_id", channelId),
+        (supabase as any).from("follows").select("*", { count: "exact", head: true }).eq("following_id", channelId),
         (supabase as any).from("videos").select("views_count").eq("channel_id", channelId).eq("status", "published").eq("visibility", "public"),
       ]);
       const subs = followRes.count ?? 0;
