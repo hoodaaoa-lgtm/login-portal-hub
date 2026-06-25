@@ -2,15 +2,13 @@ import { createFileRoute, useNavigate, Outlet, useRouterState } from "@tanstack/
 import { BottomNav, SideNav, PageWrapper } from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 
 /* ══════════════════════════════════
-   HOODATV INTRO — Opção B (letras caem do topo + TV gradiente)
+   HOODATV INTRO
 ══════════════════════════════════ */
 const INTRO_KEY      = "hoodatv_intro_seen";
 const INTRO_DURATION = 3000;
-
-// Módulo-level: persiste enquanto a app estiver aberta, sem depender de remounts.
 let _introSeenThisSession = (() => {
   try { return !!sessionStorage.getItem(INTRO_KEY); } catch { return false; }
 })();
@@ -25,124 +23,81 @@ const HOODA_LETTERS = [
 const DOT_COLORS = ["#5B3FCF","#F26B3A","#1FAFA6","#6BA547","#E94B8A"];
 
 function HoodaTVIntro({ onDone }: { onDone: () => void }) {
-  const [letterIn,  setLetterIn]  = useState<boolean[]>(Array(5).fill(false));
-  const [tvIn,      setTvIn]      = useState(false);
-  const [dotsIn,    setDotsIn]    = useState<boolean[]>(Array(5).fill(false));
-  const [exiting,   setExiting]   = useState(false);
+  const [letterIn, setLetterIn] = useState<boolean[]>(Array(5).fill(false));
+  const [tvIn, setTvIn]         = useState(false);
+  const [dotsIn, setDotsIn]     = useState<boolean[]>(Array(5).fill(false));
+  const [exiting, setExiting]   = useState(false);
 
   useEffect(() => {
     const t: ReturnType<typeof setTimeout>[] = [];
-
-    // Letras caem uma a uma do topo
     HOODA_LETTERS.forEach((_, i) => {
       t.push(setTimeout(() => {
         setLetterIn(prev => { const n = [...prev]; n[i] = true; return n; });
       }, 200 + i * 130));
     });
-
-    // TV aparece com gradiente
     t.push(setTimeout(() => setTvIn(true), 200 + 5 * 130 + 80));
-
-    // Dots surgem um a um
     DOT_COLORS.forEach((_, i) => {
       t.push(setTimeout(() => {
         setDotsIn(prev => { const n = [...prev]; n[i] = true; return n; });
       }, 200 + 5 * 130 + 400 + i * 80));
     });
-
-    // Exit
     t.push(setTimeout(() => setExiting(true), INTRO_DURATION - 600));
     t.push(setTimeout(() => onDone(), INTRO_DURATION));
-
     return () => t.forEach(clearTimeout);
   }, [onDone]);
 
   return (
     <div style={{
-      position: "fixed",
-      top: 0, left: 0, right: 0, bottom: 0,
-      zIndex: 9999,
-      background: "#ffffff",
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      justifyContent: "center",
+      position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+      zIndex: 9999, background: "#ffffff",
+      display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
       opacity: exiting ? 0 : 1,
       transition: exiting ? "opacity 0.6s ease-in" : "none",
       pointerEvents: exiting ? "none" : "all",
     }}>
-
-      {/* Logo */}
       <div style={{ display: "flex", alignItems: "baseline", gap: 0 }}>
-
-        {/* Hooda — letras caem do topo com rotate */}
         {HOODA_LETTERS.map((l, i) => (
           <span key={i} style={{
             display: "inline-block",
             fontFamily: '"Nunito", "Quicksand", system-ui, sans-serif',
-            fontWeight: 900,
-            fontSize: "clamp(3.2rem, 11vw, 6rem)",
-            lineHeight: 1,
-            letterSpacing: "-0.02em",
-            color: l.color,
+            fontWeight: 900, fontSize: "clamp(3.2rem, 11vw, 6rem)", lineHeight: 1,
+            letterSpacing: "-0.02em", color: l.color,
             opacity: letterIn[i] ? 1 : 0,
-            transform: letterIn[i]
-              ? "translateY(0) rotate(0deg)"
-              : "translateY(-80px) rotate(-8deg)",
-            transition: letterIn[i]
-              ? `opacity 0.45s ease, transform 0.5s cubic-bezier(0.34,1.56,0.64,1)`
-              : "none",
-          }}>
-            {l.char}
-          </span>
+            transform: letterIn[i] ? "translateY(0) rotate(0deg)" : "translateY(-80px) rotate(-8deg)",
+            transition: letterIn[i] ? `opacity 0.45s ease, transform 0.5s cubic-bezier(0.34,1.56,0.64,1)` : "none",
+          }}>{l.char}</span>
         ))}
-
-        {/* TV — cápsula com gradiente roxo→rosa */}
         <span style={{
           display: "inline-block",
           fontFamily: '"Nunito", "Quicksand", system-ui, sans-serif',
-          fontWeight: 900,
-          fontSize: "clamp(1.1rem, 3.5vw, 1.8rem)",
-          letterSpacing: "0.18em",
-          color: "#fff",
+          fontWeight: 900, fontSize: "clamp(1.1rem, 3.5vw, 1.8rem)",
+          letterSpacing: "0.18em", color: "#fff",
           background: "linear-gradient(135deg, #5B3FCF, #E94B8A)",
-          padding: "5px 12px 7px",
-          borderRadius: "8px",
-          marginLeft: "10px",
-          marginBottom: "clamp(6px, 1.5vw, 12px)",
+          padding: "5px 12px 7px", borderRadius: "8px",
+          marginLeft: "10px", marginBottom: "clamp(6px, 1.5vw, 12px)",
           opacity: tvIn ? 1 : 0,
           transform: tvIn ? "scale(1)" : "scale(0)",
-          transition: tvIn
-            ? "opacity 0.4s ease, transform 0.5s cubic-bezier(0.34,1.56,0.64,1)"
-            : "none",
-        }}>
-          TV
-        </span>
+          transition: tvIn ? "opacity 0.4s ease, transform 0.5s cubic-bezier(0.34,1.56,0.64,1)" : "none",
+        }}>TV</span>
       </div>
-
-      {/* Dots coloridos */}
       <div style={{ display: "flex", gap: "8px", marginTop: "22px" }}>
         {DOT_COLORS.map((color, i) => (
           <span key={i} style={{
-            width: "8px", height: "8px",
-            borderRadius: "50%",
-            background: color,
+            width: "8px", height: "8px", borderRadius: "50%", background: color,
             display: "inline-block",
             opacity: dotsIn[i] ? 1 : 0,
             transform: dotsIn[i] ? "scale(1)" : "scale(0)",
-            transition: dotsIn[i]
-              ? "opacity 0.3s ease, transform 0.4s cubic-bezier(0.34,1.56,0.64,1)"
-              : "none",
+            transition: dotsIn[i] ? "opacity 0.3s ease, transform 0.4s cubic-bezier(0.34,1.56,0.64,1)" : "none",
           }} />
         ))}
       </div>
     </div>
   );
 }
+
 import {
-  Search, Bell, Play, Eye, Clock, TrendingUp, Star, Users,
-  UserPlus, X, Flame, Sparkles, Clapperboard,
-  MoreVertical, ThumbsUp, BookmarkPlus,
+  Search, Bell, Play, Eye, Clock, Star, Users,
+  UserPlus, X, Flame, Sparkles, Clapperboard, CheckCircle2,
 } from "lucide-react";
 
 export const Route = createFileRoute("/hoodatv")({
@@ -159,7 +114,6 @@ const GREEN  = "#6BA547";
 const YELLOW = "#FFC93C";
 const GRAD   = `linear-gradient(135deg,${P},${PINK})`;
 const AVATAR_COLORS = [P, ORANGE, TEAL, GREEN, PINK];
-
 
 /* ── Queries ── */
 function useMe() {
@@ -221,10 +175,10 @@ function VSkel() {
     <div className="animate-pulse space-y-3">
       <div className="aspect-video rounded-2xl" style={{ background: "var(--s3)" }} />
       <div className="flex gap-2.5">
-        <div className="w-9 h-9 rounded-full shrink-0" style={{ background: "var(--s3)" }} />
+        <div className="w-8 h-8 rounded-full shrink-0" style={{ background: "var(--s3)" }} />
         <div className="flex-1 space-y-2">
           <div className="h-3 rounded-full" style={{ background: "var(--s3)", width: "80%" }} />
-          <div className="h-3 rounded-full" style={{ background: "var(--s3)", width: "55%" }} />
+          <div className="h-2.5 rounded-full" style={{ background: "var(--s3)", width: "55%" }} />
         </div>
       </div>
     </div>
@@ -233,7 +187,6 @@ function VSkel() {
 
 /* ── Video Card ── */
 function VideoCard({ v, rank }: { v: any; rank?: number }) {
-  const [menu, setMenu] = useState(false);
   const navigate = useNavigate();
   const ch = v.channel;
   const bg = avatarColor(ch?.name ?? "");
@@ -243,86 +196,55 @@ function VideoCard({ v, rank }: { v: any; rank?: number }) {
       {/* Thumbnail */}
       <div className="relative aspect-video rounded-2xl overflow-hidden"
         onContextMenu={e => e.preventDefault()}
-        style={{ background: "var(--s3)", boxShadow: "0 4px 16px rgba(0,0,0,0.10)" }}>
+        style={{ background: "var(--s3)" }}>
         {v.thumbnail_url
           ? <img src={v.thumbnail_url} alt={v.title} loading="lazy"
               onContextMenu={e => e.preventDefault()}
               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.04]" />
           : <div className="w-full h-full flex items-center justify-center" style={{ background: `${bg}18` }}>
-              <Play className="w-12 h-12" style={{ color: bg, opacity: 0.5 }} />
+              <Play className="w-10 h-10" style={{ color: bg, opacity: 0.45 }} />
             </div>}
 
-        {/* Duration */}
+        {/* Duração */}
         {v.duration_seconds && (
           <span className="absolute bottom-2 right-2 text-[11px] font-bold text-white px-1.5 py-0.5 rounded-lg"
-            style={{ background: "rgba(0,0,0,0.80)" }}>
+            style={{ background: "rgba(0,0,0,0.82)" }}>
             {fmtDur(v.duration_seconds)}
           </span>
         )}
 
         {/* Rank badge */}
         {rank !== undefined && rank < 3 && (
-          <div className="absolute top-2 left-2 w-7 h-7 rounded-xl flex items-center justify-center text-xs font-black text-white"
+          <div className="absolute top-2 left-2 w-7 h-7 rounded-xl flex items-center justify-center text-xs font-black text-white shadow-lg"
             style={{ background: rank === 0 ? "#FFC93C" : rank === 1 ? "#aaa" : "#cd7f32" }}>
             {rank + 1}
           </div>
         )}
 
-        {/* Hover overlay */}
+        {/* Hover play overlay */}
         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200"
-          style={{ background: "rgba(0,0,0,0.28)" }}>
-          <div className="w-14 h-14 rounded-full flex items-center justify-center shadow-2xl"
-            style={{ background: "rgba(255,255,255,0.96)" }}>
-            <Play className="w-6 h-6 ml-1" style={{ color: P }} />
+          style={{ background: "rgba(0,0,0,0.25)" }}>
+          <div className="w-12 h-12 rounded-full flex items-center justify-center shadow-2xl"
+            style={{ background: "rgba(255,255,255,0.95)" }}>
+            <Play className="w-5 h-5 ml-0.5" style={{ color: P }} />
           </div>
-        </div>
-
-        {/* Menu */}
-        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button onClick={e => { e.stopPropagation(); setMenu(m => !m); }}
-            className="w-8 h-8 rounded-full flex items-center justify-center"
-            style={{ background: "rgba(0,0,0,0.5)", color: "#fff" }}>
-            <MoreVertical className="w-4 w-4" />
-          </button>
-          {menu && (
-            <div className="absolute right-0 top-10 rounded-2xl shadow-2xl z-20 overflow-hidden min-w-[160px] border"
-              style={{ background: "var(--s0)", borderColor: "var(--border-default)" }}
-              onClick={e => e.stopPropagation()}>
-              {[
-                { icon: <BookmarkPlus className="w-4 h-4" />, label: "Guardar" },
-                { icon: <ThumbsUp className="w-4 h-4" />, label: "Gosto" },
-              ].map(a => (
-                <button key={a.label} onClick={() => setMenu(false)}
-                  className="w-full flex items-center gap-2.5 px-4 py-3 text-sm transition hover:bg-[var(--s2)]"
-                  style={{ color: "var(--text-primary)" }}>
-                  {a.icon}{a.label}
-                </button>
-              ))}
-            </div>
-          )}
         </div>
       </div>
 
       {/* Meta */}
-      <div className="flex gap-2.5 mt-3">
-        {/* Avatar → navega para perfil do canal */}
-        <div className="w-9 h-9 rounded-full shrink-0 overflow-hidden flex items-center justify-center text-white text-xs font-bold mt-0.5 cursor-pointer"
+      <div className="flex gap-2.5 mt-2.5">
+        <div className="w-8 h-8 rounded-full shrink-0 overflow-hidden flex items-center justify-center text-white text-xs font-bold mt-0.5 cursor-pointer"
           style={{ background: bg }}
           onClick={e => { e.stopPropagation(); if (ch?.handle) navigate({ to: "/hoodatv/canal/$handle", params: { handle: ch.handle } }); }}>
           {ch?.avatar_url ? <img src={ch.avatar_url} alt="" className="w-full h-full object-cover" /> : (ch?.name?.[0] ?? "?").toUpperCase()}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[13px] font-bold leading-[1.35] line-clamp-2 cursor-pointer"
-            style={{ color: "var(--text-primary)" }}
-            onClick={() => navigate({ to: "/hoodatv/watch/$id", params: { id: v.id } })}>
-            {v.title}
+          <p className="text-[13px] font-semibold leading-[1.35] line-clamp-2"
+            style={{ color: "var(--text-primary)" }}>
+            {v.title?.replace(/\b\d{10,}\b/g, "").replace(/@\S+/g, "").trim()}
           </p>
-          <p className="text-[12px] mt-0.5 font-medium hover:underline cursor-pointer" style={{ color: "var(--text-secondary)" }}
-            onClick={e => { e.stopPropagation(); if (ch?.handle) navigate({ to: "/hoodatv/canal/$handle", params: { handle: ch.handle } }); }}>
-            {ch?.name ?? "Canal"}
-          </p>
-          <p className="text-[11px] mt-0.5" style={{ color: "var(--text-muted)" }}>
-            {fmtV(Number(v.views_count ?? 0))} visualizações · {timeAgo(v.published_at ?? v.created_at)}
+          <p className="text-[11px] mt-0.5 font-medium" style={{ color: "var(--text-muted)" }}>
+            {ch?.name ?? "Canal"} · {fmtV(Number(v.views_count ?? 0))} views · {timeAgo(v.published_at ?? v.created_at)}
           </p>
         </div>
       </div>
@@ -334,61 +256,65 @@ function VideoCard({ v, rank }: { v: any; rank?: number }) {
 function ChannelCard({ ch, isFollowing, onFollow }: { ch: any; isFollowing: boolean; onFollow: () => void }) {
   const navigate = useNavigate();
   const bg = avatarColor(ch.name ?? "");
-  return (
-    <div className="group flex flex-col items-center gap-3 p-5 rounded-2xl border transition-all hover:shadow-lg hover:-translate-y-0.5 cursor-pointer" onClick={() => navigate({ to: "/hoodatv/canal/$handle", params: { handle: ch.handle } })}
-      style={{ background: "var(--s0)", borderColor: "var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
-      <div className="relative">
-        <div className="w-16 h-16 rounded-full overflow-hidden flex items-center justify-center text-white text-xl font-bold ring-2 ring-white shadow"
-          style={{ background: bg }}>
-          {ch.avatar_url ? <img src={ch.avatar_url} alt="" className="w-full h-full object-cover" /> : (ch.name?.[0] ?? "?").toUpperCase()}
-        </div>
-        {isFollowing && (
-          <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center"
-            style={{ background: GREEN, border: "2px solid var(--s0)" }}>
-            <Eye className="w-2.5 h-2.5 text-white" />
-          </div>
-        )}
-      </div>
-      <div className="text-center min-w-0 w-full">
-        <p className="text-sm font-bold truncate" style={{ color: "var(--text-primary)" }}>{ch.name}</p>
-        <p className="text-[11px]" style={{ color: P }}>@{ch.handle}</p>
-        {ch.category && <p className="text-[10px] mt-0.5" style={{ color: "var(--text-muted)" }}>{ch.category}</p>}
-      </div>
-      <button onClick={onFollow}
-        className="w-full h-8 rounded-full text-xs font-bold transition-all active:scale-95"
-        style={isFollowing
-          ? { background: "var(--s2)", color: "var(--text-secondary)", border: "1.5px solid var(--border-default)" }
-          : { background: GRAD, color: "#fff" }}>
-        {isFollowing ? "A seguir ✓" : "+ Seguir"}
-      </button>
-    </div>
-  );
-}
 
-/* ── Section header ── */
-function SHead({ icon, title, sub, accent, action }: { icon: React.ReactNode; title: string; sub?: string; accent: string; action?: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-3 mb-5">
-      <div className="w-9 h-9 rounded-2xl flex items-center justify-center shrink-0"
-        style={{ background: accent + "18" }}>
-        <span style={{ color: accent }}>{icon}</span>
+    <div
+      className="group relative overflow-hidden rounded-3xl cursor-pointer transition-all duration-300 hover:-translate-y-1"
+      style={{ background: "var(--s0)", border: "1.5px solid var(--border-subtle)", boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}
+      onClick={() => navigate({ to: "/hoodatv/canal/$handle", params: { handle: ch.handle } })}>
+
+      {/* Banner colorido no topo */}
+      <div className="h-16 w-full relative overflow-hidden"
+        style={{ background: `linear-gradient(135deg, ${bg}cc, ${bg}55)` }}>
+        {/* pattern decorativo */}
+        <div className="absolute inset-0 opacity-20"
+          style={{ backgroundImage: `radial-gradient(circle at 20% 50%, #fff 1px, transparent 1px), radial-gradient(circle at 80% 20%, #fff 1px, transparent 1px)`, backgroundSize: "24px 24px" }} />
       </div>
-      <div className="flex-1">
-        <h2 className="text-base font-extrabold tracking-tight" style={{ color: "var(--text-primary)" }}>{title}</h2>
-        {sub && <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>{sub}</p>}
+
+      {/* Avatar flutuante sobre o banner */}
+      <div className="flex flex-col items-center px-4 pb-4" style={{ marginTop: "-28px" }}>
+        <div className="relative mb-2">
+          <div className="w-14 h-14 rounded-full overflow-hidden flex items-center justify-center text-white text-lg font-extrabold ring-4 shadow-lg"
+            style={{ background: bg, ringColor: "var(--s0)" }}>
+            {ch.avatar_url ? <img src={ch.avatar_url} alt="" className="w-full h-full object-cover" /> : (ch.name?.[0] ?? "?").toUpperCase()}
+          </div>
+          {isFollowing && (
+            <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full flex items-center justify-center"
+              style={{ background: GREEN, border: "2px solid var(--s0)" }}>
+              <CheckCircle2 className="w-3 h-3 text-white" />
+            </div>
+          )}
+        </div>
+
+        <p className="text-sm font-bold truncate w-full text-center" style={{ color: "var(--text-primary)" }}>{ch.name}</p>
+        <p className="text-[11px] font-medium mb-3" style={{ color: P }}>@{ch.handle}</p>
+        {ch.category && (
+          <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full mb-3"
+            style={{ background: `${bg}18`, color: bg }}>
+            {ch.category}
+          </span>
+        )}
+
+        <button
+          onClick={e => { e.stopPropagation(); onFollow(); }}
+          className="w-full h-8 rounded-full text-xs font-bold transition-all active:scale-95"
+          style={isFollowing
+            ? { background: "var(--s2)", color: "var(--text-secondary)", border: "1.5px solid var(--border-default)" }
+            : { background: GRAD, color: "#fff", boxShadow: `0 4px 12px ${P}44` }}>
+          {isFollowing ? "A seguir ✓" : "+ Seguir"}
+        </button>
       </div>
-      {action}
     </div>
   );
 }
 
 /* ── Filter pills ── */
 const FILTERS = [
-  { key: "alta",     label: "Em Alta",    icon: <Flame className="w-3.5 h-3.5" />,    accent: PINK },
-  { key: "recentes", label: "Recentes",   icon: <Clock className="w-3.5 h-3.5" />,    accent: TEAL },
-  { key: "ti",       label: "Para Ti",    icon: <Sparkles className="w-3.5 h-3.5" />, accent: YELLOW },
-  { key: "canais",   label: "Canais",     icon: <Star className="w-3.5 h-3.5" />,     accent: ORANGE },
-  { key: "seguindo", label: "Seguindo",   icon: <Users className="w-3.5 h-3.5" />,    accent: P },
+  { key: "alta",     label: "Em Alta",   icon: <Flame className="w-3.5 h-3.5" />,    accent: PINK   },
+  { key: "recentes", label: "Recentes",  icon: <Clock className="w-3.5 h-3.5" />,    accent: TEAL   },
+  { key: "ti",       label: "Para Ti",   icon: <Sparkles className="w-3.5 h-3.5" />, accent: YELLOW },
+  { key: "canais",   label: "Canais",    icon: <Star className="w-3.5 h-3.5" />,     accent: ORANGE },
+  { key: "seguindo", label: "Seguindo",  icon: <Users className="w-3.5 h-3.5" />,    accent: P      },
 ] as const;
 type FilterKey = typeof FILTERS[number]["key"];
 
@@ -402,24 +328,24 @@ function HoodaTVPage() {
 }
 
 function HoodaTVMain() {
-  const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState<FilterKey>("alta");
-  // ── Intro: uma vez por sessão ──
+  const [search, setSearch]   = useState("");
+  const [filter, setFilter]   = useState<FilterKey>("alta");
   const [showIntro, setShowIntro] = useState(() => !_introSeenThisSession);
+
   const handleIntroDone = () => {
     _introSeenThisSession = true;
     try { sessionStorage.setItem(INTRO_KEY, "1"); } catch {}
     setShowIntro(false);
   };
 
-  const { data: me } = useMe();
-  const { data: trending, isLoading: tL } = useVideos("views");
-  const { data: recent,   isLoading: rL } = useVideos("recent");
-  const { data: channels, isLoading: cL } = useChannels();
-  const { data: followingIds = [] } = useFollowing(me?.id ?? null);
+  const { data: me }                        = useMe();
+  const { data: trending, isLoading: tL }   = useVideos("views");
+  const { data: recent,   isLoading: rL }   = useVideos("recent");
+  const { data: channels, isLoading: cL }   = useChannels();
+  const { data: followingIds = [] }          = useFollowing(me?.id ?? null);
   const qc = useQueryClient();
 
-  /* Realtime — novos vídeos, views/likes e novos canais aparecem ao vivo */
+  /* Realtime */
   useEffect(() => {
     const ch = supabase
       .channel("hoodatv-live")
@@ -435,7 +361,6 @@ function HoodaTVMain() {
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [qc, me?.id]);
-
 
   function toggleFollow(chId: string) {
     qc.setQueryData(["htv-following", me?.id], (old: string[] = []) =>
@@ -454,8 +379,8 @@ function HoodaTVMain() {
         v.channel?.name?.toLowerCase().includes(search.toLowerCase()))
     : [];
 
-  const showVideos = filter === "alta" ? trending : recent;
-  const loadingVideos = filter === "alta" ? tL : rL;
+  const showVideos     = filter === "alta" ? trending : recent;
+  const loadingVideos  = filter === "alta" ? tL : rL;
 
   return (
     <>
@@ -464,26 +389,36 @@ function HoodaTVMain() {
         {showIntro && <HoodaTVIntro onDone={handleIntroDone} />}
 
         {/* ── HEADER ── */}
-        <div className="sticky top-0 z-40 border-b"
-          style={{ background: "rgba(var(--s1-rgb,250,250,252),.94)", backdropFilter: "blur(20px)", borderColor: "var(--border-subtle)" }}>
+        <div className="sticky top-0 z-40"
+          style={{ background: "rgba(var(--s1-rgb,250,250,252),.96)", backdropFilter: "blur(24px)", borderBottom: "1px solid var(--border-subtle)" }}>
 
-          {/* Top row */}
-          <div className="flex items-center gap-3 px-4 py-3">
-            {/* Search */}
-            <div className="flex-1 flex items-center gap-2 rounded-full px-4 h-10 border transition-all"
-              style={{ background: "var(--s2)", borderColor: "var(--border-default)" }}>
-              <Search className="w-4 h-4 shrink-0" style={{ color: "var(--text-muted)" }} />
-              <input value={search} onChange={e => setSearch(e.target.value)}
-                placeholder="Pesquisar vídeos, canais…"
-                className="flex-1 bg-transparent text-sm outline-none"
-                style={{ color: "var(--text-primary)" }} />
-              {search && <button onClick={() => setSearch("")}><X className="w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} /></button>}
+          {/* Barra de pesquisa premium */}
+          <div className="px-4 pt-4 pb-3">
+            <div className="relative flex items-center">
+              <Search className="absolute left-4 w-4 h-4 pointer-events-none" style={{ color: "var(--text-muted)" }} />
+              <input
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Pesquisar vídeos e canais…"
+                className="w-full h-11 pl-11 pr-11 rounded-2xl text-sm outline-none transition-all"
+                style={{
+                  background: "var(--s2)",
+                  border: `1.5px solid ${search ? P : "var(--border-default)"}`,
+                  color: "var(--text-primary)",
+                  boxShadow: search ? `0 0 0 3px ${P}18` : "none",
+                }}
+              />
+              {search
+                ? <button onClick={() => setSearch("")}
+                    className="absolute right-3 w-6 h-6 rounded-full flex items-center justify-center transition hover:opacity-70"
+                    style={{ background: "var(--s3)" }}>
+                    <X className="w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} />
+                  </button>
+                : <button className="absolute right-3 w-8 h-8 rounded-xl flex items-center justify-center transition hover:opacity-80"
+                    style={{ background: "var(--s3)" }}>
+                    <Bell className="w-4 h-4" style={{ color: "var(--text-secondary)" }} />
+                  </button>}
             </div>
-
-            <button className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
-              style={{ background: "var(--s2)" }}>
-              <Bell className="w-4 h-4" style={{ color: "var(--text-secondary)" }} />
-            </button>
           </div>
 
           {/* Filter pills */}
@@ -493,10 +428,10 @@ function HoodaTVMain() {
                 const active = filter === f.key;
                 return (
                   <button key={f.key} onClick={() => setFilter(f.key)}
-                    className="shrink-0 flex items-center gap-1.5 px-3.5 h-8 rounded-full text-[13px] font-semibold transition-all active:scale-95"
+                    className="shrink-0 flex items-center gap-1.5 px-4 h-8 rounded-full text-[13px] font-semibold transition-all duration-200 active:scale-95"
                     style={active
-                      ? { background: f.accent, color: "#fff", boxShadow: `0 4px 12px ${f.accent}44` }
-                      : { background: "var(--s3)", color: "var(--text-secondary)" }}>
+                      ? { background: f.accent, color: "#fff", boxShadow: `0 4px 14px ${f.accent}55` }
+                      : { background: "var(--s2)", color: "var(--text-secondary)", border: "1px solid var(--border-subtle)" }}>
                     {f.icon} {f.label}
                   </button>
                 );
@@ -505,68 +440,69 @@ function HoodaTVMain() {
           )}
         </div>
 
-        <div className="max-w-6xl mx-auto px-4 py-7 space-y-12">
+        <div className="max-w-6xl mx-auto px-4 py-6 space-y-10">
 
           {/* ══ SEARCH RESULTS ══ */}
           {search && (
             <section>
-              <SHead icon={<Search className="w-4 h-4" />} title={`Resultados para "${search}"`} accent={P} />
-              {!searchVideos.length
-                ? <Empty msg={`Sem resultados para "${search}"`} />
-                : <Grid>{searchVideos.map((v: any) => <VideoCard key={v.id} v={v} />)}</Grid>}
+              <p className="text-sm font-semibold mb-5" style={{ color: "var(--text-muted)" }}>
+                {searchVideos.length > 0
+                  ? `${searchVideos.length} resultado${searchVideos.length !== 1 ? "s" : ""} para "${search}"`
+                  : `Sem resultados para "${search}"`}
+              </p>
+              {searchVideos.length > 0
+                ? <Grid>{searchVideos.map((v: any) => <VideoCard key={v.id} v={v} />)}</Grid>
+                : <Empty msg={`Tenta pesquisar algo diferente.`} />}
             </section>
           )}
 
-          {/* ══ EM ALTA / RECENTES ══ */}
-          {!search && (filter === "alta" || filter === "recentes") && (
+          {/* ══ EM ALTA / RECENTES / PARA TI ══ */}
+          {!search && (filter === "alta" || filter === "recentes" || filter === "ti") && (
             <section>
-              <SHead
-                icon={filter === "alta" ? <Flame className="w-4 h-4" /> : <Clock className="w-4 h-4" />}
-                title={filter === "alta" ? "Em Alta" : "Mais Recentes"}
-                sub={filter === "alta" ? "Os vídeos mais vistos agora" : "Acabados de publicar"}
-                accent={filter === "alta" ? PINK : TEAL}
-              />
               {loadingVideos
-                ? <Grid>{Array.from({length:8}).map((_,i)=><VSkel key={i}/>)}</Grid>
-                : !showVideos?.length
+                ? <Grid>{Array.from({length: 8}).map((_, i) => <VSkel key={i} />)}</Grid>
+                : !showVideos?.length && !recent?.length
                   ? <Empty msg="Ainda não há vídeos publicados." />
-                  : <Grid>{showVideos.map((v:any,i:number)=><VideoCard key={v.id} v={v} rank={filter==="alta"?i:undefined}/>)}</Grid>}
-            </section>
-          )}
-
-          {/* ══ PARA TI ══ */}
-          {!search && filter === "ti" && (
-            <section>
-              <SHead icon={<Sparkles className="w-4 h-4" />} title="Para Ti" sub="Baseado nos teus interesses" accent={YELLOW} />
-              {rL
-                ? <Grid>{Array.from({length:8}).map((_,i)=><VSkel key={i}/>)}</Grid>
-                : !recent?.length
-                  ? <Empty msg="Ainda sem recomendações — explora outros canais primeiro." />
-                  : <Grid>{[...(recent??[])].sort(()=>Math.random()-.5).map((v:any)=><VideoCard key={v.id} v={v}/>)}</Grid>}
+                  : <Grid>
+                      {(filter === "ti"
+                        ? [...(recent ?? [])].sort(() => Math.random() - .5)
+                        : showVideos ?? []
+                      ).map((v: any, i: number) =>
+                        <VideoCard key={v.id} v={v} rank={filter === "alta" ? i : undefined} />
+                      )}
+                    </Grid>}
             </section>
           )}
 
           {/* ══ CANAIS ══ */}
           {!search && filter === "canais" && (
             <section>
-              <SHead icon={<Star className="w-4 h-4" />} title="Canais em Destaque" sub="Descobre criadores da Hooda" accent={ORANGE} />
+              <div className="flex items-center justify-between mb-5">
+                <div>
+                  <h2 className="text-lg font-extrabold tracking-tight" style={{ color: "var(--text-primary)" }}>Canais</h2>
+                  <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>Descobre criadores da Hooda</p>
+                </div>
+              </div>
               {cL
                 ? <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                    {Array.from({length:5}).map((_,i)=>(
-                      <div key={i} className="animate-pulse rounded-2xl p-5 space-y-3" style={{background:"var(--s2)"}}>
-                        <div className="w-16 h-16 rounded-full mx-auto" style={{background:"var(--s3)"}}/>
-                        <div className="h-3 rounded-full mx-auto" style={{background:"var(--s3)",width:"70%"}}/>
-                        <div className="h-8 rounded-full" style={{background:"var(--s3)"}}/>
+                    {Array.from({length: 5}).map((_, i) => (
+                      <div key={i} className="animate-pulse rounded-3xl overflow-hidden" style={{ background: "var(--s2)" }}>
+                        <div className="h-16" style={{ background: "var(--s3)" }} />
+                        <div className="p-4 space-y-3 flex flex-col items-center" style={{ marginTop: "-28px" }}>
+                          <div className="w-14 h-14 rounded-full" style={{ background: "var(--s3)" }} />
+                          <div className="h-3 rounded-full w-3/4" style={{ background: "var(--s3)" }} />
+                          <div className="h-7 rounded-full w-full" style={{ background: "var(--s3)" }} />
+                        </div>
                       </div>
                     ))}
                   </div>
                 : !channels?.length
-                  ? <Empty msg="Nenhum canal disponível ainda." icon={<Clapperboard className="w-10 h-10"/>} />
+                  ? <Empty msg="Nenhum canal disponível ainda." icon={<Clapperboard className="w-10 h-10" />} />
                   : <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                      {channels.map((ch:any)=>(
+                      {channels.map((ch: any) => (
                         <ChannelCard key={ch.id} ch={ch}
                           isFollowing={followingIds.includes(ch.id)}
-                          onFollow={()=>toggleFollow(ch.id)}/>
+                          onFollow={() => toggleFollow(ch.id)} />
                       ))}
                     </div>}
             </section>
@@ -575,19 +511,21 @@ function HoodaTVMain() {
           {/* ══ SEGUINDO ══ */}
           {!search && filter === "seguindo" && (
             <section>
-              <SHead icon={<Users className="w-4 h-4" />} title="Seguindo" sub="Novos vídeos dos canais que segues" accent={P} />
               {!me
                 ? <Empty msg="Inicia sessão para ver os canais que segues." />
                 : followingIds.length === 0
                   ? (
-                    <div className="rounded-2xl p-8 text-center border"
+                    <div className="rounded-3xl p-10 text-center border"
                       style={{ background: "var(--s2)", borderColor: "var(--border-subtle)" }}>
-                      <UserPlus className="w-12 h-12 mx-auto mb-3" style={{ color: "var(--text-muted)" }} />
-                      <p className="text-sm font-bold mb-1" style={{ color: "var(--text-primary)" }}>Ainda não segues nenhum canal</p>
-                      <p className="text-xs mb-5" style={{ color: "var(--text-muted)" }}>Vai ao separador Canais e começa a seguir.</p>
+                      <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
+                        style={{ background: `${P}15` }}>
+                        <UserPlus className="w-8 h-8" style={{ color: P }} />
+                      </div>
+                      <p className="text-base font-bold mb-1" style={{ color: "var(--text-primary)" }}>Ainda não segues nenhum canal</p>
+                      <p className="text-sm mb-6" style={{ color: "var(--text-muted)" }}>Vai ao separador Canais e começa a seguir.</p>
                       <button onClick={() => setFilter("canais")}
-                        className="px-5 py-2 rounded-full text-sm font-bold text-white"
-                        style={{ background: GRAD }}>
+                        className="px-6 py-2.5 rounded-full text-sm font-bold text-white transition-all active:scale-95"
+                        style={{ background: GRAD, boxShadow: `0 4px 14px ${P}44` }}>
                         Ver canais
                       </button>
                     </div>
@@ -604,17 +542,17 @@ function HoodaTVMain() {
 }
 
 function Grid({ children }: { children: React.ReactNode }) {
-  return <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">{children}</div>;
+  return <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">{children}</div>;
 }
 
 function Empty({ msg, icon }: { msg: string; icon?: React.ReactNode }) {
   return (
-    <div className="py-14 text-center rounded-2xl border"
+    <div className="py-16 text-center rounded-3xl border"
       style={{ background: "var(--s2)", borderColor: "var(--border-subtle)" }}>
       <div className="flex justify-center mb-3" style={{ color: "var(--text-muted)" }}>
         {icon ?? <Play className="w-10 h-10" />}
       </div>
-      <p className="text-sm" style={{ color: "var(--text-muted)" }}>{msg}</p>
+      <p className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>{msg}</p>
     </div>
   );
 }
