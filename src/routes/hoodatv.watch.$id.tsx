@@ -8,9 +8,10 @@ import {
   Bell, BellOff, Bookmark, BookmarkCheck, Copy, Check,
   MessageCircle, Send, Smile, Trash2, CornerDownRight, X,
   MoreVertical, Clock3, Ban, Flag, BarChart2, Repeat, Minimize2,
-  ChevronRight, Gauge, Volume2, VolumeX, Maximize,
+  ChevronRight, Gauge, Volume2, VolumeX, Maximize, Settings2,
 } from "lucide-react";
 import { toast } from "sonner";
+import Hls from "hls.js";
 
 export const Route = createFileRoute("/hoodatv/watch/$id")({
   head: () => ({ meta: [{ title: "HoodaTV — A ver vídeo" }] }),
@@ -26,6 +27,12 @@ const avatarColor = (name: string) =>
   AVATAR_COLORS[(name?.charCodeAt(0) ?? 0) % AVATAR_COLORS.length];
 const EMOJIS = ["❤️","😂","😮","😢","👏","🔥","💯","😍"];
 const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2];
+const QUALITY_OPTIONS: { label: string; height: number }[] = [
+  { label: "1080p", height: 1080 },
+  { label: "720p",  height: 720  },
+  { label: "480p",  height: 480  },
+  { label: "360p",  height: 360  },
+];
 const REPORT_REASONS = [
   "Conteúdo sexual ou explícito",
   "Violência ou conteúdo perturbador",
@@ -362,19 +369,23 @@ function StatsModal({ video, reactions, onClose }: { video: any; reactions: any;
 /* ── Dropdown YouTube-style ── */
 function VideoOptionsDropdown({
   onClose, onWatchLater, onNotInterested, onReport, onStats,
-  onSpeedChange, onLoopToggle, onPiP,
-  speed, looping, hasPiP, isSaved,
+  onSpeedChange, onLoopToggle, onPiP, onQualityChange,
+  speed, looping, hasPiP, isSaved, quality, availableHeights,
 }: {
   onClose: () => void; onWatchLater: () => void; onNotInterested: () => void;
   onReport: () => void; onStats: () => void; onSpeedChange: (s: number) => void;
-  onLoopToggle: () => void; onPiP: () => void;
+  onLoopToggle: () => void; onPiP: () => void; onQualityChange: (q: number | "auto") => void;
   speed: number; looping: boolean; hasPiP: boolean; isSaved: boolean;
+  quality: number | "auto"; availableHeights: number[];
 }) {
   const [showSpeed, setShowSpeed] = useState(false);
+  const [showQuality, setShowQuality] = useState(false);
+  const hasQuality = availableHeights.length > 0;
 
   const items = [
     { icon: <Clock3 className="w-4 h-4" />, label: "Assistir mais tarde", action: onWatchLater },
     { icon: <Gauge className="w-4 h-4" />, label: "Velocidade", sub: `${speed}x`, action: () => setShowSpeed(true), chevron: true },
+    ...(hasQuality ? [{ icon: <Settings2 className="w-4 h-4" />, label: "Qualidade", sub: quality === "auto" ? "Automática" : `${quality}p`, action: () => setShowQuality(true), chevron: true }] : []),
     { icon: <Repeat className="w-4 h-4" />, label: "Repetir vídeo", sub: looping ? "Ativo" : "Desativado", action: () => { onLoopToggle(); onClose(); }, active: looping },
     ...(hasPiP ? [{ icon: <Minimize2 className="w-4 h-4" />, label: "Miniplayer (PiP)", action: () => { onPiP(); onClose(); } }] : []),
     { icon: <BarChart2 className="w-4 h-4" />, label: "Estatísticas", action: () => { onStats(); onClose(); } },
@@ -405,6 +416,33 @@ function VideoOptionsDropdown({
                 {s === speed && <Check className="w-3.5 h-3.5" style={{ color: P }} />}
               </button>
             ))}
+          </>
+        ) : showQuality ? (
+          <>
+            <button onClick={() => setShowQuality(false)}
+              className="w-full flex items-center gap-2 px-4 py-3 text-sm font-semibold border-b transition hover:bg-white/10"
+              style={{ color: "#fff", borderColor: "rgba(255,255,255,0.1)" }}>
+              <ChevronLeft className="w-4 h-4" /> Qualidade
+            </button>
+            <button onClick={() => { onQualityChange("auto"); setShowQuality(false); onClose(); }}
+              className="w-full flex items-center justify-between px-4 py-2.5 text-sm transition hover:bg-white/10"
+              style={{ color: quality === "auto" ? P : "#fff" }}>
+              <span>Automática</span>
+              {quality === "auto" && <Check className="w-3.5 h-3.5" style={{ color: P }} />}
+            </button>
+            {QUALITY_OPTIONS.map(opt => {
+              const disponivel = availableHeights.includes(opt.height);
+              return (
+                <button key={opt.height}
+                  onClick={() => { if (disponivel) { onQualityChange(opt.height); setShowQuality(false); onClose(); } }}
+                  disabled={!disponivel}
+                  className="w-full flex items-center justify-between px-4 py-2.5 text-sm transition hover:bg-white/10 disabled:hover:bg-transparent disabled:cursor-not-allowed"
+                  style={{ color: !disponivel ? "rgba(255,255,255,0.3)" : quality === opt.height ? P : "#fff" }}>
+                  <span>{opt.label}</span>
+                  {quality === opt.height && <Check className="w-3.5 h-3.5" style={{ color: P }} />}
+                </button>
+              );
+            })}
           </>
         ) : (
           items.map((item: any, i) => (
@@ -666,6 +704,7 @@ function WatchPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const videoRef = useRef<HTMLVideoElement>(null);
+  const hlsRef = useRef<Hls | null>(null);
 
   const { data: video, isLoading } = useVideo(id);
   const ch = video?.channels;
@@ -687,6 +726,8 @@ function WatchPage() {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration]       = useState(0);
   const [muted, setMuted]             = useState(false);
+  const [quality, setQuality]         = useState<number | "auto">("auto");
+  const [availableHeights, setAvailableHeights] = useState<number[]>([]);
 
   const bg = avatarColor(ch?.name ?? "");
 
@@ -816,6 +857,70 @@ function WatchPage() {
   const hasEmbed  = !!video?.cf_embed_url;
   const watchUrl  = typeof window !== "undefined" ? window.location.href : "";
 
+  /* ── Carregar vídeo (HLS via hls.js, ou ficheiro direto) ── */
+  useEffect(() => {
+    const vid = videoRef.current;
+    if (!vid || !playerUrl) return;
+
+    setAvailableHeights([]);
+    setQuality("auto");
+
+    const isHlsStream = playerUrl.includes(".m3u8");
+
+    if (isHlsStream && Hls.isSupported()) {
+      const hls = new Hls({ startLevel: -1 });
+      hlsRef.current = hls;
+
+      hls.on(Hls.Events.MANIFEST_PARSED, (_evt, data) => {
+        const heights = Array.from(
+          new Set(data.levels.map(l => l.height).filter((h): h is number => !!h))
+        ).sort((a, b) => b - a);
+        setAvailableHeights(heights);
+        vid.play().catch(() => {});
+      });
+
+      hls.on(Hls.Events.LEVEL_SWITCHED, (_evt, data) => {
+        const lvl = hls.levels[data.level];
+        setQuality(hls.autoLevelEnabled ? "auto" : (lvl?.height ?? "auto"));
+      });
+
+      hls.on(Hls.Events.ERROR, (_evt, data) => {
+        if (data.fatal) console.error("[HoodaTV] Erro fatal no HLS:", data);
+      });
+
+      hls.loadSource(playerUrl);
+      hls.attachMedia(vid);
+
+      return () => { hls.destroy(); hlsRef.current = null; };
+    }
+
+    // Safari (HLS nativo) ou ficheiro mp4 direto do Supabase Storage
+    hlsRef.current = null;
+    vid.src = playerUrl;
+    return () => { vid.removeAttribute("src"); };
+  }, [playerUrl]);
+
+  /* ── Trocar qualidade manualmente ── */
+  function handleQualityChange(opt: number | "auto") {
+    const hls = hlsRef.current;
+    if (!hls) {
+      toast.info("Seletor de qualidade disponível apenas para vídeos HLS.");
+      return;
+    }
+    if (opt === "auto") {
+      hls.currentLevel = -1;
+      setQuality("auto");
+      toast.success("Qualidade definida para Automática");
+    } else {
+      const idx = hls.levels.findIndex(l => l.height === opt);
+      if (idx >= 0) {
+        hls.currentLevel = idx;
+        setQuality(opt);
+        toast.success(`Qualidade definida para ${opt}p`);
+      }
+    }
+  }
+
   /* ── Título limpo — remove IDs e handles expostos acidentalmente ── */
   function cleanTitle(raw: string | null): string {
     if (!raw) return "";
@@ -895,7 +1000,6 @@ function WatchPage() {
                   <video
                     ref={videoRef}
                     key={playerUrl}
-                    src={playerUrl}
                     autoPlay
                     playsInline
                     preload="metadata"
@@ -913,6 +1017,27 @@ function WatchPage() {
                     onClick={() => { const v = videoRef.current; if (v) { v.paused ? v.play() : v.pause(); } }}
                   />
 
+                  <style>{`
+                    .htv-seek { -webkit-appearance: none; appearance: none; background: transparent; }
+                    .htv-seek::-webkit-slider-runnable-track { background: transparent; }
+                    .htv-seek::-moz-range-track { background: transparent; }
+                    .htv-seek::-webkit-slider-thumb {
+                      -webkit-appearance: none;
+                      width: 12px; height: 12px; border-radius: 50%;
+                      background: #fff;
+                      box-shadow: 0 0 0 3px rgba(91,63,207,0.55);
+                      cursor: pointer;
+                      transition: transform .15s ease;
+                    }
+                    .htv-seek::-moz-range-thumb {
+                      width: 12px; height: 12px; border-radius: 50%;
+                      background: #fff; border: none;
+                      box-shadow: 0 0 0 3px rgba(91,63,207,0.55);
+                      cursor: pointer;
+                    }
+                    .htv-seek:hover::-webkit-slider-thumb, .htv-seek:active::-webkit-slider-thumb { transform: scale(1.25); }
+                  `}</style>
+
                   {/* Buffer spinner */}
                   {isBuffering && (
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none"
@@ -927,10 +1052,16 @@ function WatchPage() {
 
                     {/* Barra de progresso */}
                     <div className="px-3 pb-1">
-                      <input type="range" min={0} max={duration || 100} value={currentTime} step={0.5}
-                        onChange={e => { const v = videoRef.current; if (v) v.currentTime = Number(e.target.value); setCurrentTime(Number(e.target.value)); }}
-                        className="w-full h-1 rounded-full appearance-none cursor-pointer"
-                        style={{ accentColor: P }} />
+                      <div className="relative h-3 flex items-center">
+                        {/* Trilha de fundo */}
+                        <div className="absolute inset-x-0 h-1 rounded-full" style={{ background: "rgba(255,255,255,0.25)" }} />
+                        {/* Preenchimento roxo até à posição atual */}
+                        <div className="absolute left-0 h-1 rounded-full pointer-events-none transition-[width] duration-100"
+                          style={{ width: `${duration > 0 ? Math.min(100, (currentTime / duration) * 100) : 0}%`, background: GRAD }} />
+                        <input type="range" min={0} max={duration || 100} value={currentTime} step={0.5}
+                          onChange={e => { const v = videoRef.current; if (v) v.currentTime = Number(e.target.value); setCurrentTime(Number(e.target.value)); }}
+                          className="htv-seek relative w-full h-3 m-0 rounded-full cursor-pointer" />
+                      </div>
                     </div>
 
                     {/* Botões */}
@@ -957,6 +1088,11 @@ function WatchPage() {
                         <span className="text-xs font-bold px-2 py-0.5 rounded-full mr-1" style={{ background: `${P}cc`, color: "#fff" }}>{speed}x</span>
                       )}
 
+                      {/* Qualidade */}
+                      {quality !== "auto" && (
+                        <span className="text-xs font-bold px-2 py-0.5 rounded-full mr-1" style={{ background: `${P}cc`, color: "#fff" }}>{quality}p</span>
+                      )}
+
                       {/* ⋮ Menu */}
                       <div className="relative">
                         <button onClick={e => { e.stopPropagation(); setShowMenu(m => !m); }}
@@ -973,10 +1109,13 @@ function WatchPage() {
                             onSpeedChange={s => { setSpeed(s); if (videoRef.current) videoRef.current.playbackRate = s; }}
                             onLoopToggle={() => { setLooping(l => !l); setShowMenu(false); }}
                             onPiP={handlePiP}
+                            onQualityChange={handleQualityChange}
                             speed={speed}
                             looping={looping}
                             hasPiP={hasPiP && !!playerUrl}
                             isSaved={isSaved}
+                            quality={quality}
+                            availableHeights={availableHeights}
                           />
                         )}
                       </div>
