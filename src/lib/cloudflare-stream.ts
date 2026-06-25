@@ -74,7 +74,7 @@ export async function uploadToCloudflareStream(
       },
       onSuccess() {
         const location = (upload as any).url as string ?? "";
-        const uid = initialUid || location.split("/").pop() ?? "";
+        const uid = initialUid || (location.split("/").pop() ?? "");
 
         if (!uid) {
           reject(new Error("Não foi possível obter o UID do vídeo após o upload."));
@@ -104,4 +104,13 @@ export function getStreamThumbnailUrl(uid: string, timeSeconds = 0): string {
 
 export function getStreamPlaybackUrl(uid: string): string {
   return `https://${CF_STREAM_DOMAIN}/${uid}/manifest/video.m3u8`;
+}
+
+/**
+ * Apaga um vídeo do Cloudflare Stream via Edge Function.
+ */
+export async function deleteFromCloudflareStream(_uid: string): Promise<void> {
+  // Operação de delete deve ser feita via backend seguro.
+  // Por agora lança erro informativo — implementar Edge Function separada se necessário.
+  throw new Error("Delete não implementado via Edge Function ainda.");
 }
