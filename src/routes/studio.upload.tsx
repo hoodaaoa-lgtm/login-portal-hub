@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import * as tus from "tus-js-client";
-
+import { uploadToCloudflareStream } from "@/lib/cloudflare-stream";
 
 export const Route = createFileRoute("/studio/upload")({
   head: () => ({ meta: [{ title: "Enviar vídeo — Hooda Studio" }] }),
@@ -197,24 +197,18 @@ function UploadPage() {
       /* 1 — Duração */
       const duration = detectedDur ?? await getVideoDuration(videoFile);
 
-      /* 2 — Upload do vídeo para Supabase Storage */
+      /* 2 — Upload para Cloudflare Stream via Worker */
       setProgress(5);
-      setProgLabel("A enviar vídeo…");
-      const vExt  = videoFile.name.split(".").pop() ?? "mp4";
-      const vPath = `${uid}/${videoId}.${vExt}`;
-
-      if (videoFile.size <= MAX_VIDEO_FREE) {
-        await uploadSimple("videos", vPath, videoFile, videoFile.type, pct => setProgress(5 + Math.round(pct * 0.70)));
-      } else {
-        await uploadTUS("videos", vPath, videoFile, videoFile.type, pct => setProgress(5 + Math.round(pct * 0.70)));
-      }
-
-      setProgress(78); setProgLabel("A obter URL do vídeo…");
-      const { data: vUrl } = supabase.storage.from("videos").getPublicUrl(vPath);
-      const videoUrl = vUrl.publicUrl;
+      setProgLabel("A enviar para Cloudflare Stream…");
+      const streamResult = await uploadToCloudflareStream(
+        videoFile,
+        { title: title.trim(), channelId: channel.id, userId: uid },
+        pct => setProgress(5 + Math.round(pct * 0.70)),
+      );
+      setProgress(75); setProgLabel("A processar o vídeo…");
 
       /* 3 — Thumbnail */
-      let thumbnailUrl: string | null = null;
+      let thumbnailUrl: string = streamResult.thumbnailUrl;
       if (thumbFile) {
         setProgLabel("A enviar miniatura…");
         const tExt  = thumbFile.name.split(".").pop() ?? "jpg";
@@ -227,7 +221,7 @@ function UploadPage() {
           thumbnailUrl = tUrl.publicUrl;
         }
       }
-      setProgress(88); setProgLabel("A guardar informações…");
+      setProgress(85); setProgLabel("A guardar informações…");
 
       /* 4 — Inserir na DB */
       const isScheduled = visibility === "scheduled";
@@ -235,13 +229,16 @@ function UploadPage() {
         ? (scheduledAt ? new Date(scheduledAt).toISOString() : null)
         : (visibility === "public" ? new Date().toISOString() : null);
 
-      const { error: iErr } = await supabase.from("videos").insert({
+      const { error: iErr } = await (supabase as any).from("videos").insert({
         id:               videoId,
         channel_id:       channel.id,
         owner_id:         uid,
         title:            title.trim(),
         description:      description.trim() || null,
-        video_path:       videoUrl,
+        video_path:       null,
+        cf_stream_uid:    streamResult.uid,
+        cf_stream_url:    streamResult.playbackUrl,
+        cf_embed_url:     streamResult.embedUrl,
         thumbnail_url:    thumbnailUrl,
         duration_seconds: duration,
         tags:             tags.length ? tags : null,
@@ -250,7 +247,7 @@ function UploadPage() {
         published_at:     publishedAt,
         views_count:      0,
         likes_count:      0,
-      } as any);
+      });
 
       if (iErr) throw iErr;
 
