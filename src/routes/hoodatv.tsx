@@ -7,91 +7,166 @@ import { useState, useEffect, useRef } from "react";
 /* ══════════════════════════════════
    HOODATV INTRO (Netflix-style, uma vez por sessão)
 ══════════════════════════════════ */
-const INTRO_KEY = "hoodatv_intro_seen";
-const INTRO_DURATION = 2600; // ms total antes de fazer fade out
+const INTRO_KEY      = "hoodatv_intro_seen";
+const INTRO_DURATION = 3200;
 
-const INTRO_LETTERS = [
-  { char: "h", color: "#5B3FCF" },
+// "Hooda" colorido + "TV" em cinza escuro
+const HOODA_LETTERS = [
+  { char: "H", color: "#5B3FCF" },
   { char: "o", color: "#F26B3A" },
   { char: "o", color: "#1FAFA6" },
   { char: "d", color: "#6BA547" },
   { char: "a", color: "#E94B8A" },
 ];
+const TV_LETTERS = [
+  { char: "T", color: "#1a1a2e" },
+  { char: "V", color: "#1a1a2e" },
+];
+const ALL_LETTERS = [...HOODA_LETTERS, ...TV_LETTERS];
 
 function HoodaTVIntro({ onDone }: { onDone: () => void }) {
-  const [phase, setPhase] = useState<"enter" | "pulse" | "exit">("enter");
-  const [letterVisible, setLetterVisible] = useState<boolean[]>(Array(5).fill(false));
+  const [phase, setPhase] = useState<"enter" | "pulse" | "tagline" | "exit">("enter");
+  const [visible, setVisible] = useState<boolean[]>(Array(ALL_LETTERS.length).fill(false));
+  const [tagline, setTagline] = useState(false);
 
   useEffect(() => {
-    // Faz cada letra aparecer uma a uma
-    const timers: ReturnType<typeof setTimeout>[] = [];
-    INTRO_LETTERS.forEach((_, i) => {
-      timers.push(setTimeout(() => {
-        setLetterVisible(prev => {
-          const next = [...prev];
-          next[i] = true;
-          return next;
-        });
-      }, 400 + i * 130));
+    const t: ReturnType<typeof setTimeout>[] = [];
+
+    // Letras entram uma a uma
+    ALL_LETTERS.forEach((_, i) => {
+      t.push(setTimeout(() => {
+        setVisible(prev => { const n = [...prev]; n[i] = true; return n; });
+      }, 350 + i * 110));
     });
 
-    // Depois de todas aparecerem, faz pulse
-    timers.push(setTimeout(() => setPhase("pulse"), 400 + 5 * 130 + 200));
+    // Pulse
+    t.push(setTimeout(() => setPhase("pulse"), 350 + ALL_LETTERS.length * 110 + 150));
 
-    // Depois faz exit
-    timers.push(setTimeout(() => setPhase("exit"), INTRO_DURATION - 500));
+    // Tagline aparece
+    t.push(setTimeout(() => { setPhase("tagline"); setTagline(true); }, 350 + ALL_LETTERS.length * 110 + 500));
 
-    // Avisa o pai que acabou
-    timers.push(setTimeout(() => onDone(), INTRO_DURATION));
+    // Exit
+    t.push(setTimeout(() => setPhase("exit"), INTRO_DURATION - 600));
 
-    return () => timers.forEach(clearTimeout);
+    // Fim
+    t.push(setTimeout(() => onDone(), INTRO_DURATION));
+
+    return () => t.forEach(clearTimeout);
   }, [onDone]);
 
   return (
     <div
       style={{
-        position: "absolute",
-        inset: 0,
-        zIndex: 30,
+        position: "fixed",
+        top: 0, left: 0, right: 0, bottom: 0,
+        zIndex: 9999,
         background: "#ffffff",
         display: "flex",
+        flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
         opacity: phase === "exit" ? 0 : 1,
-        transition: phase === "exit" ? "opacity 0.5s ease-in" : "none",
+        transition: phase === "exit" ? "opacity 0.6s ease-in" : "none",
         pointerEvents: phase === "exit" ? "none" : "all",
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: "2px" }}>
-        {INTRO_LETTERS.map((l, i) => (
+      {/* Logo HoodaTV */}
+      <div style={{ display: "flex", alignItems: "baseline", gap: 0 }}>
+        {/* Hooda */}
+        {HOODA_LETTERS.map((l, i) => (
           <span
             key={i}
             style={{
               display: "inline-block",
               fontFamily: '"Nunito", "Quicksand", system-ui, sans-serif',
-              fontSize: "clamp(3.5rem, 10vw, 6rem)",
-              fontWeight: 800,
+              fontSize: "clamp(3rem, 11vw, 6.5rem)",
+              fontWeight: 900,
               lineHeight: 1,
               color: l.color,
-              opacity: letterVisible[i] ? 1 : 0,
-              transform: letterVisible[i]
-                ? phase === "pulse" ? "scale(1.12)" : "scale(1) translateY(0)"
-                : "scale(0.4) translateY(40px)",
-              transition: letterVisible[i]
-                ? phase === "pulse"
-                  ? `transform 0.35s cubic-bezier(0.34,1.56,0.64,1) ${i * 0.04}s`
-                  : "transform 0.35s cubic-bezier(0.34,1.56,0.64,1), opacity 0.35s ease"
+              opacity: visible[i] ? 1 : 0,
+              transform: visible[i]
+                ? phase === "pulse" || phase === "tagline"
+                  ? `scale(1.10) translateY(-4px)`
+                  : "scale(1) translateY(0)"
+                : "scale(0.3) translateY(50px)",
+              transition: visible[i]
+                ? phase === "pulse" || phase === "tagline"
+                  ? `transform 0.4s cubic-bezier(0.34,1.56,0.64,1) ${i * 0.035}s`
+                  : "transform 0.45s cubic-bezier(0.34,1.56,0.64,1), opacity 0.4s ease"
                 : "none",
-              textShadow: letterVisible[i]
-                ? `0 0 28px ${l.color}88, 0 4px 16px ${l.color}44`
-                : "none",
-              willChange: "transform, opacity",
+              textShadow: visible[i] ? `0 0 32px ${l.color}66, 0 4px 18px ${l.color}33` : "none",
+              letterSpacing: "-0.02em",
             }}
           >
             {l.char}
           </span>
         ))}
+
+        {/* TV — mais pequeno, bold, escuro */}
+        <span style={{ display: "inline-flex", alignItems: "baseline", marginLeft: "6px" }}>
+          {TV_LETTERS.map((l, j) => {
+            const i = HOODA_LETTERS.length + j;
+            return (
+              <span
+                key={j}
+                style={{
+                  display: "inline-block",
+                  fontFamily: '"Nunito", "Quicksand", system-ui, sans-serif',
+                  fontSize: "clamp(1.4rem, 4.5vw, 2.8rem)",
+                  fontWeight: 900,
+                  lineHeight: 1,
+                  color: l.color,
+                  opacity: visible[i] ? 1 : 0,
+                  transform: visible[i]
+                    ? phase === "pulse" || phase === "tagline"
+                      ? "scale(1.10) translateY(-4px)"
+                      : "scale(1) translateY(0)"
+                    : "scale(0.3) translateY(40px)",
+                  transition: visible[i]
+                    ? phase === "pulse" || phase === "tagline"
+                      ? `transform 0.4s cubic-bezier(0.34,1.56,0.64,1) ${i * 0.035}s`
+                      : "transform 0.45s cubic-bezier(0.34,1.56,0.64,1), opacity 0.4s ease"
+                    : "none",
+                  letterSpacing: "0.05em",
+                  marginBottom: "0.15em",
+                }}
+              >
+                {l.char}
+              </span>
+            );
+          })}
+        </span>
       </div>
+
+      {/* Tagline */}
+      <div
+        style={{
+          marginTop: "18px",
+          opacity: tagline ? 1 : 0,
+          transform: tagline ? "translateY(0)" : "translateY(12px)",
+          transition: "opacity 0.5s ease, transform 0.5s ease",
+          fontSize: "clamp(0.75rem, 2vw, 0.95rem)",
+          fontWeight: 600,
+          letterSpacing: "0.18em",
+          textTransform: "uppercase",
+          color: "#9ca3af",
+          fontFamily: '"Nunito", system-ui, sans-serif',
+        }}
+      >
+        O teu canal. A tua história.
+      </div>
+
+      {/* Barra decorativa */}
+      <div
+        style={{
+          marginTop: "28px",
+          height: "3px",
+          width: tagline ? "120px" : "0px",
+          borderRadius: "999px",
+          background: "linear-gradient(90deg,#5B3FCF,#E94B8A,#F26B3A)",
+          transition: "width 0.7s cubic-bezier(0.34,1.56,0.64,1) 0.1s",
+        }}
+      />
     </div>
   );
 }
@@ -404,7 +479,6 @@ function HoodaTVPage() {
     <>
       <SideNav />
       <PageWrapper className="pb-20 lg:pb-0">
-        <div style={{ position: "relative", minHeight: "100vh" }}>
         {showIntro && <HoodaTVIntro onDone={handleIntroDone} />}
 
         {/* ── HEADER ── */}
@@ -540,7 +614,6 @@ function HoodaTVPage() {
             </section>
           )}
 
-        </div>
         </div>
         <BottomNav />
       </PageWrapper>
