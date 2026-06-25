@@ -23,22 +23,35 @@ export async function uploadToCloudflareStream(
 ): Promise<StreamUploadResult> {
 
   // 1 — Pede ao Worker uma URL de upload TUS
-  const res = await fetch(WORKER_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      title:    meta.title,
-      fileSize: file.size,
-      fileType: file.type,
-    }),
-  });
-
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Worker falhou: ${err}`);
+  let res: Response;
+  try {
+    res = await fetch(WORKER_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title:    meta.title,
+        fileSize: file.size,
+        fileType: file.type,
+      }),
+    });
+  } catch (fetchErr: any) {
+    throw new Error(`Não foi possível contactar o Worker: ${fetchErr?.message ?? fetchErr}`);
   }
 
-  const { uploadUrl, uid: initialUid } = await res.json();
+  if (!res.ok) {
+    const err = await res.text().catch(() => `HTTP ${res.status}`);
+    throw new Error(`Worker falhou (${res.status}): ${err}`);
+  }
+
+  let workerBody: any;
+  try {
+    workerBody = await res.json();
+  } catch {
+    throw new Error("Worker devolveu resposta inválida (não é JSON).");
+  }
+
+  const { uploadUrl, uid: initialUid } = workerBody;
+  console.log("[CF Stream] Worker response:", workerBody);
 
   if (!uploadUrl) throw new Error("Worker não devolveu URL de upload.");
 

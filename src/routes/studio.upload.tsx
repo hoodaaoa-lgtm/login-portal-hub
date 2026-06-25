@@ -263,7 +263,9 @@ function UploadPage() {
       }, 600);
 
     } catch (e: any) {
-      toast.error(e?.message ?? "Falha no upload. Tenta novamente.");
+      console.error("[Upload] Erro:", e);
+      const msg = e?.message ?? e?.error_description ?? JSON.stringify(e) ?? "Falha no upload.";
+      toast.error(msg, { duration: 8000 });
       setStep("details");
       setProgress(0);
     }
