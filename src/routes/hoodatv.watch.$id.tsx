@@ -738,6 +738,8 @@ function WatchPage() {
   const [quality, setQuality]         = useState<number | "auto">("auto");
   const [availableHeights, setAvailableHeights] = useState<number[]>([]);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showControls, setShowControls] = useState(true);
+  const controlsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [showNerdStats, setShowNerdStats] = useState(false);
   const [nerdStats, setNerdStats] = useState<{
     videoId: string; viewport: string; currentRes: string; optimalRes: string;
@@ -760,6 +762,25 @@ function WatchPage() {
     document.addEventListener("fullscreenchange", onFsChange);
     return () => document.removeEventListener("fullscreenchange", onFsChange);
   }, []);
+
+  /* ── Auto-esconder controlos em fullscreen após 3s de inactividade ── */
+  const resetControlsTimer = useCallback(() => {
+    setShowControls(true);
+    if (controlsTimerRef.current) clearTimeout(controlsTimerRef.current);
+    if (isFullscreen) {
+      controlsTimerRef.current = setTimeout(() => setShowControls(false), 3000);
+    }
+  }, [isFullscreen]);
+
+  useEffect(() => {
+    if (!isFullscreen) {
+      setShowControls(true);
+      if (controlsTimerRef.current) clearTimeout(controlsTimerRef.current);
+    } else {
+      resetControlsTimer();
+    }
+    return () => { if (controlsTimerRef.current) clearTimeout(controlsTimerRef.current); };
+  }, [isFullscreen, resetControlsTimer]);
 
   /* ── Restaurar posição guardada ── */
   useEffect(() => {
@@ -1097,8 +1118,11 @@ function WatchPage() {
           <div className="space-y-4">
 
             {/* Player */}
-            <div ref={containerRef} className="w-full aspect-video rounded-2xl overflow-hidden bg-black relative group"
-              style={{ boxShadow: "0 8px 32px rgba(0,0,0,0.18)" }}>
+            <div ref={containerRef}
+              className="w-full aspect-video rounded-2xl overflow-hidden bg-black relative group"
+              style={{ boxShadow: "0 8px 32px rgba(0,0,0,0.18)" }}
+              onMouseMove={resetControlsTimer}
+              onTouchStart={resetControlsTimer}>
               {playerUrl ? (
                 <>
                   <video
@@ -1180,7 +1204,8 @@ function WatchPage() {
                   )}
 
                   {/* Controles personalizados */}
-                  <div className={`absolute bottom-0 left-0 right-0 transition-opacity duration-200 ${isFullscreen ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
+                  <div className={`absolute bottom-0 left-0 right-0 transition-opacity duration-300 ${isFullscreen ? (showControls ? "opacity-100" : "opacity-0") : "opacity-0 group-hover:opacity-100"}`}
+                    style={{ cursor: isFullscreen ? (showControls ? "default" : "none") : "default" }}
                     style={{ background: "linear-gradient(transparent, rgba(0,0,0,0.85))", paddingBottom: "8px" }}>
 
                     {/* Barra de progresso */}
