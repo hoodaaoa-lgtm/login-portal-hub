@@ -9,6 +9,7 @@ import {
   CheckCircle, Info,
 } from "lucide-react";
 import { toast } from "sonner";
+import * as tus from "tus-js-client";
 
 export const Route = createFileRoute("/studio/upload")({
   head: () => ({ meta: [{ title: "Enviar vídeo — Hooda Studio" }] }),
@@ -19,9 +20,10 @@ const P    = "#5B3FCF";
 const GRAD = "linear-gradient(135deg,#5B3FCF,#E94B8A)";
 const ACCEPT_VIDEO = ["video/mp4","video/quicktime","video/webm","video/x-matroska"];
 const ACCEPT_IMG   = ["image/jpeg","image/png","image/webp","image/gif"];
-const MAX_VIDEO    = 1024 * 1024 * 1024;
-const MAX_IMG      = 5 * 1024 * 1024;
-const CHUNK_SIZE   = 6 * 1024 * 1024; // 6 MB chunks
+const MAX_VIDEO_FREE = 45  * 1024 * 1024;  // 45 MB — upload simples (Supabase free safe)
+const MAX_VIDEO_TUS  = 500 * 1024 * 1024;  // 500 MB — via TUS resumível
+const MAX_IMG        = 5   * 1024 * 1024;
+const TUS_CHUNK      = 6   * 1024 * 1024;  // 6 MB por chunk
 
 type Step       = "drop" | "details" | "uploading" | "done";
 type Visibility = "public" | "private" | "unlisted" | "scheduled";
@@ -38,44 +40,69 @@ function getVideoDuration(file: File): Promise<number | null> {
   });
 }
 
-/* ── Upload por chunks com progresso real ───────────────── */
-async function uploadInChunks(
+/* ── Upload simples para ficheiros <= 45 MB ─────────────── */
+async function uploadSimple(
   bucket: string, path: string, file: File, contentType: string,
   onProgress: (pct: number) => void,
 ): Promise<void> {
-  const total  = file.size;
-  let uploaded = 0;
+  const { error } = await supabase.storage
+    .from(bucket)
+    .upload(path, file, { cacheControl: "3600", upsert: false, contentType });
+  if (error) throw new Error(error.message);
+  onProgress(100);
+}
 
-  /* Ficheiros pequenos (<= CHUNK_SIZE) — upload simples */
-  if (total <= CHUNK_SIZE) {
-    const { error } = await supabase.storage.from(bucket)
-      .upload(path, file, { cacheControl: "3600", upsert: false, contentType });
-    if (error) throw error;
-    onProgress(100);
-    return;
-  }
-
-  /* Upload por chunks usando fetch directo com Content-Range */
+/* ── Upload TUS resumível para ficheiros > 45 MB ─────────── */
+async function uploadTUS(
+  bucket: string, path: string, file: File, contentType: string,
+  onProgress: (pct: number) => void,
+): Promise<void> {
   const { data: { session } } = await supabase.auth.getSession();
   const token = session?.access_token;
-  const supabaseUrl = (supabase as any).supabaseUrl as string;
+  if (!token) throw new Error("Sem sessão activa.");
 
-  /* Inicia o upload multipart via Supabase Storage REST */
-  const initRes = await fetch(`${supabaseUrl}/storage/v1/object/${bucket}/${path}`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": contentType,
-      "x-upsert": "false",
-    },
-    body: file,
+  const supabaseUrl: string =
+    (import.meta as any).env?.VITE_SUPABASE_URL ||
+    (supabase as any).supabaseUrl ||
+    "";
+
+  return new Promise((resolve, reject) => {
+    const upload = new tus.Upload(file, {
+      endpoint: `${supabaseUrl}/storage/v1/upload/resumable`,
+      retryDelays: [0, 1000, 3000, 5000, 10000],
+      chunkSize: TUS_CHUNK,
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "x-upsert": "false",
+      },
+      metadata: {
+        bucketName: bucket,
+        objectName: path,
+        contentType,
+        cacheControl: "3600",
+      },
+      onError(err) { reject(new Error((err as any).message ?? "Upload TUS falhou.")); },
+      onProgress(bytesUploaded, bytesTotal) {
+        onProgress(Math.round((bytesUploaded / bytesTotal) * 100));
+      },
+      onSuccess() { resolve(); },
+    });
+    upload.findPreviousUploads().then(prev => {
+      if (prev.length) upload.resumeFromPreviousUpload(prev[0]);
+      upload.start();
+    }).catch(() => upload.start());
   });
+}
 
-  if (!initRes.ok) {
-    const errText = await initRes.text().catch(() => "");
-    throw new Error(`Upload falhou: ${errText}`);
+/* ── Orquestrador: simples ou TUS conforme o tamanho ──────── */
+async function uploadVideo(
+  bucket: string, path: string, file: File, contentType: string,
+  onProgress: (pct: number) => void,
+): Promise<void> {
+  if (file.size <= MAX_VIDEO_FREE) {
+    return uploadSimple(bucket, path, file, contentType, onProgress);
   }
-  onProgress(100);
+  return uploadTUS(bucket, path, file, contentType, onProgress);
 }
 
 function UploadPage() {
@@ -125,7 +152,7 @@ function UploadPage() {
   const pickVideo = useCallback(async (f: File | null) => {
     if (!f) return;
     if (!ACCEPT_VIDEO.includes(f.type)) { toast.error("Formato não suportado. Usa MP4, MOV, WEBM ou MKV."); return; }
-    if (f.size > MAX_VIDEO) { toast.error("O vídeo não pode ter mais de 1 GB."); return; }
+    if (f.size > MAX_VIDEO_TUS) { toast.error("O vídeo não pode ter mais de 500 MB."); return; }
     setVideoFile(f);
     if (!title) setTitle(f.name.replace(/\.[^.]+$/, "").replace(/[-_]/g, " "));
     /* Detecta duração em background */
@@ -172,9 +199,11 @@ function UploadPage() {
       const duration = detectedDur ?? await getVideoDuration(videoFile);
 
       /* 2 — Upload do vídeo com progresso real */
-      setProgress(5); setProgLabel("A preparar o envio…");
-      await uploadInChunks("videos", videoPath, videoFile, videoFile.type, pct => {
-        setProgress(5 + Math.round(pct * 0.6)); /* 5%→65% */
+      const isBig = videoFile.size > MAX_VIDEO_FREE;
+      setProgress(5);
+      setProgLabel(isBig ? "A enviar em partes (ficheiro grande)…" : "A enviar o vídeo…");
+      await uploadVideo("videos", videoPath, videoFile, videoFile.type, pct => {
+        setProgress(5 + Math.round(pct * 0.60)); /* 5%→65% */
       });
       setProgress(65); setProgLabel("A processar o vídeo…");
 
@@ -265,7 +294,7 @@ function UploadPage() {
           Selecionar ficheiro
         </button>
         <p className="text-xs mt-5" style={{ color: "var(--text-muted)" }}>
-          MP4 · MOV · WEBM · MKV &nbsp;·&nbsp; Máximo 1 GB
+          MP4 · MOV · WEBM · MKV &nbsp;·&nbsp; Até 45 MB directo · Até 500 MB via upload resumível
         </p>
         <input ref={videoRef} type="file" accept={ACCEPT_VIDEO.join(",")} className="hidden"
           onChange={e => pickVideo(e.target.files?.[0] ?? null)} />
@@ -282,13 +311,18 @@ function UploadPage() {
       <h2 className="text-xl font-extrabold mb-1" style={{ color: "var(--text-primary)" }}>A enviar o vídeo…</h2>
       <p className="text-sm mb-8" style={{ color: "var(--text-muted)" }}>{progLabel}</p>
       <div className="w-full rounded-full overflow-hidden h-3 mb-2" style={{ background: "var(--s3)" }}>
-        <div className="h-full rounded-full transition-all duration-300"
+        <div className="h-full rounded-full transition-all duration-500"
           style={{ width: `${progress}%`, background: GRAD }} />
       </div>
       <p className="text-sm font-bold" style={{ color: P }}>{progress}%</p>
       {detectedDur && (
         <p className="text-xs mt-3" style={{ color: "var(--text-muted)" }}>
           Duração detectada: {fmtDuration(detectedDur)}
+        </p>
+      )}
+      {videoFile && videoFile.size > MAX_VIDEO_FREE && (
+        <p className="text-xs mt-2 font-semibold" style={{ color: "#F97316" }}>
+          Upload resumível activo — podes perder ligação e retomar.
         </p>
       )}
       <p className="text-xs mt-2" style={{ color: "var(--text-muted)" }}>Não feches esta janela.</p>
@@ -359,6 +393,9 @@ function UploadPage() {
               <p className="text-xs" style={{ color: "var(--text-muted)" }}>
                 {videoFile ? (videoFile.size / 1024 / 1024).toFixed(1) : 0} MB
                 {detectedDur && <> · {fmtDuration(detectedDur)}</>}
+                {videoFile && videoFile.size > MAX_VIDEO_FREE && (
+                  <span style={{ color: "#F97316", fontWeight: 600 }}> · upload resumível (TUS)</span>
+                )}
               </p>
             </div>
             <button onClick={() => { setStep("drop"); setVideoFile(null); setDetectedDur(null); }}
@@ -367,6 +404,18 @@ function UploadPage() {
               <X className="w-4 h-4" />
             </button>
           </div>
+
+          {/* Aviso ficheiro grande */}
+          {videoFile && videoFile.size > MAX_VIDEO_FREE && (
+            <div className="flex items-start gap-2 text-xs rounded-xl p-3"
+              style={{ background: "#FFF7ED", color: "#92400E", border: "1px solid #FED7AA" }}>
+              <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+              <span>
+                Ficheiro grande ({(videoFile.size / 1024 / 1024).toFixed(0)} MB) — será enviado em partes via TUS.
+                O upload pode ser retomado se a ligação cair. Não feches o browser durante o envio.
+              </span>
+            </div>
+          )}
 
           {/* Título */}
           <div>
