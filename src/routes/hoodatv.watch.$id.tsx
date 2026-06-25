@@ -1205,8 +1205,7 @@ function WatchPage() {
 
                   {/* Controles personalizados */}
                   <div className={`absolute bottom-0 left-0 right-0 transition-opacity duration-300 ${isFullscreen ? (showControls ? "opacity-100" : "opacity-0") : "opacity-0 group-hover:opacity-100"}`}
-                    style={{ cursor: isFullscreen ? (showControls ? "default" : "none") : "default" }}
-                    style={{ background: "linear-gradient(transparent, rgba(0,0,0,0.85))", paddingBottom: "8px" }}>
+                    style={{ background: "linear-gradient(transparent, rgba(0,0,0,0.85))", paddingBottom: "8px", cursor: isFullscreen && !showControls ? "none" : "default" }}>
 
                     {/* Barra de progresso */}
                     <div className="px-3 pb-1">
