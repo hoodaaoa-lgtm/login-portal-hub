@@ -231,8 +231,62 @@ function VSkel() {
   );
 }
 
+/* ── Video Player Modal (igual ao canal) ── */
+function VideoModal({ v, channel, onClose }: { v: any; channel: any; onClose: () => void }) {
+  if (!v) return null;
+  const bg = avatarColor(channel?.name ?? "");
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: "rgba(0,0,0,0.85)" }}
+      onClick={onClose}>
+      <div className="w-full max-w-3xl rounded-2xl overflow-hidden shadow-2xl"
+        style={{ background: "var(--s0)" }}
+        onClick={e => e.stopPropagation()}>
+
+        {/* Player */}
+        <div className="relative aspect-video bg-black">
+          {v.cf_stream_url
+            ? <video src={v.cf_stream_url} controls autoPlay className="w-full h-full" />
+            : v.cf_embed_url
+              ? <iframe src={`${v.cf_embed_url}?autoplay=true`}
+                  className="w-full h-full" allow="autoplay; fullscreen" allowFullScreen />
+              : <div className="w-full h-full flex items-center justify-center">
+                  <p className="text-white text-sm opacity-60">Vídeo não disponível</p>
+                </div>}
+          <button onClick={onClose}
+            className="absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center text-white"
+            style={{ background: "rgba(0,0,0,0.60)" }}>
+            ✕
+          </button>
+        </div>
+
+        {/* Info */}
+        <div className="p-4">
+          <h2 className="text-base font-bold mb-2" style={{ color: "var(--text-primary)" }}>{v.title}</h2>
+          <div className="flex items-center gap-3">
+            {/* Avatar canal */}
+            <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center text-white text-xs font-bold shrink-0"
+              style={{ background: bg }}>
+              {channel?.avatar_url
+                ? <img src={channel.avatar_url} alt="" className="w-full h-full object-cover" />
+                : (channel?.name?.[0] ?? "?").toUpperCase()}
+            </div>
+            <span className="text-sm font-semibold" style={{ color: "var(--text-secondary)" }}>
+              {channel?.name ?? "Canal"}
+            </span>
+          </div>
+          <div className="flex items-center gap-4 mt-2 text-xs" style={{ color: "var(--text-muted)" }}>
+            <span className="flex items-center gap-1"><Eye className="w-3.5 h-3.5" />{fmtV(v.views_count ?? 0)} views</span>
+            <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" />{timeAgo(v.published_at ?? v.created_at)}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ── Video Card ── */
-function VideoCard({ v, rank }: { v: any; rank?: number }) {
+function VideoCard({ v, rank, onPlay }: { v: any; rank?: number; onPlay: (v: any) => void }) {
   const [menu, setMenu] = useState(false);
   const navigate = useNavigate();
   const ch = v.channel;
@@ -240,9 +294,10 @@ function VideoCard({ v, rank }: { v: any; rank?: number }) {
 
   return (
     <div className="group cursor-pointer">
-      {/* Thumbnail */}
+      {/* Thumbnail — clique abre modal */}
       <div className="relative aspect-video rounded-2xl overflow-hidden"
-        style={{ background: "var(--s3)", boxShadow: "0 4px 16px rgba(0,0,0,0.10)" }}>
+        style={{ background: "var(--s3)", boxShadow: "0 4px 16px rgba(0,0,0,0.10)" }}
+        onClick={() => onPlay(v)}>
         {v.thumbnail_url
           ? <img src={v.thumbnail_url} alt={v.title} loading="lazy"
               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.04]" />
@@ -303,12 +358,15 @@ function VideoCard({ v, rank }: { v: any; rank?: number }) {
 
       {/* Meta */}
       <div className="flex gap-2.5 mt-3">
-        <div className="w-9 h-9 rounded-full shrink-0 overflow-hidden flex items-center justify-center text-white text-xs font-bold mt-0.5"
-          style={{ background: bg }}>
+        {/* Avatar → navega para perfil do canal */}
+        <div className="w-9 h-9 rounded-full shrink-0 overflow-hidden flex items-center justify-center text-white text-xs font-bold mt-0.5 cursor-pointer"
+          style={{ background: bg }}
+          onClick={e => { e.stopPropagation(); if (ch?.handle) navigate({ to: "/hoodatv/canal/$handle", params: { handle: ch.handle } }); }}>
           {ch?.avatar_url ? <img src={ch.avatar_url} alt="" className="w-full h-full object-cover" /> : (ch?.name?.[0] ?? "?").toUpperCase()}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[13px] font-bold leading-[1.35] line-clamp-2" style={{ color: "var(--text-primary)" }}>
+          <p className="text-[13px] font-bold leading-[1.35] line-clamp-2 cursor-pointer" style={{ color: "var(--text-primary)" }}
+            onClick={() => onPlay(v)}>
             {v.title}
           </p>
           <p className="text-[12px] mt-0.5 font-medium hover:underline cursor-pointer" style={{ color: "var(--text-secondary)" }}
@@ -398,6 +456,7 @@ function HoodaTVPage() {
 function HoodaTVMain() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<FilterKey>("alta");
+  const [selectedVideo, setSelectedVideo] = useState<any>(null);
 
   // ── Intro: uma vez por sessão ──
   const [showIntro, setShowIntro] = useState(() => !_introSeenThisSession);
@@ -458,6 +517,15 @@ function HoodaTVMain() {
       <PageWrapper className="pb-20 lg:pb-0">
         {showIntro && <HoodaTVIntro onDone={handleIntroDone} />}
 
+        {/* ── Video Modal ── */}
+        {selectedVideo && (
+          <VideoModal
+            v={selectedVideo}
+            channel={selectedVideo.channel}
+            onClose={() => setSelectedVideo(null)}
+          />
+        )}
+
         {/* ── HEADER ── */}
         <div className="sticky top-0 z-40 border-b"
           style={{ background: "rgba(var(--s1-rgb,250,250,252),.94)", backdropFilter: "blur(20px)", borderColor: "var(--border-subtle)" }}>
@@ -508,7 +576,7 @@ function HoodaTVMain() {
               <SHead icon={<Search className="w-4 h-4" />} title={`Resultados para "${search}"`} accent={P} />
               {!searchVideos.length
                 ? <Empty msg={`Sem resultados para "${search}"`} />
-                : <Grid>{searchVideos.map((v: any) => <VideoCard key={v.id} v={v} />)}</Grid>}
+                : <Grid>{searchVideos.map((v: any) => <VideoCard key={v.id} v={v} onPlay={setSelectedVideo} />)}</Grid>}
             </section>
           )}
 
@@ -525,7 +593,7 @@ function HoodaTVMain() {
                 ? <Grid>{Array.from({length:8}).map((_,i)=><VSkel key={i}/>)}</Grid>
                 : !showVideos?.length
                   ? <Empty msg="Ainda não há vídeos publicados." />
-                  : <Grid>{showVideos.map((v:any,i:number)=><VideoCard key={v.id} v={v} rank={filter==="alta"?i:undefined}/>)}</Grid>}
+                  : <Grid>{showVideos.map((v:any,i:number)=><VideoCard key={v.id} v={v} rank={filter==="alta"?i:undefined} onPlay={setSelectedVideo}/>)}</Grid>}
             </section>
           )}
 
