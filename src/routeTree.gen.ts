@@ -195,6 +195,7 @@ export interface FileRoutesById {
   '/studio/': typeof StudioIndexRoute
   '/hoodatv/canal/$handle': typeof HoodatvCanalHandleRoute
   '/hoodatv/playlist/$id': typeof HoodatvPlaylistIdRoute
+  '/hoodatv/watch/$id': typeof HoodatvWatchIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -218,6 +219,7 @@ export interface FileRouteTypes {
     | '/studio/'
     | '/hoodatv/canal/$handle'
     | '/hoodatv/playlist/$id'
+    | '/hoodatv/watch/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -238,6 +240,7 @@ export interface FileRouteTypes {
     | '/studio'
     | '/hoodatv/canal/$handle'
     | '/hoodatv/playlist/$id'
+    | '/hoodatv/watch/$id'
   id:
     | '__root__'
     | '/'
@@ -259,6 +262,7 @@ export interface FileRouteTypes {
     | '/studio/'
     | '/hoodatv/canal/$handle'
     | '/hoodatv/playlist/$id'
+    | '/hoodatv/watch/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -410,12 +414,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof HoodatvPlaylistIdRouteImport
       parentRoute: typeof HoodatvRoute
     }
+    '/hoodatv/watch/$id': {
+      id: '/hoodatv/watch/$id'
+      path: '/watch/$id'
+      fullPath: '/hoodatv/watch/$id'
+      preLoaderRoute: typeof HoodatvWatchIdRouteImport
+      parentRoute: typeof HoodatvRoute
+    }
   }
 }
 
 interface HoodatvRouteChildren {
   HoodatvCanalHandleRoute: typeof HoodatvCanalHandleRoute
   HoodatvPlaylistIdRoute: typeof HoodatvPlaylistIdRoute
+  HoodatvWatchIdRoute: typeof HoodatvWatchIdRoute
 }
 
 const HoodatvRouteChildren: HoodatvRouteChildren = {
