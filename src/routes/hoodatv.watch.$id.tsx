@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import Hls from "hls.js";
+import { getVideoStreamUrl } from "@/lib/cloudinary";
 
 export const Route = createFileRoute("/hoodatv/watch/$id")({
   head: () => ({ meta: [{ title: "HoodaTV — A ver vídeo" }] }),
@@ -433,7 +434,7 @@ function VideoOptionsDropdown({
             </button>
             {availableHeights.length === 0 ? (
               <p className="px-4 py-3 text-xs leading-relaxed" style={{ color: "rgba(255,255,255,0.45)" }}>
-                A carregar resoluções do vídeo… Se isto não mudar em alguns segundos, este vídeo não suporta troca manual de qualidade (apenas vídeos HLS do Cloudflare Stream suportam).
+                A carregar resoluções do vídeo… Se isto não mudar em alguns segundos, este vídeo está a tocar em modo direto (sem qualidades alternativas disponíveis no Cloudinary para este ficheiro).
               </p>
             ) : (
               QUALITY_OPTIONS.map(opt => {
@@ -858,6 +859,12 @@ function WatchPage() {
   /* ── Player URL ── */
   function getPlayerUrl(): string | null {
     if (!video) return null;
+    // Vídeos enviados via Cloudinary (campo cf_stream_url guarda o mp4 directo,
+    // mas o video_path guarda o public_id — usamos isso para gerar o manifesto HLS
+    // adaptativo, que é o que permite trocar de qualidade).
+    if (video.cf_stream_url?.includes("res.cloudinary.com") && video.video_path) {
+      return getVideoStreamUrl(video.video_path);
+    }
     if (video.cf_stream_url) return video.cf_stream_url;
     if (video.video_path) {
       const { data } = supabase.storage.from("videos").getPublicUrl(video.video_path);
@@ -865,6 +872,11 @@ function WatchPage() {
     }
     return null;
   }
+
+  /* URL directa (mp4) usada como recurso de recuperação se o HLS falhar */
+  const directFallbackUrl = video?.cf_stream_url?.includes("res.cloudinary.com")
+    ? video.cf_stream_url
+    : null;
 
   const playerUrl = getPlayerUrl();
   const hasEmbed  = !!video?.cf_embed_url;
@@ -900,7 +912,16 @@ function WatchPage() {
       hls.on(Hls.Events.ERROR, (_evt, data) => {
         if (data.fatal) {
           console.error("[HoodaTV] Erro fatal no HLS:", data);
-          toast.error("Não foi possível carregar as qualidades do vídeo (erro de rede/HLS).");
+          if (directFallbackUrl) {
+            toast.error("Qualidade adaptativa indisponível — a usar reprodução direta.");
+            hls.destroy();
+            hlsRef.current = null;
+            setAvailableHeights([]);
+            vid.src = directFallbackUrl;
+            vid.play().catch(() => {});
+          } else {
+            toast.error("Não foi possível carregar o vídeo (erro de rede/HLS).");
+          }
         }
       });
 
@@ -910,11 +931,11 @@ function WatchPage() {
       return () => { hls.destroy(); hlsRef.current = null; };
     }
 
-    // Safari (HLS nativo) ou ficheiro mp4 direto do Supabase Storage
+    // Safari (HLS nativo) ou ficheiro mp4 direto
     hlsRef.current = null;
     vid.src = playerUrl;
     return () => { vid.removeAttribute("src"); };
-  }, [playerUrl]);
+  }, [playerUrl, directFallbackUrl]);
 
   /* ── Trocar qualidade manualmente ── */
   function handleQualityChange(opt: number | "auto") {
