@@ -20,6 +20,7 @@ import { Route as ExplorarRouteImport } from './routes/explorar'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as StudioIndexRouteImport } from './routes/studio.index'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
+import { Route as HoodatvCanalHandleRouteImport } from './routes/hoodatv.canal.$handle'
 import { Route as StudioUploadRouteImport } from './routes/studio.upload'
 import { Route as StudioOnboardingRouteImport } from './routes/studio.onboarding'
 import { Route as StudioContentRouteImport } from './routes/studio.content'
@@ -101,6 +102,12 @@ const StudioAnalyticsRoute = StudioAnalyticsRouteImport.update({
   path: '/analytics',
   getParentRoute: () => StudioRoute,
 } as any)
+const HoodatvCanalHandleRoute = HoodatvCanalHandleRouteImport.update({
+  id: '/hoodatv/canal/$handle',
+  path: '/canal/$handle',
+  getParentRoute: () => HoodatvRoute,
+} as any)
+
 const AuthBridgeRoute = AuthBridgeRouteImport.update({
   id: '/auth/bridge',
   path: '/auth/bridge',
@@ -124,6 +131,7 @@ export interface FileRoutesByFullPath {
   '/studio/upload': typeof StudioUploadRoute
   '/u/$username': typeof UUsernameRoute
   '/studio/': typeof StudioIndexRoute
+  '/hoodatv/canal/$handle': typeof HoodatvCanalHandleRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -141,6 +149,7 @@ export interface FileRoutesByTo {
   '/studio/upload': typeof StudioUploadRoute
   '/u/$username': typeof UUsernameRoute
   '/studio': typeof StudioIndexRoute
+  '/hoodatv/canal/$handle': typeof HoodatvCanalHandleRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -160,6 +169,7 @@ export interface FileRoutesById {
   '/studio/upload': typeof StudioUploadRoute
   '/u/$username': typeof UUsernameRoute
   '/studio/': typeof StudioIndexRoute
+  '/hoodatv/canal/$handle': typeof HoodatvCanalHandleRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -180,6 +190,8 @@ export interface FileRouteTypes {
     | '/studio/upload'
     | '/u/$username'
     | '/studio/'
+    | '/hoodatv/canal/$handle'
+    | '/hoodatv/canal/$handle'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -197,6 +209,7 @@ export interface FileRouteTypes {
     | '/studio/upload'
     | '/u/$username'
     | '/studio'
+    | '/hoodatv/canal/$handle'
   id:
     | '__root__'
     | '/'
@@ -215,6 +228,8 @@ export interface FileRouteTypes {
     | '/studio/upload'
     | '/u/$username'
     | '/studio/'
+    | '/hoodatv/canal/$handle'
+    | '/hoodatv/canal/$handle'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -229,6 +244,7 @@ export interface RootRouteChildren {
   StudioRoute: typeof StudioRouteWithChildren
   AuthBridgeRoute: typeof AuthBridgeRoute
   UUsernameRoute: typeof UUsernameRoute
+  HoodatvCanalHandleRoute: typeof HoodatvCanalHandleRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -338,6 +354,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StudioAnalyticsRouteImport
       parentRoute: typeof StudioRoute
     }
+    '/hoodatv/canal/$handle': {
+      id: '/hoodatv/canal/$handle'
+      path: '/canal/$handle'
+      fullPath: '/hoodatv/canal/$handle'
+      preLoaderRoute: typeof HoodatvCanalHandleRouteImport
+      parentRoute: typeof HoodatvRoute
+    }
     '/auth/bridge': {
       id: '/auth/bridge'
       path: '/auth/bridge'
@@ -347,6 +370,17 @@ declare module '@tanstack/react-router' {
     }
   }
 }
+
+interface HoodatvRouteChildren {
+  HoodatvCanalHandleRoute: typeof HoodatvCanalHandleRoute
+}
+
+const HoodatvRouteChildren: HoodatvRouteChildren = {
+  HoodatvCanalHandleRoute: HoodatvCanalHandleRoute,
+}
+
+const HoodatvRouteWithChildren =
+  HoodatvRoute._addFileChildren(HoodatvRouteChildren)
 
 interface StudioRouteChildren {
   StudioAnalyticsRoute: typeof StudioAnalyticsRoute
@@ -371,7 +405,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ExplorarRoute: ExplorarRoute,
   HomeRoute: HomeRoute,
-  HoodatvRoute: HoodatvRoute,
+  HoodatvRoute: HoodatvRouteWithChildren,
   MensagensRoute: MensagensRoute,
   PerfilRoute: PerfilRoute,
   ResetPasswordRoute: ResetPasswordRoute,

@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { BottomNav, SideNav, PageWrapper } from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -229,6 +229,7 @@ function VSkel() {
 /* ── Video Card ── */
 function VideoCard({ v, rank }: { v: any; rank?: number }) {
   const [menu, setMenu] = useState(false);
+  const navigate = useNavigate();
   const ch = v.channel;
   const bg = avatarColor(ch?.name ?? "");
 
@@ -305,7 +306,8 @@ function VideoCard({ v, rank }: { v: any; rank?: number }) {
           <p className="text-[13px] font-bold leading-[1.35] line-clamp-2" style={{ color: "var(--text-primary)" }}>
             {v.title}
           </p>
-          <p className="text-[12px] mt-0.5 font-medium hover:underline cursor-pointer" style={{ color: "var(--text-secondary)" }}>
+          <p className="text-[12px] mt-0.5 font-medium hover:underline cursor-pointer" style={{ color: "var(--text-secondary)" }}
+            onClick={e => { e.stopPropagation(); if (ch?.handle) navigate({ to: "/hoodatv/canal/$handle", params: { handle: ch.handle } }); }}>
             {ch?.name ?? "Canal"}
           </p>
           <p className="text-[11px] mt-0.5" style={{ color: "var(--text-muted)" }}>
@@ -319,9 +321,10 @@ function VideoCard({ v, rank }: { v: any; rank?: number }) {
 
 /* ── Channel Card ── */
 function ChannelCard({ ch, isFollowing, onFollow }: { ch: any; isFollowing: boolean; onFollow: () => void }) {
+  const navigate = useNavigate();
   const bg = avatarColor(ch.name ?? "");
   return (
-    <div className="group flex flex-col items-center gap-3 p-5 rounded-2xl border transition-all hover:shadow-lg hover:-translate-y-0.5"
+    <div className="group flex flex-col items-center gap-3 p-5 rounded-2xl border transition-all hover:shadow-lg hover:-translate-y-0.5 cursor-pointer" onClick={() => navigate({ to: "/hoodatv/canal/$handle", params: { handle: ch.handle } })}
       style={{ background: "var(--s0)", borderColor: "var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
       <div className="relative">
         <div className="w-16 h-16 rounded-full overflow-hidden flex items-center justify-center text-white text-xl font-bold ring-2 ring-white shadow"
