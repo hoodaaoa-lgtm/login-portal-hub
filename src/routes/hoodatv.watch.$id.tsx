@@ -359,85 +359,67 @@ function StatsModal({ video, reactions, onClose }: { video: any; reactions: any;
   );
 }
 
-/* ── Menu de 3 pontinhos ── */
-function VideoOptionsMenu({
+/* ── Dropdown YouTube-style ── */
+function VideoOptionsDropdown({
   onClose, onWatchLater, onNotInterested, onReport, onStats,
   onSpeedChange, onLoopToggle, onPiP,
-  speed, looping, hasPiP,
-  isSaved,
+  speed, looping, hasPiP, isSaved,
 }: {
-  onClose: () => void;
-  onWatchLater: () => void;
-  onNotInterested: () => void;
-  onReport: () => void;
-  onStats: () => void;
-  onSpeedChange: (s: number) => void;
-  onLoopToggle: () => void;
-  onPiP: () => void;
-  speed: number;
-  looping: boolean;
-  hasPiP: boolean;
-  isSaved: boolean;
+  onClose: () => void; onWatchLater: () => void; onNotInterested: () => void;
+  onReport: () => void; onStats: () => void; onSpeedChange: (s: number) => void;
+  onLoopToggle: () => void; onPiP: () => void;
+  speed: number; looping: boolean; hasPiP: boolean; isSaved: boolean;
 }) {
   const [showSpeed, setShowSpeed] = useState(false);
 
   const items = [
-    { icon: <Clock3 className="w-4 h-4" />, label: "Assistir mais tarde", sub: isSaved ? "Já guardado" : undefined, action: onWatchLater },
-    { icon: <Gauge className="w-4 h-4" />, label: "Velocidade", sub: `${speed}x`, action: () => setShowSpeed(s => !s), chevron: true },
-    { icon: <Repeat className="w-4 h-4" />, label: "Repetir vídeo", sub: looping ? "Ativo" : "Desativado", action: onLoopToggle, active: looping },
-    ...(hasPiP ? [{ icon: <Minimize2 className="w-4 h-4" />, label: "Miniplayer (PiP)", action: onPiP }] : []),
+    { icon: <Clock3 className="w-4 h-4" />, label: "Assistir mais tarde", action: onWatchLater },
+    { icon: <Gauge className="w-4 h-4" />, label: "Velocidade", sub: `${speed}x`, action: () => setShowSpeed(true), chevron: true },
+    { icon: <Repeat className="w-4 h-4" />, label: "Repetir vídeo", sub: looping ? "Ativo" : "Desativado", action: () => { onLoopToggle(); onClose(); }, active: looping },
+    ...(hasPiP ? [{ icon: <Minimize2 className="w-4 h-4" />, label: "Miniplayer (PiP)", action: () => { onPiP(); onClose(); } }] : []),
     { icon: <BarChart2 className="w-4 h-4" />, label: "Estatísticas", action: () => { onStats(); onClose(); } },
     { icon: <Ban className="w-4 h-4" />, label: "Não tenho interesse", action: () => { onNotInterested(); onClose(); } },
     { icon: <Flag className="w-4 h-4" />, label: "Denunciar", action: () => { onReport(); onClose(); }, danger: true },
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
-      style={{ background: "rgba(0,0,0,0.45)" }} onClick={onClose}>
-      <div className="w-full max-w-sm rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden"
-        style={{ background: "var(--s0)" }} onClick={e => e.stopPropagation()}>
-        <div className="px-4 py-3 border-b flex items-center justify-between" style={{ borderColor: "var(--border-subtle)" }}>
-          <span className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>Opções</span>
-          <button onClick={onClose} className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: "var(--s2)" }}>
-            <X className="w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} />
-          </button>
-        </div>
-
+    <>
+      {/* Overlay invisível para fechar */}
+      <div className="fixed inset-0 z-40" onClick={onClose} />
+      {/* Dropdown */}
+      <div className="absolute bottom-14 right-2 z-50 w-56 rounded-xl overflow-hidden shadow-2xl"
+        style={{ background: "rgba(28,28,28,0.97)", backdropFilter: "blur(12px)" }}
+        onClick={e => e.stopPropagation()}>
         {showSpeed ? (
-          <div className="p-3">
+          <>
             <button onClick={() => setShowSpeed(false)}
-              className="flex items-center gap-2 text-sm font-semibold mb-3 px-1"
-              style={{ color: "var(--text-secondary)" }}>
-              <ChevronLeft className="w-4 h-4" /> Velocidade de reprodução
+              className="w-full flex items-center gap-2 px-4 py-3 text-sm font-semibold border-b transition hover:bg-white/10"
+              style={{ color: "#fff", borderColor: "rgba(255,255,255,0.1)" }}>
+              <ChevronLeft className="w-4 h-4" /> Velocidade
             </button>
-            <div className="grid grid-cols-3 gap-2">
-              {SPEEDS.map(s => (
-                <button key={s} onClick={() => { onSpeedChange(s); setShowSpeed(false); onClose(); }}
-                  className="h-10 rounded-2xl text-sm font-bold transition-all active:scale-95"
-                  style={s === speed
-                    ? { background: GRAD, color: "#fff" }
-                    : { background: "var(--s2)", color: "var(--text-secondary)" }}>
-                  {s}x
-                </button>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <div className="py-2">
-            {items.map((item: any, i) => (
-              <button key={i} onClick={item.action}
-                className="w-full flex items-center gap-3 px-5 py-3.5 text-sm font-medium transition hover:bg-[var(--s2)] text-left"
-                style={{ color: item.danger ? "#ef4444" : item.active ? P : "var(--text-primary)" }}>
-                <span style={{ color: item.danger ? "#ef4444" : item.active ? P : "var(--text-muted)" }}>{item.icon}</span>
-                <span className="flex-1">{item.label}</span>
-                {item.sub && <span className="text-xs" style={{ color: item.active ? P : "var(--text-muted)" }}>{item.sub}</span>}
-                {item.chevron && <ChevronRight className="w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} />}
+            {SPEEDS.map(s => (
+              <button key={s} onClick={() => { onSpeedChange(s); setShowSpeed(false); onClose(); }}
+                className="w-full flex items-center justify-between px-4 py-2.5 text-sm transition hover:bg-white/10"
+                style={{ color: s === speed ? P : "#fff" }}>
+                <span>{s === 1 ? "Normal" : `${s}x`}</span>
+                {s === speed && <Check className="w-3.5 h-3.5" style={{ color: P }} />}
               </button>
             ))}
-          </div>
+          </>
+        ) : (
+          items.map((item: any, i) => (
+            <button key={i} onClick={item.action}
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm transition hover:bg-white/10 text-left"
+              style={{ color: item.danger ? "#f87171" : item.active ? P : "#fff" }}>
+              <span style={{ color: item.danger ? "#f87171" : item.active ? P : "rgba(255,255,255,0.6)" }}>{item.icon}</span>
+              <span className="flex-1">{item.label}</span>
+              {item.sub && <span className="text-xs" style={{ color: item.active ? P : "rgba(255,255,255,0.4)" }}>{item.sub}</span>}
+              {item.chevron && <ChevronRight className="w-3.5 h-3.5" style={{ color: "rgba(255,255,255,0.4)" }} />}
+            </button>
+          ))
         )}
       </div>
-    </div>
+    </>
   );
 }
 
@@ -884,22 +866,6 @@ function WatchPage() {
         {showShare  && <ShareSheet url={watchUrl} onClose={() => setShowShare(false)} />}
         {showReport && <ReportModal onClose={() => setShowReport(false)} videoTitle={video.title ?? ""} />}
         {showStats  && <StatsModal video={video} reactions={reactions} onClose={() => setShowStats(false)} />}
-        {showMenu   && (
-          <VideoOptionsMenu
-            onClose={() => setShowMenu(false)}
-            onWatchLater={toggleSave}
-            onNotInterested={handleNotInterested}
-            onReport={() => setShowReport(true)}
-            onStats={() => setShowStats(true)}
-            onSpeedChange={s => { setSpeed(s); if (videoRef.current) videoRef.current.playbackRate = s; toast.success(`Velocidade: ${s}x`); }}
-            onLoopToggle={() => { setLooping(l => !l); toast.success(looping ? "Repetição desativada" : "Repetição ativada"); setShowMenu(false); }}
-            onPiP={handlePiP}
-            speed={speed}
-            looping={looping}
-            hasPiP={hasPiP && !!playerUrl}
-            isSaved={isSaved}
-          />
-        )}
 
         {/* Back bar */}
         <div className="sticky top-0 z-30 flex items-center gap-2 px-4 py-3 border-b"
@@ -992,10 +958,28 @@ function WatchPage() {
                       )}
 
                       {/* ⋮ Menu */}
-                      <button onClick={e => { e.stopPropagation(); setShowMenu(true); }}
-                        className="w-9 h-9 flex items-center justify-center rounded-full transition hover:bg-white/10 text-white">
-                        <MoreVertical className="w-5 h-5" />
-                      </button>
+                      <div className="relative">
+                        <button onClick={e => { e.stopPropagation(); setShowMenu(m => !m); }}
+                          className="w-9 h-9 flex items-center justify-center rounded-full transition hover:bg-white/10 text-white">
+                          <MoreVertical className="w-5 h-5" />
+                        </button>
+                        {showMenu && (
+                          <VideoOptionsDropdown
+                            onClose={() => setShowMenu(false)}
+                            onWatchLater={() => { toggleSave(); setShowMenu(false); }}
+                            onNotInterested={handleNotInterested}
+                            onReport={() => { setShowReport(true); setShowMenu(false); }}
+                            onStats={() => { setShowStats(true); setShowMenu(false); }}
+                            onSpeedChange={s => { setSpeed(s); if (videoRef.current) videoRef.current.playbackRate = s; }}
+                            onLoopToggle={() => { setLooping(l => !l); setShowMenu(false); }}
+                            onPiP={handlePiP}
+                            speed={speed}
+                            looping={looping}
+                            hasPiP={hasPiP && !!playerUrl}
+                            isSaved={isSaved}
+                          />
+                        )}
+                      </div>
 
                       {/* Fullscreen */}
                       <button onClick={() => { const el = videoRef.current; if (el) { if (document.fullscreenElement) document.exitFullscreen(); else el.requestFullscreen(); } }}
