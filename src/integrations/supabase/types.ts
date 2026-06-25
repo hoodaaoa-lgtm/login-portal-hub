@@ -32,6 +32,42 @@ export type Database = {
         }
         Relationships: []
       }
+      channel_follows: {
+        Row: {
+          channel_id: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          channel_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          channel_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "channel_follows_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "channel_stats_view"
+            referencedColumns: ["channel_id"]
+          },
+          {
+            foreignKeyName: "channel_follows_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "channels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       channels: {
         Row: {
           avatar_url: string | null
@@ -540,6 +576,45 @@ export type Database = {
           views_count?: number
         }
         Relationships: []
+      }
+      message_reactions: {
+        Row: {
+          created_at: string
+          emoji: string
+          id: string
+          message_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          emoji: string
+          id?: string
+          message_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          emoji?: string
+          id?: string
+          message_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_reactions_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_reactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       message_requests: {
         Row: {
@@ -1092,6 +1167,76 @@ export type Database = {
           },
         ]
       }
+      video_likes: {
+        Row: {
+          created_at: string
+          id: string
+          user_id: string
+          video_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          user_id: string
+          video_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          user_id?: string
+          video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_likes_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      video_views: {
+        Row: {
+          channel_id: string
+          country: string | null
+          id: string
+          user_id: string | null
+          video_id: string
+          viewed_at: string
+          viewer_ip: string | null
+          watch_pct: number | null
+        }
+        Insert: {
+          channel_id: string
+          country?: string | null
+          id?: string
+          user_id?: string | null
+          video_id: string
+          viewed_at?: string
+          viewer_ip?: string | null
+          watch_pct?: number | null
+        }
+        Update: {
+          channel_id?: string
+          country?: string | null
+          id?: string
+          user_id?: string | null
+          video_id?: string
+          viewed_at?: string
+          viewer_ip?: string | null
+          watch_pct?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_views_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       videos: {
         Row: {
           category: string | null
@@ -1158,6 +1303,13 @@ export type Database = {
             foreignKeyName: "videos_channel_id_fkey"
             columns: ["channel_id"]
             isOneToOne: false
+            referencedRelation: "channel_stats_view"
+            referencedColumns: ["channel_id"]
+          },
+          {
+            foreignKeyName: "videos_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
             referencedRelation: "channels"
             referencedColumns: ["id"]
           },
@@ -1165,7 +1317,22 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      channel_stats_view: {
+        Row: {
+          avg_watch_pct: number | null
+          channel_id: string | null
+          followers: number | null
+          followers_gained_28d: number | null
+          published_videos: number | null
+          total_duration_seconds: number | null
+          total_videos: number | null
+          total_views: number | null
+          views_24h: number | null
+          views_28d: number | null
+          views_7d: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       cleanup_expired_stories: { Args: never; Returns: undefined }

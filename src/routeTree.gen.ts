@@ -118,10 +118,10 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/studio': typeof StudioRouteWithChildren
   '/auth/bridge': typeof AuthBridgeRoute
+  '/studio/analytics': typeof StudioAnalyticsRoute
   '/studio/content': typeof StudioContentRoute
   '/studio/onboarding': typeof StudioOnboardingRoute
   '/studio/upload': typeof StudioUploadRoute
-  '/studio/analytics': typeof StudioAnalyticsRoute
   '/u/$username': typeof UUsernameRoute
   '/studio/': typeof StudioIndexRoute
 }
@@ -135,10 +135,10 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/auth/bridge': typeof AuthBridgeRoute
+  '/studio/analytics': typeof StudioAnalyticsRoute
   '/studio/content': typeof StudioContentRoute
   '/studio/onboarding': typeof StudioOnboardingRoute
   '/studio/upload': typeof StudioUploadRoute
-  '/studio/analytics': typeof StudioAnalyticsRoute
   '/u/$username': typeof UUsernameRoute
   '/studio': typeof StudioIndexRoute
 }
@@ -154,10 +154,10 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/studio': typeof StudioRouteWithChildren
   '/auth/bridge': typeof AuthBridgeRoute
+  '/studio/analytics': typeof StudioAnalyticsRoute
   '/studio/content': typeof StudioContentRoute
   '/studio/onboarding': typeof StudioOnboardingRoute
   '/studio/upload': typeof StudioUploadRoute
-  '/studio/analytics': typeof StudioAnalyticsRoute
   '/u/$username': typeof UUsernameRoute
   '/studio/': typeof StudioIndexRoute
 }
@@ -174,10 +174,10 @@ export interface FileRouteTypes {
     | '/signup'
     | '/studio'
     | '/auth/bridge'
+    | '/studio/analytics'
     | '/studio/content'
     | '/studio/onboarding'
     | '/studio/upload'
-    | '/studio/analytics'
     | '/u/$username'
     | '/studio/'
   fileRoutesByTo: FileRoutesByTo
@@ -191,10 +191,10 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/signup'
     | '/auth/bridge'
+    | '/studio/analytics'
     | '/studio/content'
     | '/studio/onboarding'
     | '/studio/upload'
-    | '/studio/analytics'
     | '/u/$username'
     | '/studio'
   id:
@@ -209,10 +209,10 @@ export interface FileRouteTypes {
     | '/signup'
     | '/studio'
     | '/auth/bridge'
+    | '/studio/analytics'
     | '/studio/content'
     | '/studio/onboarding'
     | '/studio/upload'
-    | '/studio/analytics'
     | '/u/$username'
     | '/studio/'
   fileRoutesById: FileRoutesById
@@ -349,16 +349,16 @@ declare module '@tanstack/react-router' {
 }
 
 interface StudioRouteChildren {
-  StudioContentRoute: typeof StudioContentRoute
   StudioAnalyticsRoute: typeof StudioAnalyticsRoute
+  StudioContentRoute: typeof StudioContentRoute
   StudioOnboardingRoute: typeof StudioOnboardingRoute
   StudioUploadRoute: typeof StudioUploadRoute
   StudioIndexRoute: typeof StudioIndexRoute
 }
 
 const StudioRouteChildren: StudioRouteChildren = {
-  StudioContentRoute: StudioContentRoute,
   StudioAnalyticsRoute: StudioAnalyticsRoute,
+  StudioContentRoute: StudioContentRoute,
   StudioOnboardingRoute: StudioOnboardingRoute,
   StudioUploadRoute: StudioUploadRoute,
   StudioIndexRoute: StudioIndexRoute,
@@ -383,13 +383,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
