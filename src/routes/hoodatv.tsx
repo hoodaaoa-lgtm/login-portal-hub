@@ -180,7 +180,7 @@ function useVideos(sort: "views" | "recent") {
     queryFn: async () => {
       const { data } = await (supabase as any)
         .from("videos")
-        .select("id,title,thumbnail_url,duration_seconds,views_count,likes_count,created_at,published_at,channel_id,cf_embed_url,cf_stream_uid,channels(name,handle,avatar_url)")
+        .select("id,title,thumbnail_url,duration_seconds,views_count,likes_count,created_at,published_at,channel_id,cf_embed_url,cf_stream_uid,cf_stream_url,channels(name,handle,avatar_url)")
         .eq("status", "published").eq("visibility", "public")
         .order(sort === "views" ? "views_count" : "created_at", { ascending: false }).limit(16);
       return (data ?? []).map((v: any) => ({ ...v, channel: v.channels }));
