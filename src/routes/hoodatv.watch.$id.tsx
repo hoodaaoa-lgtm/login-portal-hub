@@ -935,6 +935,7 @@ function WatchPage() {
                     onWaiting={() => setIsBuffering(true)}
                     onPlaying={() => setIsBuffering(false)}
                     onCanPlay={() => setIsBuffering(false)}
+                    onContextMenu={e => e.preventDefault()}
                   />
                   {/* Buffer spinner */}
                   {isBuffering && (
@@ -943,11 +944,12 @@ function WatchPage() {
                       <div className="w-12 h-12 rounded-full border-4 border-white/20 border-t-white animate-spin" />
                     </div>
                   )}
-                  {/* Botão ⋮ dentro do player */}
+                  {/* Botão ⋮ dentro do player — bloqueia menu nativo */}
                   <button
-                    onClick={() => setShowMenu(true)}
+                    onClick={e => { e.stopPropagation(); setShowMenu(true); }}
+                    onContextMenu={e => e.preventDefault()}
                     className="absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center transition-all opacity-0 group-hover:opacity-100"
-                    style={{ background: "rgba(0,0,0,0.55)", color: "#fff", backdropFilter: "blur(4px)" }}>
+                    style={{ background: "rgba(0,0,0,0.55)", color: "#fff", backdropFilter: "blur(4px)", zIndex: 10 }}>
                     <MoreVertical className="w-5 h-5" />
                   </button>
                 </>
