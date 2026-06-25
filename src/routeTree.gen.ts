@@ -20,12 +20,12 @@ import { Route as ExplorarRouteImport } from './routes/explorar'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as StudioIndexRouteImport } from './routes/studio.index'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
-import { Route as HoodatvCanalHandleRouteImport } from './routes/hoodatv.canal.$handle'
 import { Route as StudioUploadRouteImport } from './routes/studio.upload'
 import { Route as StudioOnboardingRouteImport } from './routes/studio.onboarding'
 import { Route as StudioContentRouteImport } from './routes/studio.content'
 import { Route as StudioAnalyticsRouteImport } from './routes/studio.analytics'
 import { Route as AuthBridgeRouteImport } from './routes/auth.bridge'
+import { Route as HoodatvCanalHandleRouteImport } from './routes/hoodatv.canal.$handle'
 
 const StudioRoute = StudioRouteImport.update({
   id: '/studio',
@@ -102,23 +102,22 @@ const StudioAnalyticsRoute = StudioAnalyticsRouteImport.update({
   path: '/analytics',
   getParentRoute: () => StudioRoute,
 } as any)
-const HoodatvCanalHandleRoute = HoodatvCanalHandleRouteImport.update({
-  id: '/hoodatv/canal/$handle',
-  path: '/canal/$handle',
-  getParentRoute: () => HoodatvRoute,
-} as any)
-
 const AuthBridgeRoute = AuthBridgeRouteImport.update({
   id: '/auth/bridge',
   path: '/auth/bridge',
   getParentRoute: () => rootRouteImport,
+} as any)
+const HoodatvCanalHandleRoute = HoodatvCanalHandleRouteImport.update({
+  id: '/canal/$handle',
+  path: '/canal/$handle',
+  getParentRoute: () => HoodatvRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/explorar': typeof ExplorarRoute
   '/home': typeof HomeRoute
-  '/hoodatv': typeof HoodatvRoute
+  '/hoodatv': typeof HoodatvRouteWithChildren
   '/mensagens': typeof MensagensRoute
   '/perfil': typeof PerfilRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -137,7 +136,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/explorar': typeof ExplorarRoute
   '/home': typeof HomeRoute
-  '/hoodatv': typeof HoodatvRoute
+  '/hoodatv': typeof HoodatvRouteWithChildren
   '/mensagens': typeof MensagensRoute
   '/perfil': typeof PerfilRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -156,7 +155,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/explorar': typeof ExplorarRoute
   '/home': typeof HomeRoute
-  '/hoodatv': typeof HoodatvRoute
+  '/hoodatv': typeof HoodatvRouteWithChildren
   '/mensagens': typeof MensagensRoute
   '/perfil': typeof PerfilRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -190,7 +189,6 @@ export interface FileRouteTypes {
     | '/studio/upload'
     | '/u/$username'
     | '/studio/'
-    | '/hoodatv/canal/$handle'
     | '/hoodatv/canal/$handle'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -229,14 +227,13 @@ export interface FileRouteTypes {
     | '/u/$username'
     | '/studio/'
     | '/hoodatv/canal/$handle'
-    | '/hoodatv/canal/$handle'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ExplorarRoute: typeof ExplorarRoute
   HomeRoute: typeof HomeRoute
-  HoodatvRoute: typeof HoodatvRoute
+  HoodatvRoute: typeof HoodatvRouteWithChildren
   MensagensRoute: typeof MensagensRoute
   PerfilRoute: typeof PerfilRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
@@ -244,7 +241,6 @@ export interface RootRouteChildren {
   StudioRoute: typeof StudioRouteWithChildren
   AuthBridgeRoute: typeof AuthBridgeRoute
   UUsernameRoute: typeof UUsernameRoute
-  HoodatvCanalHandleRoute: typeof HoodatvCanalHandleRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -354,19 +350,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StudioAnalyticsRouteImport
       parentRoute: typeof StudioRoute
     }
-    '/hoodatv/canal/$handle': {
-      id: '/hoodatv/canal/$handle'
-      path: '/canal/$handle'
-      fullPath: '/hoodatv/canal/$handle'
-      preLoaderRoute: typeof HoodatvCanalHandleRouteImport
-      parentRoute: typeof HoodatvRoute
-    }
     '/auth/bridge': {
       id: '/auth/bridge'
       path: '/auth/bridge'
       fullPath: '/auth/bridge'
       preLoaderRoute: typeof AuthBridgeRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/hoodatv/canal/$handle': {
+      id: '/hoodatv/canal/$handle'
+      path: '/canal/$handle'
+      fullPath: '/hoodatv/canal/$handle'
+      preLoaderRoute: typeof HoodatvCanalHandleRouteImport
+      parentRoute: typeof HoodatvRoute
     }
   }
 }
