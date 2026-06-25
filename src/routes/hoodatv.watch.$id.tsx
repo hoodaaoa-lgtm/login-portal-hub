@@ -381,12 +381,11 @@ function VideoOptionsDropdown({
 }) {
   const [showSpeed, setShowSpeed] = useState(false);
   const [showQuality, setShowQuality] = useState(false);
-  const hasQuality = availableHeights.length > 0;
 
   const items = [
     { icon: <Clock3 className="w-4 h-4" />, label: "Assistir mais tarde", action: onWatchLater },
     { icon: <Gauge className="w-4 h-4" />, label: "Velocidade", sub: `${speed}x`, action: () => setShowSpeed(true), chevron: true },
-    ...(hasQuality ? [{ icon: <Settings2 className="w-4 h-4" />, label: "Qualidade", sub: quality === "auto" ? "Automática" : `${quality}p`, action: () => setShowQuality(true), chevron: true }] : []),
+    { icon: <Settings2 className="w-4 h-4" />, label: "Qualidade", sub: quality === "auto" ? "Automática" : `${quality}p`, action: () => setShowQuality(true), chevron: true },
     { icon: <Repeat className="w-4 h-4" />, label: "Repetir vídeo", sub: looping ? "Ativo" : "Desativado", action: () => { onLoopToggle(); onClose(); }, active: looping },
     { icon: <Activity className="w-4 h-4" />, label: "Estatísticas para nerds", sub: showNerdStats ? "Ativadas" : "Desativadas", action: () => { onToggleNerdStats(); onClose(); }, active: showNerdStats },
     ...(hasPiP ? [{ icon: <Minimize2 className="w-4 h-4" />, label: "Miniplayer (PiP)", action: () => { onPiP(); onClose(); } }] : []),
@@ -432,19 +431,25 @@ function VideoOptionsDropdown({
               <span>Automática</span>
               {quality === "auto" && <Check className="w-3.5 h-3.5" style={{ color: P }} />}
             </button>
-            {QUALITY_OPTIONS.map(opt => {
-              const disponivel = availableHeights.includes(opt.height);
-              return (
-                <button key={opt.height}
-                  onClick={() => { if (disponivel) { onQualityChange(opt.height); setShowQuality(false); onClose(); } }}
-                  disabled={!disponivel}
-                  className="w-full flex items-center justify-between px-4 py-2.5 text-sm transition hover:bg-white/10 disabled:hover:bg-transparent disabled:cursor-not-allowed"
-                  style={{ color: !disponivel ? "rgba(255,255,255,0.3)" : quality === opt.height ? P : "#fff" }}>
-                  <span>{opt.label}</span>
-                  {quality === opt.height && <Check className="w-3.5 h-3.5" style={{ color: P }} />}
-                </button>
-              );
-            })}
+            {availableHeights.length === 0 ? (
+              <p className="px-4 py-3 text-xs leading-relaxed" style={{ color: "rgba(255,255,255,0.45)" }}>
+                A carregar resoluções do vídeo… Se isto não mudar em alguns segundos, este vídeo não suporta troca manual de qualidade (apenas vídeos HLS do Cloudflare Stream suportam).
+              </p>
+            ) : (
+              QUALITY_OPTIONS.map(opt => {
+                const disponivel = availableHeights.includes(opt.height);
+                return (
+                  <button key={opt.height}
+                    onClick={() => { if (disponivel) { onQualityChange(opt.height); setShowQuality(false); onClose(); } }}
+                    disabled={!disponivel}
+                    className="w-full flex items-center justify-between px-4 py-2.5 text-sm transition hover:bg-white/10 disabled:hover:bg-transparent disabled:cursor-not-allowed"
+                    style={{ color: !disponivel ? "rgba(255,255,255,0.3)" : quality === opt.height ? P : "#fff" }}>
+                    <span>{opt.label}</span>
+                    {quality === opt.height && <Check className="w-3.5 h-3.5" style={{ color: P }} />}
+                  </button>
+                );
+              })
+            )}
           </>
         ) : (
           items.map((item: any, i) => (
@@ -893,7 +898,10 @@ function WatchPage() {
       });
 
       hls.on(Hls.Events.ERROR, (_evt, data) => {
-        if (data.fatal) console.error("[HoodaTV] Erro fatal no HLS:", data);
+        if (data.fatal) {
+          console.error("[HoodaTV] Erro fatal no HLS:", data);
+          toast.error("Não foi possível carregar as qualidades do vídeo (erro de rede/HLS).");
+        }
       });
 
       hls.loadSource(playerUrl);
