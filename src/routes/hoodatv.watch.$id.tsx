@@ -8,7 +8,7 @@ import {
   Bell, BellOff, Bookmark, BookmarkCheck, Copy, Check,
   MessageCircle, Send, Smile, Trash2, CornerDownRight, X,
   MoreVertical, Clock3, Ban, Flag, BarChart2, Repeat, Minimize2,
-  ChevronRight, Gauge, Volume2, VolumeX, Maximize, Settings2,
+  ChevronRight, Gauge, Volume2, VolumeX, Maximize, Settings2, Activity,
 } from "lucide-react";
 import { toast } from "sonner";
 import Hls from "hls.js";
@@ -369,14 +369,15 @@ function StatsModal({ video, reactions, onClose }: { video: any; reactions: any;
 /* ── Dropdown YouTube-style ── */
 function VideoOptionsDropdown({
   onClose, onWatchLater, onNotInterested, onReport, onStats,
-  onSpeedChange, onLoopToggle, onPiP, onQualityChange,
-  speed, looping, hasPiP, isSaved, quality, availableHeights,
+  onSpeedChange, onLoopToggle, onPiP, onQualityChange, onToggleNerdStats,
+  speed, looping, hasPiP, isSaved, quality, availableHeights, showNerdStats,
 }: {
   onClose: () => void; onWatchLater: () => void; onNotInterested: () => void;
   onReport: () => void; onStats: () => void; onSpeedChange: (s: number) => void;
   onLoopToggle: () => void; onPiP: () => void; onQualityChange: (q: number | "auto") => void;
+  onToggleNerdStats: () => void;
   speed: number; looping: boolean; hasPiP: boolean; isSaved: boolean;
-  quality: number | "auto"; availableHeights: number[];
+  quality: number | "auto"; availableHeights: number[]; showNerdStats: boolean;
 }) {
   const [showSpeed, setShowSpeed] = useState(false);
   const [showQuality, setShowQuality] = useState(false);
@@ -387,6 +388,7 @@ function VideoOptionsDropdown({
     { icon: <Gauge className="w-4 h-4" />, label: "Velocidade", sub: `${speed}x`, action: () => setShowSpeed(true), chevron: true },
     ...(hasQuality ? [{ icon: <Settings2 className="w-4 h-4" />, label: "Qualidade", sub: quality === "auto" ? "Automática" : `${quality}p`, action: () => setShowQuality(true), chevron: true }] : []),
     { icon: <Repeat className="w-4 h-4" />, label: "Repetir vídeo", sub: looping ? "Ativo" : "Desativado", action: () => { onLoopToggle(); onClose(); }, active: looping },
+    { icon: <Activity className="w-4 h-4" />, label: "Estatísticas para nerds", sub: showNerdStats ? "Ativadas" : "Desativadas", action: () => { onToggleNerdStats(); onClose(); }, active: showNerdStats },
     ...(hasPiP ? [{ icon: <Minimize2 className="w-4 h-4" />, label: "Miniplayer (PiP)", action: () => { onPiP(); onClose(); } }] : []),
     { icon: <BarChart2 className="w-4 h-4" />, label: "Estatísticas", action: () => { onStats(); onClose(); } },
     { icon: <Ban className="w-4 h-4" />, label: "Não tenho interesse", action: () => { onNotInterested(); onClose(); } },
@@ -728,6 +730,12 @@ function WatchPage() {
   const [muted, setMuted]             = useState(false);
   const [quality, setQuality]         = useState<number | "auto">("auto");
   const [availableHeights, setAvailableHeights] = useState<number[]>([]);
+  const [showNerdStats, setShowNerdStats] = useState(false);
+  const [nerdStats, setNerdStats] = useState<{
+    videoId: string; viewport: string; currentRes: string; optimalRes: string;
+    volume: string; codecs: string; host: string; connection: string;
+    buffer: string; dropped: string; mode: string;
+  } | null>(null);
 
   const bg = avatarColor(ch?.name ?? "");
 
@@ -921,6 +929,62 @@ function WatchPage() {
     }
   }
 
+  /* ── Estatísticas para nerds (dados reais do player) ── */
+  function computeNerdStats() {
+    const vid = videoRef.current;
+    if (!vid) return null;
+    const hls = hlsRef.current;
+
+    const currentRes = vid.videoWidth && vid.videoHeight ? `${vid.videoWidth}x${vid.videoHeight}` : "—";
+
+    let optimalRes = currentRes;
+    if (hls && hls.levels.length) {
+      const best = hls.levels.reduce((a, b) => ((b.height ?? 0) > (a.height ?? 0) ? b : a));
+      if (best?.width && best?.height) optimalRes = `${best.width}x${best.height}`;
+    }
+
+    let codecs = "—";
+    if (hls && hls.levels[hls.currentLevel]) {
+      const lvl = hls.levels[hls.currentLevel];
+      codecs = `${lvl.videoCodec ?? "?"} / ${lvl.audioCodec ?? "?"}`;
+    }
+
+    let host = "—";
+    try { host = playerUrl ? new URL(playerUrl).hostname : "—"; } catch {}
+
+    const connection = hls?.bandwidthEstimate ? `${Math.round(hls.bandwidthEstimate / 1000)} Kbps` : "—";
+
+    let buffer = "0.00 s";
+    const ranges = vid.buffered;
+    for (let i = 0; i < ranges.length; i++) {
+      if (vid.currentTime >= ranges.start(i) && vid.currentTime <= ranges.end(i)) {
+        buffer = `${(ranges.end(i) - vid.currentTime).toFixed(2)} s`;
+        break;
+      }
+    }
+
+    let dropped = "Não suportado";
+    const vq = (vid as any).getVideoPlaybackQuality?.();
+    if (vq) dropped = `${vq.droppedVideoFrames}/${vq.totalVideoFrames}`;
+
+    return {
+      videoId: id,
+      viewport: `${vid.clientWidth}x${vid.clientHeight}`,
+      currentRes, optimalRes,
+      volume: vid.muted ? "Mudo" : `${Math.round(vid.volume * 100)}%`,
+      codecs, host, connection, buffer, dropped,
+      mode: hls ? (hls.autoLevelEnabled ? "Automático" : "Manual") : "Direto",
+    };
+  }
+
+  useEffect(() => {
+    if (!showNerdStats) { setNerdStats(null); return; }
+    const update = () => setNerdStats(computeNerdStats());
+    update();
+    const interval = setInterval(update, 500);
+    return () => clearInterval(interval);
+  }, [showNerdStats, playerUrl, quality]);
+
   /* ── Título limpo — remove IDs e handles expostos acidentalmente ── */
   function cleanTitle(raw: string | null): string {
     if (!raw) return "";
@@ -1046,6 +1110,35 @@ function WatchPage() {
                     </div>
                   )}
 
+                  {/* Estatísticas para nerds */}
+                  {showNerdStats && nerdStats && (
+                    <div className="absolute top-2 left-2 z-20 rounded-md px-3 py-2 text-[11px] leading-snug font-mono"
+                      style={{ background: "rgba(0,0,0,0.82)", color: "#fff", minWidth: 240 }}
+                      onClick={e => e.stopPropagation()}>
+                      <div className="flex items-center justify-between mb-1.5 gap-3">
+                        <span className="font-bold">Estatísticas para nerds</span>
+                        <button onClick={() => setShowNerdStats(false)} className="opacity-70 hover:opacity-100 px-1">[x]</button>
+                      </div>
+                      {[
+                        ["ID do vídeo", nerdStats.videoId],
+                        ["Viewport", nerdStats.viewport],
+                        ["Resolução atual / ideal", `${nerdStats.currentRes} / ${nerdStats.optimalRes}`],
+                        ["Volume", nerdStats.volume],
+                        ["Codecs", nerdStats.codecs],
+                        ["Host", nerdStats.host],
+                        ["Ligação (estimada)", nerdStats.connection],
+                        ["Saúde do buffer", nerdStats.buffer],
+                        ["Frames perdidos", nerdStats.dropped],
+                        ["Modo de qualidade", nerdStats.mode],
+                      ].map(([label, value]) => (
+                        <div key={label} className="flex justify-between gap-3">
+                          <span style={{ color: "rgba(255,255,255,0.6)" }}>{label}</span>
+                          <span className="text-right">{value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
                   {/* Controles personalizados */}
                   <div className="absolute bottom-0 left-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
                     style={{ background: "linear-gradient(transparent, rgba(0,0,0,0.85))", paddingBottom: "8px" }}>
@@ -1110,12 +1203,14 @@ function WatchPage() {
                             onLoopToggle={() => { setLooping(l => !l); setShowMenu(false); }}
                             onPiP={handlePiP}
                             onQualityChange={handleQualityChange}
+                            onToggleNerdStats={() => setShowNerdStats(s => !s)}
                             speed={speed}
                             looping={looping}
                             hasPiP={hasPiP && !!playerUrl}
                             isSaved={isSaved}
                             quality={quality}
                             availableHeights={availableHeights}
+                            showNerdStats={showNerdStats}
                           />
                         )}
                       </div>
