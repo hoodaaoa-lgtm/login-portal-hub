@@ -4,11 +4,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { BottomNav, SideNav, PageWrapper } from "@/components/AppShell";
 import { useState, useRef, useEffect, useCallback } from "react";
 import {
-  ChevronLeft, Play, ThumbsUp, ThumbsDown, Share2, Eye, Clock,
+  ChevronLeft, Play, Pause, ThumbsUp, ThumbsDown, Share2, Eye, Clock,
   Bell, BellOff, Bookmark, BookmarkCheck, Copy, Check,
   MessageCircle, Send, Smile, Trash2, CornerDownRight, X,
   MoreVertical, Clock3, Ban, Flag, BarChart2, Repeat, Minimize2,
-  ChevronRight, Gauge,
+  ChevronRight, Gauge, Volume2, VolumeX, Maximize,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -701,6 +701,10 @@ function WatchPage() {
   const [looping, setLooping]         = useState(false);
   const [hasPiP, setHasPiP]          = useState(false);
   const [isBuffering, setIsBuffering] = useState(false);
+  const [isPlaying, setIsPlaying]     = useState(true);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration]       = useState(0);
+  const [muted, setMuted]             = useState(false);
 
   const bg = avatarColor(ch?.name ?? "");
 
@@ -926,32 +930,80 @@ function WatchPage() {
                     ref={videoRef}
                     key={playerUrl}
                     src={playerUrl}
-                    controls
                     autoPlay
                     playsInline
                     preload="metadata"
                     loop={looping}
                     className="w-full h-full"
                     onWaiting={() => setIsBuffering(true)}
-                    onPlaying={() => setIsBuffering(false)}
+                    onPlaying={() => { setIsBuffering(false); setIsPlaying(true); }}
                     onCanPlay={() => setIsBuffering(false)}
+                    onPause={() => setIsPlaying(false)}
+                    onTimeUpdate={() => {
+                      const v = videoRef.current;
+                      if (v) { setCurrentTime(v.currentTime); setDuration(v.duration || 0); }
+                    }}
                     onContextMenu={e => e.preventDefault()}
+                    onClick={() => { const v = videoRef.current; if (v) { v.paused ? v.play() : v.pause(); } }}
                   />
+
                   {/* Buffer spinner */}
                   {isBuffering && (
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none"
-                      style={{ background: "rgba(0,0,0,0.35)" }}>
+                      style={{ background: "rgba(0,0,0,0.3)" }}>
                       <div className="w-12 h-12 rounded-full border-4 border-white/20 border-t-white animate-spin" />
                     </div>
                   )}
-                  {/* Botão ⋮ dentro do player — bloqueia menu nativo */}
-                  <button
-                    onClick={e => { e.stopPropagation(); setShowMenu(true); }}
-                    onContextMenu={e => e.preventDefault()}
-                    className="absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center transition-all opacity-0 group-hover:opacity-100"
-                    style={{ background: "rgba(0,0,0,0.55)", color: "#fff", backdropFilter: "blur(4px)", zIndex: 10 }}>
-                    <MoreVertical className="w-5 h-5" />
-                  </button>
+
+                  {/* Controles personalizados */}
+                  <div className="absolute bottom-0 left-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                    style={{ background: "linear-gradient(transparent, rgba(0,0,0,0.85))", paddingBottom: "8px" }}>
+
+                    {/* Barra de progresso */}
+                    <div className="px-3 pb-1">
+                      <input type="range" min={0} max={duration || 100} value={currentTime} step={0.5}
+                        onChange={e => { const v = videoRef.current; if (v) v.currentTime = Number(e.target.value); setCurrentTime(Number(e.target.value)); }}
+                        className="w-full h-1 rounded-full appearance-none cursor-pointer"
+                        style={{ accentColor: P }} />
+                    </div>
+
+                    {/* Botões */}
+                    <div className="flex items-center gap-1 px-3">
+                      {/* Play/Pause */}
+                      <button onClick={() => { const v = videoRef.current; if (v) { v.paused ? v.play() : v.pause(); } }}
+                        className="w-9 h-9 flex items-center justify-center rounded-full transition hover:bg-white/10 text-white">
+                        {isPlaying ? <Pause className="w-5 h-5 fill-white" /> : <Play className="w-5 h-5 fill-white" />}
+                      </button>
+
+                      {/* Volume */}
+                      <button onClick={() => { const v = videoRef.current; if (v) { v.muted = !v.muted; setMuted(m => !m); } }}
+                        className="w-9 h-9 flex items-center justify-center rounded-full transition hover:bg-white/10 text-white">
+                        {muted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+                      </button>
+
+                      {/* Tempo */}
+                      <span className="text-white text-xs font-mono flex-1 ml-1">
+                        {fmtDur(Math.floor(currentTime))} / {fmtDur(Math.floor(duration))}
+                      </span>
+
+                      {/* Velocidade */}
+                      {speed !== 1 && (
+                        <span className="text-xs font-bold px-2 py-0.5 rounded-full mr-1" style={{ background: `${P}cc`, color: "#fff" }}>{speed}x</span>
+                      )}
+
+                      {/* ⋮ Menu */}
+                      <button onClick={e => { e.stopPropagation(); setShowMenu(true); }}
+                        className="w-9 h-9 flex items-center justify-center rounded-full transition hover:bg-white/10 text-white">
+                        <MoreVertical className="w-5 h-5" />
+                      </button>
+
+                      {/* Fullscreen */}
+                      <button onClick={() => { const el = videoRef.current; if (el) { if (document.fullscreenElement) document.exitFullscreen(); else el.requestFullscreen(); } }}
+                        className="w-9 h-9 flex items-center justify-center rounded-full transition hover:bg-white/10 text-white">
+                        <Maximize className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
                 </>
               ) : hasEmbed ? (
                 <iframe src={`${video.cf_embed_url}?autoplay=true`} className="w-full h-full"
