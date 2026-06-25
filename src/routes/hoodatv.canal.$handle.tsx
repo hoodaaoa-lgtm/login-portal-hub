@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { channelPlaylistsQuery, type Playlist } from "@/lib/playlist-queries";
+import { PhotoViewer } from "@/components/PhotoViewer";
 
 export const Route = createFileRoute("/hoodatv/canal/$handle")({
   head: ({ params }) => ({ meta: [{ title: `${params.handle} — HoodaTV` }] }),
@@ -263,6 +264,7 @@ function ChannelPage() {
   const [tab, setTab]         = useState<Tab>("videos");
   const [playing, setPlaying] = useState<any>(null);
   const [search, setSearch]   = useState("");
+  const [photoViewerSrc, setPhotoViewerSrc] = useState<string | null>(null);
 
   const { data: channel, isLoading: chLoading } = useChannel(handle);
   const { data: videos = [], isLoading: vLoading } = useChannelVideos(channel?.id);
@@ -364,8 +366,11 @@ function ChannelPage() {
           {/* ── Avatar sobre o banner ── */}
           <div className="px-4 sm:px-6">
             <div className="flex items-end gap-4 -mt-10 sm:-mt-12">
-              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden flex items-center justify-center text-white text-2xl font-black ring-4 shrink-0"
-                style={{ background: bg }}>
+              <div
+                className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden flex items-center justify-center text-white text-2xl font-black ring-4 shrink-0"
+                style={{ background: bg, cursor: channel.avatar_url ? "pointer" : "default" }}
+                onClick={() => channel.avatar_url && setPhotoViewerSrc(channel.avatar_url)}
+              >
                 {channel.avatar_url
                   ? <img src={channel.avatar_url} alt="" className="w-full h-full object-cover" />
                   : (channel.name?.[0] ?? "?").toUpperCase()}
@@ -593,6 +598,9 @@ function ChannelPage() {
 
         <BottomNav />
       </PageWrapper>
+      {photoViewerSrc && (
+        <PhotoViewer src={photoViewerSrc} alt={channel?.name ?? "Foto"} onClose={() => setPhotoViewerSrc(null)} />
+      )}
     </>
   );
 }

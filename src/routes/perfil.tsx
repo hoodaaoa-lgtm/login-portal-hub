@@ -20,6 +20,7 @@ import { PostCommentsModal } from "@/components/PostCommentsModal";
 import { fetchPostComments, sendPostComment, replyToPostComment, toggleCommentLike } from "@/lib/comments";
 import { deletePostForEveryone, fetchMyShareableCommunities, sharePostToCommunity, type MyCommunity } from "@/lib/posts";
 import { toast } from "sonner";
+import { PhotoViewer } from "@/components/PhotoViewer";
 
 export const Route = createFileRoute("/perfil")({
   head: () => ({ meta: [{ title: "hooda — Perfil" }] }),
@@ -1260,6 +1261,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
   const [savedLoading, setSavedLoading] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
+  const [photoViewerSrc, setPhotoViewerSrc] = useState<string | null>(null);
 
   function pickFile(ref: React.RefObject<HTMLInputElement | null>, onDone: (url: string) => void, saveToDb?: "avatar") {
     if (!ref.current) return;
@@ -1513,12 +1515,15 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
               <div className="rounded-full p-[3px]"
                 style={{ background: "linear-gradient(135deg, #5B3FCF 0%, #E94B8A 50%, #FFC93C 100%)" }}>
                 <div className="rounded-full p-[2px] bg-white">
-                  <div style={{
-                    width: 90, height: 90, borderRadius: "50%",
-                    overflow: "hidden", background: avatarUrl ? "transparent" : getColor(name),
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: 32, fontWeight: 700, color: "white",
-                  }}>
+                  <div
+                    onClick={() => avatarUrl && setPhotoViewerSrc(avatarUrl)}
+                    style={{
+                      width: 90, height: 90, borderRadius: "50%",
+                      overflow: "hidden", background: avatarUrl ? "transparent" : getColor(name),
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: 32, fontWeight: 700, color: "white",
+                      cursor: avatarUrl ? "pointer" : "default",
+                    }}>
                     {avatarUrl
                       ? <img src={avatarUrl} alt={name} style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={(e) => { e.currentTarget.style.display = "none"; }} />
                       : (name?.[0] ?? "?").toUpperCase()}
@@ -1714,6 +1719,9 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
           onClose={() => setShowCreate(false)}
           onPublish={(data) => { addPost(data); setShowCreate(false); }}
         />
+      )}
+      {photoViewerSrc && (
+        <PhotoViewer src={photoViewerSrc} alt={name} onClose={() => setPhotoViewerSrc(null)} />
       )}
     </PageWrapper>
     </>
