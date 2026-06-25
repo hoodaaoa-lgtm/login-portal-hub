@@ -289,14 +289,14 @@ function VideoModal({ v, onClose }: { v: any; onClose: () => void }) {
 }
 
 /* ── Video Card ── */
-function VideoCard({ v, rank, onPlay }: { v: any; rank?: number; onPlay: (v: any) => void }) {
+function VideoCard({ v, rank }: { v: any; rank?: number }) {
   const [menu, setMenu] = useState(false);
   const navigate = useNavigate();
   const ch = v.channel;
   const bg = avatarColor(ch?.name ?? "");
 
   return (
-    <div className="group cursor-pointer" onClick={() => onPlay(v)}>
+    <div className="group cursor-pointer" onClick={() => navigate({ to: "/hoodatv/watch/$id", params: { id: v.id } })}>
       {/* Thumbnail */}
       <div className="relative aspect-video rounded-2xl overflow-hidden"
         style={{ background: "var(--s3)", boxShadow: "0 4px 16px rgba(0,0,0,0.10)" }}>
@@ -367,7 +367,9 @@ function VideoCard({ v, rank, onPlay }: { v: any; rank?: number; onPlay: (v: any
           {ch?.avatar_url ? <img src={ch.avatar_url} alt="" className="w-full h-full object-cover" /> : (ch?.name?.[0] ?? "?").toUpperCase()}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[13px] font-bold leading-[1.35] line-clamp-2" style={{ color: "var(--text-primary)" }}>
+          <p className="text-[13px] font-bold leading-[1.35] line-clamp-2 cursor-pointer"
+            style={{ color: "var(--text-primary)" }}
+            onClick={() => navigate({ to: "/hoodatv/watch/$id", params: { id: v.id } })}>
             {v.title}
           </p>
           <p className="text-[12px] mt-0.5 font-medium hover:underline cursor-pointer" style={{ color: "var(--text-secondary)" }}
@@ -457,8 +459,6 @@ function HoodaTVPage() {
 function HoodaTVMain() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<FilterKey>("alta");
-  const [playing, setPlaying] = useState<any>(null);
-
   // ── Intro: uma vez por sessão ──
   const [showIntro, setShowIntro] = useState(() => !_introSeenThisSession);
   const handleIntroDone = () => {
@@ -560,8 +560,6 @@ function HoodaTVMain() {
           )}
         </div>
 
-        {playing && <VideoModal v={playing} onClose={() => setPlaying(null)} />}
-
         <div className="max-w-6xl mx-auto px-4 py-7 space-y-12">
 
           {/* ══ SEARCH RESULTS ══ */}
@@ -570,7 +568,7 @@ function HoodaTVMain() {
               <SHead icon={<Search className="w-4 h-4" />} title={`Resultados para "${search}"`} accent={P} />
               {!searchVideos.length
                 ? <Empty msg={`Sem resultados para "${search}"`} />
-                : <Grid>{searchVideos.map((v: any) => <VideoCard key={v.id} v={v} onPlay={setPlaying} />)}</Grid>}
+                : <Grid>{searchVideos.map((v: any) => <VideoCard key={v.id} v={v} />)}</Grid>}
             </section>
           )}
 
@@ -587,7 +585,7 @@ function HoodaTVMain() {
                 ? <Grid>{Array.from({length:8}).map((_,i)=><VSkel key={i}/>)}</Grid>
                 : !showVideos?.length
                   ? <Empty msg="Ainda não há vídeos publicados." />
-                  : <Grid>{showVideos.map((v:any,i:number)=><VideoCard key={v.id} v={v} rank={filter==="alta"?i:undefined} onPlay={setPlaying}/>)}</Grid>}
+                  : <Grid>{showVideos.map((v:any,i:number)=><VideoCard key={v.id} v={v} rank={filter==="alta"?i:undefined}/>)}</Grid>}
             </section>
           )}
 
@@ -599,7 +597,7 @@ function HoodaTVMain() {
                 ? <Grid>{Array.from({length:8}).map((_,i)=><VSkel key={i}/>)}</Grid>
                 : !recent?.length
                   ? <Empty msg="Ainda sem recomendações — explora outros canais primeiro." />
-                  : <Grid>{[...(recent??[])].sort(()=>Math.random()-.5).map((v:any)=><VideoCard key={v.id} v={v} onPlay={setPlaying}/>)}</Grid>}
+                  : <Grid>{[...(recent??[])].sort(()=>Math.random()-.5).map((v:any)=><VideoCard key={v.id} v={v}/>)}</Grid>}
             </section>
           )}
 

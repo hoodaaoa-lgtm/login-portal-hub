@@ -66,7 +66,7 @@ function useChannelVideos(channelId: string | undefined) {
       if (!channelId) return [];
       const { data } = await (supabase as any)
         .from("videos")
-        .select("id,title,thumbnail_url,duration_seconds,views_count,likes_count,published_at,created_at,cf_embed_url,cf_stream_uid")
+        .select("id,title,thumbnail_url,duration_seconds,views_count,likes_count,published_at,created_at,cf_embed_url,cf_stream_uid,cf_stream_url,video_path")
         .eq("channel_id", channelId)
         .eq("status", "published")
         .eq("visibility", "public")
@@ -118,9 +118,10 @@ function useIsFollowing(userId: string | null, channelId: string | undefined) {
 }
 
 /* ── Video Card ── */
-function VideoCard({ v, onPlay }: { v: any; onPlay: (v: any) => void }) {
+function VideoCard({ v }: { v: any }) {
+  const navigate = useNavigate();
   return (
-    <div className="group cursor-pointer" onClick={() => onPlay(v)}>
+    <div className="group cursor-pointer" onClick={() => navigate({ to: "/hoodatv/watch/$id", params: { id: v.id } })}>
       <div className="relative aspect-video rounded-2xl overflow-hidden" style={{ background: "var(--s3)" }}>
         {v.thumbnail_url
           ? <img src={v.thumbnail_url} alt={v.title} loading="lazy"
@@ -433,7 +434,7 @@ function ChannelPage() {
                     </div>
                   : <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
                       {filteredVideos.map((v: any) => (
-                        <VideoCard key={v.id} v={v} onPlay={setPlaying} />
+                        <VideoCard key={v.id} v={v} />
                       ))}
                     </div>}
             </div>

@@ -26,6 +26,7 @@ import { Route as StudioContentRouteImport } from './routes/studio.content'
 import { Route as StudioAnalyticsRouteImport } from './routes/studio.analytics'
 import { Route as AuthBridgeRouteImport } from './routes/auth.bridge'
 import { Route as HoodatvCanalHandleRouteImport } from './routes/hoodatv.canal.$handle'
+import { Route as HoodatvWatchIdRouteImport } from './routes/hoodatv.watch.$id'
 
 const StudioRoute = StudioRouteImport.update({
   id: '/studio',
@@ -112,6 +113,11 @@ const HoodatvCanalHandleRoute = HoodatvCanalHandleRouteImport.update({
   path: '/canal/$handle',
   getParentRoute: () => HoodatvRoute,
 } as any)
+const HoodatvWatchIdRoute = HoodatvWatchIdRouteImport.update({
+  id: '/watch/$id',
+  path: '/watch/$id',
+  getParentRoute: () => HoodatvRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -131,6 +137,7 @@ export interface FileRoutesByFullPath {
   '/u/$username': typeof UUsernameRoute
   '/studio/': typeof StudioIndexRoute
   '/hoodatv/canal/$handle': typeof HoodatvCanalHandleRoute
+  '/hoodatv/watch/$id': typeof HoodatvWatchIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -149,6 +156,7 @@ export interface FileRoutesByTo {
   '/u/$username': typeof UUsernameRoute
   '/studio': typeof StudioIndexRoute
   '/hoodatv/canal/$handle': typeof HoodatvCanalHandleRoute
+  '/hoodatv/watch/$id': typeof HoodatvWatchIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -373,6 +381,7 @@ interface HoodatvRouteChildren {
 
 const HoodatvRouteChildren: HoodatvRouteChildren = {
   HoodatvCanalHandleRoute: HoodatvCanalHandleRoute,
+    HoodatvWatchIdRoute,
 }
 
 const HoodatvRouteWithChildren =
