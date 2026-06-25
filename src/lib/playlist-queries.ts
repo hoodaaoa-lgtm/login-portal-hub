@@ -8,6 +8,7 @@ export type Playlist = {
   title: string;
   description: string | null;
   cover_video_id: string | null;
+  cover_image_url: string | null;
   created_at: string;
   updated_at: string;
   /* joined */
@@ -52,7 +53,7 @@ export const myPlaylistsQuery = (channelId: string | undefined) =>
       return ((data as any[]) ?? []).map((p: any) => ({
         ...p,
         video_count: p.playlist_videos?.length ?? 0,
-        cover_thumbnail_url: p.cover_video?.thumbnail_url ?? null,
+        cover_thumbnail_url: p.cover_image_url ?? p.cover_video?.thumbnail_url ?? null,
         cover_video: undefined,
         playlist_videos: undefined,
       }));
@@ -79,7 +80,7 @@ export const channelPlaylistsQuery = (channelId: string | undefined) =>
       return ((data as any[]) ?? []).map((p: any) => ({
         ...p,
         video_count: p.playlist_videos?.length ?? 0,
-        cover_thumbnail_url: p.cover_video?.thumbnail_url ?? null,
+        cover_thumbnail_url: p.cover_image_url ?? p.cover_video?.thumbnail_url ?? null,
         cover_video: undefined,
         playlist_videos: undefined,
       }));
@@ -132,7 +133,7 @@ export const playlistQuery = (playlistId: string | undefined) =>
       return {
         ...data,
         video_count: data.playlist_videos?.length ?? 0,
-        cover_thumbnail_url: data.cover_video?.thumbnail_url ?? null,
+        cover_thumbnail_url: data.cover_image_url ?? data.cover_video?.thumbnail_url ?? null,
         cover_video: undefined,
         playlist_videos: undefined,
       };

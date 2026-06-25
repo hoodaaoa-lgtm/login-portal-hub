@@ -4,9 +4,9 @@ import { myChannelQuery, myVideosQuery } from "@/lib/channel-queries";
 import { myPlaylistsQuery, type Playlist } from "@/lib/playlist-queries";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  Plus, X, Check, Play, Trash2, Pencil, ListVideo, Image as ImageIcon,
+  Plus, X, Check, Play, Trash2, Pencil, ListVideo, Image as ImageIcon, Upload,
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/studio/playlists")({
@@ -51,8 +51,14 @@ function PlaylistModal({
   const [desc,        setDesc]        = useState(existing?.description ?? "");
   const [selected,    setSelected]    = useState<Set<string>>(new Set());
   const [coverId,     setCoverId]     = useState<string | null>(existing?.cover_video_id ?? null);
+  const [coverMode,   setCoverMode]   = useState<"upload" | "video">(
+    existing?.cover_image_url ? "upload" : "video"
+  );
+  const [coverFile,   setCoverFile]   = useState<File | null>(null);
+  const [coverPreview,setCoverPreview]= useState<string | null>(existing?.cover_image_url ?? null);
   const [saving,      setSaving]      = useState(false);
   const [step,        setStep]        = useState<"info" | "videos">("info");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   /* Se a editar, carregar vídeos já na playlist */
   useEffect(() => {
@@ -79,6 +85,26 @@ function PlaylistModal({
     });
   }
 
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { toast.error("Seleciona uma imagem válida."); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error("Imagem demasiado grande (máx 5MB)."); return; }
+    setCoverFile(file);
+    setCoverPreview(URL.createObjectURL(file));
+  }
+
+  async function uploadCoverImage(userId: string): Promise<string | null> {
+    if (!coverFile) return coverPreview; // URL já existente
+    const ext = coverFile.name.split(".").pop() ?? "jpg";
+    const path = `playlist-covers/${userId}/${Date.now()}.${ext}`;
+    const { error } = await supabase.storage
+      .from("channel-assets")
+      .upload(path, coverFile, { upsert: true, contentType: coverFile.type });
+    if (error) throw error;
+    return supabase.storage.from("channel-assets").getPublicUrl(path).data.publicUrl;
+  }
+
   async function save() {
     if (!title.trim()) { toast.error("O título não pode estar vazio."); return; }
     if (title.trim().length < 2) { toast.error("Título demasiado curto (mínimo 2 caracteres)."); return; }
@@ -87,21 +113,25 @@ function PlaylistModal({
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Não autenticado");
 
+      /* Upload de imagem se necessário */
+      let uploadedImageUrl: string | null = null;
+      if (coverMode === "upload") {
+        uploadedImageUrl = await uploadCoverImage(session.user.id);
+      }
+
+      const coverPayload = coverMode === "upload"
+        ? { cover_image_url: uploadedImageUrl, cover_video_id: null }
+        : { cover_image_url: null, cover_video_id: coverId };
+
       let playlistId = existing?.id ?? null;
 
       if (existing) {
-        /* update */
         const { error } = await (supabase as any)
           .from("playlists")
-          .update({
-            title: title.trim(),
-            description: desc.trim() || null,
-            cover_video_id: coverId,
-          })
+          .update({ title: title.trim(), description: desc.trim() || null, ...coverPayload })
           .eq("id", existing.id);
         if (error) throw error;
       } else {
-        /* insert */
         const { data, error } = await (supabase as any)
           .from("playlists")
           .insert({
@@ -109,7 +139,7 @@ function PlaylistModal({
             owner_id: session.user.id,
             title: title.trim(),
             description: desc.trim() || null,
-            cover_video_id: coverId,
+            ...coverPayload,
           })
           .select("id")
           .single();
@@ -119,7 +149,6 @@ function PlaylistModal({
 
       /* Sincronizar playlist_videos */
       if (playlistId) {
-        /* apagar todos e reinserir (simples e seguro para V1) */
         await (supabase as any).from("playlist_videos").delete().eq("playlist_id", playlistId);
         const rows = Array.from(selected).map((videoId, i) => ({
           playlist_id: playlistId,
@@ -213,43 +242,112 @@ function PlaylistModal({
                 />
               </div>
 
-              {/* Capa: miniatura do cover_video_id */}
-              {selected.size > 0 && (
-                <div>
-                  <label className="text-[12px] font-bold uppercase tracking-wider block mb-2"
-                    style={{ color: "var(--text-muted)" }}>
-                    Capa da playlist <span className="font-normal normal-case">(clica num vídeo)</span>
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    {videos
-                      .filter(v => selected.has(v.id))
-                      .map(v => (
-                        <button
-                          key={v.id}
-                          onClick={() => setCoverId(coverId === v.id ? null : v.id)}
-                          className="relative w-20 h-14 rounded-xl overflow-hidden border-2 transition-all"
-                          style={{
-                            borderColor: coverId === v.id ? P : "var(--border-default)",
-                          }}
-                          title={v.title}
-                        >
-                          {v.thumbnail_url
-                            ? <img src={v.thumbnail_url} alt="" className="w-full h-full object-cover" />
-                            : <div className="w-full h-full flex items-center justify-center"
-                                style={{ background: `${P}18` }}>
-                                <Play className="w-4 h-4" style={{ color: P }} />
-                              </div>}
-                          {coverId === v.id && (
-                            <div className="absolute inset-0 flex items-center justify-center"
-                              style={{ background: "rgba(91,63,207,0.55)" }}>
-                              <ImageIcon className="w-4 h-4 text-white" />
-                            </div>
-                          )}
-                        </button>
-                      ))}
-                  </div>
+              {/* Capa da playlist */}
+              <div>
+                <label className="text-[12px] font-bold uppercase tracking-wider block mb-2"
+                  style={{ color: "var(--text-muted)" }}>
+                  Capa da playlist
+                </label>
+
+                {/* Modo toggle */}
+                <div className="flex gap-2 mb-3">
+                  {(["upload", "video"] as const).map(mode => (
+                    <button
+                      key={mode}
+                      onClick={() => setCoverMode(mode)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition-all"
+                      style={{
+                        background: coverMode === mode ? P : "transparent",
+                        borderColor: coverMode === mode ? P : "var(--border-default)",
+                        color: coverMode === mode ? "#fff" : "var(--text-muted)",
+                      }}
+                    >
+                      {mode === "upload" ? <><Upload className="w-3 h-3" /> Upload</> : <><ImageIcon className="w-3 h-3" /> Thumbnail de vídeo</>}
+                    </button>
+                  ))}
                 </div>
-              )}
+
+                {/* Modo Upload */}
+                {coverMode === "upload" && (
+                  <div>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleFileChange}
+                    />
+                    {coverPreview ? (
+                      <div className="relative w-full aspect-video rounded-xl overflow-hidden border"
+                        style={{ borderColor: "var(--border-default)" }}>
+                        <img src={coverPreview} alt="Capa" className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 flex items-end justify-end p-2 gap-2">
+                          <button
+                            onClick={() => fileInputRef.current?.click()}
+                            className="px-3 py-1.5 rounded-full text-xs font-bold text-white"
+                            style={{ background: "rgba(91,63,207,0.85)" }}
+                          >
+                            Trocar
+                          </button>
+                          <button
+                            onClick={() => { setCoverFile(null); setCoverPreview(null); }}
+                            className="px-3 py-1.5 rounded-full text-xs font-bold text-white"
+                            style={{ background: "rgba(0,0,0,0.6)" }}
+                          >
+                            Remover
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="w-full aspect-video rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-2 transition-all hover:border-[#5B3FCF]"
+                        style={{ borderColor: "var(--border-default)", color: "var(--text-muted)" }}
+                      >
+                        <Upload className="w-6 h-6" />
+                        <span className="text-xs font-semibold">Clica para fazer upload</span>
+                        <span className="text-[10px]">JPG, PNG, WebP · máx 5MB</span>
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {/* Modo Thumbnail de vídeo */}
+                {coverMode === "video" && (
+                  selected.size > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {videos
+                        .filter(v => selected.has(v.id))
+                        .map(v => (
+                          <button
+                            key={v.id}
+                            onClick={() => setCoverId(coverId === v.id ? null : v.id)}
+                            className="relative w-20 h-14 rounded-xl overflow-hidden border-2 transition-all"
+                            style={{ borderColor: coverId === v.id ? P : "var(--border-default)" }}
+                            title={v.title}
+                          >
+                            {v.thumbnail_url
+                              ? <img src={v.thumbnail_url} alt="" className="w-full h-full object-cover" />
+                              : <div className="w-full h-full flex items-center justify-center"
+                                  style={{ background: `${P}18` }}>
+                                  <Play className="w-4 h-4" style={{ color: P }} />
+                                </div>}
+                            {coverId === v.id && (
+                              <div className="absolute inset-0 flex items-center justify-center"
+                                style={{ background: "rgba(91,63,207,0.55)" }}>
+                                <Check className="w-4 h-4 text-white" strokeWidth={3} />
+                              </div>
+                            )}
+                          </button>
+                        ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs py-3 text-center" style={{ color: "var(--text-muted)" }}>
+                      Adiciona vídeos na aba Vídeos para escolher uma thumbnail.
+                    </p>
+                  )
+                )}
+              </div>
             </>
           )}
 
