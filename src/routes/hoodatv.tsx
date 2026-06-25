@@ -261,6 +261,24 @@ function HoodaTVPage() {
   const { data: followingIds = [] } = useFollowing(me?.id ?? null);
   const qc = useQueryClient();
 
+  /* Realtime — novos vídeos, views/likes e novos canais aparecem ao vivo */
+  useEffect(() => {
+    const ch = supabase
+      .channel("hoodatv-live")
+      .on("postgres_changes", { event: "*", schema: "public", table: "videos" }, () => {
+        qc.invalidateQueries({ queryKey: ["htv-videos"] });
+      })
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "channels" }, () => {
+        qc.invalidateQueries({ queryKey: ["htv-channels"] });
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "follows" }, () => {
+        if (me?.id) qc.invalidateQueries({ queryKey: ["htv-following", me.id] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [qc, me?.id]);
+
+
   function toggleFollow(chId: string) {
     qc.setQueryData(["htv-following", me?.id], (old: string[] = []) =>
       old.includes(chId) ? old.filter(id => id !== chId) : [...old, chId]);
