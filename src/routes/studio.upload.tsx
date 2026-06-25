@@ -200,7 +200,7 @@ function UploadPage() {
         ? (scheduledAt ? new Date(scheduledAt).toISOString() : null)
         : (visibility === "public" ? new Date().toISOString() : null);
 
-      const { error: iErr } = await supabase.from("videos").insert({
+      const { error: iErr } = await (supabase as any).from("videos").insert({
         id:           videoId,
         channel_id:   channel.id,
         owner_id:     uid,
@@ -217,6 +217,7 @@ function UploadPage() {
         views_count:  0,
         likes_count:  0,
       });
+
       if (iErr) throw iErr;
 
       setProgress(100); setProgLabel("Concluído!");
