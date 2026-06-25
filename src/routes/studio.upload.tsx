@@ -9,8 +9,7 @@ import {
   CheckCircle, Info,
 } from "lucide-react";
 import { toast } from "sonner";
-import * as tus from "tus-js-client";
-import { uploadToCloudflareStream } from "@/lib/cloudflare-stream";
+import { uploadToCloudinary } from "@/lib/cloudinary";
 
 export const Route = createFileRoute("/studio/upload")({
   head: () => ({ meta: [{ title: "Enviar vídeo — Hooda Studio" }] }),
@@ -21,10 +20,8 @@ const P    = "#5B3FCF";
 const GRAD = "linear-gradient(135deg,#5B3FCF,#E94B8A)";
 const ACCEPT_VIDEO = ["video/mp4","video/quicktime","video/webm","video/x-matroska"];
 const ACCEPT_IMG   = ["image/jpeg","image/png","image/webp","image/gif"];
-const MAX_VIDEO_FREE = 45  * 1024 * 1024;  // 45 MB — upload simples (Supabase free safe)
-const MAX_VIDEO_TUS  = 500 * 1024 * 1024;  // 500 MB — via TUS resumível
+const MAX_VIDEO      = 500 * 1024 * 1024;  // 500 MB — limite Cloudinary free
 const MAX_IMG        = 5   * 1024 * 1024;
-const TUS_CHUNK      = 6   * 1024 * 1024;  // 6 MB por chunk
 
 type Step       = "drop" | "details" | "uploading" | "done";
 type Visibility = "public" | "private" | "unlisted" | "scheduled";
@@ -41,70 +38,6 @@ function getVideoDuration(file: File): Promise<number | null> {
   });
 }
 
-/* ── Upload simples para ficheiros <= 45 MB ─────────────── */
-async function uploadSimple(
-  bucket: string, path: string, file: File, contentType: string,
-  onProgress: (pct: number) => void,
-): Promise<void> {
-  const { error } = await supabase.storage
-    .from(bucket)
-    .upload(path, file, { cacheControl: "3600", upsert: false, contentType });
-  if (error) throw new Error(error.message);
-  onProgress(100);
-}
-
-/* ── Upload TUS resumível para ficheiros > 45 MB ─────────── */
-async function uploadTUS(
-  bucket: string, path: string, file: File, contentType: string,
-  onProgress: (pct: number) => void,
-): Promise<void> {
-  const { data: { session } } = await supabase.auth.getSession();
-  const token = session?.access_token;
-  if (!token) throw new Error("Sem sessão activa.");
-
-  const supabaseUrl: string =
-    (import.meta as any).env?.VITE_SUPABASE_URL ||
-    (supabase as any).supabaseUrl ||
-    "";
-
-  return new Promise((resolve, reject) => {
-    const upload = new tus.Upload(file, {
-      endpoint: `${supabaseUrl}/storage/v1/upload/resumable`,
-      retryDelays: [0, 1000, 3000, 5000, 10000],
-      chunkSize: TUS_CHUNK,
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "x-upsert": "false",
-      },
-      metadata: {
-        bucketName: bucket,
-        objectName: path,
-        contentType,
-        cacheControl: "3600",
-      },
-      onError(err) { reject(new Error((err as any).message ?? "Upload TUS falhou.")); },
-      onProgress(bytesUploaded, bytesTotal) {
-        onProgress(Math.round((bytesUploaded / bytesTotal) * 100));
-      },
-      onSuccess() { resolve(); },
-    });
-    upload.findPreviousUploads().then(prev => {
-      if (prev.length) upload.resumeFromPreviousUpload(prev[0]);
-      upload.start();
-    }).catch(() => upload.start());
-  });
-}
-
-/* ── Orquestrador: simples ou TUS conforme o tamanho ──────── */
-async function uploadVideo(
-  bucket: string, path: string, file: File, contentType: string,
-  onProgress: (pct: number) => void,
-): Promise<void> {
-  if (file.size <= MAX_VIDEO_FREE) {
-    return uploadSimple(bucket, path, file, contentType, onProgress);
-  }
-  return uploadTUS(bucket, path, file, contentType, onProgress);
-}
 
 function UploadPage() {
   const navigate = useNavigate();
@@ -153,7 +86,7 @@ function UploadPage() {
   const pickVideo = useCallback(async (f: File | null) => {
     if (!f) return;
     if (!ACCEPT_VIDEO.includes(f.type)) { toast.error("Formato não suportado. Usa MP4, MOV, WEBM ou MKV."); return; }
-    if (f.size > MAX_VIDEO_TUS) { toast.error("O vídeo não pode ter mais de 500 MB."); return; }
+    if (f.size > MAX_VIDEO) { toast.error("O vídeo não pode ter mais de 500 MB."); return; }
     setVideoFile(f);
     if (!title) setTitle(f.name.replace(/\.[^.]+$/, "").replace(/[-_]/g, " "));
     /* Detecta duração em background */
@@ -197,18 +130,18 @@ function UploadPage() {
       /* 1 — Duração */
       const duration = detectedDur ?? await getVideoDuration(videoFile);
 
-      /* 2 — Upload para Cloudflare Stream via Worker */
+      /* 2 — Upload para Cloudinary */
       setProgress(5);
-      setProgLabel("A enviar para Cloudflare Stream…");
-      const streamResult = await uploadToCloudflareStream(
+      setProgLabel("A enviar para Cloudinary…");
+      const cloudResult = await uploadToCloudinary(
         videoFile,
         { title: title.trim(), channelId: channel.id, userId: uid },
-        pct => setProgress(5 + Math.round(pct * 0.70)),
+        pct => setProgress(5 + Math.round(pct * 0.75)),
       );
-      setProgress(75); setProgLabel("A processar o vídeo…");
+      setProgress(80); setProgLabel("A processar o vídeo…");
 
       /* 3 — Thumbnail */
-      let thumbnailUrl: string = streamResult.thumbnailUrl;
+      let thumbnailUrl: string = cloudResult.thumbnailUrl;
       if (thumbFile) {
         setProgLabel("A enviar miniatura…");
         const tExt  = thumbFile.name.split(".").pop() ?? "jpg";
@@ -221,7 +154,7 @@ function UploadPage() {
           thumbnailUrl = tUrl.publicUrl;
         }
       }
-      setProgress(85); setProgLabel("A guardar informações…");
+      setProgress(88); setProgLabel("A guardar informações…");
 
       /* 4 — Inserir na DB */
       const isScheduled = visibility === "scheduled";
@@ -235,12 +168,12 @@ function UploadPage() {
         owner_id:         uid,
         title:            title.trim(),
         description:      description.trim() || null,
-        video_path:       null,
-        cf_stream_uid:    streamResult.uid,
-        cf_stream_url:    streamResult.playbackUrl,
-        cf_embed_url:     streamResult.embedUrl,
+        video_path:       cloudResult.publicId,
+        cf_stream_uid:    null,
+        cf_stream_url:    cloudResult.playbackUrl,
+        cf_embed_url:     null,
         thumbnail_url:    thumbnailUrl,
-        duration_seconds: duration,
+        duration_seconds: cloudResult.duration ?? detectedDur,
         tags:             tags.length ? tags : null,
         status:           isScheduled ? "processing" : "published",
         visibility:       isScheduled ? "private" : visibility as any,
@@ -298,7 +231,7 @@ function UploadPage() {
           Selecionar ficheiro
         </button>
         <p className="text-xs mt-5" style={{ color: "var(--text-muted)" }}>
-          MP4 · MOV · WEBM · MKV &nbsp;·&nbsp; Até 45 MB directo · Até 500 MB via upload resumível
+          MP4 · MOV · WEBM · MKV &nbsp;·&nbsp; Até 500 MB via Cloudinary
         </p>
         <input ref={videoRef} type="file" accept={ACCEPT_VIDEO.join(",")} className="hidden"
           onChange={e => pickVideo(e.target.files?.[0] ?? null)} />
@@ -397,9 +330,6 @@ function UploadPage() {
               <p className="text-xs" style={{ color: "var(--text-muted)" }}>
                 {videoFile ? (videoFile.size / 1024 / 1024).toFixed(1) : 0} MB
                 {detectedDur && <> · {fmtDuration(detectedDur)}</>}
-                {videoFile && videoFile.size > MAX_VIDEO_FREE && (
-                  <span style={{ color: "#F97316", fontWeight: 600 }}> · upload resumível (TUS)</span>
-                )}
               </p>
             </div>
             <button onClick={() => { setStep("drop"); setVideoFile(null); setDetectedDur(null); }}
@@ -409,17 +339,8 @@ function UploadPage() {
             </button>
           </div>
 
-          {/* Aviso ficheiro grande */}
-          {videoFile && videoFile.size > MAX_VIDEO_FREE && (
-            <div className="flex items-start gap-2 text-xs rounded-xl p-3"
-              style={{ background: "#FFF7ED", color: "#92400E", border: "1px solid #FED7AA" }}>
-              <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-              <span>
-                Ficheiro grande ({(videoFile.size / 1024 / 1024).toFixed(0)} MB) — será enviado em partes via TUS.
-                O upload pode ser retomado se a ligação cair. Não feches o browser durante o envio.
-              </span>
-            </div>
-          )}
+
+
 
           {/* Título */}
           <div>
