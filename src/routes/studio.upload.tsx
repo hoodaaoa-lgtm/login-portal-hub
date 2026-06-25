@@ -22,6 +22,7 @@ const GRAD = "linear-gradient(135deg,#5B3FCF,#E94B8A)";
 const ACCEPT_VIDEO = ["video/mp4","video/quicktime","video/webm","video/x-matroska"];
 const ACCEPT_IMG   = ["image/jpeg","image/png","image/webp","image/gif"];
 const MAX_VIDEO      = 500 * 1024 * 1024;  // 500 MB — limite Cloudinary free
+const MAX_VIDEO_FREE = 100 * 1024 * 1024;  // 100 MB — threshold para upload resumível
 const MAX_IMG        = 5   * 1024 * 1024;
 
 type Step       = "drop" | "details" | "uploading" | "done";
