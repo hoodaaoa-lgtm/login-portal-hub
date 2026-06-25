@@ -10,6 +10,11 @@ import { useState, useEffect, useRef } from "react";
 const INTRO_KEY      = "hoodatv_intro_seen";
 const INTRO_DURATION = 3000;
 
+// Módulo-level: persiste enquanto a app estiver aberta, sem depender de remounts.
+let _introSeenThisSession = (() => {
+  try { return !!sessionStorage.getItem(INTRO_KEY); } catch { return false; }
+})();
+
 const HOODA_LETTERS = [
   { char: "H", color: "#5B3FCF" },
   { char: "o", color: "#F26B3A" },
@@ -393,10 +398,9 @@ function HoodaTVPage() {
   const [filter, setFilter] = useState<FilterKey>("alta");
 
   // ── Intro: uma vez por sessão ──
-  const [showIntro, setShowIntro] = useState(() => {
-    try { return !sessionStorage.getItem(INTRO_KEY); } catch { return false; }
-  });
+  const [showIntro, setShowIntro] = useState(() => !_introSeenThisSession);
   const handleIntroDone = () => {
+    _introSeenThisSession = true;
     try { sessionStorage.setItem(INTRO_KEY, "1"); } catch {}
     setShowIntro(false);
   };
