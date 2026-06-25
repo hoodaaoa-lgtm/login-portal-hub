@@ -96,8 +96,8 @@ function HoodaTVIntro({ onDone }: { onDone: () => void }) {
 }
 
 import {
-  Search, Bell, Play, Eye, Clock, Star, Users,
-  UserPlus, X, Flame, Sparkles, Clapperboard, CheckCircle2,
+  Search, Play, Star, Users,
+  UserPlus, X, Sparkles, Clapperboard, CheckCircle2, Video, Heart,
 } from "lucide-react";
 
 export const Route = createFileRoute("/hoodatv")({
@@ -172,13 +172,14 @@ const avatarColor = (name: string) => AVATAR_COLORS[(name?.charCodeAt(0) ?? 0) %
 /* ── Skeleton ── */
 function VSkel() {
   return (
-    <div className="animate-pulse space-y-3">
-      <div className="aspect-video rounded-2xl" style={{ background: "var(--s3)" }} />
-      <div className="flex gap-2.5">
-        <div className="w-8 h-8 rounded-full shrink-0" style={{ background: "var(--s3)" }} />
-        <div className="flex-1 space-y-2">
-          <div className="h-3 rounded-full" style={{ background: "var(--s3)", width: "80%" }} />
-          <div className="h-2.5 rounded-full" style={{ background: "var(--s3)", width: "55%" }} />
+    <div className="animate-pulse rounded-3xl overflow-hidden" style={{ background: "var(--s2)", border: "1.5px solid var(--border-subtle)" }}>
+      <div className="bg-s3" style={{ aspectRatio: "16/9", background: "var(--s3)" }} />
+      <div className="flex gap-3 p-3.5">
+        <div className="w-9 h-9 rounded-full shrink-0" style={{ background: "var(--s3)" }} />
+        <div className="flex-1 space-y-2 pt-0.5">
+          <div className="h-3.5 rounded-full" style={{ background: "var(--s3)", width: "85%" }} />
+          <div className="h-3 rounded-full" style={{ background: "var(--s3)", width: "55%" }} />
+          <div className="h-2.5 rounded-full" style={{ background: "var(--s3)", width: "40%" }} />
         </div>
       </div>
     </div>
@@ -192,60 +193,80 @@ function VideoCard({ v, rank }: { v: any; rank?: number }) {
   const bg = avatarColor(ch?.name ?? "");
 
   return (
-    <div className="group cursor-pointer" onClick={() => navigate({ to: "/hoodatv/watch/$id", params: { id: v.id } })}>
+    <div
+      className="group cursor-pointer rounded-3xl overflow-hidden transition-all duration-300 hover:-translate-y-1.5"
+      style={{
+        background: "var(--s0)",
+        border: "1.5px solid var(--border-subtle)",
+        boxShadow: "0 2px 16px rgba(0,0,0,0.06)",
+      }}
+      onClick={() => navigate({ to: "/hoodatv/watch/$id", params: { id: v.id } })}
+    >
       {/* Thumbnail */}
-      <div className="relative aspect-video rounded-2xl overflow-hidden"
-        onContextMenu={e => e.preventDefault()}
-        style={{ background: "var(--s3)" }}>
+      <div className="relative overflow-hidden" style={{ aspectRatio: "16/9" }}
+        onContextMenu={e => e.preventDefault()}>
         {v.thumbnail_url
           ? <img src={v.thumbnail_url} alt={v.title} loading="lazy"
               onContextMenu={e => e.preventDefault()}
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.04]" />
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.06]" />
           : <div className="w-full h-full flex items-center justify-center" style={{ background: `${bg}18` }}>
-              <Play className="w-10 h-10" style={{ color: bg, opacity: 0.45 }} />
+              <Play className="w-12 h-12" style={{ color: bg, opacity: 0.4 }} />
             </div>}
+
+        {/* Gradient overlay on hover */}
+        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+          style={{ background: `linear-gradient(180deg, transparent 30%, ${P}99 100%)` }} />
 
         {/* Duração */}
         {v.duration_seconds && (
-          <span className="absolute bottom-2 right-2 text-[11px] font-bold text-white px-1.5 py-0.5 rounded-lg"
-            style={{ background: "rgba(0,0,0,0.82)" }}>
+          <span className="absolute bottom-2.5 right-2.5 text-[11px] font-bold text-white px-2 py-0.5 rounded-lg z-10"
+            style={{ background: "rgba(0,0,0,0.78)" }}>
             {fmtDur(v.duration_seconds)}
           </span>
         )}
 
         {/* Rank badge */}
         {rank !== undefined && rank < 3 && (
-          <div className="absolute top-2 left-2 w-7 h-7 rounded-xl flex items-center justify-center text-xs font-black text-white shadow-lg"
+          <div className="absolute top-2.5 left-2.5 w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black text-white shadow-lg z-10"
             style={{ background: rank === 0 ? "#FFC93C" : rank === 1 ? "#aaa" : "#cd7f32" }}>
             {rank + 1}
           </div>
         )}
 
-        {/* Hover play overlay */}
-        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200"
-          style={{ background: "rgba(0,0,0,0.25)" }}>
-          <div className="w-12 h-12 rounded-full flex items-center justify-center shadow-2xl"
+        {/* Hover play button */}
+        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 z-10">
+          <div className="w-14 h-14 rounded-full flex items-center justify-center shadow-2xl"
             style={{ background: "rgba(255,255,255,0.95)" }}>
-            <Play className="w-5 h-5 ml-0.5" style={{ color: P }} />
+            <Play className="w-6 h-6 ml-0.5" style={{ color: P }} />
           </div>
         </div>
       </div>
 
       {/* Meta */}
-      <div className="flex gap-2.5 mt-2.5">
-        <div className="w-8 h-8 rounded-full shrink-0 overflow-hidden flex items-center justify-center text-white text-xs font-bold mt-0.5 cursor-pointer"
+      <div className="flex gap-3 p-3.5 pt-3">
+        <div
+          className="w-9 h-9 rounded-full shrink-0 overflow-hidden flex items-center justify-center text-white text-sm font-bold cursor-pointer ring-2 ring-white/60 shadow"
           style={{ background: bg }}
           onClick={e => { e.stopPropagation(); if (ch?.handle) navigate({ to: "/hoodatv/canal/$handle", params: { handle: ch.handle } }); }}>
           {ch?.avatar_url ? <img src={ch.avatar_url} alt="" className="w-full h-full object-cover" /> : (ch?.name?.[0] ?? "?").toUpperCase()}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[13px] font-semibold leading-[1.35] line-clamp-2"
+          <p className="text-[13.5px] font-bold leading-[1.35] line-clamp-2 mb-1"
             style={{ color: "var(--text-primary)" }}>
             {v.title?.replace(/\b\d{10,}\b/g, "").replace(/@\S+/g, "").trim()}
           </p>
-          <p className="text-[11px] mt-0.5 font-medium" style={{ color: "var(--text-muted)" }}>
-            {ch?.name ?? "Canal"} · {fmtV(Number(v.views_count ?? 0))} views · {timeAgo(v.published_at ?? v.created_at)}
+          <p className="text-[11.5px] font-medium" style={{ color: "var(--text-muted)" }}>
+            {ch?.name ?? "Canal"}
           </p>
+          <div className="flex items-center gap-2.5 mt-1.5">
+            <span className="flex items-center gap-1 text-[11px] font-semibold" style={{ color: "var(--text-muted)" }}>
+              <Play className="w-3 h-3" /> {fmtV(Number(v.views_count ?? 0))}
+            </span>
+            <span className="flex items-center gap-1 text-[11px] font-semibold" style={{ color: "var(--text-muted)" }}>
+              <Heart className="w-3 h-3" /> {fmtV(Number(v.likes_count ?? 0))}
+            </span>
+            <span className="text-[11px]" style={{ color: "var(--text-muted)", opacity: 0.6 }}>· {timeAgo(v.published_at ?? v.created_at)}</span>
+          </div>
         </div>
       </div>
     </div>
@@ -310,11 +331,10 @@ function ChannelCard({ ch, isFollowing, onFollow }: { ch: any; isFollowing: bool
 
 /* ── Filter pills ── */
 const FILTERS = [
-  { key: "alta",     label: "Em Alta",   icon: <Flame className="w-3.5 h-3.5" />,    accent: PINK   },
-  { key: "recentes", label: "Recentes",  icon: <Clock className="w-3.5 h-3.5" />,    accent: TEAL   },
-  { key: "ti",       label: "Para Ti",   icon: <Sparkles className="w-3.5 h-3.5" />, accent: YELLOW },
-  { key: "canais",   label: "Canais",    icon: <Star className="w-3.5 h-3.5" />,     accent: ORANGE },
-  { key: "seguindo", label: "Seguindo",  icon: <Users className="w-3.5 h-3.5" />,    accent: P      },
+  { key: "ti",       label: "Vídeos",    icon: <Video className="w-3.5 h-3.5" />,      accent: PINK   },
+  { key: "alta",     label: "Para Ti",   icon: <Sparkles className="w-3.5 h-3.5" />,   accent: YELLOW },
+  { key: "canais",   label: "Canais",    icon: <Star className="w-3.5 h-3.5" />,        accent: ORANGE },
+  { key: "seguindo", label: "Seguindo",  icon: <Users className="w-3.5 h-3.5" />,       accent: P      },
 ] as const;
 type FilterKey = typeof FILTERS[number]["key"];
 
@@ -329,7 +349,7 @@ function HoodaTVPage() {
 
 function HoodaTVMain() {
   const [search, setSearch]   = useState("");
-  const [filter, setFilter]   = useState<FilterKey>("alta");
+  const [filter, setFilter]   = useState<FilterKey>("ti");
   const [showIntro, setShowIntro] = useState(() => !_introSeenThisSession);
 
   const handleIntroDone = () => {
@@ -380,7 +400,7 @@ function HoodaTVMain() {
     : [];
 
   const showVideos     = filter === "alta" ? trending : recent;
-  const loadingVideos  = filter === "alta" ? tL : rL;
+  const loadingVideos  = filter === "alta" || filter === "ti" ? tL : rL;
 
   return (
     <>
@@ -392,15 +412,15 @@ function HoodaTVMain() {
         <div className="sticky top-0 z-40"
           style={{ background: "rgba(var(--s1-rgb,250,250,252),.96)", backdropFilter: "blur(24px)", borderBottom: "1px solid var(--border-subtle)" }}>
 
-          {/* Barra de pesquisa premium */}
-          <div className="px-4 pt-4 pb-3">
-            <div className="relative flex items-center">
-              <Search className="absolute left-4 w-4 h-4 pointer-events-none" style={{ color: "var(--text-muted)" }} />
+          {/* Barra de pesquisa compacta */}
+          <div className="px-4 pt-4 pb-3 flex items-center gap-3">
+            <div className="relative flex items-center" style={{ width: "min(320px, 55%)" }}>
+              <Search className="absolute left-3.5 w-4 h-4 pointer-events-none" style={{ color: "var(--text-muted)" }} />
               <input
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                placeholder="Pesquisar vídeos e canais…"
-                className="w-full h-11 pl-11 pr-11 rounded-2xl text-sm outline-none transition-all"
+                placeholder="Pesquisar…"
+                className="w-full h-9 pl-10 pr-9 rounded-xl text-sm outline-none transition-all"
                 style={{
                   background: "var(--s2)",
                   border: `1.5px solid ${search ? P : "var(--border-default)"}`,
@@ -408,16 +428,13 @@ function HoodaTVMain() {
                   boxShadow: search ? `0 0 0 3px ${P}18` : "none",
                 }}
               />
-              {search
-                ? <button onClick={() => setSearch("")}
-                    className="absolute right-3 w-6 h-6 rounded-full flex items-center justify-center transition hover:opacity-70"
-                    style={{ background: "var(--s3)" }}>
-                    <X className="w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} />
-                  </button>
-                : <button className="absolute right-3 w-8 h-8 rounded-xl flex items-center justify-center transition hover:opacity-80"
-                    style={{ background: "var(--s3)" }}>
-                    <Bell className="w-4 h-4" style={{ color: "var(--text-secondary)" }} />
-                  </button>}
+              {search && (
+                <button onClick={() => setSearch("")}
+                  className="absolute right-2 w-5 h-5 rounded-full flex items-center justify-center transition hover:opacity-70"
+                  style={{ background: "var(--s3)" }}>
+                  <X className="w-3 h-3" style={{ color: "var(--text-muted)" }} />
+                </button>
+              )}
             </div>
           </div>
 
@@ -456,8 +473,8 @@ function HoodaTVMain() {
             </section>
           )}
 
-          {/* ══ EM ALTA / RECENTES / PARA TI ══ */}
-          {!search && (filter === "alta" || filter === "recentes" || filter === "ti") && (
+          {/* ══ VÍDEOS / PARA TI ══ */}
+          {!search && (filter === "ti" || filter === "alta") && (
             <section>
               {loadingVideos
                 ? <Grid>{Array.from({length: 8}).map((_, i) => <VSkel key={i} />)}</Grid>
@@ -542,7 +559,7 @@ function HoodaTVMain() {
 }
 
 function Grid({ children }: { children: React.ReactNode }) {
-  return <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">{children}</div>;
+  return <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">{children}</div>;
 }
 
 function Empty({ msg, icon }: { msg: string; icon?: React.ReactNode }) {
