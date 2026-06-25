@@ -203,27 +203,43 @@ function AppProviders({ queryClient, children }: { queryClient: QueryClient; chi
   );
 }
 
+// Depois do splash ter saído uma vez, nunca mais aparece mesmo que o componente remonte.
+let _splashDone = false;
+
 function AuthGate({ children }: { children: ReactNode }) {
   const { status, initializing } = useAuth();
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const isPublicRoute = PUBLIC_ROUTES.has(pathname);
 
+  const [showSplash, setShowSplash] = useState(() => !_splashDone && initializing);
+  const [leaving, setLeaving] = useState(false);
+
+  useEffect(() => {
+    if (_splashDone) { setShowSplash(false); return; }
+    if (!initializing && showSplash) {
+      setLeaving(true);
+      const t = setTimeout(() => {
+        _splashDone = true;
+        setShowSplash(false);
+        setLeaving(false);
+      }, SPLASH_EXIT_MS);
+      return () => clearTimeout(t);
+    }
+  }, [initializing, showSplash]);
+
   useEffect(() => {
     if (initializing) return;
-
     if (status === "unauthenticated" && !isPublicRoute) {
       navigate({ to: "/", replace: true });
       return;
     }
-
     if (status === "authenticated" && isPublicRoute && pathname !== "/reset-password") {
       navigate({ to: "/home", replace: true });
     }
   }, [status, initializing, isPublicRoute, pathname, navigate]);
 
-  // Enquanto verifica sessão no primeiro boot, não mostra nada (ecrã branco breve)
-  if (initializing) return null;
+  if (showSplash) return <SplashScreen leaving={leaving} />;
 
   return <>{children}</>;
 }
