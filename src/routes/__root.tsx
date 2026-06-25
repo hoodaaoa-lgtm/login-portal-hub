@@ -203,55 +203,11 @@ function AppProviders({ queryClient, children }: { queryClient: QueryClient; chi
   );
 }
 
-/**
- * Global session gate.
- *
- * - While the first session check is in flight: show the Hooda splash
- *   screen (no flash of the login form or the feed).
- * - Once resolved:
- *   - Protected route + no session  → redirect to "/" (login).
- *   - Public route ("/", "/signup") + valid session → redirect to "/home".
- *   - Otherwise render the route as normal.
- * - The splash never disappears instantly: it holds for its minimum beat
- *   (see MIN_SPLASH_MS in AuthContext) then plays a brief fade-out instead
- *   of hard-cutting to the next screen, so the transition reads as
- *   deliberate rather than a flash/glitch.
- *
- * This also reacts live to sign-out / token-refresh failures from any tab,
- * so an expired or revoked session bounces the user back to login from
- * wherever they are in the app — the same behaviour as Instagram, Facebook
- * and TikTok.
- */
 function AuthGate({ children }: { children: ReactNode }) {
   const { status, initializing } = useAuth();
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const isPublicRoute = PUBLIC_ROUTES.has(pathname);
-
-  // O splash só aparece durante o boot inicial da app (primeira verificação de sessão).
-  // Redirects por autenticação não precisam de splash — fazem-no silenciosamente.
-  const needsSplash = initializing;
-
-  // Keep the splash mounted slightly past the moment it's no longer
-  // strictly needed, so it can fade out instead of disappearing instantly.
-  const [showSplash, setShowSplash] = useState(needsSplash);
-  const [splashLeaving, setSplashLeaving] = useState(false);
-
-  useEffect(() => {
-    if (needsSplash) {
-      setShowSplash(true);
-      setSplashLeaving(false);
-      return;
-    }
-    if (!showSplash) return;
-    setSplashLeaving(true);
-    const t = setTimeout(() => {
-      setShowSplash(false);
-      setSplashLeaving(false);
-    }, SPLASH_EXIT_MS);
-    return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [needsSplash]);
 
   useEffect(() => {
     if (initializing) return;
@@ -266,9 +222,8 @@ function AuthGate({ children }: { children: ReactNode }) {
     }
   }, [status, initializing, isPublicRoute, pathname, navigate]);
 
-  if (showSplash) {
-    return <SplashScreen leaving={splashLeaving} />;
-  }
+  // Enquanto verifica sessão no primeiro boot, não mostra nada (ecrã branco breve)
+  if (initializing) return null;
 
   return <>{children}</>;
 }
