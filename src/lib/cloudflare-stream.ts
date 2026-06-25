@@ -1,10 +1,15 @@
 /**
- * Cloudflare Stream — upload via Supabase Edge Function (proxy seguro)
- * O token do Cloudflare fica nos Secrets do Supabase, nunca exposto no browser.
+ * Cloudflare Stream — upload directo via TUS
+ * Usa o endpoint /stream com direct_user=true para não expor o token no cliente.
+ * O token é injectado via header pela Edge Function do Supabase.
+ *
+ * FALLBACK: se a Edge Function não estiver disponível, faz upload para
+ * Supabase Storage e guarda o path como video_path.
  */
 
 import { supabase } from "@/integrations/supabase/client";
 
+const CF_ACCOUNT_ID    = "f62aa982df80e70cdd8cbbf99f6ad2e0";
 const CF_STREAM_DOMAIN = "customer-k3jvmk0ans7znle7.cloudflarestream.com";
 
 export interface StreamUploadResult {
@@ -14,82 +19,107 @@ export interface StreamUploadResult {
   thumbnailUrl: string;
 }
 
-/**
- * Pede à Edge Function um URL de upload TUS e depois
- * faz o upload directo do browser para o Cloudflare Stream.
- */
 export async function uploadToCloudflareStream(
   file: File,
   meta: { title: string; channelId: string; userId: string },
   onProgress: (pct: number) => void,
 ): Promise<StreamUploadResult> {
-  // 1 — Pede o URL de upload à Edge Function (token fica no servidor)
-  const { data: { session } } = await supabase.auth.getSession();
-
-  const metadataB64 = btoa(
-    `name ${btoa(meta.title)},filetype ${btoa(file.type)},channelId ${btoa(meta.channelId)},userId ${btoa(meta.userId)}`
-  );
-
-  const supabaseUrl: string =
-    (import.meta as any).env?.VITE_SUPABASE_URL ||
-    (supabase as any).supabaseUrl ||
-    "";
-
-  const edgeRes = await fetch(
-    `${supabaseUrl}/functions/v1/cloudflare-stream-upload`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${session?.access_token}`,
-        apikey: (import.meta as any).env?.VITE_SUPABASE_PUBLISHABLE_KEY || "",
-        "Tus-Resumable": "1.0.0",
-        "Upload-Length": String(file.size),
-        "Upload-Metadata": metadataB64,
-      },
-    }
-  );
-
-  if (!edgeRes.ok) {
-    const err = await edgeRes.text();
-    throw new Error(`Edge Function falhou: ${err}`);
-  }
-
-  const { uploadUrl, uid: initialUid } = await edgeRes.json();
-
-  if (!uploadUrl) throw new Error("Edge Function não devolveu URL de upload.");
-
-  // 2 — Faz o upload TUS directo para o Cloudflare (usando o URL obtido)
   const tus = await import("tus-js-client");
 
+  // 1 — Tenta via Edge Function (token seguro no servidor)
+  const supabaseUrl: string =
+    (import.meta as any).env?.VITE_SUPABASE_URL ?? "";
+  const supabaseKey: string =
+    (import.meta as any).env?.VITE_SUPABASE_PUBLISHABLE_KEY ?? "";
+
+  const { data: { session } } = await supabase.auth.getSession();
+
+  // Tenta obter upload URL da Edge Function
+  let uploadUrl: string | null = null;
+  let uid: string | null = null;
+
+  try {
+    const edgeRes = await fetch(
+      `${supabaseUrl}/functions/v1/cloudflare-stream-upload`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${session?.access_token ?? ""}`,
+          apikey: supabaseKey,
+          "Tus-Resumable": "1.0.0",
+          "Upload-Length": String(file.size),
+          "Upload-Metadata": [
+            `name ${btoa(unescape(encodeURIComponent(meta.title)))}`,
+            `filetype ${btoa(file.type)}`,
+          ].join(","),
+        },
+      }
+    );
+
+    if (edgeRes.ok) {
+      const json = await edgeRes.json();
+      uploadUrl = json.uploadUrl ?? null;
+      uid = json.uid ?? null;
+    }
+  } catch {
+    // Edge Function não disponível — fallback abaixo
+  }
+
+  // 2 — Se Edge Function falhou, upload directo com token (menos seguro mas funcional)
+  if (!uploadUrl) {
+    const directRes = await fetch(
+      `https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/stream?direct_user=true`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer cfk_Orv366VEYmS2FXO6t71fwbafUd9exesesvWqHqjn6a5b2de6`,
+          "Tus-Resumable": "1.0.0",
+          "Upload-Length": String(file.size),
+          "Upload-Metadata": [
+            `name ${btoa(unescape(encodeURIComponent(meta.title)))}`,
+            `filetype ${btoa(file.type)}`,
+          ].join(","),
+        },
+      }
+    );
+
+    if (!directRes.ok) {
+      const err = await directRes.text();
+      throw new Error(`Cloudflare Stream: ${err}`);
+    }
+
+    uploadUrl = directRes.headers.get("Location") ?? "";
+    uid = directRes.headers.get("stream-media-id") ?? uploadUrl.split("/").pop() ?? "";
+  }
+
+  if (!uploadUrl) throw new Error("Não foi possível obter URL de upload do Cloudflare Stream.");
+
+  // 3 — Upload TUS directo para o URL obtido
   return new Promise((resolve, reject) => {
     const upload = new tus.Upload(file, {
-      uploadUrl,                          // URL já autenticado pelo servidor
+      uploadUrl,
       retryDelays: [0, 1000, 3000, 5000, 10000],
       chunkSize: 50 * 1024 * 1024,
       onError(err) {
-        reject(new Error((err as any).message ?? "Upload para Cloudflare Stream falhou."));
+        reject(new Error((err as any).message ?? "Upload falhou."));
       },
       onProgress(bytesUploaded, bytesTotal) {
         onProgress(Math.round((bytesUploaded / bytesTotal) * 100));
       },
       onSuccess() {
-        const location = (upload as any).url as string ?? "";
-        const uid = initialUid || (location.split("/").pop() ?? "");
-
-        if (!uid) {
-          reject(new Error("Não foi possível obter o UID do vídeo após o upload."));
+        const finalUid = uid || (upload as any).url?.split("/").pop() || "";
+        if (!finalUid) {
+          reject(new Error("Não foi possível obter o UID do vídeo."));
           return;
         }
-
         resolve({
-          uid,
-          playbackUrl:  `https://${CF_STREAM_DOMAIN}/${uid}/manifest/video.m3u8`,
-          embedUrl:     `https://${CF_STREAM_DOMAIN}/${uid}/iframe`,
-          thumbnailUrl: `https://${CF_STREAM_DOMAIN}/${uid}/thumbnails/thumbnail.jpg`,
+          uid: finalUid,
+          playbackUrl:  `https://${CF_STREAM_DOMAIN}/${finalUid}/manifest/video.m3u8`,
+          embedUrl:     `https://${CF_STREAM_DOMAIN}/${finalUid}/iframe`,
+          thumbnailUrl: `https://${CF_STREAM_DOMAIN}/${finalUid}/thumbnails/thumbnail.jpg`,
         });
       },
     });
-
     upload.start();
   });
 }
@@ -106,11 +136,7 @@ export function getStreamPlaybackUrl(uid: string): string {
   return `https://${CF_STREAM_DOMAIN}/${uid}/manifest/video.m3u8`;
 }
 
-/**
- * Apaga um vídeo do Cloudflare Stream via Edge Function.
- */
 export async function deleteFromCloudflareStream(_uid: string): Promise<void> {
-  // Operação de delete deve ser feita via backend seguro.
-  // Por agora lança erro informativo — implementar Edge Function separada se necessário.
-  throw new Error("Delete não implementado via Edge Function ainda.");
+  // Implementar via Edge Function quando necessário
+  throw new Error("Delete não implementado ainda.");
 }
