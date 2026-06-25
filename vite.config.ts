@@ -13,6 +13,27 @@
       server: { entry: "server" },
     },
     vite: {
+      define: {
+        // The published browser bundle needs the public backend config at
+        // build time. If the VITE_* values are not present in the publish
+        // environment, fall back to this app's public Lovable Cloud values so
+        // the auth/client code does not crash on boot.
+        "import.meta.env.VITE_SUPABASE_URL": JSON.stringify(
+          process.env.VITE_SUPABASE_URL ||
+            process.env.SUPABASE_URL ||
+            "https://uiqxumshtqcmnjjciuba.supabase.co",
+        ),
+        "import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY": JSON.stringify(
+          process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+            process.env.SUPABASE_PUBLISHABLE_KEY ||
+            "sb_publishable_MhAthVjgpBekqplH8JFiIg_uV_GJkxL",
+        ),
+        "import.meta.env.VITE_SUPABASE_PROJECT_ID": JSON.stringify(
+          process.env.VITE_SUPABASE_PROJECT_ID ||
+            process.env.SUPABASE_PROJECT_ID ||
+            "uiqxumshtqcmnjjciuba",
+        ),
+      },
       resolve: {
         alias: {
           // workerd's `fs` polyfill is frozen, so graceful-fs's gracefulify()
