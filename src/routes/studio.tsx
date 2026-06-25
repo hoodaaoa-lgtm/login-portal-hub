@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Video, Upload, Settings,
   HelpCircle, LogOut, ArrowLeft, Menu, X, BarChart2, Tv2,
   Camera, Save, Trash2, Globe, Lock, Users, AlertTriangle,
-  Loader2, Check, ChevronDown,
+  Loader2, Check, ChevronDown, ListVideo,
 } from "lucide-react";
 import { useState, useRef } from "react";
 import { createPortal } from "react-dom";
@@ -20,10 +20,11 @@ const P    = "#5B3FCF";
 const GRAD = "linear-gradient(135deg,#5B3FCF,#E94B8A)";
 
 const NAV = [
-  { to: "/studio",           label: "Painel",        icon: LayoutDashboard, exact: true },
-  { to: "/studio/content",   label: "Conteúdo",      icon: Video },
-  { to: "/studio/upload",    label: "Enviar vídeo",  icon: Upload },
-  { to: "/studio/analytics", label: "Análises",      icon: BarChart2 },
+  { to: "/studio",             label: "Painel",        icon: LayoutDashboard, exact: true },
+  { to: "/studio/content",     label: "Conteúdo",      icon: Video },
+  { to: "/studio/upload",      label: "Enviar vídeo",  icon: Upload },
+  { to: "/studio/playlists",   label: "Playlists",     icon: ListVideo },
+  { to: "/studio/analytics",   label: "Análises",      icon: BarChart2 },
 ];
 
 const CATEGORIES = [

@@ -6,9 +6,10 @@ import { useState } from "react";
 import {
   ChevronLeft, Play, Bell, BellOff, Share2,
   Eye, Clock, Video as VideoIcon, Globe, Calendar,
-  ThumbsUp, MoreVertical, Search,
+  ThumbsUp, MoreVertical, Search, ListVideo,
 } from "lucide-react";
 import { toast } from "sonner";
+import { channelPlaylistsQuery, type Playlist } from "@/lib/playlist-queries";
 
 export const Route = createFileRoute("/hoodatv/canal/$handle")({
   head: ({ params }) => ({ meta: [{ title: `${params.handle} — HoodaTV` }] }),
@@ -41,7 +42,7 @@ const timeAgo = (d: string) => {
 const fmtDate = (d: string) =>
   new Date(d).toLocaleDateString("pt-PT", { year: "numeric", month: "long", day: "numeric" });
 
-type Tab = "videos" | "sobre";
+type Tab = "videos" | "playlists" | "sobre";
 
 /* ── Queries ── */
 function useChannel(handle: string) {
@@ -209,6 +210,50 @@ function Skel() {
   );
 }
 
+/* ── Playlist Card (HoodaTV) ── */
+function PlaylistCard({ p }: { p: Playlist }) {
+  const navigate = useNavigate();
+  return (
+    <div
+      className="group cursor-pointer"
+      onClick={() => navigate({ to: "/hoodatv/playlist/$id", params: { id: p.id } })}
+    >
+      <div className="relative aspect-video rounded-2xl overflow-hidden" style={{ background: "var(--s3)" }}>
+        {p.cover_thumbnail_url
+          ? <img src={p.cover_thumbnail_url} alt={p.title} loading="lazy"
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.04]" />
+          : <div className="w-full h-full flex items-center justify-center" style={{ background: `${P}18` }}>
+              <ListVideo className="w-10 h-10" style={{ color: P, opacity: 0.45 }} />
+            </div>}
+
+        {/* Overlay de faixa de vídeos estilo YouTube */}
+        <div className="absolute inset-y-0 right-0 w-1/4 flex flex-col items-center justify-center gap-1"
+          style={{ background: "rgba(0,0,0,0.62)" }}>
+          <ListVideo className="w-5 h-5 text-white opacity-80" />
+          <span className="text-white text-[11px] font-bold">{p.video_count ?? 0}</span>
+        </div>
+
+        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200"
+          style={{ background: "rgba(0,0,0,0.22)" }}>
+          <div className="w-12 h-12 rounded-full flex items-center justify-center"
+            style={{ background: "rgba(255,255,255,0.92)" }}>
+            <Play className="w-5 h-5 ml-0.5" style={{ color: P }} />
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-2.5 space-y-0.5">
+        <p className="text-[13px] font-bold leading-[1.35] line-clamp-2" style={{ color: "var(--text-primary)" }}>
+          {p.title}
+        </p>
+        <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
+          {p.video_count ?? 0} vídeo{(p.video_count ?? 0) !== 1 ? "s" : ""}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 /* ══ PÁGINA PRINCIPAL ══ */
 function ChannelPage() {
   const { handle } = useParams({ from: "/hoodatv/canal/$handle" });
@@ -224,6 +269,7 @@ function ChannelPage() {
   const { data: stats } = useChannelStats(channel?.id);
   const { data: me } = useMe();
   const { data: isFollowing = false } = useIsFollowing(me?.id ?? null, channel?.id);
+  const { data: playlists = [], isLoading: plLoading } = useQuery(channelPlaylistsQuery(channel?.id));
 
   const bg = avatarColor(channel?.name ?? "");
 
@@ -391,12 +437,16 @@ function ChannelPage() {
         <div className="sticky top-[53px] z-20 border-b"
           style={{ background: "rgba(var(--s1-rgb,250,250,252),.94)", backdropFilter: "blur(20px)", borderColor: "var(--border-subtle)" }}>
           <div className="flex px-4 sm:px-6">
-            {(["videos", "sobre"] as Tab[]).map(t => (
-              <button key={t} onClick={() => setTab(t)}
-                className="px-4 py-3 text-sm font-bold capitalize transition-all relative"
-                style={{ color: tab === t ? P : "var(--text-muted)" }}>
-                {t === "videos" ? `Vídeos (${stats?.videoCount ?? 0})` : "Sobre"}
-                {tab === t && (
+            {([
+              { key: "videos",    label: `Vídeos (${stats?.videoCount ?? 0})` },
+              { key: "playlists", label: `Playlists${playlists.length ? ` (${playlists.length})` : ""}` },
+              { key: "sobre",     label: "Sobre" },
+            ] as { key: Tab; label: string }[]).map(t => (
+              <button key={t.key} onClick={() => setTab(t.key)}
+                className="px-4 py-3 text-sm font-bold transition-all relative"
+                style={{ color: tab === t.key ? P : "var(--text-muted)" }}>
+                {t.label}
+                {tab === t.key && (
                   <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full" style={{ background: P }} />
                 )}
               </button>
@@ -435,6 +485,29 @@ function ChannelPage() {
                   : <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
                       {filteredVideos.map((v: any) => (
                         <VideoCard key={v.id} v={v} />
+                      ))}
+                    </div>}
+            </div>
+          )}
+
+          {/* ══ TAB: PLAYLISTS ══ */}
+          {tab === "playlists" && (
+            <div>
+              {plLoading
+                ? <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
+                    {Array.from({ length: 4 }).map((_, i) => <Skel key={i} />)}
+                  </div>
+                : !playlists.length
+                  ? <div className="py-20 text-center rounded-2xl border"
+                      style={{ background: "var(--s2)", borderColor: "var(--border-subtle)" }}>
+                      <ListVideo className="w-12 h-12 mx-auto mb-3" style={{ color: "var(--text-muted)" }} />
+                      <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>
+                        Este canal ainda não tem playlists.
+                      </p>
+                    </div>
+                  : <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
+                      {playlists.map((p: Playlist) => (
+                        <PlaylistCard key={p.id} p={p} />
                       ))}
                     </div>}
             </div>

@@ -21,11 +21,13 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as StudioIndexRouteImport } from './routes/studio.index'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
 import { Route as StudioUploadRouteImport } from './routes/studio.upload'
+import { Route as StudioPlaylistsRouteImport } from './routes/studio.playlists'
 import { Route as StudioOnboardingRouteImport } from './routes/studio.onboarding'
 import { Route as StudioContentRouteImport } from './routes/studio.content'
 import { Route as StudioAnalyticsRouteImport } from './routes/studio.analytics'
 import { Route as AuthBridgeRouteImport } from './routes/auth.bridge'
 import { Route as HoodatvCanalHandleRouteImport } from './routes/hoodatv.canal.$handle'
+import { Route as HoodatvPlaylistIdRouteImport } from './routes/hoodatv.playlist.$id'
 import { Route as HoodatvWatchIdRouteImport } from './routes/hoodatv.watch.$id'
 
 const StudioRoute = StudioRouteImport.update({
@@ -88,6 +90,11 @@ const StudioUploadRoute = StudioUploadRouteImport.update({
   path: '/upload',
   getParentRoute: () => StudioRoute,
 } as any)
+const StudioPlaylistsRoute = StudioPlaylistsRouteImport.update({
+  id: '/playlists',
+  path: '/playlists',
+  getParentRoute: () => StudioRoute,
+} as any)
 const StudioOnboardingRoute = StudioOnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
@@ -113,6 +120,11 @@ const HoodatvCanalHandleRoute = HoodatvCanalHandleRouteImport.update({
   path: '/canal/$handle',
   getParentRoute: () => HoodatvRoute,
 } as any)
+const HoodatvPlaylistIdRoute = HoodatvPlaylistIdRouteImport.update({
+  id: '/playlist/$id',
+  path: '/playlist/$id',
+  getParentRoute: () => HoodatvRoute,
+} as any)
 const HoodatvWatchIdRoute = HoodatvWatchIdRouteImport.update({
   id: '/watch/$id',
   path: '/watch/$id',
@@ -133,10 +145,12 @@ export interface FileRoutesByFullPath {
   '/studio/analytics': typeof StudioAnalyticsRoute
   '/studio/content': typeof StudioContentRoute
   '/studio/onboarding': typeof StudioOnboardingRoute
+  '/studio/playlists': typeof StudioPlaylistsRoute
   '/studio/upload': typeof StudioUploadRoute
   '/u/$username': typeof UUsernameRoute
   '/studio/': typeof StudioIndexRoute
   '/hoodatv/canal/$handle': typeof HoodatvCanalHandleRoute
+  '/hoodatv/playlist/$id': typeof HoodatvPlaylistIdRoute
   '/hoodatv/watch/$id': typeof HoodatvWatchIdRoute
 }
 export interface FileRoutesByTo {
@@ -152,10 +166,12 @@ export interface FileRoutesByTo {
   '/studio/analytics': typeof StudioAnalyticsRoute
   '/studio/content': typeof StudioContentRoute
   '/studio/onboarding': typeof StudioOnboardingRoute
+  '/studio/playlists': typeof StudioPlaylistsRoute
   '/studio/upload': typeof StudioUploadRoute
   '/u/$username': typeof UUsernameRoute
   '/studio': typeof StudioIndexRoute
   '/hoodatv/canal/$handle': typeof HoodatvCanalHandleRoute
+  '/hoodatv/playlist/$id': typeof HoodatvPlaylistIdRoute
   '/hoodatv/watch/$id': typeof HoodatvWatchIdRoute
 }
 export interface FileRoutesById {
@@ -173,10 +189,12 @@ export interface FileRoutesById {
   '/studio/analytics': typeof StudioAnalyticsRoute
   '/studio/content': typeof StudioContentRoute
   '/studio/onboarding': typeof StudioOnboardingRoute
+  '/studio/playlists': typeof StudioPlaylistsRoute
   '/studio/upload': typeof StudioUploadRoute
   '/u/$username': typeof UUsernameRoute
   '/studio/': typeof StudioIndexRoute
   '/hoodatv/canal/$handle': typeof HoodatvCanalHandleRoute
+  '/hoodatv/playlist/$id': typeof HoodatvPlaylistIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -194,10 +212,12 @@ export interface FileRouteTypes {
     | '/studio/analytics'
     | '/studio/content'
     | '/studio/onboarding'
+    | '/studio/playlists'
     | '/studio/upload'
     | '/u/$username'
     | '/studio/'
     | '/hoodatv/canal/$handle'
+    | '/hoodatv/playlist/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -212,10 +232,12 @@ export interface FileRouteTypes {
     | '/studio/analytics'
     | '/studio/content'
     | '/studio/onboarding'
+    | '/studio/playlists'
     | '/studio/upload'
     | '/u/$username'
     | '/studio'
     | '/hoodatv/canal/$handle'
+    | '/hoodatv/playlist/$id'
   id:
     | '__root__'
     | '/'
@@ -231,10 +253,12 @@ export interface FileRouteTypes {
     | '/studio/analytics'
     | '/studio/content'
     | '/studio/onboarding'
+    | '/studio/playlists'
     | '/studio/upload'
     | '/u/$username'
     | '/studio/'
     | '/hoodatv/canal/$handle'
+    | '/hoodatv/playlist/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -337,6 +361,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StudioUploadRouteImport
       parentRoute: typeof StudioRoute
     }
+    '/studio/playlists': {
+      id: '/studio/playlists'
+      path: '/playlists'
+      fullPath: '/studio/playlists'
+      preLoaderRoute: typeof StudioPlaylistsRouteImport
+      parentRoute: typeof StudioRoute
+    }
     '/studio/onboarding': {
       id: '/studio/onboarding'
       path: '/onboarding'
@@ -372,16 +403,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof HoodatvCanalHandleRouteImport
       parentRoute: typeof HoodatvRoute
     }
+    '/hoodatv/playlist/$id': {
+      id: '/hoodatv/playlist/$id'
+      path: '/playlist/$id'
+      fullPath: '/hoodatv/playlist/$id'
+      preLoaderRoute: typeof HoodatvPlaylistIdRouteImport
+      parentRoute: typeof HoodatvRoute
+    }
   }
 }
 
 interface HoodatvRouteChildren {
   HoodatvCanalHandleRoute: typeof HoodatvCanalHandleRoute
+  HoodatvPlaylistIdRoute: typeof HoodatvPlaylistIdRoute
 }
 
 const HoodatvRouteChildren: HoodatvRouteChildren = {
   HoodatvCanalHandleRoute: HoodatvCanalHandleRoute,
-    HoodatvWatchIdRoute,
+  HoodatvPlaylistIdRoute: HoodatvPlaylistIdRoute,
+  HoodatvWatchIdRoute,
 }
 
 const HoodatvRouteWithChildren =
@@ -391,6 +431,7 @@ interface StudioRouteChildren {
   StudioAnalyticsRoute: typeof StudioAnalyticsRoute
   StudioContentRoute: typeof StudioContentRoute
   StudioOnboardingRoute: typeof StudioOnboardingRoute
+  StudioPlaylistsRoute: typeof StudioPlaylistsRoute
   StudioUploadRoute: typeof StudioUploadRoute
   StudioIndexRoute: typeof StudioIndexRoute
 }
@@ -399,6 +440,7 @@ const StudioRouteChildren: StudioRouteChildren = {
   StudioAnalyticsRoute: StudioAnalyticsRoute,
   StudioContentRoute: StudioContentRoute,
   StudioOnboardingRoute: StudioOnboardingRoute,
+  StudioPlaylistsRoute: StudioPlaylistsRoute,
   StudioUploadRoute: StudioUploadRoute,
   StudioIndexRoute: StudioIndexRoute,
 }
