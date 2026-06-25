@@ -231,63 +231,6 @@ function VSkel() {
   );
 }
 
-/* ── Video Modal ── */
-function VideoModal({ v, onClose }: { v: any; onClose: () => void }) {
-  const navigate = useNavigate();
-  const ch = v.channel;
-  const bg = avatarColor(ch?.name ?? "");
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: "rgba(0,0,0,0.75)", backdropFilter: "blur(8px)" }} onClick={onClose}>
-      <div className="relative w-full max-w-3xl rounded-3xl overflow-hidden shadow-2xl"
-        style={{ background: "var(--s0)", border: "1.5px solid var(--border-subtle)" }}
-        onClick={e => e.stopPropagation()}>
-
-        {/* Gradient header bar */}
-        <div className="flex items-center justify-between px-4 py-3"
-          style={{ background: GRAD }}>
-          <div className="flex items-center gap-2 min-w-0">
-            <div className="w-7 h-7 rounded-full overflow-hidden shrink-0 flex items-center justify-center text-white text-xs font-bold"
-              style={{ background: bg }}>
-              {ch?.avatar_url
-                ? <img src={ch.avatar_url} alt="" className="w-full h-full object-cover" />
-                : (ch?.name?.[0] ?? "?").toUpperCase()}
-            </div>
-            <button className="text-sm font-bold text-white truncate hover:underline"
-              onClick={() => { onClose(); if (ch?.handle) navigate({ to: "/hoodatv/canal/$handle", params: { handle: ch.handle } }); }}>
-              {ch?.name ?? "Canal"}
-            </button>
-          </div>
-          <button onClick={onClose}
-            className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 transition hover:opacity-80"
-            style={{ background: "rgba(255,255,255,0.2)" }}>
-            <X className="w-4 h-4 text-white" />
-          </button>
-        </div>
-
-        {/* Player */}
-        {v.cf_stream_url
-          ? <video src={v.cf_stream_url} controls autoPlay playsInline className="w-full aspect-video bg-black" />
-          : v.cf_embed_url
-            ? <iframe src={`${v.cf_embed_url}?autoplay=true`}
-                className="w-full aspect-video" allow="autoplay; fullscreen" allowFullScreen />
-            : <div className="w-full aspect-video flex items-center justify-center"
-                style={{ background: "var(--s2)" }}>
-                <Play className="w-16 h-16" style={{ color: P, opacity: 0.4 }} />
-              </div>}
-
-        {/* Info */}
-        <div className="px-4 py-3 border-t" style={{ borderColor: "var(--border-subtle)" }}>
-          <p className="font-bold text-sm leading-snug" style={{ color: "var(--text-primary)" }}>{v.title}</p>
-          <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
-            {fmtV(Number(v.views_count ?? 0))} visualizações · {timeAgo(v.published_at ?? v.created_at)}
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 /* ── Video Card ── */
 function VideoCard({ v, rank }: { v: any; rank?: number }) {
   const [menu, setMenu] = useState(false);
@@ -299,9 +242,11 @@ function VideoCard({ v, rank }: { v: any; rank?: number }) {
     <div className="group cursor-pointer" onClick={() => navigate({ to: "/hoodatv/watch/$id", params: { id: v.id } })}>
       {/* Thumbnail */}
       <div className="relative aspect-video rounded-2xl overflow-hidden"
+        onContextMenu={e => e.preventDefault()}
         style={{ background: "var(--s3)", boxShadow: "0 4px 16px rgba(0,0,0,0.10)" }}>
         {v.thumbnail_url
           ? <img src={v.thumbnail_url} alt={v.title} loading="lazy"
+              onContextMenu={e => e.preventDefault()}
               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.04]" />
           : <div className="w-full h-full flex items-center justify-center" style={{ background: `${bg}18` }}>
               <Play className="w-12 h-12" style={{ color: bg, opacity: 0.5 }} />
