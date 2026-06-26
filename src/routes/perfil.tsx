@@ -868,6 +868,11 @@ function SettingsDrawer({
     return () => cancelAnimationFrame(id);
   }, []);
 
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = ""; };
+  }, []);
+
   const handleClose = () => {
     setVisible(false);
     setTimeout(onClose, 300);
@@ -903,7 +908,7 @@ function SettingsDrawer({
   const avatar = avatarUrl || profile?.avatar_url;
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end">
+    <div className="fixed inset-0 z-50 flex justify-end overflow-hidden">
       {/* Overlay */}
       <div
         className="absolute inset-0 bg-black/40 transition-opacity duration-300"
