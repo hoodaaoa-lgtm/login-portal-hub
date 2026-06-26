@@ -626,7 +626,7 @@ function CommentItem({ comment, me, videoId, qc, depth = 0 }: {
                 value={replyText}
                 onChange={e => setReplyText(e.target.value)}
                 onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitReply(); } }}
-                placeholder=t("common.add_comment")
+                placeholder={t("common.add_comment")}
                 className="flex-1 rounded-full px-4 h-9 text-sm outline-none border"
                 style={{ background: "var(--s2)", borderColor: "var(--border-default)", color: "var(--text-primary)" }}
               />
