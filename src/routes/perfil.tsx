@@ -320,88 +320,107 @@ function PostCard({
   const GROUPS = shareCommunities;
 
   return (
-    <article className="hooda-card rounded-none border-b border-[var(--border-subtle)]">
-      {/* Header */}
-      <div className="flex items-start gap-3 px-4 pt-4 pb-2">
-        <Avatar name={name} size={42} src={avatarUrl} />
+    <article className="border-b border-[var(--border-subtle)]" style={{ background: "var(--s1)" }}>
+      {/* Header — estilo Instagram */}
+      <div className="flex items-center gap-2.5 px-3 py-2.5">
+        <Avatar name={name} size={36} src={avatarUrl} />
         <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between gap-2">
-            <div className="min-w-0">
-              <span className="font-bold text-[15px] text-black">{name}</span>
-              <p className="text-[12px] text-[var(--text-muted)] mt-0.5">@{username} · {timeAgo(post.createdAt)}</p>
-            </div>
-            {isOwner ? (
-              <div className="relative shrink-0">
-                <button onClick={() => { setMenuOpen(o => !o); setShareOpen(false); }}
-                  className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-[var(--s2)] transition">
-                  <MoreHorizontal className="h-5 w-5 text-[var(--text-muted)]" />
-                </button>
-                {menuOpen && (
-                  <div className="absolute right-0 top-9 bg-[var(--s2)] rounded-2xl shadow-xl border border-[var(--border-subtle)] z-30 min-w-[180px] overflow-hidden">
-                    <button onClick={openShareSheet}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-[var(--s1)] text-[var(--text-secondary)]">
-                      <Send className="h-4 w-4 text-[#5B3FCF]" /> Partilhar em grupo
-                    </button>
-                    <button onClick={() => { navigator.clipboard?.writeText(post.text); setMenuOpen(false); toast.success("Texto copiado!"); }}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-[var(--s1)] text-[var(--text-secondary)] border-t border-neutral-50">
-                      <Copy className="h-4 w-4 text-[var(--text-muted)]" /> Copiar texto
-                    </button>
-                    <button onClick={handleDelete} disabled={deleting}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-red-50 text-red-500 border-t border-neutral-50 disabled:opacity-50">
-                      {deleting ? <Loader className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />} Apagar publicação
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <button className="shrink-0 text-[13px] font-bold border border-[#5B3FCF] text-[#5B3FCF] rounded-full px-4 py-1 hover:bg-[#5B3FCF]/5 transition">
-                Seguir
+          <span className="font-bold text-[14px]" style={{ color: "var(--text-primary)" }}>{name}</span>
+          <p className="text-[11px] leading-none mt-0.5" style={{ color: "var(--text-muted)" }}>@{username} · {timeAgo(post.createdAt)}</p>
+        </div>
+        <div className="relative shrink-0">
+          <button onClick={() => { setMenuOpen(o => !o); setShareOpen(false); }}
+            className="w-8 h-8 rounded-full flex items-center justify-center transition"
+            style={{ color: "var(--text-muted)" }}>
+            <MoreHorizontal className="h-5 w-5" />
+          </button>
+          {menuOpen && (
+            <div className="absolute right-0 top-9 rounded-2xl shadow-xl border z-30 min-w-[180px] overflow-hidden"
+              style={{ background: "var(--s2)", borderColor: "var(--border-default)" }}>
+              <button onClick={openShareSheet}
+                className="w-full flex items-center gap-3 px-4 py-3 text-sm text-left transition"
+                style={{ color: "var(--text-secondary)" }}
+                onMouseOver={e => e.currentTarget.style.background = "var(--s3)"}
+                onMouseOut={e => e.currentTarget.style.background = "transparent"}>
+                <Send className="h-4 w-4" style={{ color: "#5B3FCF" }} /> Partilhar em grupo
               </button>
-            )}
-          </div>
+              <button onClick={() => { navigator.clipboard?.writeText(post.text); setMenuOpen(false); toast.success("Texto copiado!"); }}
+                className="w-full flex items-center gap-3 px-4 py-3 text-sm text-left transition border-t"
+                style={{ color: "var(--text-secondary)", borderColor: "var(--border-subtle)" }}
+                onMouseOver={e => e.currentTarget.style.background = "var(--s3)"}
+                onMouseOut={e => e.currentTarget.style.background = "transparent"}>
+                <Copy className="h-4 w-4" style={{ color: "var(--text-muted)" }} /> Copiar texto
+              </button>
+              {isOwner && (
+                <button onClick={handleDelete} disabled={deleting}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-left border-t disabled:opacity-50 transition"
+                  style={{ color: "#dc2626", borderColor: "var(--border-subtle)" }}
+                  onMouseOver={e => e.currentTarget.style.background = "#fee2e2"}
+                  onMouseOut={e => e.currentTarget.style.background = "transparent"}>
+                  {deleting ? <Loader className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />} Apagar
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Content */}
+      {/* Media — ocupa largura total, sem padding lateral */}
       {post.videoUrl && (
         <div className="w-full">
           <HoodaPlayer src={post.videoUrl} rounded="rounded-none" aspectRatio="16/9" />
         </div>
       )}
-      {post.photo && !post.videoUrl && <img src={post.photo} alt="" className="w-full" style={{ display: "block" }} onError={(e) => { e.currentTarget.style.display = "none"; }} />}
-      {post.text && (
-        post.bgColor ? (
-          <div className="px-4 pb-3">
-            <div className="rounded-2xl px-5 py-7 flex items-center justify-center" style={{ background: post.bgColor, minHeight: 110 }}>
-              <p className="font-bold text-center leading-snug" style={{ fontSize: 18, color: "#fff" }}>{post.text}</p>
-            </div>
-          </div>
-        ) : (
-          <p className="px-4 pb-3 text-[15px] text-neutral-800 leading-relaxed">{post.text}</p>
-        )
+      {post.photo && !post.videoUrl && (
+        <img src={post.photo} alt="" className="w-full block"
+          style={{ maxHeight: "500px", objectFit: "cover" }}
+          onError={(e) => { e.currentTarget.style.display = "none"; }} />
+      )}
+      {post.bgColor && !post.photo && !post.videoUrl && (
+        <div className="mx-3 rounded-2xl flex items-center justify-center"
+          style={{ background: post.bgColor, minHeight: 180 }}>
+          <p className="font-bold text-center leading-snug px-6 py-8 text-white text-[18px]">{post.text}</p>
+        </div>
       )}
 
-      {/* Action bar */}
-      <div className="flex items-center px-3 pb-3 border-t border-neutral-50 pt-2">
-        <button onClick={() => onLike(post.id)} className="flex items-center gap-1.5 px-2 py-1.5 rounded-xl hover:bg-[var(--s1)] transition group">
-          <Heart className={`h-[19px] w-[19px] transition ${post.likedByMe ? "fill-red-500 text-red-500" : "text-[var(--text-muted)] group-hover:text-red-400"}`} />
-          <span className={`text-[13px] font-semibold ${post.likedByMe ? "text-red-500" : "text-[var(--text-muted)]"}`}>{fmtNum(post.likes)}</span>
+      {/* Actions — estilo Instagram */}
+      <div className="flex items-center px-3 pt-2 pb-1 gap-1">
+        <button onClick={() => onLike(post.id)} className="flex items-center gap-1 p-1.5 rounded-full transition active:scale-90 group">
+          <Heart className={`h-[22px] w-[22px] transition-all ${post.likedByMe ? "fill-red-500 text-red-500 scale-110" : "group-hover:text-red-400"}`}
+            style={{ color: post.likedByMe ? undefined : "var(--text-primary)" }} />
         </button>
-        <button onClick={() => setShowComments(true)} className="flex items-center gap-1.5 px-2 py-1.5 rounded-xl hover:bg-[var(--s1)] transition group">
-          <MessageCircle className="h-[19px] w-[19px] text-[var(--text-muted)] group-hover:text-blue-400 transition" />
-          <span className="text-[13px] font-semibold text-[var(--text-muted)]">{fmtNum(commentCount)}</span>
+        <button onClick={() => setShowComments(true)} className="flex items-center gap-1 p-1.5 rounded-full transition active:scale-90">
+          <MessageCircle className="h-[22px] w-[22px]" style={{ color: "var(--text-primary)" }} />
         </button>
-        <button onClick={openShareSheet}
-          className="flex items-center gap-1.5 px-2 py-1.5 rounded-xl hover:bg-[var(--s1)] transition group">
-          <Share2 className="h-[19px] w-[19px] text-[var(--text-muted)] group-hover:text-green-500 transition" />
+        <button onClick={openShareSheet} className="flex items-center gap-1 p-1.5 rounded-full transition active:scale-90">
+          <Share2 className="h-[22px] w-[22px]" style={{ color: "var(--text-primary)" }} />
         </button>
         <div className="flex-1" />
-        <button onClick={() => onBookmark(post.id)} className="px-2 py-1.5 rounded-xl hover:bg-[var(--s1)] transition">
-          <Bookmark className={`h-[19px] w-[19px] transition ${post.bookmarked ? "fill-[#5B3FCF] text-[#5B3FCF]" : "text-[var(--text-muted)]"}`} />
+        <button onClick={() => onBookmark(post.id)} className="p-1.5 rounded-full transition active:scale-90">
+          <Bookmark className={`h-[22px] w-[22px] transition ${post.bookmarked ? "fill-[#5B3FCF] text-[#5B3FCF]" : ""}`}
+            style={{ color: post.bookmarked ? undefined : "var(--text-primary)" }} />
         </button>
       </div>
 
-      {/* Modal de comentários */}
+      {/* Likes count + legenda — estilo Instagram */}
+      <div className="px-3 pb-3">
+        {post.likes > 0 && (
+          <p className="text-[13px] font-bold mb-1" style={{ color: "var(--text-primary)" }}>
+            {post.likes === 1 ? "1 gosto" : `${fmtNum(post.likes)} gostos`}
+          </p>
+        )}
+        {post.text && !post.bgColor && (
+          <p className="text-[14px] leading-snug" style={{ color: "var(--text-primary)" }}>
+            <span className="font-bold mr-1">{username}</span>
+            {post.text}
+          </p>
+        )}
+        {commentCount > 0 && (
+          <button onClick={() => setShowComments(true)} className="mt-1 text-[13px]" style={{ color: "var(--text-muted)" }}>
+            Ver {commentCount === 1 ? "1 comentário" : `todos os ${fmtNum(commentCount)} comentários`}
+          </button>
+        )}
+      </div>
       {showComments && (
         <PostCommentsModal
           onClose={() => setShowComments(false)}
