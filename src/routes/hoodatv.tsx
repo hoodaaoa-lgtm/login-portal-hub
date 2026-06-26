@@ -59,10 +59,9 @@ function HoodaTVIntro({ onDone }: { onDone: () => void }) {
 
   return (
     <div style={{
-      position: "absolute", inset: 0,
-      zIndex: 50, background: "var(--s1)",
+      position: "fixed", inset: 0,
+      zIndex: 9999, background: "var(--s1)",
       display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-      paddingBottom: "80px",
       opacity: exiting ? 0 : 1,
       transition: exiting ? "opacity 0.6s ease-in" : "none",
       pointerEvents: exiting ? "none" : "all",
