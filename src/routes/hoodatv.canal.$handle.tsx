@@ -205,7 +205,7 @@ function VideoModal({ v, onClose }: { v: any; onClose: () => void }) {
 function Skel() {
   return (
     <div className="animate-pulse space-y-3">
-      <div className="aspect-video rounded-2xl" style={{ background: "var(--s3)" }} />
+      <div className="htv-skeleton aspect-video rounded-2xl" style={{ background: "var(--s3)" }} />
       <div className="h-3 rounded-full" style={{ background: "var(--s3)", width: "80%" }} />
       <div className="h-3 rounded-full" style={{ background: "var(--s3)", width: "50%" }} />
     </div>
@@ -304,11 +304,11 @@ function ChannelPage() {
       <SideNav />
       <PageWrapper className="pb-20 lg:pb-0">
         <div className="animate-pulse">
-          <div className="h-40 sm:h-52" style={{ background: "var(--s3)" }} />
+          <div className="htv-skeleton h-40 sm:h-52" style={{ background: "var(--s3)" }} />
           <div className="px-4 pt-4 space-y-3">
-            <div className="w-20 h-20 rounded-full" style={{ background: "var(--s3)" }} />
-            <div className="h-5 rounded-full w-48" style={{ background: "var(--s3)" }} />
-            <div className="h-3 rounded-full w-32" style={{ background: "var(--s3)" }} />
+            <div className="htv-skeleton w-20 h-20 rounded-full" style={{ background: "var(--s3)" }} />
+            <div className="htv-skeleton h-5 rounded-full w-48" style={{ background: "var(--s3)" }} />
+            <div className="htv-skeleton h-3 rounded-full w-32" style={{ background: "var(--s3)" }} />
           </div>
         </div>
         <BottomNav />
@@ -345,7 +345,7 @@ function ChannelPage() {
         {playing && <VideoModal v={playing} onClose={() => setPlaying(null)} />}
 
         {/* ── Back button ── */}
-        <div className="sticky top-0 z-30 flex items-center gap-2 px-4 py-3 border-b"
+        <div className="htv-back-bar sticky top-0 z-30 flex items-center gap-2 px-4 py-3 border-b"
           style={{ background: "rgba(var(--s1-rgb,250,250,252),.94)", backdropFilter: "blur(20px)", borderColor: "var(--border-subtle)" }}>
           <button onClick={() => navigate({ to: "/hoodatv" })}
             className="w-9 h-9 rounded-full flex items-center justify-center transition hover:bg-[var(--s3)]"
@@ -440,7 +440,7 @@ function ChannelPage() {
         </div>
 
         {/* ── Tabs ── */}
-        <div className="sticky top-[53px] z-20 border-b"
+        <div className="htv-tab-bar sticky top-[53px] z-20 border-b"
           style={{ background: "rgba(var(--s1-rgb,250,250,252),.94)", backdropFilter: "blur(20px)", borderColor: "var(--border-subtle)" }}>
           <div className="flex px-4 sm:px-6">
             {([
@@ -466,7 +466,7 @@ function ChannelPage() {
           {tab === "videos" && (
             <div>
               {/* Search dentro do canal */}
-              <div className="flex items-center gap-2 rounded-full px-4 h-10 border mb-6 transition-all"
+              <div className="htv-canal-search flex items-center gap-2 rounded-full px-4 h-10 border mb-6 transition-all"
                 style={{ background: "var(--s2)", borderColor: "var(--border-default)" }}>
                 <Search className="w-4 h-4 shrink-0" style={{ color: "var(--text-muted)" }} />
                 <input value={search} onChange={e => setSearch(e.target.value)}
@@ -481,7 +481,7 @@ function ChannelPage() {
                     {Array.from({ length: 8 }).map((_, i) => <Skel key={i} />)}
                   </div>
                 : !filteredVideos.length
-                  ? <div className="py-20 text-center rounded-2xl border"
+                  ? <div className="htv-empty py-20 text-center rounded-2xl border"
                       style={{ background: "var(--s2)", borderColor: "var(--border-subtle)" }}>
                       <VideoIcon className="w-12 h-12 mx-auto mb-3" style={{ color: "var(--text-muted)" }} />
                       <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>
@@ -504,7 +504,7 @@ function ChannelPage() {
                     {Array.from({ length: 4 }).map((_, i) => <Skel key={i} />)}
                   </div>
                 : !playlists.length
-                  ? <div className="py-20 text-center rounded-2xl border"
+                  ? <div className="htv-empty py-20 text-center rounded-2xl border"
                       style={{ background: "var(--s2)", borderColor: "var(--border-subtle)" }}>
                       <ListVideo className="w-12 h-12 mx-auto mb-3" style={{ color: "var(--text-muted)" }} />
                       <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>
@@ -585,7 +585,7 @@ function ChannelPage() {
                   { label: t("tv.videos"), value: String(stats?.videoCount ?? 0) },
                   { label: t("common.views"), value: fmtV(stats?.totalViews ?? 0) },
                 ].map(s => (
-                  <div key={s.label} className="rounded-2xl p-4 text-center border"
+                  <div key={s.label} className="htv-stat-card rounded-2xl p-4 text-center border"
                     style={{ background: "var(--s2)", borderColor: "var(--border-subtle)" }}>
                     <p className="text-xl font-extrabold" style={{ color: P }}>{s.value}</p>
                     <p className="text-[11px] mt-0.5" style={{ color: "var(--text-muted)" }}>{s.label}</p>

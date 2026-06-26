@@ -865,3 +865,142 @@ nav.hooda-bottom-nav {
   0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
   30%            { transform: translateY(-5px); opacity: 1; }
 }
+
+/* ═══════════════════════════════════════════════════════
+   HOODATV — DARK MODE OVERRIDES
+   ═══════════════════════════════════════════════════════ */
+
+/* Filter pills */
+.dark .htv-pill {
+  background-color: var(--s3) !important;
+  color: var(--text-secondary) !important;
+  border-color: var(--border-default) !important;
+}
+.dark .htv-pill-active {
+  color: #fff !important;
+}
+
+/* Video cards — thumbnail placeholder */
+.dark .htv-thumb-placeholder {
+  background-color: var(--s3) !important;
+}
+
+/* Channel cards */
+.dark .htv-channel-card {
+  background-color: var(--s2) !important;
+  border-color: var(--border-subtle) !important;
+}
+
+/* Search bar na HoodaTV */
+.dark .htv-search {
+  background-color: var(--s3) !important;
+  border-color: var(--border-default) !important;
+  color: var(--text-primary) !important;
+}
+
+/* HoodaTV sticky header */
+.dark .htv-header {
+  background-color: rgba(17,17,24,0.92) !important;
+  border-color: var(--border-subtle) !important;
+}
+
+/* Hover overlay dos thumbnails em dark */
+.dark .htv-thumb-overlay {
+  background: rgba(0,0,0,0.45) !important;
+}
+
+/* Play button nos thumbnails */
+.dark .htv-play-btn {
+  background: rgba(255,255,255,0.12) !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+/* VideoModal em dark */
+.dark .htv-modal-bg {
+  background: rgba(0,0,0,0.80) !important;
+}
+.dark .htv-modal-body {
+  background-color: var(--s2) !important;
+}
+.dark .htv-modal-sidebar {
+  background-color: var(--s1) !important;
+  border-color: var(--border-subtle) !important;
+}
+
+/* Badge de duração no thumbnail */
+.dark .htv-duration-badge {
+  background: rgba(0,0,0,0.82) !important;
+  color: #fff !important;
+}
+
+/* Menu de 3 pontos no card */
+.dark .htv-card-menu {
+  background-color: var(--s2) !important;
+  border-color: var(--border-default) !important;
+}
+.dark .htv-card-menu button:hover {
+  background-color: var(--s3) !important;
+}
+
+/* Tabs na página do canal */
+.dark .htv-tab-bar {
+  background-color: rgba(17,17,24,0.92) !important;
+  border-color: var(--border-subtle) !important;
+}
+
+/* Back button barra topo na página do canal */
+.dark .htv-back-bar {
+  background-color: rgba(17,17,24,0.92) !important;
+  border-color: var(--border-subtle) !important;
+}
+
+/* Stat cards na página do canal (tab Sobre) */
+.dark .htv-stat-card {
+  background-color: var(--s2) !important;
+  border-color: var(--border-subtle) !important;
+}
+
+/* Banner fallback do canal */
+.dark .htv-banner-fallback {
+  opacity: 0.5 !important;
+}
+
+/* Secção vazia (sem vídeos) */
+.dark .htv-empty {
+  background-color: var(--s2) !important;
+  border-color: var(--border-subtle) !important;
+}
+
+/* Skeleton loading */
+.dark .htv-skeleton {
+  background-color: var(--s3) !important;
+}
+
+/* Input de pesquisa dentro do canal */
+.dark .htv-canal-search {
+  background-color: var(--s3) !important;
+  border-color: var(--border-default) !important;
+}
+
+/* Botão Seguir inactivo */
+.dark .htv-btn-following {
+  background-color: var(--s3) !important;
+  color: var(--text-secondary) !important;
+  border-color: var(--border-default) !important;
+}
+
+/* Card de relacionados no modal */
+.dark .htv-related-card:hover {
+  background-color: var(--s3) !important;
+}
+
+/* Stats pills no modal de vídeo */
+.dark .htv-stat-pill {
+  background-color: var(--s3) !important;
+  color: var(--text-muted) !important;
+}
+
+/* Botão canal no modal */
+.dark .htv-channel-btn:hover {
+  background-color: var(--s3) !important;
+}
