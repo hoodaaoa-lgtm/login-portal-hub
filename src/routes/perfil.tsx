@@ -1410,7 +1410,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
   const coverInputRef = useRef<HTMLInputElement>(null);
   const [photoViewerSrc, setPhotoViewerSrc] = useState<string | null>(null);
 
-  function pickFile(ref: React.RefObject<HTMLInputElement | null>, onDone: (url: string) => void, saveToDb?: "avatar") {
+  function pickFile(ref: React.RefObject<HTMLInputElement | null>, onDone: (url: string) => void, saveToDb?: "avatar" | "cover") {
     if (!ref.current) return;
     ref.current.onchange = async (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
@@ -1420,12 +1420,16 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
         if (ev.target?.result) {
           const url = ev.target.result as string;
           onDone(url);
-          // Guardar avatar_url no Supabase
           if (saveToDb === "avatar") {
             const { data: { session } } = await supabase.auth.getSession();
             if (session) {
-              await supabase.from("profiles").update({ avatar_url: url }).eq("id", session.user.id);
+              await supabase.from("profiles").update({ avatar_url: url } as any).eq("id", session.user.id);
               setGlobalAvatarUrl(url);
+            }
+          } else if (saveToDb === "cover") {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+              await supabase.from("profiles").update({ cover_url: url } as any).eq("id", session.user.id);
             }
           }
         }
