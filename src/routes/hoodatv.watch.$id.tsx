@@ -185,8 +185,8 @@ function useIsFollowing(userId: string | null, channelId: string | undefined) {
     queryKey: ["htv-is-following", userId, channelId],
     queryFn: async () => {
       if (!userId || !channelId) return false;
-      const { data } = await (supabase as any).from("follows").select("id")
-        .eq("follower_id", userId).eq("following_id", channelId).maybeSingle();
+      const { data } = await (supabase as any).from("channel_follows").select("channel_id")
+        .eq("user_id", userId).eq("channel_id", channelId).maybeSingle();
       return !!data;
     },
     enabled: !!userId && !!channelId,
@@ -749,6 +749,34 @@ function WatchPage() {
 
   const bg = avatarColor(ch?.name ?? "");
 
+  /* ── Gravar view + incrementar contador (1x por sessão) ── */
+  useEffect(() => {
+    if (!id || !video) return;
+    const key = `htv-viewed-${id}`;
+    if (sessionStorage.getItem(key)) return;
+    sessionStorage.setItem(key, "1");
+    // RPC grava em video_views (para o Studio) E incrementa views_count
+    (supabase as any).rpc("record_video_view", {
+      p_video_id:   id,
+      p_channel_id: video.channel_id ?? null,
+    }).then(() => qc.invalidateQueries({ queryKey: ["htv-watch", id] }));
+  }, [id, video?.channel_id]);
+
+  /* ── Realtime: comentários novos ── */
+  useEffect(() => {
+    if (!id) return;
+    const ch = supabase
+      .channel(`comments-${id}`)
+      .on("postgres_changes", {
+        event: "*", schema: "public", table: "video_comments",
+        filter: `video_id=eq.${id}`,
+      }, () => {
+        qc.invalidateQueries({ queryKey: ["htv-comments", id] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [id, qc]);
+
   /* ── Detectar suporte PiP ── */
   useEffect(() => {
     setHasPiP(document.pictureInPictureEnabled ?? false);
@@ -852,18 +880,21 @@ function WatchPage() {
     qc.invalidateQueries({ queryKey: ["htv-saved", id, me?.id] });
   }
 
-  /* ── Seguir ── */
+  /* ── Seguir canal ── */
   async function toggleFollow() {
     if (!me) { toast.error("Inicia sessão para seguir."); return; }
     if (!ch?.id) return;
     if (isFollowing) {
-      await (supabase as any).from("follows").delete().eq("follower_id", me.id).eq("following_id", ch.id);
+      await (supabase as any).from("channel_follows")
+        .delete().eq("user_id", me.id).eq("channel_id", ch.id);
       toast.success("Deixaste de seguir.");
     } else {
-      await (supabase as any).from("follows").insert({ follower_id: me.id, following_id: ch.id });
-      toast.success("Canal seguido!");
+      await (supabase as any).from("channel_follows")
+        .insert({ user_id: me.id, channel_id: ch.id });
+      toast.success("Canal seguido! 🎉");
     }
     qc.invalidateQueries({ queryKey: ["htv-is-following", me.id, ch.id] });
+    qc.invalidateQueries({ queryKey: ["channel-stats", ch.id] });
   }
 
   /* ── Não tenho interesse ── */
