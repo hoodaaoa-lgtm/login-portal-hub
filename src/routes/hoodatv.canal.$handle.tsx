@@ -581,8 +581,8 @@ function ChannelPage() {
               {/* Stats destacadas */}
               <div className="grid grid-cols-3 gap-3">
                 {[
-                  { label: "Seguidores", value: fmtV(stats?.subs ?? 0) },
-                  { label: "Vídeos", value: String(stats?.videoCount ?? 0) },
+                  { label: t("profile.followers"), value: fmtV(stats?.subs ?? 0) },
+                  { label: t("tv.videos"), value: String(stats?.videoCount ?? 0) },
                   { label: "Visualizações", value: fmtV(stats?.totalViews ?? 0) },
                 ].map(s => (
                   <div key={s.label} className="rounded-2xl p-4 text-center border"

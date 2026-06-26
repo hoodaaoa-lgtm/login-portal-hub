@@ -434,7 +434,7 @@ function AddContactModal({ myId, onClose, onAdd, existingContacts }: {
               className="w-full h-11 rounded-2xl font-bold text-sm text-white flex items-center justify-center gap-2 transition active:scale-95"
               style={{ background: "#5B3FCF", opacity: sendingRequest ? 0.7 : 1 }}>
               {sendingRequest ? <Loader className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-              {sendingRequest ? "A enviar..." : "Enviar pedido"}
+              {sendingRequest ? t("studio.uploading") : "Enviar pedido"}
             </button>
             <p className="text-center text-[11px]" style={{ color: "var(--text-muted,#aaa)" }}>
               @{requestTarget.username} verá a tua mensagem antes de aceitar
@@ -1335,7 +1335,7 @@ function ChatMediaLightbox({ items, index, onIndexChange, onClose, onReact, cont
             <ZoomIn className="h-[18px] w-[18px]" />
           </button>
           {/* Encaminhar / partilhar */}
-          <button title="Partilhar" onClick={handleForward}
+          <button title={t("common.share")} onClick={handleForward}
             className="w-9 h-9 rounded-full flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 transition active:scale-90">
             <Forward className="h-[18px] w-[18px]" />
           </button>
@@ -1390,7 +1390,7 @@ function ChatMediaLightbox({ items, index, onIndexChange, onClose, onReact, cont
             )}
           </div>
           {/* Fechar */}
-          <button title="Fechar" onClick={onClose}
+          <button title={t("common.close")} onClick={onClose}
             className="w-9 h-9 rounded-full flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 transition active:scale-90">
             <X className="h-[18px] w-[18px]" />
           </button>
@@ -3882,7 +3882,7 @@ function MensagensPage() {
           : msg.message_type === "video"  ? "🎥 Vídeo"
           : msg.message_type === "audio"  ? "🎤 Áudio"
           : msg.message_type === "sticker" ? "😊 Sticker"
-          : (msg.content || "Nova mensagem");
+          : (msg.content || t("messages.new_message"));
 
         toast(
           <div className="flex items-center gap-3">

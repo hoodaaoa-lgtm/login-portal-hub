@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { t } from "@/lib/useT";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { HoodaLogo } from "@/components/HoodaLogo";
@@ -72,7 +73,7 @@ function ResetPasswordPage() {
             {error && <p className="text-sm text-red-600">{error}</p>}
             <button type="submit" disabled={loading}
               className="w-full h-12 rounded-2xl bg-black text-white font-bold transition-all hover:bg-neutral-800 disabled:opacity-60">
-              {loading ? "A guardar…" : "Guardar senha"}
+              {loading ? t("settings.saving") : "Guardar senha"}
             </button>
           </form>
         )}

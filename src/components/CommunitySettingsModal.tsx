@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
+import { t } from "@/lib/useT";
 import {
   X, ChevronRight, Camera, Save, Loader, Users, Shield, ShieldCheck,
   Search, UserMinus, UserX, VolumeX, Globe, Lock, EyeOff, Link,
@@ -109,11 +110,11 @@ export function CommunitySettingsModal({ community, onClose, onUpdate, initialSe
   }
 
   const titles: Record<SettingsSection, string> = {
-    main:           "Definições",
+    main:           t("studio.settings"),
     info:           "Informações",
     membros:        "Membros",
     "membro-detail":"Gerir membro",
-    visibilidade:   "Visibilidade",
+    visibilidade:   t("studio.visibility"),
     permissoes:     "Permissões",
     foto:           "Foto da comunidade",
     regras:         "Regras",
@@ -242,7 +243,7 @@ function SectionInfo({ community, onUpdate }: { community: Community; onUpdate: 
         <p className="text-right text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>{name.length}/60</p>
       </Field>
 
-      <Field label="Descrição">
+      <Field label={t("tv.description")}>
         <textarea value={desc} onChange={e => setDesc(e.target.value)} rows={3} maxLength={300}
           className="w-full rounded-xl px-4 py-3 text-sm outline-none resize-none"
           style={{ background: "var(--s3)", border: "1.5px solid var(--border-default)", color: "var(--text-primary)" }} />
@@ -754,7 +755,7 @@ function SectionPermissoes({ community, onUpdate }: { community: Community; onUp
       <div className="space-y-2">
         <p className="text-xs font-bold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Conteúdo permitido</p>
         <Toggle label="Imagens" icon={ImageIcon} value={perms.can_send_images} onChange={v => setPerms(p => ({ ...p, can_send_images: v }))} />
-        <Toggle label="Vídeos" icon={Video} value={perms.can_send_videos} onChange={v => setPerms(p => ({ ...p, can_send_videos: v }))} />
+        <Toggle label={t("tv.videos")} icon={Video} value={perms.can_send_videos} onChange={v => setPerms(p => ({ ...p, can_send_videos: v }))} />
         <Toggle label="Links" icon={LinkIcon} value={perms.can_share_links} onChange={v => setPerms(p => ({ ...p, can_share_links: v }))} />
         <Toggle label="Aprovação de publicações" desc="Publicações precisam de aprovação antes de aparecerem"
           icon={CheckSquare} value={perms.posts_need_approval} onChange={v => setPerms(p => ({ ...p, posts_need_approval: v }))} />

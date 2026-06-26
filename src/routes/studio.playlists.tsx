@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { t } from "@/lib/useT";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { myChannelQuery, myVideosQuery } from "@/lib/channel-queries";
 import { myPlaylistsQuery, type Playlist } from "@/lib/playlist-queries";
@@ -424,7 +425,7 @@ function PlaylistModal({
             className="px-6 py-2.5 rounded-full text-sm font-bold text-white transition-all active:scale-95 disabled:opacity-50"
             style={{ background: GRAD }}
           >
-            {saving ? "A guardar…" : existing ? "Guardar" : "Criar playlist"}
+            {saving ? t("settings.saving") : existing ? t("common.save") : "Criar playlist"}
           </button>
         </div>
       </div>
@@ -476,7 +477,7 @@ function PlaylistCard({
             onClick={onEdit}
             className="w-8 h-8 rounded-full flex items-center justify-center text-white transition hover:scale-110"
             style={{ background: "rgba(91,63,207,0.85)" }}
-            title="Editar"
+            title={t("common.edit")}
           >
             <Pencil className="w-3.5 h-3.5" />
           </button>
@@ -484,7 +485,7 @@ function PlaylistCard({
             onClick={onDelete}
             className="w-8 h-8 rounded-full flex items-center justify-center text-white transition hover:scale-110"
             style={{ background: "rgba(233,75,138,0.85)" }}
-            title="Apagar"
+            title={t("common.delete")}
           >
             <Trash2 className="w-3.5 h-3.5" />
           </button>
@@ -652,7 +653,7 @@ function PlaylistsPage() {
                 className="flex-1 py-2.5 rounded-full text-sm font-bold text-white transition disabled:opacity-50"
                 style={{ background: "#E94B8A" }}
               >
-                {deleteMutation.isPending ? "A apagar…" : "Apagar"}
+                {deleteMutation.isPending ? "A apagar…" : t("common.delete")}
               </button>
             </div>
           </div>

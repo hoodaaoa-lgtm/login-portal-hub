@@ -87,7 +87,7 @@ export default function AnalyticsPage() {
 
   const METRIC_CARDS = [
     { label: "Visualizações totais",  value: stats?.views ?? 0,          icon: Eye,       accent: PURPLE },
-    { label: "Seguidores",            value: stats?.subs ?? 0,           icon: Users,     accent: "#E94B8A" },
+    { label: t("profile.followers"),            value: stats?.subs ?? 0,           icon: Users,     accent: "#E94B8A" },
     { label: "Vistas — 24h",          value: stats?.views_24h ?? 0,      icon: Activity,  accent: "#10b981" },
     { label: "Vistas — 7 dias",       value: stats?.views_7d ?? 0,       icon: BarChart2, accent: "#1FAFA6" },
     { label: "Vistas — 28 dias",      value: stats?.views_28d ?? 0,      icon: TrendingUp,accent: "#8B5CF6" },

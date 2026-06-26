@@ -413,7 +413,7 @@ function VideoOptionsDropdown({
     ...(hasPiP ? [{ icon: <Minimize2 className="w-4 h-4" />, label: "Miniplayer (PiP)", action: () => { onPiP(); onClose(); } }] : []),
     { icon: <BarChart2 className="w-4 h-4" />, label: "Estatísticas", action: () => { onStats(); onClose(); } },
     { icon: <Ban className="w-4 h-4" />, label: "Não tenho interesse", action: () => { onNotInterested(); onClose(); } },
-    { icon: <Flag className="w-4 h-4" />, label: "Denunciar", action: () => { onReport(); onClose(); }, danger: true },
+    { icon: <Flag className="w-4 h-4" />, label: t("common.report"), action: () => { onReport(); onClose(); }, danger: true },
   ];
 
   return (
@@ -1435,7 +1435,7 @@ function WatchPage() {
                   ? { background: `${P}18`, color: P, borderColor: P }
                   : { background: "var(--s2)", color: "var(--text-secondary)", borderColor: "var(--border-default)" }}>
                 {isSaved ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
-                {isSaved ? "Guardado" : "Guardar"}
+                {isSaved ? "Guardado" : t("common.save")}
               </button>
 
               <button onClick={() => setShowShare(true)}

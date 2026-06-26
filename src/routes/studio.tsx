@@ -22,10 +22,10 @@ const GRAD = "linear-gradient(135deg,#5B3FCF,#E94B8A)";
 
 const NAV = [
   { to: "/studio",             label: "Painel",        icon: LayoutDashboard, exact: true },
-  { to: "/studio/content",     label: "Conteúdo",      icon: Video },
+  { to: "/studio/content",     label: t("studio.content"),      icon: Video },
   { to: "/studio/upload",      label: "Enviar vídeo",  icon: Upload },
   { to: "/studio/playlists",   label: "Playlists",     icon: ListVideo },
-  { to: "/studio/analytics",   label: "Análises",      icon: BarChart2 },
+  { to: "/studio/analytics",   label: t("studio.analytics"),      icon: BarChart2 },
 ];
 
 const CATEGORIES = [
@@ -56,12 +56,12 @@ const COUNTRIES = [
 const AUDIENCE_OPTIONS = [
   { value: "all",     label: "Todos",           icon: Globe,  desc: "Qualquer pessoa pode ver o teu canal" },
   { value: "18+",     label: "Maiores de 18",   icon: Users,  desc: "Conteúdo restrito a adultos" },
-  { value: "private", label: "Privado",         icon: Lock,   desc: "Só tu podes ver o teu canal" },
+  { value: "private", label: t("studio.private"),         icon: Lock,   desc: "Só tu podes ver o teu canal" },
 ];
 
 const COMMENT_OPTIONS = [
   { value: "all",       label: "Todos" },
-  { value: "followers", label: "Seguidores" },
+  { value: "followers", label: t("profile.followers") },
   { value: "none",      label: "Ninguém" },
 ];
 
@@ -211,7 +211,7 @@ function SettingsModal({ onClose }: { onClose: () => void }) {
 
         {/* Tabs */}
         <div className="flex border-b shrink-0" style={{ borderColor: "var(--border-subtle)" }}>
-          {([ ["info","Informações"], ["privacy","Privacidade"], ["danger","Perigo"] ] as const).map(([key, label]) => (
+          {([ ["info","Informações"], ["privacy",t("settings.privacy")], ["danger","Perigo"] ] as const).map(([key, label]) => (
             <button key={key} onClick={() => setTab(key)}
               className="flex-1 py-3 text-xs font-semibold transition"
               style={{

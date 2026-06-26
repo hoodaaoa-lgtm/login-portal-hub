@@ -1453,7 +1453,7 @@ function StoryViewer({ stories, startIndex, onClose, onDelete, userAvatarUrl }: 
           {story.isYou && story.published && (
             <div className="flex items-center gap-1.5 mb-2 px-1">
               <Eye className="h-3.5 w-3.5 text-white/60" />
-              <span className="text-white/60 text-xs font-semibold flex-1">{viewCount} {viewCount === 1 ? "visualização" : "visualizações"}</span>
+              <span className="text-white/60 text-xs font-semibold flex-1">{viewCount} {viewCount === 1 ? "visualização" : t("tv.views")}</span>
               {story.id && onDelete && (
                 <button
                   onClick={() => setShowDeleteConfirm(true)}

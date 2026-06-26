@@ -1,4 +1,5 @@
 import React from "react";
+import { t } from "@/lib/useT";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { HoodaLogo } from "@/components/HoodaLogo";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -11,18 +12,18 @@ import {
 
 const NAV_ITEMS = [
   { to: "/home",       label: "Home",        Icon: Home        },
-  { to: "/explorar",   label: "Explorar",    Icon: Compass     },
+  { to: "/explorar",   label: t("nav.explore"),    Icon: Compass     },
   { to: "/hoodatv",    label: "HoodaTV",     Icon: Tv          },
-  { to: "/mensagens",  label: "Mensagens",   Icon: MessageSquare },
-  { to: "/perfil",     label: "Perfil",      Icon: User        },
+  { to: "/mensagens",  label: t("nav.messages"),   Icon: MessageSquare },
+  { to: "/perfil",     label: t("nav.profile"),      Icon: User        },
 ] as const;
 
 const MOBILE_ITEMS = [
   { to: "/home",       label: "Home",      Icon: Home          },
-  { to: "/explorar",   label: "Explorar",  Icon: Compass       },
+  { to: "/explorar",   label: t("nav.explore"),  Icon: Compass       },
   { to: "/hoodatv",    label: "HoodaTV",   Icon: Tv            },
-  { to: "/mensagens",  label: "Mensagens", Icon: MessageSquare },
-  { to: "/perfil",     label: "Perfil",    Icon: User          },
+  { to: "/mensagens",  label: t("nav.messages"), Icon: MessageSquare },
+  { to: "/perfil",     label: t("nav.profile"),    Icon: User          },
 ] as const;
 
 /** Resolve o valor do badge para uma rota de navegação a partir dos contadores já carregados */
@@ -129,7 +130,7 @@ export function SideNav() {
           {theme === "dark"
             ? <Sun className="h-5 w-5" strokeWidth={1.8} />
             : <Moon className="h-5 w-5" strokeWidth={1.8} />}
-          <span>{theme === "dark" ? "Modo claro" : "Modo escuro"}</span>
+          <span>{theme === "dark" ? t("settings.light_mode") : t("settings.dark_mode")}</span>
         </button>
         <Link to="/perfil"
           className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors"

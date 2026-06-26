@@ -399,9 +399,9 @@ function UploadPage() {
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {([
-                { key: "public",    icon: Globe,    label: "Público",   desc: "Visível na HoodaTV" },
+                { key: "public",    icon: Globe,    label: t("studio.public"),   desc: "Visível na HoodaTV" },
                 { key: "unlisted",  icon: LinkIcon, label: "Com link",  desc: "Só com o link" },
-                { key: "private",   icon: Lock,     label: "Privado",   desc: "Só tu podes ver" },
+                { key: "private",   icon: Lock,     label: t("studio.private"),   desc: "Só tu podes ver" },
                 { key: "scheduled", icon: Calendar, label: "Agendado",  desc: "Publica na data" },
               ] as const).map(opt => {
                 const Icon = opt.icon;
@@ -483,7 +483,7 @@ function UploadPage() {
               <div className="flex justify-between">
                 <span>Visibilidade</span>
                 <span className="font-semibold" style={{ color: visibility === "public" ? "#10b981" : visibility === "scheduled" ? "#F97316" : "var(--text-primary)" }}>
-                  {visibility === "public" ? "Público" : visibility === "unlisted" ? "Com link" : visibility === "scheduled" ? "Agendado" : "Privado"}
+                  {visibility === "public" ? t("studio.public") : visibility === "unlisted" ? "Com link" : visibility === "scheduled" ? "Agendado" : t("studio.private")}
                 </span>
               </div>
               {detectedDur && (

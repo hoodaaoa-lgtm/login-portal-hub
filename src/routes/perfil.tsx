@@ -737,7 +737,7 @@ function CreatePostModal({
                 <span>
                   {uploadStage === "upload" && (photoFile ? "A enviar foto…" : "A enviar vídeo…")}
                   {uploadStage === "saving" && "A guardar publicação…"}
-                  {uploadStage === "done"   && "Publicado! ✓"}
+                  {uploadStage === "done"   && t("post.published")}
                 </span>
                 {uploadStage === "upload" && (
                   <span style={{ color: ACCENT }}>{uploadProgress}%</span>
@@ -760,7 +760,7 @@ function CreatePostModal({
             className="w-full h-12 rounded-xl font-bold text-base transition-all active:scale-[0.99] disabled:opacity-40 flex items-center justify-center gap-2"
             style={{ background: canPublish ? ACCENT : "var(--s3)", color: canPublish ? "#fff" : "var(--text-muted)" }}>
             {done
-              ? "Publicado! ✓"
+              ? t("post.published")
               : publishing
                 ? <><div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />A publicar…</>
                 : t("post.publish")}
@@ -1027,7 +1027,7 @@ function SettingsDrawer({
       title: "Suporte",
       items: [
         { icon: HelpCircle, label: t("settings.help"), desc: "Perguntas frequentes", action: onOpenHelp, color: "#1FAFA6" },
-        { icon: Info, label: "Sobre a Hooda", desc: "Versão e informações legais", action: onOpenAbout, color: "#E94B8A" },
+        { icon: Info, label: t("settings.about"), desc: "Versão e informações legais", action: onOpenAbout, color: "#E94B8A" },
       ],
     },
     {
@@ -1300,9 +1300,9 @@ function NotificationsPanel({ onBack }: { onBack: () => void }) {
 
   const ITEMS: { key: keyof typeof prefs; icon: React.ElementType; color: string; label: string; desc: string }[] = [
     { key: "likes",    icon: Heart,         color: "#E94B8A", label: "Gostos",           desc: "Quando alguém gosta das tuas publicações" },
-    { key: "comments", icon: MessageCircle, color: "#1FAFA6", label: "Comentários",      desc: "Quando alguém comenta as tuas publicações" },
+    { key: "comments", icon: MessageCircle, color: "#1FAFA6", label: t("post.comments"),      desc: "Quando alguém comenta as tuas publicações" },
     { key: "follows",  icon: Users,         color: "#6BA547", label: "Novos seguidores", desc: "Quando alguém começa a seguir-te" },
-    { key: "messages", icon: Bell,          color: "#F26B3A", label: "Mensagens",        desc: "Quando recebes uma nova mensagem" },
+    { key: "messages", icon: Bell,          color: "#F26B3A", label: t("nav.messages"),        desc: "Quando recebes uma nova mensagem" },
     { key: "mentions", icon: Type,          color: ACCENT,    label: "Menções",          desc: "Quando alguém te menciona numa publicação" },
   ];
 
@@ -1456,7 +1456,7 @@ function PrivacyPanel({ onBack }: { onBack: () => void }) {
           )}
           <p className="px-5 pb-1.5 text-[11px] font-bold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Visibilidade do perfil</p>
           <div className="mx-3 rounded-2xl overflow-hidden border shadow-sm" style={{ background: "var(--s2)", borderColor: "var(--border-default)" }}>
-            <ToggleRow icon={Lock} color="#6BA547" label="Conta privada"
+            <ToggleRow icon={Lock} color="#6BA547" label={t("settings.private_account")}
               desc="Só seguidores aprovados veem as tuas publicações"
               checked={isPrivate} onChange={toggle} />
           </div>
@@ -1503,16 +1503,16 @@ function SecurityPanel({ onBack, email }: { onBack: () => void; email: string })
         <p className="px-5 pb-1.5 pt-3 text-[11px] font-bold text-neutral-400 uppercase tracking-wider">Alterar palavra-passe</p>
         <div className="bg-white mx-3 rounded-2xl overflow-hidden border border-neutral-100 shadow-sm px-4 py-3.5 space-y-3">
           <input type="password" value={pwd} onChange={e => setPwd(e.target.value)}
-            placeholder="Nova senha" className="w-full h-10 px-3 rounded-xl text-sm outline-none bg-neutral-50 border border-neutral-100" />
+            placeholder={t("settings.new_password")} className="w-full h-10 px-3 rounded-xl text-sm outline-none bg-neutral-50 border border-neutral-100" />
           <input type="password" value={pwd2} onChange={e => setPwd2(e.target.value)}
-            placeholder="Confirmar nova senha" className="w-full h-10 px-3 rounded-xl text-sm outline-none bg-neutral-50 border border-neutral-100" />
+            placeholder={t("settings.confirm_new_password")} className="w-full h-10 px-3 rounded-xl text-sm outline-none bg-neutral-50 border border-neutral-100" />
           {msg && (
             <p className={`text-xs ${msg.type === "ok" ? "text-green-600" : "text-red-500"}`}>{msg.text}</p>
           )}
           <button onClick={changePassword} disabled={saving || !pwd || !pwd2}
             className="w-full h-10 rounded-xl text-sm font-bold text-white disabled:opacity-40 transition active:scale-[0.98]"
             style={{ background: ACCENT }}>
-            {saving ? "A guardar..." : "Atualizar senha"}
+            {saving ? t("settings.saving") : t("settings.update_password")}
           </button>
         </div>
       </div>
@@ -1532,7 +1532,7 @@ function MsgPrivacyPanel({ onBack, msgPermission, onMsgPermissionChange }: {
   // Valores que a constraint da DB aceita: todos, seguidores, mutuos, aprovados
   const OPTIONS = [
     { value: "todos",      label: "Toda a gente",     desc: "Qualquer utilizador pode escrever-te" },
-    { value: "seguidores", label: "Seguidores",        desc: "Apenas quem te segue" },
+    { value: "seguidores", label: t("profile.followers"),        desc: "Apenas quem te segue" },
     { value: "mutuos",     label: "Seguimento mútuo", desc: "Quem segues e te segue" },
     { value: "aprovados",  label: "Apenas aprovados", desc: "Tens de aceitar cada pedido" },
   ];
@@ -1550,7 +1550,7 @@ function MsgPrivacyPanel({ onBack, msgPermission, onMsgPermissionChange }: {
   }
 
   return (
-    <SettingsSubPanel title="Privacidade de Mensagens" onBack={onBack}>
+    <SettingsSubPanel title={t("settings.msg_privacy")} onBack={onBack}>
       <div className="mb-2">
         {savedOk && (
           <p className="mx-5 mb-3 text-xs font-semibold text-green-600 flex items-center gap-1">
@@ -1594,7 +1594,7 @@ function MsgPrivacyPanel({ onBack, msgPermission, onMsgPermissionChange }: {
 /* ─── Sobre ─── */
 function AboutPanel({ onBack }: { onBack: () => void }) {
   return (
-    <SettingsSubPanel title="Sobre a Hooda" onBack={onBack}>
+    <SettingsSubPanel title={t("settings.about")} onBack={onBack}>
       <div className="px-5 py-4 space-y-4">
         <div className="rounded-2xl border p-4 space-y-2" style={{ background: "var(--s2)", borderColor: "var(--border-subtle)" }}>
           <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>Hooda</p>
@@ -1602,7 +1602,7 @@ function AboutPanel({ onBack }: { onBack: () => void }) {
         </div>
         <div className="rounded-2xl border divide-y" style={{ background: "var(--s2)", borderColor: "var(--border-subtle)" }}>
           {[
-            { label: "Versão", value: "1.0.0" },
+            { label: t("common.version"), value: "1.0.0" },
             { label: "Termos de serviço", value: "→" },
             { label: "Política de privacidade", value: "→" },
           ].map(item => (
@@ -1735,7 +1735,7 @@ function MyVideosFeed({ userId }: { userId: string }) {
             {v.status !== "published" && (
               <span className="absolute top-1.5 left-1.5 text-[10px] font-bold px-2 py-0.5 rounded-full"
                 style={{ background: v.status === "processing" ? "#F26B3A" : "#6B7280", color: "white" }}>
-                {v.status === "processing" ? "A processar" : "Privado"}
+                {v.status === "processing" ? "A processar" : t("studio.private")}
               </span>
             )}
           </div>
@@ -2195,11 +2195,11 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
             <div className="bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden">
               <p className="px-5 py-3 text-xs font-bold text-neutral-400 uppercase tracking-wider border-b border-neutral-100">Sobre</p>
               {[
-                { label: "Nome completo", value: name },
+                { label: t("profile.full_name"), value: name },
                 { label: "Username", value: `@${profile?.username || "—"}` },
-                { label: "Email", value: email },
-                { label: "Localização", value: location || "—" },
-                { label: "Website", value: website || "—" },
+                { label: t("auth.email"), value: email },
+                { label: t("profile.location"), value: location || "—" },
+                { label: t("profile.website"), value: website || "—" },
               ].map((row, i) => (
                 <div key={row.label} className={`flex items-center justify-between px-5 py-3.5 ${i > 0 ? "border-t border-neutral-100" : ""}`}>
                   <span className="text-xs text-neutral-400 font-medium">{row.label}</span>

@@ -514,9 +514,9 @@ function UserProfilePage() {
               {/* Stats — caixas com tamanho fixo; só o número troca de shimmer para valor real */}
               <div className="grid grid-cols-3 gap-2 px-5 pb-4">
                 {[
-                  { n: postCount, l: "Publicações" },
-                  { n: followerCount, l: "Seguidores" },
-                  { n: followingCount, l: "Seguindo" },
+                  { n: postCount, l: t("profile.publications") },
+                  { n: followerCount, l: t("profile.followers") },
+                  { n: followingCount, l: t("profile.following") },
                 ].map((s) => (
                   <div
                     key={s.l}

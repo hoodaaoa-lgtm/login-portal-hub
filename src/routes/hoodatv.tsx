@@ -139,7 +139,7 @@ function useVideos(sort: "views" | "recent") {
         .from("videos")
         .select("id,title,thumbnail_url,duration_seconds,views_count,likes_count,created_at,published_at,channel_id,cf_embed_url,cf_stream_uid,cf_stream_url,channels(name,handle,avatar_url)")
         .eq("status", "published").eq("visibility", "public")
-        .order(sort === "views" ? "views_count" : "created_at", { ascending: false }).limit(16);
+        .order(sort === t("tv.views") ? "views_count" : "created_at", { ascending: false }).limit(16);
       return (data ?? []).map((v: any) => ({ ...v, channel: v.channels }));
     }, staleTime: 120_000,
   });
@@ -403,7 +403,7 @@ function ChannelCard({ ch, isFollowing, onFollow }: { ch: any; isFollowing: bool
           style={isFollowing
             ? { background: "var(--s2)", color: "var(--text-secondary)", border: "1.5px solid var(--border-default)" }
             : { background: GRAD, color: "#fff", boxShadow: `0 4px 12px ${P}44` }}>
-          {isFollowing ? "A seguir ✓" : "+ Seguir"}
+          {isFollowing ? t("tv.following_btn") : t("tv.follow")}
         </button>
       </div>
     </div>

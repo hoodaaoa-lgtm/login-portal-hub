@@ -81,9 +81,9 @@ function EditModal({ v, onClose, onSave }: { v: any; onClose: () => void; onSave
             style={{ color: "var(--text-muted)" }}>Visibilidade</label>
           <div className="flex gap-2">
             {([
-              { key: "public",   icon: Globe,    label: "Público"   },
+              { key: "public",   icon: Globe,    label: t("studio.public")   },
               { key: "unlisted", icon: LinkIcon,  label: "Com link"  },
-              { key: "private",  icon: Lock,     label: "Privado"   },
+              { key: "private",  icon: Lock,     label: t("studio.private")   },
             ] as const).map(opt => {
               const Icon = opt.icon;
               const sel  = vis === opt.key;
@@ -113,7 +113,7 @@ function EditModal({ v, onClose, onSave }: { v: any; onClose: () => void; onSave
           <button onClick={save} disabled={saving}
             className="flex-1 py-2.5 rounded-2xl text-sm font-bold text-white flex items-center justify-center gap-2 transition"
             style={{ background: GRAD }}>
-            {saving ? "A guardar…" : <><Save className="w-3.5 h-3.5" /> Guardar</>}
+            {saving ? t("settings.saving") : <><Save className="w-3.5 h-3.5" /> Guardar</>}
           </button>
         </div>
       </div>
@@ -177,7 +177,7 @@ function ContentPage() {
   });
 
   const visIcon  = { public: Globe, private: Lock, unlisted: LinkIcon } as const;
-  const visLabel = { public: "Público", private: "Privado", unlisted: "Com link" } as const;
+  const visLabel = { public: t("studio.public"), private: t("studio.private"), unlisted: "Com link" } as const;
   const visBg    = { public: "#d1fae5", private: "#f1f5f9", unlisted: "#ede9fe" } as const;
   const visCl    = { public: "#065f46", private: "#475569", unlisted: P } as const;
 

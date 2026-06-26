@@ -91,7 +91,7 @@ function VideoRow({ v, onEdit, onDelete }: { v: any; onEdit: (v: any) => void; o
         <p className="text-xs mt-0.5 flex items-center gap-1.5" style={{ color: "var(--text-muted)" }}>
           <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${isPublic ? "text-green-700 bg-green-50" : "text-neutral-500 bg-neutral-100"}`}>
             {isPublic ? <Globe className="h-2.5 w-2.5" /> : <Lock className="h-2.5 w-2.5" />}
-            {isPublic ? "Público" : "Privado"}
+            {isPublic ? t("studio.public") : t("studio.private")}
           </span>
           · {Number(v.views_count ?? 0).toLocaleString("pt-PT")} vistas
           {v.duration_seconds && <> · {fmtDuration(v.duration_seconds)}</>}
@@ -203,7 +203,7 @@ export default function DashboardPage() {
   const STATS = [
     { label: "Visualizações totais", value: stats?.views ?? 0, sub: `+${stats?.views_24h ?? 0} hoje`, icon: Eye, accent: PURPLE },
     { label: "Vistas 7 dias",        value: stats?.views_7d ?? 0, sub: `${stats?.views_28d ?? 0} em 28 dias`, icon: BarChart2, accent: "#1FAFA6" },
-    { label: "Seguidores",           value: stats?.subs ?? 0, sub: `+${stats?.subs_gained_28d ?? 0} este mês`, icon: Users, accent: "#E94B8A" },
+    { label: t("profile.followers"),           value: stats?.subs ?? 0, sub: `+${stats?.subs_gained_28d ?? 0} este mês`, icon: Users, accent: "#E94B8A" },
     { label: "Tempo de vídeo",       value: `${totalHours}h`, sub: "total carregado", icon: Clock, accent: "#FFC93C" },
     { label: "Em directo agora",     value: liveCount, sub: "vistas nesta sessão", icon: Activity, accent: "#10b981" },
     { label: "Retenção média",       value: `${stats?.avg_watch_pct ?? 0}%`, sub: "tempo médio assistido", icon: PlayCircle, accent: "#F97316" },
@@ -490,7 +490,7 @@ function DashEditModal({ v, onClose, onSave }: { v: any; onClose: () => void; on
             <button key={opt} onClick={() => setVis(opt)}
               className="flex-1 py-2 rounded-xl border-2 text-xs font-bold transition"
               style={{ borderColor: vis === opt ? "#5B3FCF" : "var(--border-default)", background: vis === opt ? "#5B3FCF08" : "var(--s3)", color: vis === opt ? "#5B3FCF" : "var(--text-secondary)" }}>
-              {opt === "public" ? "Público" : opt === "unlisted" ? "Com link" : "Privado"}
+              {opt === "public" ? t("studio.public") : opt === "unlisted" ? "Com link" : t("studio.private")}
             </button>
           ))}
         </div>
@@ -501,7 +501,7 @@ function DashEditModal({ v, onClose, onSave }: { v: any; onClose: () => void; on
           <button onClick={save} disabled={saving}
             className="flex-1 py-2.5 rounded-2xl text-sm font-bold text-white"
             style={{ background: "linear-gradient(135deg,#5B3FCF,#E94B8A)" }}>
-            {saving ? "A guardar…" : "Guardar"}
+            {saving ? t("settings.saving") : t("common.save")}
           </button>
         </div>
       </div>

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { t } from "@/lib/useT";
 import { useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { queryClient } from "@/lib/queryClient";
@@ -11,7 +12,7 @@ import { X, MessageCircle, UserPlus, UserCheck, UserRound, Volume2, VolumeX } fr
  * desse utilizador, com:
  *   - botão "Ver Perfil"
  *   - botão "Enviar Mensagem"
- *   - botão "Seguir" / "Seguindo"
+ *   - botão t("profile.follow") / t("profile.following")
  *
  * Fica montado uma única vez em __root.tsx para funcionar em toda a app.
  * Não duplica/substitui o StoryViewer já existente em home.tsx (esse
@@ -292,7 +293,7 @@ export function GlobalStoryViewer() {
             </button>
             <button onClick={openChat} disabled={openingChat}
               className="flex-1 flex items-center justify-center gap-1.5 h-10 rounded-full bg-white/15 backdrop-blur text-white text-xs font-bold hover:bg-white/25 transition active:scale-95 disabled:opacity-50">
-              <MessageCircle className="h-4 w-4" /> {openingChat ? "..." : "Mensagem"}
+              <MessageCircle className="h-4 w-4" /> {openingChat ? "..." : t("profile.message")}
             </button>
             <button onClick={toggleFollow}
               className="flex-1 flex items-center justify-center gap-1.5 h-10 rounded-full text-xs font-bold transition active:scale-95"
