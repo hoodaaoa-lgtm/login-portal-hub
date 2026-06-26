@@ -665,8 +665,26 @@ function EditProfileModal({
   const [location, setLocation] = useState((profile as any)?.location || "");
   const [saving, setSaving] = useState(false);
   const [done, setDone] = useState(false);
+  const [usernameStatus, setUsernameStatus] = useState<"idle"|"checking"|"available"|"taken"|"invalid">("idle");
+  const usernameTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function handleUsernameChange(val: string) {
+    const clean = val.toLowerCase().replace(/[^a-z0-9_.]/g, "");
+    setUsername(clean);
+    setUsernameStatus("idle");
+    if (usernameTimer.current) clearTimeout(usernameTimer.current);
+    if (!clean || clean === (profile?.username || "")) { setUsernameStatus("idle"); return; }
+    if (clean.length < 3) { setUsernameStatus("invalid"); return; }
+    setUsernameStatus("checking");
+    usernameTimer.current = setTimeout(async () => {
+      const { data } = await supabase.from("profiles").select("id").eq("username", clean).maybeSingle();
+      setUsernameStatus(data ? "taken" : "available");
+    }, 600);
+  }
 
   async function save() {
+    if (usernameStatus === "taken" || usernameStatus === "invalid") return;
+    if (usernameStatus === "checking") return;
     setSaving(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -699,7 +717,8 @@ function EditProfileModal({
             <X className="h-5 w-5 text-neutral-500" />
           </button>
           <span className="text-base font-extrabold text-black">Editar perfil</span>
-          <button onClick={save} disabled={saving || done}
+          <button onClick={save}
+            disabled={saving || done || usernameStatus === "taken" || usernameStatus === "invalid" || usernameStatus === "checking"}
             className="text-sm font-bold px-4 py-1.5 rounded-full text-white transition active:scale-95 disabled:opacity-50"
             style={{ background: ACCENT }}>
             {done ? "✓" : saving ? "..." : "Guardar"}
@@ -738,11 +757,27 @@ function EditProfileModal({
               <label className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider">Nome de utilizador</label>
               <div className="relative mt-1">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400 text-sm">@</span>
-                <input value={username} onChange={(e) => setUsername(e.target.value)}
+                <input value={username} onChange={(e) => handleUsernameChange(e.target.value)}
                   placeholder="nomedeutilizador"
-                  className="w-full border border-neutral-200 rounded-xl pl-8 pr-4 py-2.5 text-sm font-medium outline-none focus:border-[#5B3FCF] focus:ring-2 focus:ring-[#5B3FCF]/20 transition"
+                  className="w-full rounded-xl pl-8 pr-10 py-2.5 text-sm font-medium outline-none transition"
+                  style={{
+                    border: `1.5px solid ${usernameStatus === "available" ? "#6BA547" : usernameStatus === "taken" || usernameStatus === "invalid" ? "#ef4444" : "#e5e7eb"}`,
+                    boxShadow: usernameStatus === "available" ? "0 0 0 3px #6BA54720" : usernameStatus === "taken" ? "0 0 0 3px #ef444420" : "none",
+                  }}
                 />
+                {/* Indicador direito */}
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  {usernameStatus === "checking" && (
+                    <div className="w-4 h-4 rounded-full border-2 animate-spin" style={{ borderColor: ACCENT, borderTopColor: "transparent" }} />
+                  )}
+                  {usernameStatus === "available" && <span className="text-[#6BA547] text-lg">✓</span>}
+                  {usernameStatus === "taken" && <span className="text-red-500 text-lg">✗</span>}
+                  {usernameStatus === "invalid" && <span className="text-red-500 text-lg">✗</span>}
+                </div>
               </div>
+              {usernameStatus === "available" && <p className="text-[11px] text-[#6BA547] mt-1">Disponível!</p>}
+              {usernameStatus === "taken" && <p className="text-[11px] text-red-500 mt-1">Este nome de utilizador já está em uso.</p>}
+              {usernameStatus === "invalid" && <p className="text-[11px] text-red-500 mt-1">Mínimo 3 caracteres. Apenas letras, números, . e _</p>}
             </div>
 
             {/* Bio */}
