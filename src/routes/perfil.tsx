@@ -850,7 +850,7 @@ function MonetizationPanel() {
 function SettingsDrawer({
   onClose, onEditProfile, onSignOut, msgPermission, onMsgPermissionChange,
   onOpenNotifications, onOpenActivity, onOpenPrivacy, onOpenSecurity,
-  onOpenHelp, onOpenAbout,
+  onOpenHelp, onOpenAbout, profile,
 }: {
   onClose: () => void;
   onEditProfile: () => void;
@@ -863,15 +863,27 @@ function SettingsDrawer({
   onOpenSecurity: () => void;
   onOpenHelp: () => void;
   onOpenAbout: () => void;
+  profile?: Profile | null;
 }) {
   const { theme, toggle } = useTheme();
-  const { setAvatarUrl: setGlobalAvatarUrl } = useAvatar();
+  const { avatarUrl } = useAvatar();
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setVisible(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+
+  const handleClose = () => {
+    setVisible(false);
+    setTimeout(onClose, 300);
+  };
 
   const sections = [
     {
       title: "Conta",
       items: [
-        { icon: Settings, label: "Editar perfil", desc: "Nome, foto, bio e mais", action: () => { onClose(); onEditProfile(); }, color: ACCENT },
+        { icon: Settings, label: "Editar perfil", desc: "Nome, foto, bio e mais", action: () => { handleClose(); setTimeout(onEditProfile, 300); }, color: ACCENT },
         { icon: Bell, label: "Notificações", desc: "Gere os teus alertas", action: onOpenNotifications, color: "#F26B3A" },
         { icon: Calendar, label: "Atividade", desc: "Histórico de ações", action: onOpenActivity, color: "#1FAFA6" },
       ],
@@ -887,46 +899,82 @@ function SettingsDrawer({
       title: "Suporte",
       items: [
         { icon: HelpCircle, label: "Ajuda", desc: "Perguntas frequentes", action: onOpenHelp, color: "#1FAFA6" },
-        { icon: Info, label: "Sobre a Hooda", desc: "Versão e informações legais", action: onOpenAbout, color: "#E94B8A" },
+        { icon: Info, label: "Sobre a hooda", desc: "Versão e informações", action: onOpenAbout, color: "#E94B8A" },
       ],
     },
   ];
 
+  const displayName = profile?.full_name || profile?.username || "Utilizador";
+  const handle = profile?.username || "";
+  const avatar = avatarUrl || profile?.avatar_url;
+
   return (
-    <div className="fixed inset-0 z-50 flex"
-      onClick={(e) => e.target === e.currentTarget && onClose()}>
+    <div className="fixed inset-0 z-50 flex justify-end">
       {/* Overlay */}
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      {/* Painel deslizante da direita */}
-      <div className="absolute right-0 top-0 bottom-0 w-full max-w-xs bg-neutral-50 flex flex-col shadow-2xl overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 bg-white border-b border-neutral-100">
-          <span className="text-base font-extrabold text-black">Configurações</span>
-          <button onClick={onClose} className="p-1.5 rounded-full hover:bg-neutral-100 transition">
-            <X className="h-5 w-5 text-neutral-500" />
-          </button>
+      <div
+        className="absolute inset-0 bg-black/40 transition-opacity duration-300"
+        style={{ opacity: visible ? 1 : 0 }}
+        onClick={handleClose}
+      />
+
+      {/* Painel */}
+      <div
+        className="relative h-full w-full max-w-sm flex flex-col shadow-2xl transition-transform duration-300 ease-out overflow-hidden"
+        style={{
+          background: "var(--s1, #fff)",
+          transform: visible ? "translateX(0)" : "translateX(100%)",
+        }}
+      >
+        {/* Header gradiente com avatar */}
+        <div className="shrink-0 px-5 pt-6 pb-5"
+          style={{ background: `linear-gradient(135deg, ${ACCENT}, #E94B8A)` }}>
+          <div className="flex items-center justify-between mb-5">
+            <span className="text-white font-extrabold text-lg tracking-tight">Configurações</span>
+            <button onClick={handleClose}
+              className="p-2 rounded-full transition active:scale-90"
+              style={{ background: "rgba(255,255,255,0.2)" }}>
+              <X className="h-5 w-5 text-white" />
+            </button>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-white/50 shrink-0 flex items-center justify-center"
+              style={{ background: "rgba(255,255,255,0.2)" }}>
+              {avatar
+                ? <img src={avatar} alt={displayName} className="w-full h-full object-cover" />
+                : <span className="text-white font-bold text-xl">{displayName[0]?.toUpperCase()}</span>
+              }
+            </div>
+            <div className="min-w-0">
+              <p className="text-white font-bold text-base leading-tight truncate">{displayName}</p>
+              {handle && <p className="text-white/70 text-sm truncate">@{handle}</p>}
+            </div>
+          </div>
         </div>
 
-        <div className="overflow-y-auto flex-1 py-3">
-          {/* Aparência — dark/light toggle */}
-          <div className="mb-2">
-            <p className="px-5 pb-1.5 pt-3 text-[11px] font-bold text-neutral-400 uppercase tracking-wider">Aparência</p>
-            <div className="bg-white mx-3 rounded-2xl overflow-hidden border border-neutral-100 shadow-sm">
+        {/* Conteúdo scrollável */}
+        <div className="flex-1 overflow-y-auto py-2">
+
+          {/* Tema */}
+          <div className="mb-1">
+            <p className="px-5 py-2 text-[11px] font-bold uppercase tracking-wider"
+              style={{ color: "var(--text-muted)" }}>Aparência</p>
+            <div className="mx-3 rounded-2xl overflow-hidden border shadow-sm"
+              style={{ background: "var(--s2, #f9f9f9)", borderColor: "var(--border-default, #eee)" }}>
               <div className="flex items-center gap-3 px-4 py-3.5">
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
                   style={{ background: theme === "dark" ? "#1e1c2e" : "#F3F0FF" }}>
                   {theme === "dark"
                     ? <Moon className="h-4 w-4" style={{ color: "#8B5CF6" }} />
                     : <Sun className="h-4 w-4" style={{ color: ACCENT }} />}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-black leading-tight">
+                  <p className="text-sm font-semibold leading-tight" style={{ color: "var(--text-primary)" }}>
                     {theme === "dark" ? "Modo escuro" : "Modo claro"}
                   </p>
-                  <p className="text-[11px] text-neutral-400 mt-0.5">Altera o tema da aplicação</p>
+                  <p className="text-[11px] mt-0.5" style={{ color: "var(--text-muted)" }}>Altera o tema da app</p>
                 </div>
                 <button onClick={toggle}
-                  className="relative w-12 h-6 rounded-full transition-all duration-300 flex-shrink-0"
+                  className="relative w-12 h-6 rounded-full transition-all duration-300 shrink-0"
                   style={{ background: theme === "dark" ? ACCENT : "#D1D5DB" }}>
                   <span className="absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all duration-300"
                     style={{ left: theme === "dark" ? "calc(100% - 22px)" : "2px" }} />
@@ -935,22 +983,28 @@ function SettingsDrawer({
             </div>
           </div>
 
+          {/* Secções */}
           {sections.map((sec) => (
-            <div key={sec.title} className="mb-2">
-              <p className="px-5 pb-1.5 pt-3 text-[11px] font-bold text-neutral-400 uppercase tracking-wider">{sec.title}</p>
-              <div className="bg-white mx-3 rounded-2xl overflow-hidden border border-neutral-100 shadow-sm">
+            <div key={sec.title} className="mb-1">
+              <p className="px-5 py-2 text-[11px] font-bold uppercase tracking-wider"
+                style={{ color: "var(--text-muted)" }}>{sec.title}</p>
+              <div className="mx-3 rounded-2xl overflow-hidden border shadow-sm"
+                style={{ background: "var(--s2, #f9f9f9)", borderColor: "var(--border-default, #eee)" }}>
                 {sec.items.map((item, idx) => (
                   <button key={item.label} onClick={item.action}
-                    className={`w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-neutral-50 transition active:bg-neutral-100 ${idx > 0 ? "border-t border-neutral-100" : ""}`}>
-                    <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                    className={`w-full flex items-center gap-3 px-4 py-3.5 text-left transition active:scale-[0.98] ${idx > 0 ? "border-t" : ""}`}
+                    style={{ borderColor: "var(--border-default, #eee)" }}
+                    onMouseOver={e => (e.currentTarget.style.background = "var(--s3, #f0f0f0)")}
+                    onMouseOut={e => (e.currentTarget.style.background = "transparent")}>
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
                       style={{ background: item.color + "18" }}>
-                      <item.icon className="h-4.5 w-4.5" style={{ color: item.color }} />
+                      <item.icon className="h-4 w-4" style={{ color: item.color }} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-black leading-tight">{item.label}</p>
-                      <p className="text-[11px] text-neutral-400 mt-0.5">{item.desc}</p>
+                      <p className="text-sm font-semibold leading-tight" style={{ color: "var(--text-primary)" }}>{item.label}</p>
+                      <p className="text-[11px] mt-0.5" style={{ color: "var(--text-muted)" }}>{item.desc}</p>
                     </div>
-                    <ChevronRight className="h-4 w-4 text-neutral-300 flex-shrink-0" />
+                    <ChevronRight className="h-4 w-4 shrink-0" style={{ color: "var(--text-muted)" }} />
                   </button>
                 ))}
               </div>
@@ -958,33 +1012,30 @@ function SettingsDrawer({
           ))}
 
           {/* Privacidade de Mensagens */}
-          <div className="mb-2">
-            <p className="px-5 pb-1.5 pt-3 text-[11px] font-bold text-neutral-400 uppercase tracking-wider">Privacidade de Mensagens</p>
-            <div className="bg-white mx-3 rounded-2xl overflow-hidden border border-neutral-100 shadow-sm px-4 py-3.5 space-y-3">
-              <p className="text-xs text-neutral-500 leading-relaxed">Quem pode enviar-te mensagens diretas?</p>
+          <div className="mb-4">
+            <p className="px-5 py-2 text-[11px] font-bold uppercase tracking-wider"
+              style={{ color: "var(--text-muted)" }}>Privacidade de Mensagens</p>
+            <div className="mx-3 rounded-2xl overflow-hidden border shadow-sm px-4 py-3 space-y-3"
+              style={{ background: "var(--s2, #f9f9f9)", borderColor: "var(--border-default, #eee)" }}>
+              <p className="text-xs leading-relaxed" style={{ color: "var(--text-muted)" }}>Quem pode enviar-te mensagens?</p>
               {[
                 { value: "todos", label: "Toda a gente", desc: "Qualquer utilizador pode escrever-te" },
                 { value: "seguidores", label: "Seguidores", desc: "Apenas quem te segue" },
                 { value: "mutuos", label: "Seguimento mútuo", desc: "Quem segues e te segue" },
-                { value: "aprovados", label: "Apenas aprovados", desc: "Tens de aceitar cada pedido manualmente" },
+                { value: "aprovados", label: "Apenas aprovados", desc: "Tens de aceitar cada pedido" },
               ].map(opt => (
-                <button
-                  key={opt.value}
-                  onClick={() => onMsgPermissionChange(opt.value)}
-                  className="w-full flex items-center gap-3 text-left transition active:scale-[0.98]"
-                >
+                <button key={opt.value} onClick={() => onMsgPermissionChange(opt.value)}
+                  className="w-full flex items-center gap-3 text-left transition active:scale-[0.98]">
                   <div className="w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition"
                     style={{
                       borderColor: msgPermission === opt.value ? ACCENT : "#d1d1d1",
                       background: msgPermission === opt.value ? ACCENT : "transparent",
                     }}>
-                    {msgPermission === opt.value && (
-                      <div className="w-2 h-2 rounded-full bg-white" />
-                    )}
+                    {msgPermission === opt.value && <div className="w-2 h-2 rounded-full bg-white" />}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-black leading-tight">{opt.label}</p>
-                    <p className="text-[11px] text-neutral-400 mt-0.5">{opt.desc}</p>
+                    <p className="text-sm font-semibold leading-tight" style={{ color: "var(--text-primary)" }}>{opt.label}</p>
+                    <p className="text-[11px] mt-0.5" style={{ color: "var(--text-muted)" }}>{opt.desc}</p>
                   </div>
                 </button>
               ))}
@@ -992,10 +1043,13 @@ function SettingsDrawer({
           </div>
         </div>
 
-        {/* Sair */}
-        <div className="p-4 border-t border-neutral-100 bg-white">
+        {/* Footer */}
+        <div className="shrink-0 p-4 border-t" style={{ borderColor: "var(--border-default, #eee)", background: "var(--s1, #fff)" }}>
           <button onClick={onSignOut}
-            className="w-full h-11 rounded-xl border border-red-200 bg-red-50 text-red-600 font-bold text-sm flex items-center justify-center gap-2 hover:bg-red-100 transition active:scale-[0.98]">
+            className="w-full h-11 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition active:scale-[0.98]"
+            style={{ background: "#fee2e2", color: "#dc2626", border: "1px solid #fca5a5" }}
+            onMouseOver={e => (e.currentTarget.style.background = "#fecaca")}
+            onMouseOut={e => (e.currentTarget.style.background = "#fee2e2")}>
             <LogOut className="h-4 w-4" /> Terminar sessão
           </button>
         </div>
@@ -1004,110 +1058,6 @@ function SettingsDrawer({
   );
 }
 
-
-/* ─── Ajuda ─── */
-function HelpPanel({ onBack }: { onBack: () => void }) {
-  const faqs = [
-    { q: "Como altero a minha foto de perfil?", a: "Vai ao teu perfil, clica no ícone de câmera sobre a tua foto e escolhe uma imagem da galeria." },
-    { q: "Como publico no feed?", a: "No perfil, clica na caixa 'Em que estás a pensar?' ou nos botões Foto/Texto abaixo dela." },
-    { q: "Como sigo outro utilizador?", a: "Acede ao perfil do utilizador e clica no botão 'Seguir'." },
-    { q: "Como envio uma mensagem?", a: "Vai ao separador Mensagens no menu inferior e clica no ícone de nova conversa." },
-    { q: "Como apago uma publicação?", a: "Nas tuas publicações, clica nos três pontos (···) e escolhe 'Apagar publicação'." },
-    { q: "Como mudo para modo escuro?", a: "Nas Configurações, em Aparência, ativa o toggle de Modo escuro." },
-    { q: "Como torno o meu perfil privado?", a: "Nas Configurações → Privacidade, ativa 'Conta privada'." },
-    { q: "Como altero a minha senha?", a: "Nas Configurações → Segurança, preenche os campos de nova senha e confirma." },
-    { q: "O que é a HoodaTV?", a: "A HoodaTV é o espaço de vídeos da Hooda. Podes ver vídeos publicados por criadores e seguir canais." },
-    { q: "Como contacto o suporte?", a: "Envia um email para suporte@hooda.app e a nossa equipa responde em até 48 horas." },
-  ];
-  const [open, setOpen] = useState<number | null>(null);
-  return (
-    <SettingsSubPanel title="Ajuda" onBack={onBack}>
-      <div className="px-3 pb-4 space-y-2">
-        <p className="px-2 pb-2 pt-1 text-[11px] font-bold text-neutral-400 uppercase tracking-wider">Perguntas frequentes</p>
-        {faqs.map((faq, i) => (
-          <div key={i} className="bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden">
-            <button className="w-full flex items-center justify-between gap-3 px-4 py-3.5 text-left"
-              onClick={() => setOpen(open === i ? null : i)}>
-              <span className="text-sm font-semibold text-black leading-snug flex-1">{faq.q}</span>
-              <ChevronRight className={`h-4 w-4 text-neutral-300 shrink-0 transition-transform ${open === i ? "rotate-90" : ""}`} />
-            </button>
-            {open === i && (
-              <div className="px-4 pb-4 border-t border-neutral-50">
-                <p className="text-sm text-neutral-500 leading-relaxed pt-3">{faq.a}</p>
-              </div>
-            )}
-          </div>
-        ))}
-        <div className="bg-white rounded-2xl border border-neutral-100 shadow-sm px-4 py-4 mt-3 text-center">
-          <p className="text-xs text-neutral-400 mb-1">Não encontraste o que procuravas?</p>
-          <a href="mailto:suporte@hooda.app"
-            className="text-sm font-bold" style={{ color: ACCENT }}>
-            suporte@hooda.app
-          </a>
-        </div>
-      </div>
-    </SettingsSubPanel>
-  );
-}
-
-/* ─── Sobre a Hooda ─── */
-function AboutPanel({ onBack }: { onBack: () => void }) {
-  const HOODA_LETTERS = [
-    { char: "H", color: "#5B3FCF" }, { char: "o", color: "#F26B3A" },
-    { char: "o", color: "#1FAFA6" }, { char: "d", color: "#6BA547" },
-    { char: "a", color: "#E94B8A" },
-  ];
-  return (
-    <SettingsSubPanel title="Sobre a Hooda" onBack={onBack}>
-      <div className="px-3 pb-6 space-y-3">
-        {/* Logo animado */}
-        <div className="bg-white rounded-3xl border border-neutral-100 shadow-sm px-4 py-8 flex flex-col items-center gap-3">
-          <div className="flex items-baseline">
-            {HOODA_LETTERS.map((l, i) => (
-              <span key={i} style={{ fontFamily: '"Nunito","Quicksand",system-ui,sans-serif', fontWeight: 900, fontSize: "2.5rem", color: l.color, lineHeight: 1 }}>{l.char}</span>
-            ))}
-          </div>
-          <span className="text-xs font-bold text-neutral-400 tracking-widest uppercase">Versão 1.0.0</span>
-          <p className="text-xs text-neutral-400 text-center leading-relaxed mt-1">
-            A rede social angolana feita para conectar pessoas, partilhar momentos e descobrir criadores.
-          </p>
-        </div>
-
-        {/* Info */}
-        <div className="bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden">
-          {[
-            { label: "Versão", value: "1.0.0" },
-            { label: "Plataforma", value: "Web / Mobile" },
-            { label: "País de origem", value: "Angola 🇦🇴" },
-            { label: "Ano de lançamento", value: "2025" },
-          ].map((row, i) => (
-            <div key={row.label} className={`flex items-center justify-between px-4 py-3.5 ${i > 0 ? "border-t border-neutral-100" : ""}`}>
-              <span className="text-xs text-neutral-400 font-medium">{row.label}</span>
-              <span className="text-sm font-semibold text-black">{row.value}</span>
-            </div>
-          ))}
-        </div>
-
-        {/* Links */}
-        <div className="bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden">
-          {[
-            { label: "Termos de Utilização", href: "https://hooda.app/termos" },
-            { label: "Política de Privacidade", href: "https://hooda.app/privacidade" },
-            { label: "Licenças de terceiros", href: "https://hooda.app/licencas" },
-          ].map((link, i) => (
-            <a key={link.label} href={link.href} target="_blank" rel="noopener noreferrer"
-              className={`flex items-center justify-between px-4 py-3.5 hover:bg-neutral-50 transition ${i > 0 ? "border-t border-neutral-100" : ""}`}>
-              <span className="text-sm font-semibold text-black">{link.label}</span>
-              <ExternalLink className="h-3.5 w-3.5 text-neutral-300" />
-            </a>
-          ))}
-        </div>
-
-        <p className="text-center text-[11px] text-neutral-300 pt-2">© 2025 Hooda · Todos os direitos reservados</p>
-      </div>
-    </SettingsSubPanel>
-  );
-}
 
 /* ─── Painel genérico (header + voltar, usado pelos sub-ecrãs de Configurações) ─── */
 function SettingsSubPanel({ title, onBack, children }: { title: string; onBack: () => void; children: React.ReactNode }) {
@@ -1836,6 +1786,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
           onEditProfile={() => setShowEditProfile(true)}
           onSignOut={onSignOut}
           msgPermission={msgPermission}
+          profile={profile}
           onMsgPermissionChange={async (v) => {
             setMsgPermission(v);
             const { data: { session } } = await supabase.auth.getSession();
