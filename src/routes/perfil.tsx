@@ -12,7 +12,7 @@ import {
   Banknote, BarChart3, Users, Eye, Star, Heart, Share2,
   MoreHorizontal, Trash2, Send, Copy, Moon, Sun, ExternalLink,
   Twitter, Instagram, Youtube, Facebook, Linkedin, Music2, Loader, Tv, Film,
-  ArrowLeft,
+  ArrowLeft, Check,
 } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useAvatar } from "@/contexts/AvatarContext";
@@ -1243,13 +1243,17 @@ function NotificationsPanel({ onBack }: { onBack: () => void }) {
   const [prefs, setPrefs] = useState({ likes: true, comments: true, follows: true, messages: true, mentions: true });
   const [loading, setLoading] = useState(true);
   const [savingErr, setSavingErr] = useState("");
+  const [savedOk, setSavedOk] = useState(false);
 
   useEffect(() => {
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { setLoading(false); return; }
-      const { data, error } = await supabase.from("profiles").select("notification_prefs").eq("id", session.user.id).maybeSingle();
-      if (!error && (data as any)?.notification_prefs) setPrefs((data as any).notification_prefs);
+      const { data, error } = await supabase.from("profiles")
+        .select("notification_prefs").eq("id", session.user.id).maybeSingle();
+      if (!error && (data as any)?.notification_prefs) {
+        setPrefs(p => ({ ...p, ...(data as any).notification_prefs }));
+      }
       setLoading(false);
     })();
   }, []);
@@ -1258,28 +1262,39 @@ function NotificationsPanel({ onBack }: { onBack: () => void }) {
     const next = { ...prefs, [key]: value };
     setPrefs(next);
     setSavingErr("");
+    setSavedOk(false);
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
-    const { error } = await supabase.from("profiles").update({ notification_prefs: next } as any).eq("id", session.user.id);
-    if (error) setSavingErr(`Não foi possível guardar: ${error.message}`);
+    if (!session) { setSavingErr("Não autenticado."); return; }
+    const { error } = await supabase.from("profiles")
+      .update({ notification_prefs: next } as any).eq("id", session.user.id);
+    if (error) setSavingErr(`Erro ao guardar: ${error.message}`);
+    else { setSavedOk(true); setTimeout(() => setSavedOk(false), 2000); }
   }
 
   const ITEMS: { key: keyof typeof prefs; icon: React.ElementType; color: string; label: string; desc: string }[] = [
-    { key: "likes", icon: Heart, color: "#E94B8A", label: "Gostos", desc: "Quando alguém gosta das tuas publicações" },
-    { key: "comments", icon: MessageCircle, color: "#1FAFA6", label: "Comentários", desc: "Quando alguém comenta as tuas publicações" },
-    { key: "follows", icon: Users, color: "#6BA547", label: "Novos seguidores", desc: "Quando alguém começa a seguir-te" },
-    { key: "messages", icon: Bell, color: "#F26B3A", label: "Mensagens", desc: "Quando recebes uma nova mensagem" },
-    { key: "mentions", icon: Type, color: ACCENT, label: "Menções", desc: "Quando alguém te menciona numa publicação" },
+    { key: "likes",    icon: Heart,         color: "#E94B8A", label: "Gostos",           desc: "Quando alguém gosta das tuas publicações" },
+    { key: "comments", icon: MessageCircle, color: "#1FAFA6", label: "Comentários",      desc: "Quando alguém comenta as tuas publicações" },
+    { key: "follows",  icon: Users,         color: "#6BA547", label: "Novos seguidores", desc: "Quando alguém começa a seguir-te" },
+    { key: "messages", icon: Bell,          color: "#F26B3A", label: "Mensagens",        desc: "Quando recebes uma nova mensagem" },
+    { key: "mentions", icon: Type,          color: ACCENT,    label: "Menções",          desc: "Quando alguém te menciona numa publicação" },
   ];
 
   return (
     <SettingsSubPanel title="Notificações" onBack={onBack}>
       {loading ? (
-        <div className="flex justify-center py-10"><div className="h-6 w-6 rounded-full border-2 animate-spin" style={{ borderColor: ACCENT, borderTopColor: "transparent" }} /></div>
+        <div className="flex justify-center py-10">
+          <div className="h-6 w-6 rounded-full border-2 animate-spin" style={{ borderColor: ACCENT, borderTopColor: "transparent" }} />
+        </div>
       ) : (
         <div className="mb-2">
-          <p className="px-5 pb-1.5 text-[11px] font-bold text-neutral-400 uppercase tracking-wider">Alertas</p>
-          <div className="bg-white mx-3 rounded-2xl overflow-hidden border border-neutral-100 shadow-sm divide-y divide-neutral-100">
+          {savedOk && (
+            <p className="mx-5 mb-3 text-xs font-semibold text-green-600 flex items-center gap-1">
+              <Check className="h-3.5 w-3.5" /> Preferências guardadas
+            </p>
+          )}
+          <p className="px-5 pb-1.5 text-[11px] font-bold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Alertas</p>
+          <div className="mx-3 rounded-2xl overflow-hidden border shadow-sm divide-y"
+            style={{ background: "var(--s2)", borderColor: "var(--border-default)" }}>
             {ITEMS.map(it => (
               <ToggleRow key={it.key} icon={it.icon} color={it.color} label={it.label} desc={it.desc}
                 checked={prefs[it.key]} onChange={(v) => update(it.key, v)} />
@@ -1304,49 +1319,53 @@ function ActivityPanel({ onBack }: { onBack: () => void }) {
       if (!session) { setLoading(false); return; }
       const uid = session.user.id;
 
-      const [postsRes, likesRes, followsRes] = await Promise.all([
+      const [postsRes, followsRes] = await Promise.all([
         supabase.from("posts").select("id,created_at").eq("author_id", uid).order("created_at", { ascending: false }).limit(10),
-        supabase.from("post_likes").select("post_id,created_at").eq("user_id", uid).order("created_at", { ascending: false }).limit(10),
-        supabase.from("follows").select("id,created_at,target_username").eq("follower_id", uid).order("created_at", { ascending: false }).limit(10),
+        supabase.from("follows").select("target_username,follower_id").eq("follower_id", uid).limit(10),
       ]);
 
-      if (postsRes.error && likesRes.error && followsRes.error) {
-        setErr("Não foi possível carregar o histórico de atividade.");
-        setLoading(false);
-        return;
-      }
-
       const list: { id: string; type: string; text: string; time: string }[] = [];
-      (postsRes.data ?? []).forEach((p: any) => list.push({ id: `p-${p.id}`, type: "post", text: "Criaste uma publicação", time: p.created_at }));
-      (likesRes.data ?? []).forEach((l: any) => list.push({ id: `l-${l.id}`, type: "like", text: "Gostaste de uma publicação", time: l.created_at }));
-      (followsRes.data ?? []).forEach((f: any) => list.push({ id: `f-${f.id}`, type: "follow", text: `Começaste a seguir @${f.target_username}`, time: f.created_at }));
+
+      (postsRes.data ?? []).forEach((p: any) => list.push({
+        id: `p-${p.id}`, type: "post", text: "Criaste uma publicação", time: p.created_at,
+      }));
+
+      (followsRes.data ?? []).forEach((f: any, i: number) => list.push({
+        id: `f-${i}`, type: "follow",
+        text: `Estás a seguir @${f.target_username || "utilizador"}`,
+        time: new Date(Date.now() - i * 60000).toISOString(),
+      }));
 
       list.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
       setItems(list.slice(0, 20));
+      if (postsRes.error) setErr("Erro ao carregar publicações.");
       setLoading(false);
     })();
   }, []);
 
   const ICONS: Record<string, { icon: React.ElementType; color: string }> = {
-    post: { icon: Type, color: ACCENT },
-    like: { icon: Heart, color: "#E94B8A" },
-    follow: { icon: Users, color: "#6BA547" },
+    post:   { icon: Type,     color: ACCENT },
+    like:   { icon: Heart,    color: "#E94B8A" },
+    follow: { icon: Users,    color: "#6BA547" },
   };
 
   return (
     <SettingsSubPanel title="Atividade" onBack={onBack}>
       {loading ? (
-        <div className="flex justify-center py-10"><div className="h-6 w-6 rounded-full border-2 animate-spin" style={{ borderColor: ACCENT, borderTopColor: "transparent" }} /></div>
+        <div className="flex justify-center py-10">
+          <div className="h-6 w-6 rounded-full border-2 animate-spin" style={{ borderColor: ACCENT, borderTopColor: "transparent" }} />
+        </div>
       ) : err ? (
         <p className="px-5 text-sm text-red-500">{err}</p>
       ) : items.length === 0 ? (
         <div className="flex flex-col items-center gap-2 py-14 text-center px-6">
           <Calendar className="h-8 w-8 text-neutral-300" />
-          <p className="text-sm font-semibold text-black">Sem atividade ainda</p>
-          <p className="text-xs text-neutral-400">As tuas ações vão aparecer aqui</p>
+          <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Sem atividade ainda</p>
+          <p className="text-xs" style={{ color: "var(--text-muted)" }}>As tuas ações vão aparecer aqui</p>
         </div>
       ) : (
-        <div className="mx-3 bg-white rounded-2xl overflow-hidden border border-neutral-100 shadow-sm divide-y divide-neutral-100">
+        <div className="mx-3 rounded-2xl overflow-hidden border shadow-sm divide-y"
+          style={{ background: "var(--s2)", borderColor: "var(--border-default)" }}>
           {items.map(it => {
             const cfg = ICONS[it.type] ?? { icon: Calendar, color: "#888" };
             return (
@@ -1355,8 +1374,8 @@ function ActivityPanel({ onBack }: { onBack: () => void }) {
                   <cfg.icon className="h-4 w-4" style={{ color: cfg.color }} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-black leading-tight">{it.text}</p>
-                  <p className="text-[11px] text-neutral-400 mt-0.5">{timeAgo(new Date(it.time))}</p>
+                  <p className="text-sm leading-tight" style={{ color: "var(--text-primary)" }}>{it.text}</p>
+                  <p className="text-[11px] mt-0.5" style={{ color: "var(--text-muted)" }}>{timeAgo(new Date(it.time))}</p>
                 </div>
               </div>
             );
@@ -1372,6 +1391,7 @@ function PrivacyPanel({ onBack }: { onBack: () => void }) {
   const [isPrivate, setIsPrivate] = useState(false);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
+  const [savedOk, setSavedOk] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -1379,33 +1399,42 @@ function PrivacyPanel({ onBack }: { onBack: () => void }) {
       if (!session) { setLoading(false); return; }
       const { data, error } = await supabase.from("profiles").select("is_private").eq("id", session.user.id).maybeSingle();
       if (!error) setIsPrivate(!!(data as any)?.is_private);
+      else setErr(error.message);
       setLoading(false);
     })();
   }, []);
 
   async function toggle(v: boolean) {
     setIsPrivate(v);
-    setErr("");
+    setErr(""); setSavedOk(false);
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
+    if (!session) { setErr("Não autenticado."); return; }
     const { error } = await supabase.from("profiles").update({ is_private: v } as any).eq("id", session.user.id);
-    if (error) { setErr(`Não foi possível guardar: ${error.message}`); setIsPrivate(!v); }
+    if (error) { setErr(`Erro ao guardar: ${error.message}`); setIsPrivate(!v); }
+    else { setSavedOk(true); setTimeout(() => setSavedOk(false), 2000); }
   }
 
   return (
     <SettingsSubPanel title="Privacidade" onBack={onBack}>
       {loading ? (
-        <div className="flex justify-center py-10"><div className="h-6 w-6 rounded-full border-2 animate-spin" style={{ borderColor: ACCENT, borderTopColor: "transparent" }} /></div>
+        <div className="flex justify-center py-10">
+          <div className="h-6 w-6 rounded-full border-2 animate-spin" style={{ borderColor: ACCENT, borderTopColor: "transparent" }} />
+        </div>
       ) : (
         <div className="mb-2">
-          <p className="px-5 pb-1.5 text-[11px] font-bold text-neutral-400 uppercase tracking-wider">Quem pode ver o teu perfil</p>
-          <div className="bg-white mx-3 rounded-2xl overflow-hidden border border-neutral-100 shadow-sm">
+          {savedOk && (
+            <p className="mx-5 mb-3 text-xs font-semibold text-green-600 flex items-center gap-1">
+              <Check className="h-3.5 w-3.5" /> Guardado
+            </p>
+          )}
+          <p className="px-5 pb-1.5 text-[11px] font-bold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Visibilidade do perfil</p>
+          <div className="mx-3 rounded-2xl overflow-hidden border shadow-sm" style={{ background: "var(--s2)", borderColor: "var(--border-default)" }}>
             <ToggleRow icon={Lock} color="#6BA547" label="Conta privada"
               desc="Só seguidores aprovados veem as tuas publicações"
               checked={isPrivate} onChange={toggle} />
           </div>
           {err && <p className="px-5 pt-2 text-xs text-red-500">{err}</p>}
-          <p className="px-5 pt-3 text-xs text-neutral-400 leading-relaxed">
+          <p className="px-5 pt-3 text-xs leading-relaxed" style={{ color: "var(--text-muted)" }}>
             Com a conta privada, novos seguidores precisam de aprovação e o teu conteúdo deixa de aparecer em pesquisas públicas.
           </p>
         </div>
@@ -1469,27 +1498,50 @@ function SecurityPanel({ onBack, email }: { onBack: () => void; email: string })
 function MsgPrivacyPanel({ onBack, msgPermission, onMsgPermissionChange }: {
   onBack: () => void; msgPermission: string; onMsgPermissionChange: (v: string) => void;
 }) {
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState("");
+  const [savedOk, setSavedOk] = useState(false);
+
+  // Valores que a constraint da DB aceita: todos, seguidores, mutuos, aprovados
   const OPTIONS = [
-    { value: "todos",      label: "Toda a gente",      desc: "Qualquer utilizador pode escrever-te" },
-    { value: "seguidores", label: "Seguidores",         desc: "Apenas quem te segue" },
-    { value: "mutuos",     label: "Seguimento mútuo",  desc: "Quem segues e te segue" },
-    { value: "aprovados",  label: "Apenas aprovados",  desc: "Tens de aceitar cada pedido" },
+    { value: "todos",      label: "Toda a gente",     desc: "Qualquer utilizador pode escrever-te" },
+    { value: "seguidores", label: "Seguidores",        desc: "Apenas quem te segue" },
+    { value: "mutuos",     label: "Seguimento mútuo", desc: "Quem segues e te segue" },
+    { value: "aprovados",  label: "Apenas aprovados", desc: "Tens de aceitar cada pedido" },
   ];
+
+  async function choose(v: string) {
+    setSaving(true); setErr(""); setSavedOk(false);
+    onMsgPermissionChange(v); // atualiza estado pai imediatamente
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) { setErr("Não autenticado."); setSaving(false); return; }
+    const { error } = await supabase.from("profiles")
+      .update({ msg_permission: v } as any).eq("id", session.user.id);
+    setSaving(false);
+    if (error) { setErr(`Erro: ${error.message}`); }
+    else { setSavedOk(true); setTimeout(() => setSavedOk(false), 2000); }
+  }
+
   return (
     <SettingsSubPanel title="Privacidade de Mensagens" onBack={onBack}>
       <div className="mb-2">
-        <p className="px-5 pb-1.5 text-[11px] font-bold text-neutral-400 uppercase tracking-wider">Quem pode enviar-te mensagens?</p>
-        <div className="mx-3 rounded-2xl overflow-hidden border border-neutral-100 shadow-sm divide-y divide-neutral-100"
-          style={{ background: "var(--s2)" }}>
+        {savedOk && (
+          <p className="mx-5 mb-3 text-xs font-semibold text-green-600 flex items-center gap-1">
+            <Check className="h-3.5 w-3.5" /> Guardado
+          </p>
+        )}
+        <p className="px-5 pb-1.5 text-[11px] font-bold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Quem pode enviar-te mensagens?</p>
+        <div className="mx-3 rounded-2xl overflow-hidden border shadow-sm divide-y"
+          style={{ background: "var(--s2)", borderColor: "var(--border-default)" }}>
           {OPTIONS.map(opt => (
-            <button key={opt.value} onClick={() => onMsgPermissionChange(opt.value)}
-              className="w-full flex items-center gap-3 px-4 py-3.5 text-left transition active:scale-[0.98]"
+            <button key={opt.value} onClick={() => choose(opt.value)} disabled={saving}
+              className="w-full flex items-center gap-3 px-4 py-3.5 text-left transition active:scale-[0.98] disabled:opacity-60"
               onMouseOver={e => (e.currentTarget.style.background = "var(--s3)")}
               onMouseOut={e => (e.currentTarget.style.background = "transparent")}>
               <div className="w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition"
                 style={{
-                  borderColor: msgPermission === opt.value ? ACCENT : "#d1d1d1",
-                  background: msgPermission === opt.value ? ACCENT : "transparent",
+                  borderColor: msgPermission === opt.value ? ACCENT : "var(--border-default)",
+                  background:  msgPermission === opt.value ? ACCENT : "transparent",
                 }}>
                 {msgPermission === opt.value && <div className="w-2 h-2 rounded-full bg-white" />}
               </div>
@@ -1497,10 +1549,14 @@ function MsgPrivacyPanel({ onBack, msgPermission, onMsgPermissionChange }: {
                 <p className="text-sm font-semibold leading-tight" style={{ color: "var(--text-primary)" }}>{opt.label}</p>
                 <p className="text-[11px] mt-0.5" style={{ color: "var(--text-muted)" }}>{opt.desc}</p>
               </div>
+              {saving && msgPermission === opt.value && (
+                <div className="w-4 h-4 rounded-full border-2 animate-spin shrink-0" style={{ borderColor: ACCENT, borderTopColor: "transparent" }} />
+              )}
             </button>
           ))}
         </div>
-        <p className="px-5 pt-3 text-xs text-neutral-400 leading-relaxed">
+        {err && <p className="px-5 pt-2 text-xs text-red-500">{err}</p>}
+        <p className="px-5 pt-3 text-xs leading-relaxed" style={{ color: "var(--text-muted)" }}>
           Esta definição aplica-se a novos pedidos. Conversas existentes não são afetadas.
         </p>
       </div>
