@@ -104,7 +104,16 @@ function SignupPage() {
       },
     });
     setLoading(false);
-    if (error) { setError(error.message); return; }
+    if (error) {
+      // Traduzir erros comuns do Supabase
+      const msg = error.message;
+      if (msg.includes("User already registered")) setError("Este email já tem uma conta. Tenta iniciar sessão.");
+      else if (msg.includes("Password should be")) setError("A senha deve ter pelo menos 6 caracteres.");
+      else if (msg.includes("Unable to validate email")) setError("Email inválido. Verifica o formato.");
+      else if (msg.includes("username")) setError("Este nome de utilizador já está ocupado. Escolhe outro.");
+      else setError(msg);
+      return;
+    }
     setDone(true);
   }
 
