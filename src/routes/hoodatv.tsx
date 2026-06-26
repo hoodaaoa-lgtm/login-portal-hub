@@ -57,7 +57,7 @@ function HoodaTVIntro({ onDone }: { onDone: () => void }) {
     };
   }, [onDone]);
 
-  return (
+  return createPortal(
     <div style={{
       position: "fixed", inset: 0,
       zIndex: 9999, background: "var(--s1)",
@@ -104,7 +104,8 @@ function HoodaTVIntro({ onDone }: { onDone: () => void }) {
           }} />
         ))}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -502,8 +503,8 @@ function HoodaTVMain() {
   return (
     <>
       <SideNav />
-      {showIntro && <HoodaTVIntro onDone={handleIntroDone} />}
       <PageWrapper className="pb-20 lg:pb-0 relative">
+        {showIntro && <HoodaTVIntro onDone={handleIntroDone} />}
 
         {/* ── HEADER ── */}
         <div className="sticky top-0 z-40"
