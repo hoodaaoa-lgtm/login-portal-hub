@@ -149,7 +149,7 @@ function useComments(videoId: string) {
   return useQuery({
     queryKey: ["htv-comments", videoId],
     queryFn: async () => {
-      const { data } = await (supabase as any)
+      const { data, error } = await (supabase as any)
         .from("video_comments")
         .select(`id,content,created_at,parent_id,user_id,
                  profiles(username,avatar_url,display_name),
@@ -157,6 +157,10 @@ function useComments(videoId: string) {
         .eq("video_id", videoId)
         .is("parent_id", null)
         .order("created_at", { ascending: false });
+      if (error) {
+        console.error("[HoodaTV] Erro ao carregar comentários:", error);
+        throw error;
+      }
       return data ?? [];
     },
     staleTime: 30_000,
@@ -633,16 +637,24 @@ function CommentItem({ comment, me, videoId, qc, depth = 0 }: {
 /* ── Secção de comentários ── */
 function CommentsSection({ videoId, me }: { videoId: string; me: any }) {
   const qc = useQueryClient();
-  const { data: comments = [], isLoading } = useComments(videoId);
+  const { data: comments = [], isLoading, isError, error } = useComments(videoId);
   const [text, setText] = useState("");
   const [focused, setFocused] = useState(false);
 
   async function submit() {
     if (!me) { toast.error("Inicia sessão para comentar."); return; }
     if (!text.trim()) return;
-    await (supabase as any).from("video_comments").insert({
-      video_id: videoId, user_id: me.id, content: text.trim(),
+    const content = text.trim();
+    const { error } = await (supabase as any).from("video_comments").insert({
+      video_id: videoId, user_id: me.id, content,
     });
+    if (error) {
+      console.error("[HoodaTV] Erro ao publicar comentário:", error);
+      toast.error(error.message?.includes("row-level security")
+        ? "Não tens permissão para comentar (sessão inválida — tenta voltar a iniciar sessão)."
+        : `Não foi possível publicar o comentário: ${error.message}`);
+      return;
+    }
     setText("");
     qc.invalidateQueries({ queryKey: ["htv-comments", videoId] });
   }
@@ -693,6 +705,10 @@ function CommentsSection({ videoId, me }: { videoId: string; me: any }) {
               </div>
             </div>
           ))}</div>
+        : isError
+          ? <p className="text-sm text-center py-6" style={{ color: "#f87171" }}>
+              Não foi possível carregar os comentários: {(error as any)?.message ?? "erro desconhecido"}
+            </p>
         : !comments.length
           ? <p className="text-sm text-center py-6" style={{ color: "var(--text-muted)" }}>Ainda não há comentários. Sê o primeiro!</p>
           : <div className="space-y-5">
@@ -759,7 +775,14 @@ function WatchPage() {
     (supabase as any).rpc("record_video_view", {
       p_video_id:   id,
       p_channel_id: video.channel_id ?? null,
-    }).then(() => qc.invalidateQueries({ queryKey: ["htv-watch", id] }));
+    }).then(({ error }: { error: any }) => {
+      if (error) {
+        console.error("[HoodaTV] Erro ao registar view:", error);
+        sessionStorage.removeItem(key); // permite tentar de novo no próximo refresh
+        return;
+      }
+      qc.invalidateQueries({ queryKey: ["htv-watch", id] });
+    });
   }, [id, video?.channel_id]);
 
   /* ── Realtime: comentários novos ── */
