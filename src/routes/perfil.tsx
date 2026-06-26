@@ -17,6 +17,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useAvatar } from "@/contexts/AvatarContext";
 import { ProfileAvatarLink } from "@/components/ProfileAvatarLink";
 import { PostCommentsModal } from "@/components/PostCommentsModal";
+import { uploadImageToCloudinary } from "@/lib/cloudinary";
 import { fetchPostComments, sendPostComment, replyToPostComment, toggleCommentLike } from "@/lib/comments";
 import { deletePostForEveryone, fetchMyShareableCommunities, sharePostToCommunity, type MyCommunity } from "@/lib/posts";
 import { toast } from "sonner";
@@ -498,6 +499,7 @@ function CreatePostModal({
   const [text, setText] = useState("");
   const [bgColor, setBgColor] = useState<string | null>(null);
   const [photo, setPhoto] = useState<string | null>(null);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [publishing, setPublishing] = useState(false);
   const [done, setDone] = useState(false);
   const [publishErr, setPublishErr] = useState<string | null>(null);
@@ -506,37 +508,31 @@ function CreatePostModal({
   function pickPhoto(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    setPhotoFile(file);
     const reader = new FileReader();
     reader.onload = (ev) => { setPhoto(ev.target?.result as string); setBgColor(null); };
     reader.readAsDataURL(file);
   }
 
   async function publish() {
-    if (!text.trim() && !photo) return;
-    if (publishing || done) return; // evita duplo-clique / duplo-submit
+    if (!text.trim() && !photoFile && !photo) return;
+    if (publishing || done) return;
     setPublishing(true);
     setPublishErr(null);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        setPublishErr("É preciso iniciar sessão para publicar.");
-        return;
+      if (!session) { setPublishErr("É preciso iniciar sessão para publicar."); return; }
+
+      // Upload foto para Cloudinary se existir ficheiro
+      let imageUrl: string | null = photo;
+      if (photoFile) {
+        const { url } = await uploadImageToCloudinary(photoFile, `hooda/posts/${session.user.id}`);
+        imageUrl = url;
       }
-      if (!text.trim()) {
-        // Post só com foto, sem registo na BD nesta versão — mantém local.
-        onPublish({ id: `local-${Date.now()}`, text, photo, bgColor, createdAt: new Date(), likes: 0, likedByMe: false, comments: 0, bookmarked: false });
-        setDone(true);
-        setTimeout(onClose, 700);
-        return;
-      }
-      const { data: prof } = await supabase
-        .from("profiles")
-        .select("username, full_name")
-        .eq("id", session.user.id)
-        .single();
-      const contentJson = bgColor
-        ? JSON.stringify({ text, bgColor })
-        : text;
+
+      const { data: prof } = await supabase.from("profiles").select("username, full_name").eq("id", session.user.id).single();
+      const contentJson = bgColor ? JSON.stringify({ text, bgColor }) : text;
+
       const { data: inserted, error } = await supabase
         .from("posts")
         .insert({
@@ -545,29 +541,27 @@ function CreatePostModal({
           author_name: prof?.full_name ?? session.user.email ?? "",
           author_color: "#5B3FCF",
           content: contentJson,
-          kind: bgColor ? "bg" : "post",
+          kind: bgColor ? "bg" : imageUrl ? "photo" : "post",
+          image_url: imageUrl,
         })
         .select("id, created_at")
         .single();
 
       if (error || !inserted?.id) {
-        // Don't pretend success: if the row was never saved, showing
-        // "Publicado!" and adding it locally would create a post that
-        // disappears on refresh — and is exactly the kind of mismatch
-        // that makes the feed look like it has phantom/inconsistent posts.
         console.error("[hooda:perfil] falha ao publicar:", error);
         setPublishErr("Não foi possível publicar. Tenta novamente.");
         return;
       }
 
       onPublish({
-        id: inserted.id,
-        text, photo, bgColor,
+        id: inserted.id, text, photo: imageUrl, bgColor,
         createdAt: new Date(inserted.created_at ?? Date.now()),
         likes: 0, likedByMe: false, comments: 0, bookmarked: false,
       });
       setDone(true);
       setTimeout(onClose, 700);
+    } catch (err: any) {
+      setPublishErr(err.message ?? "Erro ao publicar.");
     } finally {
       setPublishing(false);
     }
@@ -1327,13 +1321,100 @@ function SecurityPanel({ onBack, email }: { onBack: () => void; email: string })
 }
 
 
+/* ─── Tab Vídeos do Utilizador ─── */
+function MyVideosFeed({ userId }: { userId: string }) {
+  const navigate = useNavigate();
+  const [videos, setVideos] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!userId) return;
+    (async () => {
+      setLoading(true);
+      const { data } = await (supabase as any)
+        .from("videos")
+        .select("id,title,thumbnail_url,duration_seconds,views_count,created_at,status,visibility,channels(handle)")
+        .eq("owner_id", userId)
+        .order("created_at", { ascending: false });
+      setVideos(data ?? []);
+      setLoading(false);
+    })();
+  }, [userId]);
+
+  const fmtDur = (s: number | null) => {
+    if (!s) return "";
+    const m = Math.floor(s / 60), sec = s % 60;
+    return `${m}:${String(sec).padStart(2, "0")}`;
+  };
+
+  if (loading) return (
+    <div className="flex justify-center py-14">
+      <div className="h-6 w-6 rounded-full border-2 animate-spin" style={{ borderColor: ACCENT, borderTopColor: "transparent" }} />
+    </div>
+  );
+
+  if (videos.length === 0) return (
+    <div className="px-5 py-12 flex flex-col items-center gap-3 text-center">
+      <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ background: ACCENT + "18" }}>
+        <Tv className="h-7 w-7" style={{ color: ACCENT }} />
+      </div>
+      <p className="text-sm font-semibold" style={{ color: "var(--text-secondary)" }}>Nenhum vídeo publicado</p>
+      <p className="text-xs" style={{ color: "var(--text-muted)" }}>Publica o teu primeiro vídeo no HoodaStudio</p>
+      <button onClick={() => navigate({ to: "/studio/upload" })}
+        className="mt-2 px-4 py-2 rounded-xl text-sm font-bold text-white"
+        style={{ background: ACCENT }}>
+        Ir para o Studio
+      </button>
+    </div>
+  );
+
+  return (
+    <div className="grid grid-cols-2 gap-2 p-3">
+      {videos.map((v) => (
+        <button key={v.id}
+          onClick={() => navigate({ to: `/hoodatv/canal/${v.channels?.handle ?? ""}` })}
+          className="relative rounded-xl overflow-hidden bg-black text-left group active:scale-[0.97] transition">
+          {/* Thumbnail */}
+          <div className="aspect-video w-full bg-neutral-900 relative">
+            {v.thumbnail_url
+              ? <img src={v.thumbnail_url} alt={v.title} className="w-full h-full object-cover" />
+              : <div className="w-full h-full flex items-center justify-center">
+                  <Tv className="h-8 w-8 text-neutral-600" />
+                </div>
+            }
+            {/* Duração */}
+            {v.duration_seconds && (
+              <span className="absolute bottom-1.5 right-1.5 bg-black/80 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
+                {fmtDur(v.duration_seconds)}
+              </span>
+            )}
+            {/* Status badge */}
+            {v.status !== "published" && (
+              <span className="absolute top-1.5 left-1.5 text-[10px] font-bold px-2 py-0.5 rounded-full"
+                style={{ background: v.status === "processing" ? "#F26B3A" : "#6B7280", color: "white" }}>
+                {v.status === "processing" ? "A processar" : "Privado"}
+              </span>
+            )}
+          </div>
+          {/* Título */}
+          <div className="p-2">
+            <p className="text-xs font-semibold leading-tight line-clamp-2" style={{ color: "var(--text-primary)" }}>{v.title}</p>
+            <p className="text-[10px] mt-1" style={{ color: "var(--text-muted)" }}>{v.views_count ?? 0} visualizações</p>
+          </div>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+
 function MyProfile({ profile: initialProfile, email, onSignOut }: {
   profile: Profile | null; email: string; onSignOut: () => void;
 }) {
   const navigate = useNavigate();
   const [profile, setProfile] = useState(initialProfile);
   const name = profile?.full_name || email || "?";
-  const [tab, setTab] = useState<"posts" | "saved" | "info" | "monetization">("posts");
+  const [tab, setTab] = useState<"posts" | "videos" | "saved" | "info" | "monetization">("posts");
   const [showCreate, setShowCreate] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
@@ -1365,27 +1446,28 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
     ref.current.onchange = async (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file) return;
-      const reader = new FileReader();
-      reader.onload = async (ev) => {
-        if (ev.target?.result) {
-          const url = ev.target.result as string;
-          onDone(url);
+      (e.target as HTMLInputElement).value = "";
+      try {
+        const folder = saveToDb === "avatar" ? "hooda/avatars" : "hooda/covers";
+        toast.loading(saveToDb === "avatar" ? "A carregar foto..." : "A carregar capa...", { id: "img-upload" });
+        const { url } = await uploadImageToCloudinary(file, folder);
+        onDone(url);
+        toast.dismiss("img-upload");
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
           if (saveToDb === "avatar") {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session) {
-              await supabase.from("profiles").update({ avatar_url: url } as any).eq("id", session.user.id);
-              setGlobalAvatarUrl(url);
-            }
+            await supabase.from("profiles").update({ avatar_url: url } as any).eq("id", session.user.id);
+            setGlobalAvatarUrl(url);
+            toast.success("Foto de perfil actualizada!");
           } else if (saveToDb === "cover") {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session) {
-              await supabase.from("profiles").update({ cover_url: url } as any).eq("id", session.user.id);
-            }
+            await supabase.from("profiles").update({ cover_url: url } as any).eq("id", session.user.id);
+            toast.success("Foto de capa actualizada!");
           }
         }
-      };
-      reader.readAsDataURL(file);
-      (e.target as HTMLInputElement).value = "";
+      } catch (err: any) {
+        toast.dismiss("img-upload");
+        toast.error(err.message ?? "Erro ao carregar imagem.");
+      }
     };
     ref.current.click();
   }
@@ -1575,6 +1657,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
 
   const tabs = [
     { key: "posts", label: "Publicações", icon: Type },
+    { key: "videos", label: "Vídeos", icon: Tv },
     { key: "saved", label: "Guardado", icon: Bookmark },
     { key: "info", label: "Info", icon: Info },
     { key: "monetization", label: "Studio", icon: Tv },
@@ -1727,6 +1810,10 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
           <PostsFeed posts={posts} name={name} username={profile?.username || "utilizador"}
             avatarUrl={avatarUrl} onLike={toggleLike} onBookmark={toggleBookmark} onDelete={deletePost}
             myUserId={myUserId} />
+        )}
+
+        {tab === "videos" && (
+          <MyVideosFeed userId={myUserId} />
         )}
 
         {tab === "saved" && (
