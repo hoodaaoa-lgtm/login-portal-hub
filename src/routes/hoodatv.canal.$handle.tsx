@@ -1,5 +1,4 @@
 import { createFileRoute, useNavigate, useParams } from "@tanstack/react-router";
-import { t } from "@/lib/useT";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { BottomNav, SideNav, PageWrapper } from "@/components/AppShell";
@@ -7,11 +6,9 @@ import { useState } from "react";
 import {
   ChevronLeft, Play, Bell, BellOff, Share2,
   Eye, Clock, Video as VideoIcon, Globe, Calendar,
-  ThumbsUp, MoreVertical, Search, ListVideo,
+  ThumbsUp, MoreVertical, Search,
 } from "lucide-react";
 import { toast } from "sonner";
-import { channelPlaylistsQuery, type Playlist } from "@/lib/playlist-queries";
-import { PhotoViewer } from "@/components/PhotoViewer";
 
 export const Route = createFileRoute("/hoodatv/canal/$handle")({
   head: ({ params }) => ({ meta: [{ title: `${params.handle} — HoodaTV` }] }),
@@ -44,7 +41,7 @@ const timeAgo = (d: string) => {
 const fmtDate = (d: string) =>
   new Date(d).toLocaleDateString("pt-PT", { year: "numeric", month: "long", day: "numeric" });
 
-type Tab = "videos" | "playlists" | "sobre";
+type Tab = "videos" | "sobre";
 
 /* ── Queries ── */
 function useChannel(handle: string) {
@@ -69,7 +66,7 @@ function useChannelVideos(channelId: string | undefined) {
       if (!channelId) return [];
       const { data } = await (supabase as any)
         .from("videos")
-        .select("id,title,thumbnail_url,duration_seconds,views_count,likes_count,published_at,created_at,cf_embed_url,cf_stream_uid,cf_stream_url,video_path")
+        .select("id,title,thumbnail_url,duration_seconds,views_count,likes_count,published_at,created_at,cf_embed_url,cf_stream_url,cf_stream_uid")
         .eq("channel_id", channelId)
         .eq("status", "published")
         .eq("visibility", "public")
@@ -121,10 +118,9 @@ function useIsFollowing(userId: string | null, channelId: string | undefined) {
 }
 
 /* ── Video Card ── */
-function VideoCard({ v }: { v: any }) {
-  const navigate = useNavigate();
+function VideoCard({ v, onPlay }: { v: any; onPlay: (v: any) => void }) {
   return (
-    <div className="group cursor-pointer" onClick={() => navigate({ to: "/hoodatv/watch/$id", params: { id: v.id } })}>
+    <div className="group cursor-pointer" onClick={() => onPlay(v)}>
       <div className="relative aspect-video rounded-2xl overflow-hidden" style={{ background: "var(--s3)" }}>
         {v.thumbnail_url
           ? <img src={v.thumbnail_url} alt={v.title} loading="lazy"
@@ -177,6 +173,8 @@ function VideoModal({ v, onClose }: { v: any; onClose: () => void }) {
           {v.cf_embed_url
             ? <iframe src={`${v.cf_embed_url}?autoplay=true`}
                 className="w-full h-full" allow="autoplay; fullscreen" allowFullScreen />
+            : v.cf_stream_url
+            ? <video src={v.cf_stream_url} controls autoPlay playsInline className="w-full h-full" />
             : <div className="w-full h-full flex items-center justify-center">
                 <p className="text-white text-sm opacity-60">Vídeo não disponível</p>
               </div>}
@@ -205,53 +203,9 @@ function VideoModal({ v, onClose }: { v: any; onClose: () => void }) {
 function Skel() {
   return (
     <div className="animate-pulse space-y-3">
-      <div className="htv-skeleton aspect-video rounded-2xl" style={{ background: "var(--s3)" }} />
+      <div className="aspect-video rounded-2xl" style={{ background: "var(--s3)" }} />
       <div className="h-3 rounded-full" style={{ background: "var(--s3)", width: "80%" }} />
       <div className="h-3 rounded-full" style={{ background: "var(--s3)", width: "50%" }} />
-    </div>
-  );
-}
-
-/* ── Playlist Card (HoodaTV) ── */
-function PlaylistCard({ p }: { p: Playlist }) {
-  const navigate = useNavigate();
-  return (
-    <div
-      className="group cursor-pointer"
-      onClick={() => navigate({ to: "/hoodatv/playlist/$id", params: { id: p.id } })}
-    >
-      <div className="relative aspect-video rounded-2xl overflow-hidden" style={{ background: "var(--s3)" }}>
-        {p.cover_thumbnail_url
-          ? <img src={p.cover_thumbnail_url} alt={p.title} loading="lazy"
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.04]" />
-          : <div className="w-full h-full flex items-center justify-center" style={{ background: `${P}18` }}>
-              <ListVideo className="w-10 h-10" style={{ color: P, opacity: 0.45 }} />
-            </div>}
-
-        {/* Overlay de faixa de vídeos estilo YouTube */}
-        <div className="absolute inset-y-0 right-0 w-1/4 flex flex-col items-center justify-center gap-1"
-          style={{ background: "rgba(0,0,0,0.62)" }}>
-          <ListVideo className="w-5 h-5 text-white opacity-80" />
-          <span className="text-white text-[11px] font-bold">{p.video_count ?? 0}</span>
-        </div>
-
-        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200"
-          style={{ background: "rgba(0,0,0,0.22)" }}>
-          <div className="w-12 h-12 rounded-full flex items-center justify-center"
-            style={{ background: "rgba(255,255,255,0.92)" }}>
-            <Play className="w-5 h-5 ml-0.5" style={{ color: P }} />
-          </div>
-        </div>
-      </div>
-
-      <div className="mt-2.5 space-y-0.5">
-        <p className="text-[13px] font-bold leading-[1.35] line-clamp-2" style={{ color: "var(--text-primary)" }}>
-          {p.title}
-        </p>
-        <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
-          {p.video_count ?? 0} vídeo{(p.video_count ?? 0) !== 1 ? "s" : ""}
-        </p>
-      </div>
     </div>
   );
 }
@@ -265,14 +219,12 @@ function ChannelPage() {
   const [tab, setTab]         = useState<Tab>("videos");
   const [playing, setPlaying] = useState<any>(null);
   const [search, setSearch]   = useState("");
-  const [photoViewerSrc, setPhotoViewerSrc] = useState<string | null>(null);
 
   const { data: channel, isLoading: chLoading } = useChannel(handle);
   const { data: videos = [], isLoading: vLoading } = useChannelVideos(channel?.id);
   const { data: stats } = useChannelStats(channel?.id);
   const { data: me } = useMe();
   const { data: isFollowing = false } = useIsFollowing(me?.id ?? null, channel?.id);
-  const { data: playlists = [], isLoading: plLoading } = useQuery(channelPlaylistsQuery(channel?.id));
 
   const bg = avatarColor(channel?.name ?? "");
 
@@ -304,11 +256,11 @@ function ChannelPage() {
       <SideNav />
       <PageWrapper className="pb-20 lg:pb-0">
         <div className="animate-pulse">
-          <div className="htv-skeleton h-40 sm:h-52" style={{ background: "var(--s3)" }} />
+          <div className="h-40 sm:h-52" style={{ background: "var(--s3)" }} />
           <div className="px-4 pt-4 space-y-3">
-            <div className="htv-skeleton w-20 h-20 rounded-full" style={{ background: "var(--s3)" }} />
-            <div className="htv-skeleton h-5 rounded-full w-48" style={{ background: "var(--s3)" }} />
-            <div className="htv-skeleton h-3 rounded-full w-32" style={{ background: "var(--s3)" }} />
+            <div className="w-20 h-20 rounded-full" style={{ background: "var(--s3)" }} />
+            <div className="h-5 rounded-full w-48" style={{ background: "var(--s3)" }} />
+            <div className="h-3 rounded-full w-32" style={{ background: "var(--s3)" }} />
           </div>
         </div>
         <BottomNav />
@@ -328,7 +280,7 @@ function ChannelPage() {
           <button onClick={() => navigate({ to: "/hoodatv" })}
             className="px-6 py-2.5 rounded-full text-white font-bold text-sm"
             style={{ background: GRAD }}>
-            {t("common.back_to_tv")}
+            Voltar à HoodaTV
           </button>
         </div>
         <BottomNav />
@@ -345,7 +297,7 @@ function ChannelPage() {
         {playing && <VideoModal v={playing} onClose={() => setPlaying(null)} />}
 
         {/* ── Back button ── */}
-        <div className="htv-back-bar sticky top-0 z-30 flex items-center gap-2 px-4 py-3 border-b"
+        <div className="sticky top-0 z-30 flex items-center gap-2 px-4 py-3 border-b"
           style={{ background: "rgba(var(--s1-rgb,250,250,252),.94)", backdropFilter: "blur(20px)", borderColor: "var(--border-subtle)" }}>
           <button onClick={() => navigate({ to: "/hoodatv" })}
             className="w-9 h-9 rounded-full flex items-center justify-center transition hover:bg-[var(--s3)]"
@@ -367,11 +319,8 @@ function ChannelPage() {
           {/* ── Avatar sobre o banner ── */}
           <div className="px-4 sm:px-6">
             <div className="flex items-end gap-4 -mt-10 sm:-mt-12">
-              <div
-                className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden flex items-center justify-center text-white text-2xl font-black ring-4 shrink-0"
-                style={{ background: bg, cursor: channel.avatar_url ? "pointer" : "default" }}
-                onClick={() => channel.avatar_url && setPhotoViewerSrc(channel.avatar_url)}
-              >
+              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden flex items-center justify-center text-white text-2xl font-black ring-4 shrink-0"
+                style={{ background: bg }}>
                 {channel.avatar_url
                   ? <img src={channel.avatar_url} alt="" className="w-full h-full object-cover" />
                   : (channel.name?.[0] ?? "?").toUpperCase()}
@@ -440,19 +389,15 @@ function ChannelPage() {
         </div>
 
         {/* ── Tabs ── */}
-        <div className="htv-tab-bar sticky top-[53px] z-20 border-b"
+        <div className="sticky top-[53px] z-20 border-b"
           style={{ background: "rgba(var(--s1-rgb,250,250,252),.94)", backdropFilter: "blur(20px)", borderColor: "var(--border-subtle)" }}>
           <div className="flex px-4 sm:px-6">
-            {([
-              { key: "videos",    label: `Vídeos (${stats?.videoCount ?? 0})` },
-              { key: "playlists", label: `Playlists${playlists.length ? ` (${playlists.length})` : ""}` },
-              { key: "sobre",     label: "Sobre" },
-            ] as { key: Tab; label: string }[]).map(t => (
-              <button key={t.key} onClick={() => setTab(t.key)}
-                className="px-4 py-3 text-sm font-bold transition-all relative"
-                style={{ color: tab === t.key ? P : "var(--text-muted)" }}>
-                {t.label}
-                {tab === t.key && (
+            {(["videos", "sobre"] as Tab[]).map(t => (
+              <button key={t} onClick={() => setTab(t)}
+                className="px-4 py-3 text-sm font-bold capitalize transition-all relative"
+                style={{ color: tab === t ? P : "var(--text-muted)" }}>
+                {t === "videos" ? `Vídeos (${stats?.videoCount ?? 0})` : "Sobre"}
+                {tab === t && (
                   <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full" style={{ background: P }} />
                 )}
               </button>
@@ -460,13 +405,13 @@ function ChannelPage() {
           </div>
         </div>
 
-        <div className="max-w-5xl mx-auto px-3 sm:px-6 py-5">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6">
 
           {/* ══ TAB: VÍDEOS ══ */}
           {tab === "videos" && (
             <div>
               {/* Search dentro do canal */}
-              <div className="htv-canal-search flex items-center gap-2 rounded-full px-4 h-10 border mb-6 transition-all"
+              <div className="flex items-center gap-2 rounded-full px-4 h-10 border mb-6 transition-all"
                 style={{ background: "var(--s2)", borderColor: "var(--border-default)" }}>
                 <Search className="w-4 h-4 shrink-0" style={{ color: "var(--text-muted)" }} />
                 <input value={search} onChange={e => setSearch(e.target.value)}
@@ -481,7 +426,7 @@ function ChannelPage() {
                     {Array.from({ length: 8 }).map((_, i) => <Skel key={i} />)}
                   </div>
                 : !filteredVideos.length
-                  ? <div className="htv-empty py-20 text-center rounded-2xl border"
+                  ? <div className="py-20 text-center rounded-2xl border"
                       style={{ background: "var(--s2)", borderColor: "var(--border-subtle)" }}>
                       <VideoIcon className="w-12 h-12 mx-auto mb-3" style={{ color: "var(--text-muted)" }} />
                       <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>
@@ -490,30 +435,7 @@ function ChannelPage() {
                     </div>
                   : <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
                       {filteredVideos.map((v: any) => (
-                        <VideoCard key={v.id} v={v} />
-                      ))}
-                    </div>}
-            </div>
-          )}
-
-          {/* ══ TAB: PLAYLISTS ══ */}
-          {tab === "playlists" && (
-            <div>
-              {plLoading
-                ? <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
-                    {Array.from({ length: 4 }).map((_, i) => <Skel key={i} />)}
-                  </div>
-                : !playlists.length
-                  ? <div className="htv-empty py-20 text-center rounded-2xl border"
-                      style={{ background: "var(--s2)", borderColor: "var(--border-subtle)" }}>
-                      <ListVideo className="w-12 h-12 mx-auto mb-3" style={{ color: "var(--text-muted)" }} />
-                      <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>
-                        Este canal ainda não tem playlists.
-                      </p>
-                    </div>
-                  : <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
-                      {playlists.map((p: Playlist) => (
-                        <PlaylistCard key={p.id} p={p} />
+                        <VideoCard key={v.id} v={v} onPlay={setPlaying} />
                       ))}
                     </div>}
             </div>
@@ -581,11 +503,11 @@ function ChannelPage() {
               {/* Stats destacadas */}
               <div className="grid grid-cols-3 gap-3">
                 {[
-                  { label: t("profile.followers"), value: fmtV(stats?.subs ?? 0) },
-                  { label: t("tv.videos"), value: String(stats?.videoCount ?? 0) },
-                  { label: t("common.views"), value: fmtV(stats?.totalViews ?? 0) },
+                  { label: "Seguidores", value: fmtV(stats?.subs ?? 0) },
+                  { label: "Vídeos", value: String(stats?.videoCount ?? 0) },
+                  { label: "Visualizações", value: fmtV(stats?.totalViews ?? 0) },
                 ].map(s => (
-                  <div key={s.label} className="htv-stat-card rounded-2xl p-4 text-center border"
+                  <div key={s.label} className="rounded-2xl p-4 text-center border"
                     style={{ background: "var(--s2)", borderColor: "var(--border-subtle)" }}>
                     <p className="text-xl font-extrabold" style={{ color: P }}>{s.value}</p>
                     <p className="text-[11px] mt-0.5" style={{ color: "var(--text-muted)" }}>{s.label}</p>
@@ -599,9 +521,6 @@ function ChannelPage() {
 
         <BottomNav />
       </PageWrapper>
-      {photoViewerSrc && (
-        <PhotoViewer src={photoViewerSrc} alt={channel?.name ?? "Foto"} subtitle={channel?.handle ? `@${channel.handle}` : undefined} onClose={() => setPhotoViewerSrc(null)} />
-      )}
     </>
   );
 }

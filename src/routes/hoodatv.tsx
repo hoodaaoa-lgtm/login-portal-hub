@@ -67,7 +67,7 @@ function HoodaTVIntro({ onDone }: { onDone: () => void }) {
       pointerEvents: exiting ? "none" : "all",
       overflow: "hidden",
     }}>
-      <div style={{ display: "flex", alignItems: "flex-start", gap: 0 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 0 }}>
         {HOODA_LETTERS.map((l, i) => (
           <span key={i} style={{
             display: "inline-block",
@@ -86,7 +86,8 @@ function HoodaTVIntro({ onDone }: { onDone: () => void }) {
           letterSpacing: "0.18em", color: "#fff",
           background: "linear-gradient(135deg, #5B3FCF, #E94B8A)",
           padding: "5px 12px 7px", borderRadius: "8px",
-          marginLeft: "10px", marginBottom: 0,
+          marginLeft: "10px",
+          alignSelf: "center",
           opacity: tvIn ? 1 : 0,
           transform: tvIn ? "scale(1)" : "scale(0)",
           transition: tvIn ? "opacity 0.4s ease, transform 0.5s cubic-bezier(0.34,1.56,0.64,1)" : "none",

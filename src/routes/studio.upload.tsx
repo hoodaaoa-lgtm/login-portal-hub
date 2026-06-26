@@ -517,7 +517,7 @@ function UploadPage() {
           {/* Botão publicar */}
           <button
             onClick={handleUpload}
-            disabled={!title.trim() || (visibility === "scheduled" && !scheduledAt)}
+            disabled={!title.trim() || (visibility === "scheduled" && !scheduledAt) || step === "uploading"}
             className="w-full h-12 rounded-2xl text-white font-extrabold text-sm flex items-center justify-center gap-2 transition-all hover:-translate-y-0.5 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none"
             style={{ background: GRAD, boxShadow: "0 4px 20px rgba(91,63,207,0.3)" }}>
             <Upload className="w-4 h-4" />
