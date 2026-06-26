@@ -257,7 +257,7 @@ function UploadPage() {
           Duração detectada: {fmtDuration(detectedDur)}
         </p>
       )}
-      {videoFile && videoFile.size > MAX_VIDEO_FREE && (
+      {videoFile && videoFile.size > MAX_VIDEO && (
         <p className="text-xs mt-2 font-semibold" style={{ color: "#F97316" }}>
           Upload resumível activo — podes perder ligação e retomar.
         </p>
