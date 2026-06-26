@@ -528,6 +528,7 @@ function CreatePostModal({
   onClose: () => void;
   onPublish: (post: Post) => void;
 }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const name = profile?.full_name || email || "?";
   const [text, setText] = useState("");
@@ -717,11 +718,11 @@ function CreatePostModal({
             <div className="flex items-center gap-2">
               <button onClick={() => fileRef.current?.click()}
                 className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-neutral-100 hover:bg-neutral-200 transition text-sm font-semibold text-neutral-700 active:scale-95">
-                <Image className="h-4 w-4 text-[#6BA547]" /> Foto
+                <Image className="h-4 w-4 text-[#6BA547]" /> {t("post.photo")}
               </button>
               <button onClick={() => videoRef.current?.click()}
                 className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-neutral-100 hover:bg-neutral-200 transition text-sm font-semibold text-neutral-700 active:scale-95">
-                <Film className="h-4 w-4 text-[#E94B8A]" /> Vídeo
+                <Film className="h-4 w-4 text-[#E94B8A]" /> {t("post.video", "Vídeo")}
               </button>
             </div>
           </div>
@@ -762,7 +763,7 @@ function CreatePostModal({
             {done
               ? t("post.published")
               : publishing
-                ? <><div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />A publicar…</>
+                ? <><div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />{t("post.publishing", "A publicar…")}</>
                 : t("post.publish")}
           </button>
         </div>
@@ -779,6 +780,7 @@ function EditProfileModal({
   onClose: () => void;
   onSave: (data: Partial<Profile> & { website?: string; location?: string }) => void;
 }) {
+  const { t } = useTranslation();
   const [name, setName] = useState(profile?.full_name || "");
   const [username, setUsername] = useState(profile?.username || "");
   const [bio, setBio] = useState(profile?.bio || "");
@@ -837,7 +839,7 @@ function EditProfileModal({
           <button onClick={onClose} className="p-1.5 rounded-full hover:bg-neutral-100">
             <X className="h-5 w-5 text-neutral-500" />
           </button>
-          <span className="text-base font-extrabold text-black">Editar perfil</span>
+          <span className="text-base font-extrabold text-black">{t("settings.edit_profile")}</span>
           <button onClick={save}
             disabled={saving || done || usernameStatus === "taken" || usernameStatus === "invalid" || usernameStatus === "checking"}
             className="text-sm font-bold px-4 py-1.5 rounded-full text-white transition active:scale-95 disabled:opacity-50"
@@ -990,6 +992,7 @@ function SettingsDrawer({
 }) {
   const { theme, toggle } = useTheme();
   const { avatarUrl } = useAvatar();
+  const { t } = useTranslation();
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -1009,25 +1012,26 @@ function SettingsDrawer({
 
   const sections = [
     {
-      title: "Conta",
+      title: t("settings.account", "Conta"),
       items: [
-        { icon: Settings, label: t("profile.edit"), desc: "Nome, foto, bio e mais", action: () => { handleClose(); setTimeout(onEditProfile, 300); }, color: ACCENT },
-        { icon: Bell, label: t("settings.notifications"), desc: "Gere os teus alertas", action: onOpenNotifications, color: "#F26B3A" },
-        { icon: Calendar, label: t("settings.activity"), desc: "Histórico de ações", action: onOpenActivity, color: "#1FAFA6" },
+        { icon: Settings, label: t("settings.edit_profile"), desc: t("settings.edit_profile_desc", "Nome, foto, bio e mais"), action: () => { handleClose(); setTimeout(onEditProfile, 300); }, color: ACCENT },
+        { icon: Bell, label: t("settings.notifications"), desc: t("settings.notifications_desc", "Gere os teus alertas"), action: onOpenNotifications, color: "#F26B3A" },
+        { icon: Calendar, label: t("settings.activity"), desc: t("settings.activity_desc", "Histórico de ações"), action: onOpenActivity, color: "#1FAFA6" },
       ],
     },
     {
-      title: "Privacidade & Segurança",
+      title: t("settings.privacy_security", "Privacidade & Segurança"),
       items: [
-        { icon: Lock, label: t("settings.privacy"), desc: "Quem pode ver o teu perfil", action: onOpenPrivacy, color: "#6BA547" },
-        { icon: Shield, label: t("settings.security"), desc: "Palavra-passe e autenticação", action: onOpenSecurity, color: "#5B3FCF" },
+        { icon: Lock, label: t("settings.privacy"), desc: t("settings.privacy_desc", "Quem pode ver o teu perfil"), action: onOpenPrivacy, color: "#6BA547" },
+        { icon: Shield, label: t("settings.security"), desc: t("settings.security_desc", "Palavra-passe e autenticação"), action: onOpenSecurity, color: "#5B3FCF" },
+        { icon: MessageCircle, label: t("settings.msg_privacy"), desc: t("settings.msg_privacy_desc", "Quem pode enviar-te mensagens"), action: onOpenMsgPrivacy, color: "#1FAFA6" },
       ],
     },
     {
-      title: "Suporte",
+      title: t("settings.support", "Suporte"),
       items: [
-        { icon: HelpCircle, label: t("settings.help"), desc: "Perguntas frequentes", action: onOpenHelp, color: "#1FAFA6" },
-        { icon: Info, label: t("settings.about"), desc: "Versão e informações legais", action: onOpenAbout, color: "#E94B8A" },
+        { icon: HelpCircle, label: t("settings.help"), desc: t("settings.help_desc", "Perguntas frequentes"), action: onOpenHelp, color: "#1FAFA6" },
+        { icon: Info, label: t("settings.about"), desc: t("settings.about_desc", "Versão e informações legais"), action: onOpenAbout, color: "#E94B8A" },
       ],
     },
     {
@@ -1067,7 +1071,7 @@ function SettingsDrawer({
         <div className="shrink-0 px-5 pt-6 pb-5"
           style={{ background: `linear-gradient(135deg, ${ACCENT}, #E94B8A)` }}>
           <div className="flex items-center justify-between mb-5">
-            <span className="text-white font-extrabold text-lg tracking-tight">Configurações</span>
+            <span className="text-white font-extrabold text-lg tracking-tight">{t("settings.title")}</span>
             <button onClick={handleClose}
               className="p-2 rounded-full transition active:scale-90"
               style={{ background: "rgba(255,255,255,0.2)" }}>
@@ -2075,7 +2079,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
         <div className="flex justify-end gap-2 px-4 pt-3 pb-0">
           <button onClick={() => setShowEditProfile(true)}
             className="text-sm font-bold border border-neutral-300 rounded-full px-5 py-1.5 bg-white hover:bg-neutral-50 transition active:scale-95">
-            Editar perfil
+            {t("settings.edit_profile")}
           </button>
         </div>
 
@@ -2100,7 +2104,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
               </a>
             )}
             <span className="flex items-center gap-1 text-xs text-neutral-400">
-              <Calendar className="h-3.5 w-3.5" /> Membro desde 2025
+              <Calendar className="h-3.5 w-3.5" /> {t("profile.member_since")} {new Date(profile?.created_at ?? Date.now()).getFullYear()}
             </span>
           </div>
         </div>
@@ -2113,21 +2117,21 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
             <button onClick={() => setShowCreate(true)}
               className="w-full flex items-center gap-3 bg-white border border-neutral-200 rounded-2xl px-4 py-3.5 hover:bg-neutral-50 transition active:scale-[0.99] text-left shadow-sm">
               <Avatar name={name} size={36} src={avatarUrl} />
-              <span className="text-neutral-400 text-sm flex-1">Em que estás a pensar?</span>
+              <span className="text-neutral-400 text-sm flex-1">{t("post.placeholder")}</span>
               <Plus className="h-5 w-5 text-[#5B3FCF]" />
             </button>
             <div className="flex gap-2 mt-2">
               <button onClick={() => setShowCreate(true)}
                 className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-neutral-200 bg-white text-sm font-semibold text-neutral-600 hover:bg-neutral-50 transition active:scale-95 shadow-sm">
-                <Image className="h-4 w-4 text-[#6BA547]" /> Foto
+                <Image className="h-4 w-4 text-[#6BA547]" /> {t("post.photo")}
               </button>
               <button onClick={() => setShowCreate(true)}
                 className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-neutral-200 bg-white text-sm font-semibold text-neutral-600 hover:bg-neutral-50 transition active:scale-95 shadow-sm">
-                <Type className="h-4 w-4 text-[#5B3FCF]" /> Texto
+                <Type className="h-4 w-4 text-[#5B3FCF]" /> {t("post.text", "Texto")}
               </button>
               <button onClick={() => setShowCreate(true)}
                 className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-neutral-200 bg-white text-sm font-semibold text-neutral-600 hover:bg-neutral-50 transition active:scale-95 shadow-sm">
-                <Film className="h-4 w-4 text-[#E94B8A]" /> Vídeo
+                <Film className="h-4 w-4 text-[#E94B8A]" /> {t("post.video", "Vídeo")}
               </button>
             </div>
           </div>
