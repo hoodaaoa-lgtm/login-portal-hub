@@ -850,6 +850,7 @@ function MonetizationPanel() {
 function SettingsDrawer({
   onClose, onEditProfile, onSignOut, msgPermission, onMsgPermissionChange,
   onOpenNotifications, onOpenActivity, onOpenPrivacy, onOpenSecurity,
+  onOpenHelp, onOpenAbout,
 }: {
   onClose: () => void;
   onEditProfile: () => void;
