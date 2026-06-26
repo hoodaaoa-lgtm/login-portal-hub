@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { STATIC_QUERY_OPTIONS } from "@/lib/queryClient";
 import { BottomNav, SideNav, PageWrapper } from "@/components/AppShell";
@@ -61,6 +62,9 @@ function timeAgo(date: Date) {
   return `${Math.floor(d / 86400)}d`;
 }
 function fmtNum(n: number) { return n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n); }
+// helper global para tradução (funciona fora de hooks)
+import i18n from "@/lib/i18n";
+function t(key: string, opts?: Record<string, unknown>) { return i18n.t(key, opts) as string; }
 
 /* ─── Avatar ─── */
 function Avatar({ name, size = 72, src }: { name: string; size?: number; src?: string | null }) {
@@ -598,7 +602,7 @@ function CreatePostModal({
       const { data: prof } = await supabase.from("profiles").select("username, full_name").eq("id", session.user.id).single();
       const contentJson = bgColor ? JSON.stringify({ text, bgColor }) : text;
 
-      const { data: inserted, error } = await supabase
+      const { data: inserted, error } = await (supabase as any)
         .from("posts")
         .insert({
           author_id: session.user.id,
@@ -608,6 +612,7 @@ function CreatePostModal({
           content: contentJson,
           kind: videoUrl ? "video" : bgColor ? "bg" : imageUrl ? "photo" : "post",
           photo_url: imageUrl,
+          image_url: imageUrl,
           video_url: videoUrl,
         })
         .select("id, created_at")
@@ -1586,6 +1591,32 @@ function MsgPrivacyPanel({ onBack, msgPermission, onMsgPermissionChange }: {
   );
 }
 
+/* ─── Sobre ─── */
+function AboutPanel({ onBack }: { onBack: () => void }) {
+  return (
+    <SettingsSubPanel title="Sobre a Hooda" onBack={onBack}>
+      <div className="px-5 py-4 space-y-4">
+        <div className="rounded-2xl border p-4 space-y-2" style={{ background: "var(--s2)", borderColor: "var(--border-subtle)" }}>
+          <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>Hooda</p>
+          <p className="text-xs leading-relaxed" style={{ color: "var(--text-muted)" }}>A tua rede social angolana. Conecta, partilha e cresce com a comunidade Hooda.</p>
+        </div>
+        <div className="rounded-2xl border divide-y" style={{ background: "var(--s2)", borderColor: "var(--border-subtle)" }}>
+          {[
+            { label: "Versão", value: "1.0.0" },
+            { label: "Termos de serviço", value: "→" },
+            { label: "Política de privacidade", value: "→" },
+          ].map(item => (
+            <div key={item.label} className="flex items-center justify-between px-4 py-3">
+              <span className="text-sm" style={{ color: "var(--text-primary)" }}>{item.label}</span>
+              <span className="text-sm" style={{ color: "var(--text-muted)" }}>{item.value}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </SettingsSubPanel>
+  );
+}
+
 /* ─── Ajuda ─── */
 function HelpPanel({ onBack }: { onBack: () => void }) {
   const faqs = [
@@ -1816,9 +1847,9 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
       setFollowerCount(fc ?? 0);
       setFollowingCount(foc ?? 0);
 
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from("posts")
-        .select("id, content, kind, created_at, photo_url, video_url, photos")
+        .select("id, content, kind, created_at, photo_url, image_url, video_url, photos")
         .eq("author_id", session.user.id)
         .order("created_at", { ascending: false });
       if (data && data.length > 0) {
@@ -1842,13 +1873,13 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
         // never render twice even if the query were to return it more than
         // once.
         const seenIds = new Set<string>();
-        const loaded: Post[] = data
-          .filter((p) => {
+        const loaded: Post[] = (data as any[])
+          .filter((p: any) => {
             if (!p.id || seenIds.has(p.id)) return false;
             seenIds.add(p.id);
             return true;
           })
-          .map((p) => {
+          .map((p: any) => {
             let text = p.content;
             let bgColor: string | null = null;
             if (p.kind === "bg") {
@@ -1858,7 +1889,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
                 bgColor = j.bgColor;
               } catch (_) {}
             }
-            const photo = (p as any).photo_url || ((p as any).photos && (p as any).photos[0]) || null;
+            const photo = (p as any).photo_url || (p as any).image_url || ((p as any).photos && (p as any).photos[0]) || null;
             const videoUrl = (p as any).video_url || undefined;
             const likeIds = likesByPost[p.id] ?? [];
             return {

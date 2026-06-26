@@ -29,6 +29,9 @@ import { useQuery, useQueryClient, keepPreviousData } from "@tanstack/react-quer
 import { QUERY_KEYS, FEED_QUERY_OPTIONS, STATIC_QUERY_OPTIONS, REALTIME_QUERY_OPTIONS } from "@/lib/queryClient";
 import { FeedSkeleton, BackgroundRefreshDot, StoriesRowSkeleton } from "@/components/Skeletons";
 import { HoodaPlayer } from "@/components/HoodaPlayer";
+import { useTranslation } from "react-i18next";
+import i18n from "@/lib/i18n";
+function t(key: string, opts?: Record<string, unknown>) { return i18n.t(key, opts) as string; }
 
 export const Route = createFileRoute("/home")({
   head: () => ({ meta: [{ title: "hooda — Home" }] }),
