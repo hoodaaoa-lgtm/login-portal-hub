@@ -2606,7 +2606,7 @@ function HomePage() {
         style={{ background: "var(--s0)", borderColor: "var(--border-subtle)", backdropFilter: "blur(20px)" }}>
         <div className="mx-auto max-w-2xl lg:max-w-3xl px-4 h-14 flex items-center justify-between">
           <HoodaLogo size="sm" className="lg:hidden" />
-          <span className="hidden lg:block text-sm font-bold" style={{ color: "var(--text-primary)" }}>Feed</span>
+          <span className="hidden lg:block" />
           <div className="flex items-center gap-1">
             <button className="p-2 hover:bg-neutral-100 rounded-full text-neutral-600">
               <Search className="h-5 w-5" />
@@ -2720,7 +2720,7 @@ function HomePage() {
         )}
 
         {/* Feed */}
-        <section className="space-y-3 px-3 pb-4">
+        <section className="space-y-3 px-3 pt-4 pb-4">
           {loadingFeed && <FeedSkeleton count={4} />}
           {!loadingFeed && realPosts.length === 0 && (
             <div className="flex flex-col items-center gap-3 py-16 text-center">
