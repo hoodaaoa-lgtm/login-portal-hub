@@ -42,6 +42,7 @@ function SignupPage() {
   const [agreed, setAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [done, setDone] = useState(false);
   const usernameTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -104,7 +105,7 @@ function SignupPage() {
     });
     setLoading(false);
     if (error) { setError(error.message); return; }
-    navigate({ to: "/home", replace: true });
+    setDone(true);
   }
 
   const usernameRightIcon = () => {
@@ -138,7 +139,7 @@ function SignupPage() {
       {/* ── LEFT — brand illustration (shared with login) ── */}
       <AuthLeftPanel />
 
-      {/* ── RIGHT — form ── */}
+      {/* ── RIGHT ── */}
       <section
         className="flex-1 flex flex-col items-center justify-center min-h-screen px-6 py-12 lg:px-12"
         style={{
@@ -153,7 +154,77 @@ function SignupPage() {
           <HoodaLogo size="xl" animate={true} />
         </div>
 
-        <div className="w-full max-w-[440px]">
+        {/* ── ECRÃ DE CONFIRMAÇÃO ── */}
+        {done ? (
+          <div className="w-full max-w-[440px] text-center">
+            {/* Ícone animado */}
+            <div className="flex items-center justify-center mb-6">
+              <div className="relative">
+                <div className="w-24 h-24 rounded-full flex items-center justify-center"
+                  style={{ background: "linear-gradient(135deg,#5B3FCF18,#E94B8A18)" }}>
+                  <svg className="w-12 h-12" viewBox="0 0 24 24" fill="none">
+                    <rect x="2" y="4" width="20" height="16" rx="3" fill="#5B3FCF" opacity="0.12"/>
+                    <rect x="2" y="4" width="20" height="16" rx="3" stroke="#5B3FCF" strokeWidth="1.8"/>
+                    <path d="M2 8l10 6 10-6" stroke="#5B3FCF" strokeWidth="1.8" strokeLinecap="round"/>
+                    {/* Check badge */}
+                    <circle cx="18" cy="18" r="5" fill="#6BA547"/>
+                    <path d="M15.5 18l1.5 1.5 2.5-2.5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </div>
+                {/* Pulse ring */}
+                <div className="absolute inset-0 rounded-full animate-ping opacity-20"
+                  style={{ background: "#5B3FCF", animationDuration: "2s" }} />
+              </div>
+            </div>
+
+            <h2 className="text-[28px] font-extrabold tracking-tight text-neutral-900 mb-3">
+              Verifica o teu email
+            </h2>
+            <p className="text-[15px] text-neutral-500 mb-2 leading-relaxed">
+              Enviámos um link de confirmação para
+            </p>
+            <p className="text-[16px] font-bold mb-6" style={{ color: "#5B3FCF" }}>
+              {email}
+            </p>
+            <p className="text-[14px] text-neutral-400 leading-relaxed mb-8">
+              Abre o teu email e clica no link para ativar a tua conta hooda. Verifica também a pasta de <span className="font-semibold">spam</span> caso não encontres.
+            </p>
+
+            {/* Acções */}
+            <div className="space-y-3">
+              <a
+                href={`mailto:${email}`}
+                className="w-full h-[52px] rounded-xl text-white font-bold text-[15px] flex items-center justify-center gap-2 transition-all hover:-translate-y-0.5"
+                style={{ background: "#5B3FCF", boxShadow: "0 4px 14px rgba(91,63,207,0.3)" }}
+              >
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="2" y="4" width="20" height="16" rx="3"/><path d="M2 8l10 6 10-6"/>
+                </svg>
+                Abrir email
+              </a>
+              <Link to="/"
+                className="w-full h-[52px] rounded-xl border font-semibold text-[15px] flex items-center justify-center gap-2 transition-all hover:bg-neutral-50"
+                style={{ borderColor: "#e5e7eb", color: "#6b7280" }}>
+                Voltar ao login
+              </Link>
+            </div>
+
+            <p className="mt-6 text-[12px] text-neutral-400">
+              Não recebeste o email?{" "}
+              <button
+                onClick={async () => {
+                  await supabase.auth.resend({ type: "signup", email });
+                  alert("Email reenviado! Verifica a tua caixa de entrada.");
+                }}
+                className="font-semibold hover:underline"
+                style={{ color: "#5B3FCF" }}
+              >
+                Reenviar
+              </button>
+            </p>
+          </div>
+        ) : (
+          <div className="w-full max-w-[440px]">
           <div className="mb-8">
             <h2 className="text-[30px] font-extrabold tracking-tight text-neutral-900">Criar conta</h2>
             <p className="mt-1.5 text-[15px] text-neutral-500">
@@ -282,7 +353,8 @@ function SignupPage() {
               </Link>
             </p>
           </form>
-        </div>
+          </div>
+        )}
       </section>
     </main>
   );
