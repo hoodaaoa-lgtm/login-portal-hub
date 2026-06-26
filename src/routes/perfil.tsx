@@ -23,7 +23,7 @@ import { toast } from "sonner";
 import { PhotoViewer } from "@/components/PhotoViewer";
 
 export const Route = createFileRoute("/perfil")({
-  head: () => ({ meta: [{ title: "hooda — Perfil" }] }),
+  head: () => ({ meta: [{ title: "Hooda — Perfil" }] }),
   component: ProfilePage,
 });
 
@@ -661,8 +661,8 @@ function EditProfileModal({
   const [name, setName] = useState(profile?.full_name || "");
   const [username, setUsername] = useState(profile?.username || "");
   const [bio, setBio] = useState(profile?.bio || "");
-  const [website, setWebsite] = useState("");
-  const [location, setLocation] = useState("");
+  const [website, setWebsite] = useState((profile as any)?.website || "");
+  const [location, setLocation] = useState((profile as any)?.location || "");
   const [saving, setSaving] = useState(false);
   const [done, setDone] = useState(false);
 
@@ -675,8 +675,10 @@ function EditProfileModal({
           full_name: name,
           username,
           bio,
+          website,
+          location,
           updated_at: new Date().toISOString(),
-        }).eq("id", session.user.id);
+        } as any).eq("id", session.user.id);
       }
     } catch (_) {}
     onSave({ full_name: name, username, bio, website, location });
@@ -823,6 +825,8 @@ function SettingsDrawer({
   onOpenActivity: () => void;
   onOpenPrivacy: () => void;
   onOpenSecurity: () => void;
+  onOpenHelp: () => void;
+  onOpenAbout: () => void;
 }) {
   const { theme, toggle } = useTheme();
   const { setAvatarUrl: setGlobalAvatarUrl } = useAvatar();
@@ -846,8 +850,8 @@ function SettingsDrawer({
     {
       title: "Suporte",
       items: [
-        { icon: HelpCircle, label: "Ajuda", desc: "Perguntas frequentes", action: onClose, color: "#1FAFA6" },
-        { icon: Info, label: "Sobre a hooda", desc: "Versão e informações", action: onClose, color: "#E94B8A" },
+        { icon: HelpCircle, label: "Ajuda", desc: "Perguntas frequentes", action: onOpenHelp, color: "#1FAFA6" },
+        { icon: Info, label: "Sobre a Hooda", desc: "Versão e informações legais", action: onOpenAbout, color: "#E94B8A" },
       ],
     },
   ];
@@ -961,6 +965,111 @@ function SettingsDrawer({
         </div>
       </div>
     </div>
+  );
+}
+
+
+/* ─── Ajuda ─── */
+function HelpPanel({ onBack }: { onBack: () => void }) {
+  const faqs = [
+    { q: "Como altero a minha foto de perfil?", a: "Vai ao teu perfil, clica no ícone de câmera sobre a tua foto e escolhe uma imagem da galeria." },
+    { q: "Como publico no feed?", a: "No perfil, clica na caixa 'Em que estás a pensar?' ou nos botões Foto/Texto abaixo dela." },
+    { q: "Como sigo outro utilizador?", a: "Acede ao perfil do utilizador e clica no botão 'Seguir'." },
+    { q: "Como envio uma mensagem?", a: "Vai ao separador Mensagens no menu inferior e clica no ícone de nova conversa." },
+    { q: "Como apago uma publicação?", a: "Nas tuas publicações, clica nos três pontos (···) e escolhe 'Apagar publicação'." },
+    { q: "Como mudo para modo escuro?", a: "Nas Configurações, em Aparência, ativa o toggle de Modo escuro." },
+    { q: "Como torno o meu perfil privado?", a: "Nas Configurações → Privacidade, ativa 'Conta privada'." },
+    { q: "Como altero a minha senha?", a: "Nas Configurações → Segurança, preenche os campos de nova senha e confirma." },
+    { q: "O que é a HoodaTV?", a: "A HoodaTV é o espaço de vídeos da Hooda. Podes ver vídeos publicados por criadores e seguir canais." },
+    { q: "Como contacto o suporte?", a: "Envia um email para suporte@hooda.app e a nossa equipa responde em até 48 horas." },
+  ];
+  const [open, setOpen] = useState<number | null>(null);
+  return (
+    <SettingsSubPanel title="Ajuda" onBack={onBack}>
+      <div className="px-3 pb-4 space-y-2">
+        <p className="px-2 pb-2 pt-1 text-[11px] font-bold text-neutral-400 uppercase tracking-wider">Perguntas frequentes</p>
+        {faqs.map((faq, i) => (
+          <div key={i} className="bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden">
+            <button className="w-full flex items-center justify-between gap-3 px-4 py-3.5 text-left"
+              onClick={() => setOpen(open === i ? null : i)}>
+              <span className="text-sm font-semibold text-black leading-snug flex-1">{faq.q}</span>
+              <ChevronRight className={`h-4 w-4 text-neutral-300 shrink-0 transition-transform ${open === i ? "rotate-90" : ""}`} />
+            </button>
+            {open === i && (
+              <div className="px-4 pb-4 border-t border-neutral-50">
+                <p className="text-sm text-neutral-500 leading-relaxed pt-3">{faq.a}</p>
+              </div>
+            )}
+          </div>
+        ))}
+        <div className="bg-white rounded-2xl border border-neutral-100 shadow-sm px-4 py-4 mt-3 text-center">
+          <p className="text-xs text-neutral-400 mb-1">Não encontraste o que procuravas?</p>
+          <a href="mailto:suporte@hooda.app"
+            className="text-sm font-bold" style={{ color: ACCENT }}>
+            suporte@hooda.app
+          </a>
+        </div>
+      </div>
+    </SettingsSubPanel>
+  );
+}
+
+/* ─── Sobre a Hooda ─── */
+function AboutPanel({ onBack }: { onBack: () => void }) {
+  const HOODA_LETTERS = [
+    { char: "H", color: "#5B3FCF" }, { char: "o", color: "#F26B3A" },
+    { char: "o", color: "#1FAFA6" }, { char: "d", color: "#6BA547" },
+    { char: "a", color: "#E94B8A" },
+  ];
+  return (
+    <SettingsSubPanel title="Sobre a Hooda" onBack={onBack}>
+      <div className="px-3 pb-6 space-y-3">
+        {/* Logo animado */}
+        <div className="bg-white rounded-3xl border border-neutral-100 shadow-sm px-4 py-8 flex flex-col items-center gap-3">
+          <div className="flex items-baseline">
+            {HOODA_LETTERS.map((l, i) => (
+              <span key={i} style={{ fontFamily: '"Nunito","Quicksand",system-ui,sans-serif', fontWeight: 900, fontSize: "2.5rem", color: l.color, lineHeight: 1 }}>{l.char}</span>
+            ))}
+          </div>
+          <span className="text-xs font-bold text-neutral-400 tracking-widest uppercase">Versão 1.0.0</span>
+          <p className="text-xs text-neutral-400 text-center leading-relaxed mt-1">
+            A rede social angolana feita para conectar pessoas, partilhar momentos e descobrir criadores.
+          </p>
+        </div>
+
+        {/* Info */}
+        <div className="bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden">
+          {[
+            { label: "Versão", value: "1.0.0" },
+            { label: "Plataforma", value: "Web / Mobile" },
+            { label: "País de origem", value: "Angola 🇦🇴" },
+            { label: "Ano de lançamento", value: "2025" },
+          ].map((row, i) => (
+            <div key={row.label} className={`flex items-center justify-between px-4 py-3.5 ${i > 0 ? "border-t border-neutral-100" : ""}`}>
+              <span className="text-xs text-neutral-400 font-medium">{row.label}</span>
+              <span className="text-sm font-semibold text-black">{row.value}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Links */}
+        <div className="bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden">
+          {[
+            { label: "Termos de Utilização", href: "https://hooda.app/termos" },
+            { label: "Política de Privacidade", href: "https://hooda.app/privacidade" },
+            { label: "Licenças de terceiros", href: "https://hooda.app/licencas" },
+          ].map((link, i) => (
+            <a key={link.label} href={link.href} target="_blank" rel="noopener noreferrer"
+              className={`flex items-center justify-between px-4 py-3.5 hover:bg-neutral-50 transition ${i > 0 ? "border-t border-neutral-100" : ""}`}>
+              <span className="text-sm font-semibold text-black">{link.label}</span>
+              <ExternalLink className="h-3.5 w-3.5 text-neutral-300" />
+            </a>
+          ))}
+        </div>
+
+        <p className="text-center text-[11px] text-neutral-300 pt-2">© 2025 Hooda · Todos os direitos reservados</p>
+      </div>
+    </SettingsSubPanel>
   );
 }
 
@@ -1246,6 +1355,8 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
   const [showActivity, setShowActivity] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showSecurity, setShowSecurity] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
+  const [showAbout, setShowAbout] = useState(false);
   const [posts, setPosts] = useState<Post[]>([]);
   const [website, setWebsite] = useState("");
   const [location, setLocation] = useState("");
@@ -1301,11 +1412,14 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
       // Carregar avatar_url e username do perfil
       const { data: profData } = await supabase
         .from("profiles")
-        .select("avatar_url, username, msg_permission")
+        .select("avatar_url, username, msg_permission, website, location, cover_url")
         .eq("id", session.user.id)
         .maybeSingle();
       if ((profData as any)?.avatar_url) setAvatarUrl((profData as any).avatar_url);
       if ((profData as any)?.msg_permission) setMsgPermission((profData as any).msg_permission);
+      if ((profData as any)?.website) setWebsite((profData as any).website);
+      if ((profData as any)?.location) setLocation((profData as any).location);
+      if ((profData as any)?.cover_url) setCoverUrl((profData as any).cover_url);
 
       // follows: target_username é texto (username), não UUID
       const myUsername = (profData as any)?.username ?? "";
@@ -1503,7 +1617,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
             style={coverUrl ? undefined : { background: "linear-gradient(135deg,#5B3FCF 0%,#1FAFA6 50%,#FFC93C 100%)" }}>
             {coverUrl && <img src={coverUrl} alt="capa" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = "none"; }} />}
             {/* Botão câmera da capa */}
-            <button onClick={() => pickFile(coverInputRef, setCoverUrl)}
+            <button onClick={() => pickFile(coverInputRef, setCoverUrl, "cover")}
               className="absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center border-2 border-white shadow"
               style={{ background: "rgba(0,0,0,0.45)" }}>
               <Camera className="h-4 w-4 text-white" />
@@ -1691,12 +1805,16 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
           onOpenActivity={() => setShowActivity(true)}
           onOpenPrivacy={() => setShowPrivacy(true)}
           onOpenSecurity={() => setShowSecurity(true)}
+          onOpenHelp={() => { setShowSettings(false); setShowHelp(true); }}
+          onOpenAbout={() => { setShowSettings(false); setShowAbout(true); }}
         />
       )}
       {showNotifications && <NotificationsPanel onBack={() => setShowNotifications(false)} />}
       {showActivity && <ActivityPanel onBack={() => setShowActivity(false)} />}
       {showPrivacy && <PrivacyPanel onBack={() => setShowPrivacy(false)} />}
       {showSecurity && <SecurityPanel onBack={() => setShowSecurity(false)} email={email} />}
+      {showHelp && <HelpPanel onBack={() => setShowHelp(false)} />}
+      {showAbout && <AboutPanel onBack={() => setShowAbout(false)} />}
       {followListMode && profile && (
         <FollowListModal
           mode={followListMode}
