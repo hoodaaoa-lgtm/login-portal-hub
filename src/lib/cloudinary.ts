@@ -4,7 +4,8 @@
  */
 
 const CLOUD_NAME = "dy7o7tgmk";
-const UPLOAD_PRESET = "hooda_videos"; // vais criar este preset no Cloudinary (unsigned)
+const UPLOAD_PRESET_VIDEO = "hooda_videos";  // preset unsigned para vídeos
+const UPLOAD_PRESET_IMAGE = "hooda_images";  // preset unsigned para imagens
 
 export interface CloudinaryUploadResult {
   publicId: string;
@@ -27,7 +28,7 @@ export function uploadToCloudinary(
   return new Promise((resolve, reject) => {
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("upload_preset", UPLOAD_PRESET);
+    formData.append("upload_preset", UPLOAD_PRESET_VIDEO);
     formData.append("folder", `hooda/videos/${meta.userId}`);
     formData.append("context", `title=${meta.title}|channel_id=${meta.channelId}`);
     formData.append("resource_type", "video");
@@ -107,7 +108,7 @@ export function uploadImageToCloudinary(
   return new Promise((resolve, reject) => {
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("upload_preset", UPLOAD_PRESET);
+    formData.append("upload_preset", UPLOAD_PRESET_IMAGE);
     formData.append("folder", folder);
     formData.append("resource_type", "image");
 
