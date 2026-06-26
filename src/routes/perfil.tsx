@@ -979,7 +979,7 @@ function SettingsDrawer({
 
       {/* Painel */}
       <div
-        className="relative h-full w-full max-w-sm flex flex-col shadow-2xl transition-transform duration-300 ease-out overflow-hidden"
+        className="relative h-full w-full max-w-sm flex flex-col shadow-2xl transition-transform duration-300 ease-out"
         style={{
           background: "var(--s1, #fff)",
           transform: visible ? "translateX(0)" : "translateX(100%)",
@@ -1012,7 +1012,7 @@ function SettingsDrawer({
         </div>
 
         {/* Conteúdo scrollável */}
-        <div className="flex-1 overflow-y-auto py-2 min-h-0">
+        <div className="flex-1 overflow-y-auto py-2 min-h-0 pb-10">
 
           {/* Tema */}
           <div className="mb-1">
