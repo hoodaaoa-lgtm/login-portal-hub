@@ -60,6 +60,7 @@ function HoodaTVIntro({ onDone }: { onDone: () => void }) {
   return (
     <div style={{
       position: "absolute", inset: 0,
+      minHeight: "calc(100vh - 60px)",
       zIndex: 50, background: "var(--s1)",
       display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
       opacity: exiting ? 0 : 1,
