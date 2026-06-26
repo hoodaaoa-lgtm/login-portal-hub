@@ -1015,6 +1015,17 @@ function SettingsDrawer({
             </div>
           ))}
 
+          {/* Terminar sessão — sempre acessível */}
+          <div className="mx-3 mb-2">
+            <button onClick={onSignOut}
+              className="w-full h-12 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition active:scale-[0.98]"
+              style={{ background: "#fee2e2", color: "#dc2626", border: "1.5px solid #fca5a5" }}
+              onMouseOver={e => (e.currentTarget.style.background = "#fecaca")}
+              onMouseOut={e => (e.currentTarget.style.background = "#fee2e2")}>
+              <LogOut className="h-4 w-4" /> Terminar sessão
+            </button>
+          </div>
+
           {/* Privacidade de Mensagens */}
           <div className="mb-4">
             <p className="px-5 py-2 text-[11px] font-bold uppercase tracking-wider"
@@ -1047,16 +1058,7 @@ function SettingsDrawer({
           </div>
         </div>
 
-        {/* Footer — sempre visível no fundo */}
-        <div className="shrink-0 p-4 border-t safe-area-bottom" style={{ borderColor: "var(--border-default, #eee)", background: "var(--s1, #fff)", paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}>
-          <button onClick={onSignOut}
-            className="w-full h-12 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition active:scale-[0.98]"
-            style={{ background: "#fee2e2", color: "#dc2626", border: "1.5px solid #fca5a5" }}
-            onMouseOver={e => (e.currentTarget.style.background = "#fecaca")}
-            onMouseOut={e => (e.currentTarget.style.background = "#fee2e2")}>
-            <LogOut className="h-4 w-4" /> Terminar sessão
-          </button>
-        </div>
+
       </div>
     </div>
   );
