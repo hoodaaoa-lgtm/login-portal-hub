@@ -157,48 +157,6 @@ function VideoCard({ v, onPlay }: { v: any; onPlay: (v: any) => void }) {
   );
 }
 
-/* ── Video Player Modal ── */
-function VideoModal({ v, onClose }: { v: any; onClose: () => void }) {
-  if (!v) return null;
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: "rgba(0,0,0,0.85)" }}
-      onClick={onClose}>
-      <div className="w-full max-w-3xl rounded-2xl overflow-hidden"
-        style={{ background: "var(--s0)" }}
-        onClick={e => e.stopPropagation()}>
-
-        {/* Player */}
-        <div className="relative aspect-video bg-black">
-          {v.cf_embed_url
-            ? <iframe src={`${v.cf_embed_url}?autoplay=true`}
-                className="w-full h-full" allow="autoplay; fullscreen" allowFullScreen />
-            : v.cf_stream_url
-            ? <video src={v.cf_stream_url} controls autoPlay playsInline className="w-full h-full" />
-            : <div className="w-full h-full flex items-center justify-center">
-                <p className="text-white text-sm opacity-60">Vídeo não disponível</p>
-              </div>}
-          <button onClick={onClose}
-            className="absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center text-white"
-            style={{ background: "rgba(0,0,0,0.6)" }}>
-            ✕
-          </button>
-        </div>
-
-        {/* Info */}
-        <div className="p-4">
-          <h2 className="text-base font-bold mb-1" style={{ color: "var(--text-primary)" }}>{v.title}</h2>
-          <div className="flex items-center gap-3 text-xs" style={{ color: "var(--text-muted)" }}>
-            <span className="flex items-center gap-1"><Eye className="w-3.5 h-3.5" />{fmtV(v.views_count ?? 0)} views</span>
-            <span className="flex items-center gap-1"><ThumbsUp className="w-3.5 h-3.5" />{fmtV(v.likes_count ?? 0)}</span>
-            <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" />{timeAgo(v.published_at ?? v.created_at)}</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 /* ── Skeleton ── */
 function Skel() {
   return (
@@ -217,7 +175,6 @@ function ChannelPage() {
   const qc = useQueryClient();
 
   const [tab, setTab]         = useState<Tab>("videos");
-  const [playing, setPlaying] = useState<any>(null);
   const [search, setSearch]   = useState("");
 
   const { data: channel, isLoading: chLoading } = useChannel(handle);
@@ -294,11 +251,11 @@ function ChannelPage() {
       <PageWrapper className="pb-20 lg:pb-0">
 
         {/* ── Player Modal ── */}
-        {playing && <VideoModal v={playing} onClose={() => setPlaying(null)} />}
+        {/* navegação para /hoodatv/watch/$id em vez de modal */}
 
         {/* ── Back button ── */}
         <div className="sticky top-0 z-30 flex items-center gap-2 px-4 py-3 border-b"
-          style={{ background: "rgba(var(--s1-rgb,250,250,252),.94)", backdropFilter: "blur(20px)", borderColor: "var(--border-subtle)" }}>
+          style={{ background: "var(--s1)", backdropFilter: "blur(20px)", borderColor: "var(--border-subtle)" }}>
           <button onClick={() => navigate({ to: "/hoodatv" })}
             className="w-9 h-9 rounded-full flex items-center justify-center transition hover:bg-[var(--s3)]"
             style={{ color: "var(--text-primary)" }}>
@@ -390,7 +347,7 @@ function ChannelPage() {
 
         {/* ── Tabs ── */}
         <div className="sticky top-[53px] z-20 border-b"
-          style={{ background: "rgba(var(--s1-rgb,250,250,252),.94)", backdropFilter: "blur(20px)", borderColor: "var(--border-subtle)" }}>
+          style={{ background: "var(--s1)", backdropFilter: "blur(20px)", borderColor: "var(--border-subtle)" }}>
           <div className="flex px-4 sm:px-6">
             {(["videos", "sobre"] as Tab[]).map(t => (
               <button key={t} onClick={() => setTab(t)}
@@ -435,7 +392,7 @@ function ChannelPage() {
                     </div>
                   : <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
                       {filteredVideos.map((v: any) => (
-                        <VideoCard key={v.id} v={v} onPlay={setPlaying} />
+                        <VideoCard key={v.id} v={v} onPlay={(vid) => navigate({ to: `/hoodatv/watch/${vid.id}` })} />
                       ))}
                     </div>}
             </div>
