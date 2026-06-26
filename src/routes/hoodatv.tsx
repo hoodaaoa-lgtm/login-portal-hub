@@ -75,7 +75,7 @@ function HoodaTVIntro({ onDone }: { onDone: () => void }) {
             fontWeight: 900, fontSize: "clamp(3.2rem, 11vw, 6rem)", lineHeight: 1,
             letterSpacing: "-0.02em", color: l.color,
             opacity: letterIn[i] ? 1 : 0,
-            transform: letterIn[i] ? "translateY(0) rotate(0deg)" : "translateY(-80px) rotate(-8deg)",
+            transform: letterIn[i] ? "translateY(0) rotate(0deg)" : "translateY(0) rotate(0deg)",
             transition: letterIn[i] ? `opacity 0.45s ease, transform 0.5s cubic-bezier(0.34,1.56,0.64,1)` : "none",
           }}>{l.char}</span>
         ))}
