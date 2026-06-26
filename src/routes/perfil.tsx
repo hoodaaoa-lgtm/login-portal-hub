@@ -644,10 +644,10 @@ function CreatePostModal({
   }, []);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end lg:items-center justify-center"
+    <div className="fixed inset-0 z-50 flex items-end lg:items-center justify-center pb-0"
       style={{ background: "rgba(0,0,0,0.55)" }}
       onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="w-full lg:max-w-lg lg:rounded-3xl rounded-t-2xl hooda-modal-sheet flex flex-col" style={{ maxHeight: "92vh", overflow: "hidden" }}>
+      <div className="w-full lg:max-w-lg lg:rounded-3xl rounded-t-2xl hooda-modal-sheet flex flex-col" style={{ maxHeight: "80vh", overflow: "hidden" }}>
         <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-100">
           <span className="text-base font-bold text-black">Criar publicação</span>
           <button onClick={onClose} className="p-1.5 rounded-full hover:bg-neutral-100 transition">
