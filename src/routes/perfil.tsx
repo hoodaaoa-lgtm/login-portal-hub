@@ -844,7 +844,7 @@ function MonetizationPanel() {
 function SettingsDrawer({
   onClose, onEditProfile, onSignOut, msgPermission, onMsgPermissionChange,
   onOpenNotifications, onOpenActivity, onOpenPrivacy, onOpenSecurity,
-  onOpenHelp, onOpenAbout, profile,
+  onOpenHelp, profile,
 }: {
   onClose: () => void;
   onEditProfile: () => void;
@@ -856,7 +856,6 @@ function SettingsDrawer({
   onOpenPrivacy: () => void;
   onOpenSecurity: () => void;
   onOpenHelp: () => void;
-  onOpenAbout: () => void;
   profile?: Profile | null;
 }) {
   const { theme, toggle } = useTheme();
@@ -897,15 +896,14 @@ function SettingsDrawer({
     {
       title: "Suporte",
       items: [
-        { icon: HelpCircle, label: "Ajuda", desc: "Perguntas frequentes", action: onOpenHelp, color: "#1FAFA6" },
-        { icon: Info, label: "Sobre a hooda", desc: "Versão e informações", action: onOpenAbout, color: "#E94B8A" },
+        { icon: HelpCircle, label: "Ajuda", desc: "Perguntas frequentes e contacto", action: onOpenHelp, color: "#1FAFA6" },
       ],
     },
   ];
 
   const displayName = profile?.full_name || profile?.username || "Utilizador";
   const handle = profile?.username || "";
-  const avatar = avatarUrl || profile?.avatar_url;
+  const avatar = avatarUrl || (profile as any)?.avatar_url;
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end overflow-hidden">
@@ -1351,6 +1349,53 @@ function SecurityPanel({ onBack, email }: { onBack: () => void; email: string })
 }
 
 
+/* ─── Ajuda ─── */
+function HelpPanel({ onBack }: { onBack: () => void }) {
+  const faqs = [
+    { q: "Como altero a minha foto de perfil?", a: "Vai ao teu perfil e clica na foto de perfil para fazer upload de uma nova imagem." },
+    { q: "Como publico um vídeo?", a: "Vai ao HoodaStudio e clica em 'Novo vídeo'. Podes fazer upload e definir título, descrição e visibilidade." },
+    { q: "Como sigo um canal?", a: "Na HoodaTV, clica no canal que queres seguir e depois no botão 'Seguir'." },
+    { q: "Como altero a minha palavra-passe?", a: "Vai a Configurações → Segurança → Alterar palavra-passe." },
+    { q: "Como torno o meu perfil privado?", a: "Vai a Configurações → Privacidade e ativa 'Conta privada'." },
+    { q: "Como envio mensagens?", a: "Usa o separador Mensagens na barra de navegação. Podes enviar mensagens a outros utilizadores." },
+    { q: "Como apago uma publicação?", a: "Vai à publicação, clica no menu (⋯) e seleciona 'Eliminar'." },
+    { q: "Como contacto o suporte?", a: "Envia um email para suporte@hooda.app e responderemos em até 48 horas." },
+  ];
+  const [open, setOpen] = useState<number | null>(null);
+
+  return (
+    <SettingsSubPanel title="Ajuda" onBack={onBack}>
+      <div className="px-3 space-y-2 mb-6">
+        <p className="px-2 pb-1 text-[11px] font-bold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Perguntas frequentes</p>
+        {faqs.map((faq, i) => (
+          <div key={i} className="rounded-2xl overflow-hidden border shadow-sm" style={{ background: "var(--s2)", borderColor: "var(--border-default)" }}>
+            <button onClick={() => setOpen(open === i ? null : i)}
+              className="w-full flex items-center justify-between px-4 py-3.5 text-left transition"
+              style={{ background: "transparent" }}>
+              <span className="text-sm font-semibold leading-snug pr-3" style={{ color: "var(--text-primary)" }}>{faq.q}</span>
+              <span className="shrink-0 text-lg font-bold" style={{ color: "var(--text-muted)" }}>{open === i ? "−" : "+"}</span>
+            </button>
+            {open === i && (
+              <div className="px-4 pb-4">
+                <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>{faq.a}</p>
+              </div>
+            )}
+          </div>
+        ))}
+        <div className="mt-4 rounded-2xl p-4 border text-center" style={{ background: "var(--s2)", borderColor: "var(--border-default)" }}>
+          <p className="text-sm font-semibold mb-1" style={{ color: "var(--text-primary)" }}>Ainda tens dúvidas?</p>
+          <p className="text-xs mb-3" style={{ color: "var(--text-muted)" }}>A nossa equipa responde em até 48 horas.</p>
+          <a href="mailto:suporte@hooda.app"
+            className="inline-block px-5 py-2 rounded-xl text-sm font-bold text-white"
+            style={{ background: ACCENT }}>
+            Contactar suporte
+          </a>
+        </div>
+      </div>
+    </SettingsSubPanel>
+  );
+}
+
 /* ─── Tab Vídeos do Utilizador ─── */
 function MyVideosFeed({ userId }: { userId: string }) {
   const navigate = useNavigate();
@@ -1453,7 +1498,6 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showSecurity, setShowSecurity] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
-  const [showAbout, setShowAbout] = useState(false);
   const [posts, setPosts] = useState<Post[]>([]);
   const [website, setWebsite] = useState("");
   const [location, setLocation] = useState("");
@@ -1914,7 +1958,6 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
           onOpenPrivacy={() => setShowPrivacy(true)}
           onOpenSecurity={() => setShowSecurity(true)}
           onOpenHelp={() => { setShowSettings(false); setShowHelp(true); }}
-          onOpenAbout={() => { setShowSettings(false); setShowAbout(true); }}
         />
       )}
       {showNotifications && <NotificationsPanel onBack={() => setShowNotifications(false)} />}
@@ -1922,7 +1965,6 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
       {showPrivacy && <PrivacyPanel onBack={() => setShowPrivacy(false)} />}
       {showSecurity && <SecurityPanel onBack={() => setShowSecurity(false)} email={email} />}
       {showHelp && <HelpPanel onBack={() => setShowHelp(false)} />}
-      {showAbout && <AboutPanel onBack={() => setShowAbout(false)} />}
       {followListMode && profile && (
         <FollowListModal
           mode={followListMode}
