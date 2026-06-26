@@ -8,7 +8,11 @@ const Ctx = createContext<ThemeCtx>({ theme: "light", toggle: () => {} });
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<Theme>(() => {
     if (typeof window === "undefined") return "light";
-    return (localStorage.getItem("hooda_theme") as Theme) ?? "light";
+    const saved = localStorage.getItem("hooda_theme") as Theme | null;
+    if (saved) return saved;
+    // Se não tiver guardado, detectar preferência do sistema
+    if (window.matchMedia?.("(prefers-color-scheme: dark)").matches) return "dark";
+    return "light";
   });
 
   useEffect(() => {
