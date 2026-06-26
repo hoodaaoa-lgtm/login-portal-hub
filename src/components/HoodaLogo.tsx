@@ -11,7 +11,7 @@ const sizeMap = { sm: "text-3xl", md: "text-5xl", lg: "text-7xl", xl: "text-8xl 
 const suffixSizeMap = { sm: "text-[11px]", md: "text-[14px]", lg: "text-[18px]", xl: "text-[20px]" };
 
 const letters = [
-  { char: "h", color: "#5B3FCF" },
+  { char: "H", color: "#5B3FCF" },
   { char: "o", color: "#F26B3A" },
   { char: "o", color: "#1FAFA6" },
   { char: "d", color: "#6BA547" },
@@ -32,7 +32,7 @@ export function HoodaLogo({ className = "", size = "lg", animate = true }: Props
   return (
     <span
       aria-label={suffix ? `hooda ${suffix}` : "hooda"}
-      className={`inline-flex items-end gap-1 font-extrabold tracking-tight leading-none lowercase ${sizeMap[size]} ${className}`}
+      className={`inline-flex items-end gap-1 font-extrabold tracking-tight leading-none ${sizeMap[size]} ${className}`}
       style={{ fontFamily: '"Nunito", "Quicksand", system-ui, sans-serif' }}
     >
       <span className="inline-flex">

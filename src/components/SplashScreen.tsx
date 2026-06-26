@@ -37,7 +37,7 @@ export function SplashScreen({ leaving = false }: Props) {
       className="fixed inset-0 z-50 flex min-h-screen w-full items-center justify-center bg-white"
       role="status"
       aria-live="polite"
-      aria-label="A carregar a hooda"
+      aria-label="A carregar a Hooda"
       style={{
         opacity: leaving ? 0 : 1,
         transition: `opacity ${SPLASH_EXIT_MS}ms ease-in`,
