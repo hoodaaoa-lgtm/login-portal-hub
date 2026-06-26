@@ -60,7 +60,7 @@ function HoodaTVIntro({ onDone }: { onDone: () => void }) {
   return (
     <div style={{
       position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
-      zIndex: 9999, background: "var(--s1, #ffffff)",
+      zIndex: 9999, background: "var(--s1)",
       display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
       opacity: exiting ? 0 : 1,
       transition: exiting ? "opacity 0.6s ease-in" : "none",
@@ -327,7 +327,7 @@ function VideoCard({ v, rank }: { v: any; rank?: number }) {
         {/* Hover play overlay */}
         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200">
           <div className="w-12 h-12 rounded-full flex items-center justify-center shadow-2xl backdrop-blur-sm"
-            style={{ background: "rgba(255,255,255,0.92)" }}>
+            style={{ background: "var(--s0)", boxShadow: "0 2px 12px rgba(0,0,0,0.18)" }}>
             <Play className="w-5 h-5 ml-0.5" style={{ color: P }} fill={P} />
           </div>
         </div>
@@ -384,7 +384,7 @@ function ChannelCard({ ch, isFollowing, onFollow }: { ch: any; isFollowing: bool
         style={{ background: `linear-gradient(135deg, ${bg}cc, ${bg}55)` }}>
         {/* pattern decorativo */}
         <div className="absolute inset-0 opacity-20"
-          style={{ backgroundImage: `radial-gradient(circle at 20% 50%, #fff 1px, transparent 1px), radial-gradient(circle at 80% 20%, #fff 1px, transparent 1px)`, backgroundSize: "24px 24px" }} />
+          style={{ backgroundImage: `radial-gradient(circle at 20% 50%, rgba(255,255,255,0.35) 1px, transparent 1px), radial-gradient(circle at 80% 20%, rgba(255,255,255,0.35) 1px, transparent 1px)`, backgroundSize: "24px 24px" }} />
       </div>
 
       {/* Avatar flutuante sobre o banner */}
@@ -507,7 +507,7 @@ function HoodaTVMain() {
 
         {/* ── HEADER ── */}
         <div className="sticky top-0 z-40"
-          style={{ background: "rgba(var(--s1-rgb,250,250,252),.97)", backdropFilter: "blur(28px)", borderBottom: "1px solid var(--border-subtle)" }}>
+          style={{ background: "var(--s1)", backdropFilter: "blur(28px)", WebkitBackdropFilter: "blur(28px)", borderBottom: "1px solid var(--border-subtle)", opacity: 0.97 }}>
 
           {/* Pesquisa centrada */}
           <div className="flex justify-center px-4 pt-5 pb-4">

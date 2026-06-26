@@ -139,7 +139,7 @@ function VideoCard({ v, onPlay }: { v: any; onPlay: (v: any) => void }) {
         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200"
           style={{ background: "rgba(0,0,0,0.28)" }}>
           <div className="w-14 h-14 rounded-full flex items-center justify-center"
-            style={{ background: "rgba(255,255,255,0.95)" }}>
+            style={{ background: "var(--s0)", boxShadow: "0 2px 16px rgba(0,0,0,0.25)" }}>
             <Play className="w-6 h-6 ml-1" style={{ color: P }} />
           </div>
         </div>
