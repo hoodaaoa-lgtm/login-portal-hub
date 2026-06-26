@@ -31,6 +31,11 @@ function HoodaTVIntro({ onDone }: { onDone: () => void }) {
   const [exiting, setExiting]   = useState(false);
 
   useEffect(() => {
+    // Bloquear scroll do body durante o intro
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+
     const t: ReturnType<typeof setTimeout>[] = [];
     HOODA_LETTERS.forEach((_, i) => {
       t.push(setTimeout(() => {
@@ -45,7 +50,11 @@ function HoodaTVIntro({ onDone }: { onDone: () => void }) {
     });
     t.push(setTimeout(() => setExiting(true), INTRO_DURATION - 600));
     t.push(setTimeout(() => onDone(), INTRO_DURATION));
-    return () => t.forEach(clearTimeout);
+    return () => {
+      t.forEach(clearTimeout);
+      document.body.style.overflow = prev;
+      document.documentElement.style.overflow = "";
+    };
   }, [onDone]);
 
   return (
@@ -56,6 +65,7 @@ function HoodaTVIntro({ onDone }: { onDone: () => void }) {
       opacity: exiting ? 0 : 1,
       transition: exiting ? "opacity 0.6s ease-in" : "none",
       pointerEvents: exiting ? "none" : "all",
+      overflow: "hidden",
     }}>
       <div style={{ display: "flex", alignItems: "baseline", gap: 0 }}>
         {HOODA_LETTERS.map((l, i) => (
