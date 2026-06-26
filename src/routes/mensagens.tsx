@@ -2112,6 +2112,47 @@ function ChatPanel({ myId, contact, onBack }: {
 
   const [isBlocked, setIsBlocked] = useState(false);
   const [iAmBlockedBy, setIAmBlockedBy] = useState(false);
+  const [msgPermBlocked, setMsgPermBlocked] = useState(false);
+  const [msgPermReason, setMsgPermReason] = useState("");
+
+  // Verificar msg_permission do contacto
+  useEffect(() => {
+    if (!myId || !contact.id) return;
+    (async () => {
+      const { data: prof } = await db.from("profiles").select("msg_permission").eq("id", contact.id).maybeSingle();
+      const perm = (prof as any)?.msg_permission ?? "todos";
+      if (perm === "todos") { setMsgPermBlocked(false); return; }
+      if (perm === "aprovados") {
+        setMsgPermBlocked(true);
+        setMsgPermReason(`@${contact.username} só aceita mensagens de utilizadores aprovados.`);
+        return;
+      }
+      if (perm === "seguidores") {
+        // Verificar se o contacto me segue
+        const { data: follows } = await db.from("follows").select("id")
+          .eq("follower_id", contact.id).eq("following_id", myId).maybeSingle();
+        if (!follows) {
+          setMsgPermBlocked(true);
+          setMsgPermReason(`@${contact.username} só aceita mensagens de seguidores.`);
+        } else {
+          setMsgPermBlocked(false);
+        }
+        return;
+      }
+      if (perm === "mutuos") {
+        const [{ data: iFollow }, { data: theyFollow }] = await Promise.all([
+          db.from("follows").select("id").eq("follower_id", myId).eq("following_id", contact.id).maybeSingle(),
+          db.from("follows").select("id").eq("follower_id", contact.id).eq("following_id", myId).maybeSingle(),
+        ]);
+        if (!iFollow || !theyFollow) {
+          setMsgPermBlocked(true);
+          setMsgPermReason(`@${contact.username} só aceita mensagens de utilizadores com seguimento mútuo.`);
+        } else {
+          setMsgPermBlocked(false);
+        }
+      }
+    })();
+  }, [myId, contact.id, contact.username]);
 
   // Verificar bloqueios (eu→contacto e contacto→eu) ao montar + tempo real
   useEffect(() => {
@@ -2544,6 +2585,7 @@ function ChatPanel({ myId, contact, onBack }: {
     if (sending || uploading) return;
     if (isBlocked) { toast.error(`Desbloqueia @${contact.username} para enviar mensagens.`); return; }
     if (iAmBlockedBy) { toast.error("Não é possível enviar mensagens a este utilizador."); return; }
+    if (msgPermBlocked) { toast.error(msgPermReason); return; }
     const t = text.trim();
     if (!t && !mediaUrl) return;
     setSending(true);
@@ -3321,14 +3363,21 @@ function ChatPanel({ myId, contact, onBack }: {
       )}
 
       {/* ── INPUT BAR estilo WhatsApp ── */}
-      {(isBlocked || iAmBlockedBy) ? (
-        <div className="flex items-center justify-center px-4 py-4 shrink-0 border-t"
+      {(isBlocked || iAmBlockedBy || msgPermBlocked) ? (
+        <div className="flex flex-col items-center justify-center px-4 py-4 shrink-0 border-t gap-1"
           style={{ background:"var(--s2)", borderColor:"var(--border-default)" }}>
-          <p className="text-sm text-center" style={{ color:"var(--text-muted)" }}>
+          <p className="text-sm text-center font-semibold" style={{ color:"var(--text-primary)" }}>
             {isBlocked
               ? "Bloqueaste este utilizador. Desbloqueia para enviar mensagens."
-              : `@${contact.username} bloqueou-te. Não podes enviar mensagens.`}
+              : iAmBlockedBy
+              ? `@${contact.username} bloqueou-te. Não podes enviar mensagens.`
+              : msgPermReason}
           </p>
+          {msgPermBlocked && (
+            <p className="text-xs text-center" style={{ color:"var(--text-muted)" }}>
+              Não é possível enviar mensagens a este utilizador com as definições de privacidade actuais.
+            </p>
+          )}
         </div>
       ) : (
 
