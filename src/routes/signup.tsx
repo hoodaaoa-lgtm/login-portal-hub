@@ -61,7 +61,7 @@ function SignupPage() {
   useEffect(() => {
     if (!username) { setUsernameStatus("idle"); return; }
 
-    if (!/^[a-z0-9_.]{3,20}$/i.test(username)) {
+    if (!/^[a-z0-9_.]{3,20}$/i.test(username) || username.includes("@") || username.includes(".com") || username.includes(".net") || username.includes(".org")) {
       setUsernameStatus("invalid");
       return;
     }
@@ -139,7 +139,7 @@ function SignupPage() {
 
   const usernameHint = usernameStatus === "ok" ? <span className="text-green-600">@{username.toLowerCase()} está disponível ✓</span>
     : usernameStatus === "taken" ? <span className="text-red-500">Este username já está ocupado.</span>
-    : usernameStatus === "invalid" ? <span className="text-red-500">Usa só letras, números, . ou _ (3-20 caracteres).</span>
+    : usernameStatus === "invalid" ? <span className="text-red-500">Username inválido — não uses emails, @, ou domínios (.com, .net…).</span>
     : <span className="text-neutral-400">Será o teu @</span>;
 
   return (
@@ -254,7 +254,7 @@ function SignupPage() {
                 <Field
                   id="username" label="Nome de utilizador" type="text"
                   value={username}
-                  onChange={(v) => setUsername(v.toLowerCase().replace(/[^a-z0-9_.]/g, ""))}
+                  onChange={(v) => setUsername(v.toLowerCase().replace(/[^a-z0-9_.]/g, "").replace(/@/g, ""))}
                   placeholder="Escolha um utilizador" autoComplete="username"
                   icon={<AtIcon />}
                   rightIcon={usernameRightIcon()}
