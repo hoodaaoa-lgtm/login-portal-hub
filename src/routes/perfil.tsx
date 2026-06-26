@@ -607,7 +607,7 @@ function CreatePostModal({
           author_color: "#5B3FCF",
           content: contentJson,
           kind: videoUrl ? "video" : bgColor ? "bg" : imageUrl ? "photo" : "post",
-          image_url: imageUrl,
+          photo_url: imageUrl,
           video_url: videoUrl,
         })
         .select("id, created_at")
@@ -1817,7 +1817,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
 
       const { data } = await supabase
         .from("posts")
-        .select("id, content, kind, created_at, image_url, video_url, photos")
+        .select("id, content, kind, created_at, photo_url, video_url, photos")
         .eq("author_id", session.user.id)
         .order("created_at", { ascending: false });
       if (data && data.length > 0) {
@@ -1857,7 +1857,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
                 bgColor = j.bgColor;
               } catch (_) {}
             }
-            const photo = (p as any).image_url || ((p as any).photos && (p as any).photos[0]) || null;
+            const photo = (p as any).photo_url || ((p as any).photos && (p as any).photos[0]) || null;
             const videoUrl = (p as any).video_url || undefined;
             const likeIds = likesByPost[p.id] ?? [];
             return {
@@ -1886,7 +1886,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
 
       const { data: postsData } = await supabase
         .from("posts")
-        .select("id, content, kind, created_at, image_url, photos, author_id, author_username, author_name")
+        .select("id, content, kind, created_at, photo_url, photos, author_id, author_username, author_name")
         .in("id", postIds);
       const rows = postsData ?? [];
 
@@ -1915,7 +1915,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
         if (p.kind === "bg") {
           try { const j = JSON.parse(p.content); text = j.text; bgColor = j.bgColor; } catch (_) {}
         }
-        const photo = p.image_url || (p.photos && p.photos[0]) || null;
+        const photo = (p as any).photo_url || ((p as any).photos && (p as any).photos[0]) || null;
         const likeIds = likesByPost[p.id] ?? [];
         return {
           id: p.id, text, photo, bgColor, createdAt: new Date(p.created_at ?? Date.now()),

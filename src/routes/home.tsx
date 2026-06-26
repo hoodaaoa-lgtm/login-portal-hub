@@ -2127,7 +2127,7 @@ function HomePage() {
     // Load posts: all public (author_id null = seed) + own + followed
     const { data: postsData, error: postsErr } = await supabase
       .from("posts")
-      .select("id,author_id,author_username,author_name,author_color,content,kind,is_ad,created_at")
+      .select("id,author_id,author_username,author_name,author_color,content,kind,is_ad,created_at,photo_url,photos,video_url")
       .order("created_at", { ascending: false })
       .limit(15);
 
@@ -2181,7 +2181,10 @@ function HomePage() {
         user: name, name: `@${p.author_username || "?"}`,
         color: p.author_color || ACCENT_LOCAL[(name.charCodeAt(0) || 0) % ACCENT_LOCAL.length],
         avatar_url: p.author_id ? (avatarMap[p.author_id] ?? null) : null,
-        text, photo: null, video: null,
+        text,
+        photo: p.photo_url ?? null,
+        photos: Array.isArray(p.photos) && p.photos.length > 0 ? p.photos : (p.photo_url ? [p.photo_url] : null),
+        video: p.video_url ?? null,
         bg_color, time, created_at: p.created_at, kind: p.kind, is_ad: p.is_ad,
         likes: (likesByPost[p.id] || []).length,
         liked_by_me: (likesByPost[p.id] || []).includes(uid),
