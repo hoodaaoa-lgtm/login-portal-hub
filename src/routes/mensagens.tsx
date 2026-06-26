@@ -2566,15 +2566,32 @@ function ChatPanel({ myId, contact, onBack }: {
         .from("messages-media")
         .upload(path, file, { upsert: false, cacheControl: "3600" });
       if (error) {
+        console.error("[uploadFile] erro upload:", error.message);
         toast.error("Erro no upload: " + error.message);
         setUploading(false); setUploadPct(0);
         return null;
       }
       const { data } = supabase.storage.from("messages-media").getPublicUrl(path);
+      const url = data.publicUrl;
+      console.log("[uploadFile] ✅ URL pública:", url);
+      
+      // Testar se a URL é acessível (verificar CORS)
+      try {
+        const res = await fetch(url, { method: "HEAD" });
+        if (!res.ok) {
+          console.warn(`[uploadFile] ⚠️  URL devolveu status ${res.status} — bucket pode estar privado ou CORS não configurado`);
+        } else {
+          console.log("[uploadFile] ✅ URL acessível (status:", res.status + ")");
+        }
+      } catch (corsErr: any) {
+        console.warn("[uploadFile] ⚠️  Erro ao testar acesso (CORS?):", corsErr.message);
+      }
+      
       setUploadPct(100);
       setTimeout(() => { setUploading(false); setUploadPct(0); }, 400);
-      return data.publicUrl;
+      return url;
     } catch (err: any) {
+      console.error("[uploadFile] erro:", err);
       toast.error("Erro no upload: " + (err?.message ?? "desconhecido"));
       setUploading(false); setUploadPct(0);
       return null;
