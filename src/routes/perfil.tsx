@@ -18,7 +18,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useAvatar } from "@/contexts/AvatarContext";
 import { ProfileAvatarLink } from "@/components/ProfileAvatarLink";
 import { PostCommentsModal } from "@/components/PostCommentsModal";
-import { uploadImageToCloudinary } from "@/lib/cloudinary";
+import { uploadImageToCloudinary, uploadToCloudinary } from "@/lib/cloudinary";
 import { fetchPostComments, sendPostComment, replyToPostComment, toggleCommentLike } from "@/lib/comments";
 import { deletePostForEveryone, fetchMyShareableCommunities, sharePostToCommunity, type MyCommunity } from "@/lib/posts";
 import { toast } from "sonner";
@@ -583,12 +583,12 @@ function CreatePostModal({
 
       if (videoFile) {
         setUploadStage("upload");
-        const { url } = await uploadImageToCloudinary(
+        const result = await uploadToCloudinary(
           videoFile,
-          `hooda/posts/videos/${session.user.id}`,
+          { title: text.trim().slice(0, 60) || "post-video", channelId: "feed-post", userId: session.user.id },
           (pct) => setUploadProgress(pct),
         );
-        videoUrl = url;
+        videoUrl = result.playbackUrl;
         setUploadProgress(100);
       }
 
