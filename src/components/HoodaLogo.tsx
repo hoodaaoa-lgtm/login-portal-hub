@@ -7,19 +7,8 @@ type Props = {
   animate?: boolean;
 };
 
-const sizeMap = {
-  sm: "text-3xl",
-  md: "text-5xl",
-  lg: "text-7xl",
-  xl: "text-8xl sm:text-9xl",
-};
-
-const suffixSizeMap = {
-  sm: "text-[11px]",
-  md: "text-[14px]",
-  lg: "text-[18px]",
-  xl: "text-[20px]",
-};
+const sizeMap = { sm: "text-3xl", md: "text-5xl", lg: "text-7xl", xl: "text-8xl sm:text-9xl" };
+const suffixSizeMap = { sm: "text-[11px]", md: "text-[14px]", lg: "text-[18px]", xl: "text-[20px]" };
 
 const letters = [
   { char: "h", color: "#5B3FCF" },
@@ -46,7 +35,6 @@ export function HoodaLogo({ className = "", size = "lg", animate = true }: Props
       className={`inline-flex items-end gap-1 font-extrabold tracking-tight leading-none lowercase ${sizeMap[size]} ${className}`}
       style={{ fontFamily: '"Nunito", "Quicksand", system-ui, sans-serif' }}
     >
-      {/* Letras hooda */}
       <span className="inline-flex">
         {letters.map((l, i) => (
           <span
@@ -67,7 +55,6 @@ export function HoodaLogo({ className = "", size = "lg", animate = true }: Props
         ))}
       </span>
 
-      {/* Sufixo do país */}
       {!loading && suffix && (
         <span
           className={`${suffixSizeMap[size]} font-black uppercase tracking-widest mb-[0.15em]`}
