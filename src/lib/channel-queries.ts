@@ -102,32 +102,7 @@ export const channelStatsQuery = (channelId: string | undefined) =>
       };
       if (!channelId) return empty;
 
-      /* Tenta channel_stats_view primeiro */
-      try {
-        const { data: sv, error: svErr } = await (supabase as any)
-          .from("channel_stats_view")
-          .select("*")
-          .eq("channel_id", channelId)
-          .maybeSingle();
-
-        if (!svErr && sv) {
-          return {
-            total:                  Number(sv.total_videos ?? 0),
-            published:              Number(sv.published_videos ?? 0),
-            views:                  Number(sv.total_views ?? 0),
-            views_24h:              Number(sv.views_24h ?? 0),
-            views_7d:               Number(sv.views_7d ?? 0),
-            views_28d:              Number(sv.views_28d ?? 0),
-            subs:                   Number(sv.followers ?? 0),
-            subs_gained_28d:        Number(sv.followers_gained_28d ?? 0),
-            avg_watch_pct:          Number(sv.avg_watch_pct ?? 0),
-            total_duration_seconds: Number(sv.total_duration_seconds ?? 0),
-            lastActivity: null,
-          };
-        }
-      } catch (_) { /* fallback */ }
-
-      /* Fallback — apenas tabela videos (sem analytics avançado) */
+      /* Contar views directamente da tabela videos — evita erros da channel_stats_view */
       const { data } = await supabase
         .from("videos")
         .select("status,visibility,views_count,duration_seconds,created_at")
