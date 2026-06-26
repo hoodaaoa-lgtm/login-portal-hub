@@ -23,6 +23,7 @@ import { fetchPostComments, sendPostComment, replyToPostComment, toggleCommentLi
 import { deletePostForEveryone, fetchMyShareableCommunities, sharePostToCommunity, type MyCommunity } from "@/lib/posts";
 import { toast } from "sonner";
 import { PhotoViewer } from "@/components/PhotoViewer";
+import { HoodaPlayer } from "@/components/HoodaPlayer";
 
 export const Route = createFileRoute("/perfil")({
   head: () => ({ meta: [{ title: "Hooda — Perfil" }] }),
@@ -357,8 +358,8 @@ function PostCard({
 
       {/* Content */}
       {post.videoUrl && (
-        <div className="w-full bg-black">
-          <video src={post.videoUrl} controls playsInline className="w-full max-h-[480px]" style={{ display: "block" }} />
+        <div className="w-full">
+          <HoodaPlayer src={post.videoUrl} rounded="rounded-none" aspectRatio="16/9" />
         </div>
       )}
       {post.photo && !post.videoUrl && <img src={post.photo} alt="" className="w-full" style={{ display: "block" }} onError={(e) => { e.currentTarget.style.display = "none"; }} />}
@@ -410,8 +411,8 @@ function PostCard({
           body={
             <>
               {post.videoUrl && (
-                <div className="w-full bg-black">
-                  <video src={post.videoUrl} controls playsInline className="w-full max-h-[320px]" style={{ display: "block" }} />
+                <div className="w-full">
+                  <HoodaPlayer src={post.videoUrl} rounded="rounded-none" aspectRatio="16/9" />
                 </div>
               )}
               {post.photo && !post.videoUrl && <img src={post.photo} alt="" className="w-full" style={{ display: "block" }} />}
@@ -651,10 +652,10 @@ function CreatePostModal({
             </div>
           )}
           {videoPreview && (
-            <div className="relative mb-3 rounded-xl overflow-hidden bg-black">
-              <video src={videoPreview} controls className="w-full rounded-xl max-h-64" />
+            <div className="relative mb-3">
+              <HoodaPlayer src={videoPreview} rounded="rounded-xl" aspectRatio="16/9" />
               <button onClick={() => { setVideoFile(null); setVideoPreview(null); }}
-                className="absolute top-2 right-2 bg-black/60 text-white rounded-full p-1">
+                className="absolute top-2 right-2 bg-black/60 text-white rounded-full p-1 z-20">
                 <X className="h-4 w-4" />
               </button>
             </div>

@@ -28,6 +28,7 @@ import { useTimeAgo } from "@/hooks/useTimeAgo";
 import { useQuery, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { QUERY_KEYS, FEED_QUERY_OPTIONS, STATIC_QUERY_OPTIONS, REALTIME_QUERY_OPTIONS } from "@/lib/queryClient";
 import { FeedSkeleton, BackgroundRefreshDot, StoriesRowSkeleton } from "@/components/Skeletons";
+import { HoodaPlayer } from "@/components/HoodaPlayer";
 
 export const Route = createFileRoute("/home")({
   head: () => ({ meta: [{ title: "hooda — Home" }] }),
@@ -1938,20 +1939,13 @@ function PostCard({ p }: { p: any }) {
         )}
       </div>
 
-      {/* Vídeo — preload="metadata" evita baixar o vídeo inteiro antes do
-          utilizador decidir reproduzir; poster mostra uma miniatura
-          imediatamente, como Instagram/TikTok fazem no feed. */}
+      {/* Vídeo */}
       {p.video && (
-        <video
-          ref={cardVideoRef}
+        <HoodaPlayer
           src={p.video}
           poster={p.video_thumb || p.photo || undefined}
-          controls
-          playsInline
-          preload="metadata"
-          className="w-full max-h-96 bg-black"
-          style={{ display: "block" }}
-          onPlay={() => notifyVideoPlaying(cardVideoId)}
+          rounded="rounded-none"
+          aspectRatio="16/9"
         />
       )}
 
@@ -2039,8 +2033,7 @@ function PostCard({ p }: { p: any }) {
           body={
             <>
               {p.video && (
-                <video ref={modalVideoRef} src={p.video} controls playsInline className="w-full max-h-96 bg-black" style={{ display: "block" }}
-                  onPlay={() => notifyVideoPlaying(modalVideoId)} />
+                <HoodaPlayer src={p.video} poster={p.video_thumb || p.photo || undefined} rounded="rounded-none" aspectRatio="16/9" />
               )}
               {p.text && !p.video && (p.bg_color
                 ? <div className="px-4 pb-3">

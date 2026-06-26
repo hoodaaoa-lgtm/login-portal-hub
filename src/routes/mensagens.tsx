@@ -26,6 +26,7 @@ import {
   AlertCircle, RefreshCw, ArrowDown,
 } from "lucide-react";
 import MediaEditor, { MediaEditState, DEFAULT_EDIT, EditedMediaDisplay } from "@/components/MediaEditor";
+import { HoodaPlayer } from "@/components/HoodaPlayer";
 
 export const Route = createFileRoute("/mensagens")({
   head: () => ({ meta: [{ title: "hooda — Mensagens" }] }),
@@ -1721,12 +1722,11 @@ function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit
 
             {/* Video */}
             {m.type === "video" && m.mediaUrl && !m.viewOnce && (
-              <button type="button" className="block" onClick={onOpenLightbox}>
+              <div className="w-full max-w-xs">
                 {m.editState
                   ? <EditedMediaDisplay src={m.mediaUrl} type="video" edit={m.editState} maxH={280} />
-                  : <video src={m.mediaUrl} muted loop autoPlay playsInline preload="metadata"
-                      className="rounded-xl max-w-full block" style={{ maxHeight: 280, objectFit: "cover" }} />}
-              </button>
+                  : <HoodaPlayer src={m.mediaUrl} rounded="rounded-xl" aspectRatio="16/9" />}
+              </div>
             )}
 
             {/* Audio */}
