@@ -59,8 +59,8 @@ function HoodaTVIntro({ onDone }: { onDone: () => void }) {
 
   return (
     <div style={{
-      position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
-      zIndex: 9999, background: "var(--s1)",
+      position: "absolute", inset: 0,
+      zIndex: 50, background: "var(--s1)",
       display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
       opacity: exiting ? 0 : 1,
       transition: exiting ? "opacity 0.6s ease-in" : "none",
@@ -501,9 +501,9 @@ function HoodaTVMain() {
 
   return (
     <>
-      {showIntro && <HoodaTVIntro onDone={handleIntroDone} />}
       <SideNav />
-      <PageWrapper className="pb-20 lg:pb-0">
+      <PageWrapper className="pb-20 lg:pb-0 relative">
+        {showIntro && <HoodaTVIntro onDone={handleIntroDone} />}
 
         {/* ── HEADER ── */}
         <div className="sticky top-0 z-40"
