@@ -722,7 +722,7 @@ function CreatePostModal({
               </button>
               <button onClick={() => videoRef.current?.click()}
                 className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-neutral-100 hover:bg-neutral-200 transition text-sm font-semibold text-neutral-700 active:scale-95">
-                <Film className="h-4 w-4 text-[#E94B8A]" /> {t("post.video", "Vídeo")}
+                <Film className="h-4 w-4 text-[#E94B8A]" /> {"Vídeo"}
               </button>
             </div>
           </div>
@@ -2104,7 +2104,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
               </a>
             )}
             <span className="flex items-center gap-1 text-xs text-neutral-400">
-              <Calendar className="h-3.5 w-3.5" /> {t("profile.member_since")} {new Date(profile?.created_at ?? Date.now()).getFullYear()}
+              <Calendar className="h-3.5 w-3.5" /> {"Membro desde"} {new Date((profile as any)?.created_at ?? Date.now()).getFullYear()}
             </span>
           </div>
         </div>
@@ -2127,11 +2127,11 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
               </button>
               <button onClick={() => setShowCreate(true)}
                 className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-neutral-200 bg-white text-sm font-semibold text-neutral-600 hover:bg-neutral-50 transition active:scale-95 shadow-sm">
-                <Type className="h-4 w-4 text-[#5B3FCF]" /> {t("post.text", "Texto")}
+                <Type className="h-4 w-4 text-[#5B3FCF]" /> {"Texto"}
               </button>
               <button onClick={() => setShowCreate(true)}
                 className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-neutral-200 bg-white text-sm font-semibold text-neutral-600 hover:bg-neutral-50 transition active:scale-95 shadow-sm">
-                <Film className="h-4 w-4 text-[#E94B8A]" /> {t("post.video", "Vídeo")}
+                <Film className="h-4 w-4 text-[#E94B8A]" /> {"Vídeo"}
               </button>
             </div>
           </div>

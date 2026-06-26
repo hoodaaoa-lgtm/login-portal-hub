@@ -436,7 +436,7 @@ function AddContactModal({ myId, onClose, onAdd, existingContacts }: {
               className="w-full h-11 rounded-2xl font-bold text-sm text-white flex items-center justify-center gap-2 transition active:scale-95"
               style={{ background: "#5B3FCF", opacity: sendingRequest ? 0.7 : 1 }}>
               {sendingRequest ? <Loader className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-              {sendingRequest ? t("studio.uploading") : "Enviar pedido"}
+              {sendingRequest ? "A enviar..." : "Enviar pedido"}
             </button>
             <p className="text-center text-[11px]" style={{ color: "var(--text-muted,#aaa)" }}>
               @{requestTarget.username} verá a tua mensagem antes de aceitar
@@ -458,7 +458,7 @@ function AddContactModal({ myId, onClose, onAdd, existingContacts }: {
               value={search}
               onChange={e => setSearch(e.target.value)}
               onKeyDown={e => e.key === "Enter" && handleSearch(search)}
-              placeholder={t("messages.search_user", "@username ou nome")}
+              placeholder={"@username ou nome"}
               autoFocus
               className="w-full h-11 pl-9 pr-4 rounded-2xl text-sm outline-none"
               style={{ background: "var(--bg-secondary,#f5f5f5)" }}
@@ -1194,7 +1194,7 @@ function ChatMediaSendPreview({ item, onCancel, onSend, sending }: {
             value={caption}
             onChange={(e) => setCaption(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter" && !sending) onSend(caption, edit); }}
-            placeholder={t("messages.add_caption", "Adicionar legenda…")}
+            placeholder={"Adicionar legenda…"}
             className="flex-1 bg-transparent outline-none text-white placeholder:text-white/40 text-sm px-3 py-2.5"
             autoFocus
           />
@@ -1339,7 +1339,7 @@ function ChatMediaLightbox({ items, index, onIndexChange, onClose, onReact, cont
             <ZoomIn className="h-[18px] w-[18px]" />
           </button>
           {/* Encaminhar / partilhar */}
-          <button title={t("common.share")} onClick={handleForward}
+          <button title={"Partilhar"} onClick={handleForward}
             className="w-9 h-9 rounded-full flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 transition active:scale-90">
             <Forward className="h-[18px] w-[18px]" />
           </button>
@@ -1394,7 +1394,7 @@ function ChatMediaLightbox({ items, index, onIndexChange, onClose, onReact, cont
             )}
           </div>
           {/* Fechar */}
-          <button title={t("common.close")} onClick={onClose}
+          <button title={"Fechar"} onClick={onClose}
             className="w-9 h-9 rounded-full flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 transition active:scale-90">
             <X className="h-[18px] w-[18px]" />
           </button>
@@ -3570,7 +3570,7 @@ function ContactList({ contacts, loading, refreshing, search, setSearch, active,
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder={t("common.search_placeholder", "Pesquisar...")}
+            placeholder={"Pesquisar..."}
             className="flex-1 bg-transparent text-sm outline-none placeholder:text-white/60 text-white"
           />
           {search && (

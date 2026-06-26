@@ -36,14 +36,14 @@ const QUALITY_OPTIONS: { label: string; height: number }[] = [
   { label: "360p",  height: 360  },
 ];
 const REPORT_REASONS = [
-  t("common.sexual_content"),
-  t("common.violence"),
-  t("common.hate_speech"),
-  t("common.harassment"),
-  t("common.spam"),
-  t("common.other"),
-  t("common.other"),
-  t("common.other"),
+  "Conteúdo sexual",
+  "Violência",
+  "Discurso de ódio",
+  "Assédio",
+  "Spam",
+  "Desinformação",
+  "Direitos de autor",
+  "Outro",
 ];
 
 /* ── Helpers ── */
@@ -264,7 +264,7 @@ function ShareSheet({ url, onClose }: { url: string; onClose: () => void }) {
       <div className="w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl"
         style={{ background: "var(--s0)" }} onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-extrabold text-base" style={{ color: "var(--text-primary)" }}>{t("common.share")}</h3>
+          <h3 className="font-extrabold text-base" style={{ color: "var(--text-primary)" }}>{"Partilhar"}</h3>
           <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center"
             style={{ background: "var(--s2)" }}>
             <X className="w-4 h-4" style={{ color: "var(--text-muted)" }} />
@@ -346,12 +346,12 @@ function StatsModal({ video, reactions, onClose }: { video: any; reactions: any;
   const totalReactions = (reactions?.likes ?? 0) + (reactions?.dislikes ?? 0);
   const likeRatio = totalReactions > 0 ? Math.round(((reactions?.likes ?? 0) / totalReactions) * 100) : 0;
   const stats = [
-    { label: t("common.views"), value: fmtV(video.views_count ?? 0), icon: "👁️" },
-    { label: t("common.likes"), value: fmtV(reactions?.likes ?? 0), icon: "👍" },
-    { label: t("watch.dislike"), value: fmtV(reactions?.dislikes ?? 0), icon: "👎" },
-    { label: t("watch.approval_ratio"), value: `${likeRatio}%`, icon: "📊" },
-    { label: t("studio.duration_label", "Duração"), value: fmtDur(video.duration_seconds) || "—", icon: "⏱️" },
-    { label: t("studio.published", "Publicado"), value: timeAgo(video.published_at ?? video.created_at), icon: "📅" },
+    { label: "Visualizações", value: fmtV(video.views_count ?? 0), icon: "👁️" },
+    { label: "Gostos", value: fmtV(reactions?.likes ?? 0), icon: "👍" },
+    { label: "Não gosto", value: fmtV(reactions?.dislikes ?? 0), icon: "👎" },
+    { label: "Taxa de aprovação", value: `${likeRatio}%`, icon: "📊" },
+    { label: "Duração", value: fmtDur(video.duration_seconds) || "—", icon: "⏱️" },
+    { label: "Publicado", value: timeAgo(video.published_at ?? video.created_at), icon: "📅" },
   ];
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
@@ -413,7 +413,7 @@ function VideoOptionsDropdown({
     ...(hasPiP ? [{ icon: <Minimize2 className="w-4 h-4" />, label: "Miniplayer (PiP)", action: () => { onPiP(); onClose(); } }] : []),
     { icon: <BarChart2 className="w-4 h-4" />, label: "Estatísticas", action: () => { onStats(); onClose(); } },
     { icon: <Ban className="w-4 h-4" />, label: "Não tenho interesse", action: () => { onNotInterested(); onClose(); } },
-    { icon: <Flag className="w-4 h-4" />, label: t("common.report"), action: () => { onReport(); onClose(); }, danger: true },
+    { icon: <Flag className="w-4 h-4" />, label: "Denunciar", action: () => { onReport(); onClose(); }, danger: true },
   ];
 
   return (

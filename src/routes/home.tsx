@@ -333,7 +333,7 @@ function MusicStartPicker({ url, duration, value, onChange }: {
   return (
     <div className="px-1">
       <div className="flex justify-between items-center text-white/40 text-[10px] mb-1.5">
-        <span>{t("tv.music_start", "Início da música")}</span>
+        <span>{"Início da música"}</span>
         <div className="flex items-center gap-1.5">
           <button
             onClick={togglePreview}
@@ -583,7 +583,7 @@ function StoryCreator({ onClose, onPublish }: {
         <button onClick={onClose} className="absolute top-5 left-5 p-2 rounded-full bg-white/10">
           <X className="h-5 w-5 text-white" />
         </button>
-        <p className="text-white/50 text-xs font-semibold tracking-widest uppercase mb-2">{t("home.create_story", "Criar história")}</p>
+        <p className="text-white/50 text-xs font-semibold tracking-widest uppercase mb-2">{"Criar história"}</p>
         <div className="flex flex-col gap-4 w-full max-w-xs">
           {[
             { m: "photo" as CreatorMode,  icon: <ImageIcon className="h-6 w-6 text-white" />, grad: "linear-gradient(135deg,#5B3FCF,#E94B8A)", title: t("post.photo"),  sub: "Adiciona uma imagem ou fundo" },
@@ -823,11 +823,11 @@ function StoryCreator({ onClose, onPublish }: {
           <div className="flex-1" />
           <div className="bg-[#111] rounded-t-3xl px-4 pt-5 pb-8" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <p className="text-white font-bold text-base">{t("home.add_text", "Adicionar texto")}</p>
+              <p className="text-white font-bold text-base">{"Adicionar texto"}</p>
               <button onClick={() => setShowTextPanel(false)} className="p-1.5 rounded-full bg-white/10"><X className="h-4 w-4 text-white/60" /></button>
             </div>
             <textarea autoFocus value={newText} onChange={(e) => setNewText(e.target.value)}
-              placeholder={t("post.write_text", "Escreve o teu texto aqui...")}
+              placeholder={"Escreve o teu texto aqui..."}
               className="w-full rounded-xl px-4 py-3 text-white text-base placeholder:text-white/30 outline-none resize-none mb-3"
               style={{ fontFamily: FONTS[newFontIdx].css, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}
               rows={2} />
