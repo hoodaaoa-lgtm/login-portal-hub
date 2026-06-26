@@ -1030,10 +1030,14 @@ function SettingsDrawer({
 
       {/* Painel */}
       <div
-        className="relative h-full w-full max-w-sm flex flex-col shadow-2xl transition-transform duration-300 ease-out"
+        className="relative flex flex-col shadow-2xl transition-transform duration-300 ease-out"
         style={{
           background: "var(--s1, #fff)",
           transform: visible ? "translateX(0)" : "translateX(100%)",
+          width: "100%",
+          maxWidth: "384px",
+          height: "100dvh",
+          maxHeight: "100dvh",
         }}
       >
         {/* Header gradiente com avatar */}
@@ -1063,7 +1067,7 @@ function SettingsDrawer({
         </div>
 
         {/* Conteúdo scrollável */}
-        <div className="flex-1 overflow-y-auto py-2 min-h-0 pb-10">
+        <div className="flex-1 overflow-y-auto py-2 min-h-0" style={{ paddingBottom: "env(safe-area-inset-bottom, 24px)" }}>
 
           {/* Tema */}
           <div className="mb-1">
