@@ -146,6 +146,11 @@ function FollowListModal({ mode, targetUsername, targetUserId, onClose }: {
   });
   const err = queryError ? (queryError instanceof Error ? queryError.message : "Erro ao carregar lista") : "";
 
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = ""; };
+  }, []);
+
   return (
     <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center overflow-hidden" style={{ background: "rgba(0,0,0,0.5)" }}
       onClick={(e) => e.target === e.currentTarget && onClose()}>
@@ -217,6 +222,15 @@ function PostCard({
   const [commentCount, setCommentCount] = useState(post.comments);
 
   useEffect(() => { setCommentCount(post.comments); }, [post.comments]);
+
+  useEffect(() => {
+    if (shareOpen || showComments) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [shareOpen, showComments]);
 
   useEffect(() => {
     if (!showComments) return;
@@ -601,11 +615,16 @@ function CreatePostModal({
 
   const canPublish = (text.trim().length > 0 || photo !== null || videoFile !== null) && !publishing && !done;
 
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = ""; };
+  }, []);
+
   return (
-    <div className="fixed inset-0 z-50 flex items-end lg:items-center justify-center overflow-hidden"
+    <div className="fixed inset-0 z-50 flex items-end lg:items-center justify-center"
       style={{ background: "rgba(0,0,0,0.55)" }}
       onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="w-full lg:max-w-lg lg:rounded-3xl rounded-t-2xl hooda-modal-sheet overflow-hidden flex flex-col" style={{ maxHeight: "92vh" }}>
+      <div className="w-full lg:max-w-lg lg:rounded-3xl rounded-t-2xl hooda-modal-sheet flex flex-col" style={{ maxHeight: "92vh", overflow: "hidden" }}>
         <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-100">
           <span className="text-base font-bold text-black">Criar publicação</span>
           <button onClick={onClose} className="p-1.5 rounded-full hover:bg-neutral-100 transition">
