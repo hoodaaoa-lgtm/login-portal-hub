@@ -15,7 +15,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { ThemeProvider } from "../contexts/ThemeContext";
 import { AvatarProvider } from "../contexts/AvatarContext";
 import { BadgeProvider } from "../contexts/BadgeContext";
-import { AuthProvider, useAuth } from "../contexts/AuthContext";
+import { CountryProvider } from "../contexts/CountryContext";
 import { GlobalStoryViewer } from "../components/GlobalStoryViewer";
 import { BottomNav } from "../components/AppShell";
 import { SplashScreen, SPLASH_EXIT_MS } from "../components/SplashScreen";
@@ -193,13 +193,15 @@ function ConditionalBottomNav() {
 
 function AppProviders({ queryClient, children }: { queryClient: QueryClient; children: ReactNode }) {
   return (
-    <AuthProvider>
-      <ThemeProvider>
-        <AvatarProvider>
-          <BadgeProvider>{children}</BadgeProvider>
-        </AvatarProvider>
-      </ThemeProvider>
-    </AuthProvider>
+    <CountryProvider>
+      <AuthProvider>
+        <ThemeProvider>
+          <AvatarProvider>
+            <BadgeProvider>{children}</BadgeProvider>
+          </AvatarProvider>
+        </ThemeProvider>
+      </AuthProvider>
+    </CountryProvider>
   );
 }
 
