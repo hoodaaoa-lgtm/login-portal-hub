@@ -91,7 +91,6 @@ const BASE_STORIES: Story[] = [
   { name: "Você", color: "#5B3FCF", isYou: true },
 ];
 
-const BANNERS: { title: string; author: string; tag: string; from: string; to: string }[] = [];
 
 const POSTS: any[] = []; // feed carregado do Supabase em HomePage
 
@@ -2719,28 +2718,6 @@ function HomePage() {
           </ul>
         </section>
         )}
-
-        {/* Launches */}
-        <section className="py-4">
-          <div className="flex items-center justify-between px-4 mb-3">
-            <h2 className="text-base font-bold" style={{ color: "var(--text-primary)" }}>Lançamentos</h2>
-            <Link to="/hoodatv" className="text-xs font-semibold" style={{ color: "var(--hooda-purple)" }}>Ver tudo</Link>
-          </div>
-          <ul className="flex gap-3 overflow-x-auto px-4 pb-1 no-scrollbar">
-            {BANNERS.map((b) => (
-              <li key={b.title} className="shrink-0 w-48">
-                <div className="h-28 rounded-2xl p-4 flex flex-col justify-between"
-                  style={{ background: `linear-gradient(135deg,${b.from},${b.to})` }}>
-                  <span className="self-start text-[9px] font-bold uppercase tracking-wider bg-white/25 text-white px-2 py-1 rounded-full">{b.tag}</span>
-                  <div>
-                    <p className="text-sm font-extrabold text-white leading-tight">{b.title}</p>
-                    <p className="text-[10px] text-white/80">{b.author}</p>
-                  </div>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </section>
 
         {/* Feed */}
         <section className="space-y-3 px-3 pb-4">
