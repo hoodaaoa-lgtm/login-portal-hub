@@ -340,14 +340,7 @@ function PostCommentsModalInner({
   function handleSendReply(parentId: string) {
     const txt = replyInput.trim();
     if (!txt) return;
-    const newReply: PostComment = {
-      id: `local-${Date.now()}`,
-      authorName: "Tu",
-      authorColor: accent,
-      text: txt,
-      time: "agora",
-    };
-    setLocalReplies((prev) => ({ ...prev, [parentId]: [...(prev[parentId] || []), newReply] }));
+    // Não adicionar localmente — o pai (handleReplyComment) já atualiza o estado após inserir na DB
     onReply?.(parentId, txt);
     setReplyInput("");
     setReplyingTo(null);
