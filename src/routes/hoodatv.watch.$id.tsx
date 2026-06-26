@@ -36,14 +36,14 @@ const QUALITY_OPTIONS: { label: string; height: number }[] = [
   { label: "360p",  height: 360  },
 ];
 const REPORT_REASONS = [
-  "Conteúdo sexual ou explícito",
-  "Violência ou conteúdo perturbador",
-  "Discurso de ódio ou discriminação",
-  "Assédio ou bullying",
-  "Spam ou enganoso",
-  "Informação falsa",
-  "Infração de direitos de autor",
-  "Outro motivo",
+  t("common.sexual_content"),
+  t("common.violence"),
+  t("common.hate_speech"),
+  t("common.harassment"),
+  t("common.spam"),
+  t("common.other"),
+  t("common.other"),
+  t("common.other"),
 ];
 
 /* ── Helpers ── */
@@ -264,7 +264,7 @@ function ShareSheet({ url, onClose }: { url: string; onClose: () => void }) {
       <div className="w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl"
         style={{ background: "var(--s0)" }} onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-extrabold text-base" style={{ color: "var(--text-primary)" }}>Partilhar</h3>
+          <h3 className="font-extrabold text-base" style={{ color: "var(--text-primary)" }}>{t("common.share")}</h3>
           <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center"
             style={{ background: "var(--s2)" }}>
             <X className="w-4 h-4" style={{ color: "var(--text-muted)" }} />
@@ -346,12 +346,12 @@ function StatsModal({ video, reactions, onClose }: { video: any; reactions: any;
   const totalReactions = (reactions?.likes ?? 0) + (reactions?.dislikes ?? 0);
   const likeRatio = totalReactions > 0 ? Math.round(((reactions?.likes ?? 0) / totalReactions) * 100) : 0;
   const stats = [
-    { label: "Visualizações", value: fmtV(video.views_count ?? 0), icon: "👁️" },
-    { label: "Gostos", value: fmtV(reactions?.likes ?? 0), icon: "👍" },
-    { label: "Não gostos", value: fmtV(reactions?.dislikes ?? 0), icon: "👎" },
-    { label: "Rácio de aprovação", value: `${likeRatio}%`, icon: "📊" },
-    { label: "Duração", value: fmtDur(video.duration_seconds) || "—", icon: "⏱️" },
-    { label: "Publicado há", value: timeAgo(video.published_at ?? video.created_at), icon: "📅" },
+    { label: t("common.views"), value: fmtV(video.views_count ?? 0), icon: "👁️" },
+    { label: t("common.likes"), value: fmtV(reactions?.likes ?? 0), icon: "👍" },
+    { label: t("watch.dislike"), value: fmtV(reactions?.dislikes ?? 0), icon: "👎" },
+    { label: t("watch.approval_ratio"), value: `${likeRatio}%`, icon: "📊" },
+    { label: t("studio.duration_label", "Duração"), value: fmtDur(video.duration_seconds) || "—", icon: "⏱️" },
+    { label: t("studio.published", "Publicado"), value: timeAgo(video.published_at ?? video.created_at), icon: "📅" },
   ];
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
@@ -615,7 +615,7 @@ function CommentItem({ comment, me, videoId, qc, depth = 0 }: {
               <button onClick={() => setShowReplies(s => !s)}
                 className="flex items-center gap-1 text-[11px] font-semibold transition"
                 style={{ color: P }}>
-                {showReplies ? "Ocultar" : `Ver ${replies.length} resposta${replies.length > 1 ? "s" : ""}`}
+                {showReplies ? t("common.hide_replies") : t("common.view_replies")}
               </button>
             )}
           </div>
@@ -626,7 +626,7 @@ function CommentItem({ comment, me, videoId, qc, depth = 0 }: {
                 value={replyText}
                 onChange={e => setReplyText(e.target.value)}
                 onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitReply(); } }}
-                placeholder="Escreve uma resposta…"
+                placeholder=t("common.add_comment")
                 className="flex-1 rounded-full px-4 h-9 text-sm outline-none border"
                 style={{ background: "var(--s2)", borderColor: "var(--border-default)", color: "var(--text-primary)" }}
               />
@@ -692,7 +692,7 @@ function CommentsSection({ videoId, me }: { videoId: string; me: any }) {
             onChange={e => setText(e.target.value)}
             onFocus={() => setFocused(true)}
             onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit(); } }}
-            placeholder={me ? "Adiciona um comentário…" : "Inicia sessão para comentar"}
+            placeholder={me ? t("common.add_comment") : t("common.sign_in_to_comment")}
             className="w-full rounded-2xl px-4 h-10 text-sm outline-none border transition-all"
             style={{ background: "var(--s2)", borderColor: focused ? P : "var(--border-default)", color: "var(--text-primary)" }}
           />
@@ -1175,7 +1175,7 @@ function WatchPage() {
           <h2 className="text-xl font-extrabold mb-2" style={{ color: "var(--text-primary)" }}>Vídeo não encontrado</h2>
           <button onClick={() => navigate({ to: "/hoodatv" })}
             className="mt-4 px-6 py-2.5 rounded-full text-white font-bold text-sm" style={{ background: GRAD }}>
-            Voltar à HoodaTV
+            {t("common.back_to_tv")}
           </button>
         </div>
         <BottomNav />
@@ -1435,7 +1435,7 @@ function WatchPage() {
                   ? { background: `${P}18`, color: P, borderColor: P }
                   : { background: "var(--s2)", color: "var(--text-secondary)", borderColor: "var(--border-default)" }}>
                 {isSaved ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
-                {isSaved ? "Guardado" : t("common.save")}
+                {isSaved ? t("common.saved") : t("common.save")}
               </button>
 
               <button onClick={() => setShowShare(true)}

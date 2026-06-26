@@ -911,7 +911,7 @@ function SectionRegras({ community }: { community: Community }) {
   return (
     <div className="p-4 space-y-3 pb-8">
       <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-        Define regras claras para os membros. Estas aparecem na aba "Sobre" da comunidade.
+        Define regras claras para os membros. Estas aparecem na aba t("profile.about") da comunidade.
       </p>
 
       {rules.map((rule, i) => (

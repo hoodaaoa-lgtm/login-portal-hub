@@ -1,3 +1,4 @@
+import { t } from "@/lib/useT";
 import { createFileRoute, useNavigate, useParams } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -111,7 +112,7 @@ function PlaylistPage() {
           <button onClick={() => navigate({ to: "/hoodatv" })}
             className="mt-4 px-6 py-2.5 rounded-full text-white font-bold text-sm"
             style={{ background: GRAD }}>
-            Voltar à HoodaTV
+            {t("common.back_to_tv")}
           </button>
         </div>
         <BottomNav />

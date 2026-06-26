@@ -1,3 +1,4 @@
+import { t } from "@/lib/useT";
 import React, { useEffect, useRef, useState } from "react";
 import { CommentsListSkeleton } from "@/components/Skeletons";
 import { createPortal } from "react-dom";
@@ -33,7 +34,7 @@ class CommentsErrorBoundary extends React.Component<
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-100">
-              <span className="text-sm font-extrabold">Comentários</span>
+              <span className="text-sm font-extrabold">{t("common.comments")}</span>
               <button
                 onClick={this.props.onClose}
                 className="p-1.5 rounded-full hover:bg-neutral-100"

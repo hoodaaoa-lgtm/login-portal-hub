@@ -328,7 +328,7 @@ function ChannelPage() {
           <button onClick={() => navigate({ to: "/hoodatv" })}
             className="px-6 py-2.5 rounded-full text-white font-bold text-sm"
             style={{ background: GRAD }}>
-            Voltar à HoodaTV
+            {t("common.back_to_tv")}
           </button>
         </div>
         <BottomNav />
@@ -583,7 +583,7 @@ function ChannelPage() {
                 {[
                   { label: t("profile.followers"), value: fmtV(stats?.subs ?? 0) },
                   { label: t("tv.videos"), value: String(stats?.videoCount ?? 0) },
-                  { label: "Visualizações", value: fmtV(stats?.totalViews ?? 0) },
+                  { label: t("common.views"), value: fmtV(stats?.totalViews ?? 0) },
                 ].map(s => (
                   <div key={s.label} className="rounded-2xl p-4 text-center border"
                     style={{ background: "var(--s2)", borderColor: "var(--border-subtle)" }}>
