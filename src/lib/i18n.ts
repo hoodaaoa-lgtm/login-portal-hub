@@ -630,11 +630,15 @@ if (!i18n.isInitialized) {
 
 export function setLanguage(code: LangCode) {
   i18n.changeLanguage(code);
-  if (typeof window !== "undefined") localStorage.setItem("hooda_lang", code);
-  const lang = LANGUAGES.find(l => l.code === code);
-  if (typeof document !== "undefined") {
-    document.documentElement.dir = lang?.dir ?? "ltr";
-    document.documentElement.lang = code;
+  if (typeof window !== "undefined") {
+    localStorage.setItem("hooda_lang", code);
+    const lang = LANGUAGES.find(l => l.code === code);
+    if (typeof document !== "undefined") {
+      document.documentElement.dir = lang?.dir ?? "ltr";
+      document.documentElement.lang = code;
+    }
+    // Recarregar para aplicar idioma em todas as páginas
+    window.location.reload();
   }
 }
 
