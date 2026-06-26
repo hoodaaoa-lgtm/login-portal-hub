@@ -614,7 +614,8 @@ function CreatePostModal({
         .single();
 
       if (error || !inserted?.id) {
-        setPublishErr("Não foi possível publicar. Tenta novamente.");
+        setPublishErr(error?.message ?? "Não foi possível publicar. Tenta novamente.");
+        console.error("Erro ao publicar post:", error);
         return;
       }
 
