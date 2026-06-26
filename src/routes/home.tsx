@@ -1906,7 +1906,7 @@ function PostCard({ p }: { p: any }) {
   }
 
   return (
-    <article className="hooda-card overflow-hidden animate-fade-in-up">
+    <article className="hooda-card overflow-hidden animate-fade-in-up" style={{ borderRadius: 16 }}>
       <div className="flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-3">
           <ProfileAvatarLink userId={p.author_id} username={p.author_username} disableStoryCheck={isAd || !p.author_username}>
@@ -2631,7 +2631,7 @@ function HomePage() {
         {loadingStories ? (
           <StoriesRowSkeleton count={6} />
         ) : (
-        <section className="border-b" style={{ background: "var(--surface-0)", borderColor: "var(--border-subtle)", minHeight: 108 }}>
+        <section className="border-b mb-2" style={{ background: "var(--surface-0)", borderColor: "var(--border-subtle)", minHeight: 108 }}>
           <ul className="flex gap-4 overflow-x-auto px-4 py-4 no-scrollbar">
             {stories.map((s, i) => (
               <li key={s.name} className="flex flex-col items-center gap-1 shrink-0">
@@ -2720,7 +2720,7 @@ function HomePage() {
         )}
 
         {/* Feed */}
-        <section className="space-y-3 px-3 pt-4 pb-4">
+        <section className="px-3 pt-6 pb-6 space-y-4 max-w-2xl mx-auto w-full">
           {loadingFeed && <FeedSkeleton count={4} />}
           {!loadingFeed && realPosts.length === 0 && (
             <div className="flex flex-col items-center gap-3 py-16 text-center">
