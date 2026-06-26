@@ -501,9 +501,9 @@ function HoodaTVMain() {
 
   return (
     <>
+      {showIntro && <HoodaTVIntro onDone={handleIntroDone} />}
       <SideNav />
       <PageWrapper className="pb-20 lg:pb-0">
-        {showIntro && <HoodaTVIntro onDone={handleIntroDone} />}
 
         {/* ── HEADER ── */}
         <div className="sticky top-0 z-40"
