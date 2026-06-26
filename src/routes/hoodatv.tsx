@@ -67,7 +67,7 @@ function HoodaTVIntro({ onDone }: { onDone: () => void }) {
       pointerEvents: exiting ? "none" : "all",
       overflow: "hidden",
     }}>
-      <div style={{ display: "flex", alignItems: "baseline", gap: 0 }}>
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 0 }}>
         {HOODA_LETTERS.map((l, i) => (
           <span key={i} style={{
             display: "inline-block",
