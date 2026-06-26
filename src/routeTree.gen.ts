@@ -26,9 +26,9 @@ import { Route as StudioOnboardingRouteImport } from './routes/studio.onboarding
 import { Route as StudioContentRouteImport } from './routes/studio.content'
 import { Route as StudioAnalyticsRouteImport } from './routes/studio.analytics'
 import { Route as AuthBridgeRouteImport } from './routes/auth.bridge'
-import { Route as HoodatvCanalHandleRouteImport } from './routes/hoodatv.canal.$handle'
-import { Route as HoodatvPlaylistIdRouteImport } from './routes/hoodatv.playlist.$id'
 import { Route as HoodatvWatchIdRouteImport } from './routes/hoodatv.watch.$id'
+import { Route as HoodatvPlaylistIdRouteImport } from './routes/hoodatv.playlist.$id'
+import { Route as HoodatvCanalHandleRouteImport } from './routes/hoodatv.canal.$handle'
 
 const StudioRoute = StudioRouteImport.update({
   id: '/studio',
@@ -115,9 +115,9 @@ const AuthBridgeRoute = AuthBridgeRouteImport.update({
   path: '/auth/bridge',
   getParentRoute: () => rootRouteImport,
 } as any)
-const HoodatvCanalHandleRoute = HoodatvCanalHandleRouteImport.update({
-  id: '/canal/$handle',
-  path: '/canal/$handle',
+const HoodatvWatchIdRoute = HoodatvWatchIdRouteImport.update({
+  id: '/watch/$id',
+  path: '/watch/$id',
   getParentRoute: () => HoodatvRoute,
 } as any)
 const HoodatvPlaylistIdRoute = HoodatvPlaylistIdRouteImport.update({
@@ -125,9 +125,9 @@ const HoodatvPlaylistIdRoute = HoodatvPlaylistIdRouteImport.update({
   path: '/playlist/$id',
   getParentRoute: () => HoodatvRoute,
 } as any)
-const HoodatvWatchIdRoute = HoodatvWatchIdRouteImport.update({
-  id: '/watch/$id',
-  path: '/watch/$id',
+const HoodatvCanalHandleRoute = HoodatvCanalHandleRouteImport.update({
+  id: '/canal/$handle',
+  path: '/canal/$handle',
   getParentRoute: () => HoodatvRoute,
 } as any)
 
@@ -400,11 +400,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthBridgeRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/hoodatv/canal/$handle': {
-      id: '/hoodatv/canal/$handle'
-      path: '/canal/$handle'
-      fullPath: '/hoodatv/canal/$handle'
-      preLoaderRoute: typeof HoodatvCanalHandleRouteImport
+    '/hoodatv/watch/$id': {
+      id: '/hoodatv/watch/$id'
+      path: '/watch/$id'
+      fullPath: '/hoodatv/watch/$id'
+      preLoaderRoute: typeof HoodatvWatchIdRouteImport
       parentRoute: typeof HoodatvRoute
     }
     '/hoodatv/playlist/$id': {
@@ -414,11 +414,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof HoodatvPlaylistIdRouteImport
       parentRoute: typeof HoodatvRoute
     }
-    '/hoodatv/watch/$id': {
-      id: '/hoodatv/watch/$id'
-      path: '/watch/$id'
-      fullPath: '/hoodatv/watch/$id'
-      preLoaderRoute: typeof HoodatvWatchIdRouteImport
+    '/hoodatv/canal/$handle': {
+      id: '/hoodatv/canal/$handle'
+      path: '/canal/$handle'
+      fullPath: '/hoodatv/canal/$handle'
+      preLoaderRoute: typeof HoodatvCanalHandleRouteImport
       parentRoute: typeof HoodatvRoute
     }
   }
@@ -433,7 +433,7 @@ interface HoodatvRouteChildren {
 const HoodatvRouteChildren: HoodatvRouteChildren = {
   HoodatvCanalHandleRoute: HoodatvCanalHandleRoute,
   HoodatvPlaylistIdRoute: HoodatvPlaylistIdRoute,
-  HoodatvWatchIdRoute,
+  HoodatvWatchIdRoute: HoodatvWatchIdRoute,
 }
 
 const HoodatvRouteWithChildren =
@@ -476,3 +476,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
