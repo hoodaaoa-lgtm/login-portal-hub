@@ -86,9 +86,9 @@ function StatsGrid({ publications, followers, following, onFollowersClick, onFol
   onFollowersClick?: () => void; onFollowingClick?: () => void;
 }) {
   const items = [
-    { n: publications, l: "Publicações", onClick: undefined },
-    { n: followers, l: "Seguidores", onClick: onFollowersClick },
-    { n: following, l: "Seguindo", onClick: onFollowingClick },
+    { n: publications, l: t("profile.publications"), onClick: undefined },
+    { n: followers, l: t("profile.followers"), onClick: onFollowersClick },
+    { n: following, l: t("profile.following"), onClick: onFollowingClick },
   ];
   return (
     <div className="grid grid-cols-3 gap-2 px-5 pb-4">
@@ -159,7 +159,7 @@ function FollowListModal({ mode, targetUsername, targetUserId, onClose }: {
       onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="w-full sm:max-w-sm sm:rounded-2xl hooda-modal-sheet rounded-t-3xl overflow-hidden flex flex-col" style={{ maxHeight: "75vh" }}>
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-neutral-100 shrink-0">
-          <p className="font-extrabold text-base text-black">{mode === "followers" ? "Seguidores" : "Seguindo"}</p>
+          <p className="font-extrabold text-base text-black">{mode === "followers" ? t("profile.followers") : t("profile.following")}</p>
           <button onClick={onClose} className="p-1.5 rounded-full hover:bg-neutral-100">
             <X className="h-5 w-5 text-neutral-400" />
           </button>
@@ -686,7 +686,7 @@ function CreatePostModal({
             style={{ background: bgColor || "transparent", padding: bgColor ? "28px 20px" : "0",
               minHeight: bgColor ? 150 : "auto", display: "flex", alignItems: "center" }}>
             <textarea autoFocus value={text} onChange={(e) => setText(e.target.value)}
-              placeholder={bgColor ? "O que queres partilhar?" : "Em que estás a pensar?"}
+              placeholder={bgColor ? "O que queres partilhar?" : t("post.placeholder")}
               rows={bgColor ? 3 : 4}
               className="w-full outline-none resize-none bg-transparent leading-relaxed"
               style={{ color: textColorForBg(bgColor), fontSize: bgColor ? 20 : 15,
@@ -758,7 +758,7 @@ function CreatePostModal({
               ? "Publicado! ✓"
               : publishing
                 ? <><div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />A publicar…</>
-                : "Publicar"}
+                : t("post.publish")}
           </button>
         </div>
       </div>
@@ -837,7 +837,7 @@ function EditProfileModal({
             disabled={saving || done || usernameStatus === "taken" || usernameStatus === "invalid" || usernameStatus === "checking"}
             className="text-sm font-bold px-4 py-1.5 rounded-full text-white transition active:scale-95 disabled:opacity-50"
             style={{ background: ACCENT }}>
-            {done ? "✓" : saving ? "..." : "Guardar"}
+            {done ? "✓" : saving ? "..." : t("post.save")}
           </button>
         </div>
 
@@ -1006,29 +1006,29 @@ function SettingsDrawer({
     {
       title: "Conta",
       items: [
-        { icon: Settings, label: "Editar perfil", desc: "Nome, foto, bio e mais", action: () => { handleClose(); setTimeout(onEditProfile, 300); }, color: ACCENT },
-        { icon: Bell, label: "Notificações", desc: "Gere os teus alertas", action: onOpenNotifications, color: "#F26B3A" },
-        { icon: Calendar, label: "Atividade", desc: "Histórico de ações", action: onOpenActivity, color: "#1FAFA6" },
+        { icon: Settings, label: t("profile.edit"), desc: "Nome, foto, bio e mais", action: () => { handleClose(); setTimeout(onEditProfile, 300); }, color: ACCENT },
+        { icon: Bell, label: t("settings.notifications"), desc: "Gere os teus alertas", action: onOpenNotifications, color: "#F26B3A" },
+        { icon: Calendar, label: t("settings.activity"), desc: "Histórico de ações", action: onOpenActivity, color: "#1FAFA6" },
       ],
     },
     {
       title: "Privacidade & Segurança",
       items: [
-        { icon: Lock, label: "Privacidade", desc: "Quem pode ver o teu perfil", action: onOpenPrivacy, color: "#6BA547" },
-        { icon: Shield, label: "Segurança", desc: "Palavra-passe e autenticação", action: onOpenSecurity, color: "#5B3FCF" },
+        { icon: Lock, label: t("settings.privacy"), desc: "Quem pode ver o teu perfil", action: onOpenPrivacy, color: "#6BA547" },
+        { icon: Shield, label: t("settings.security"), desc: "Palavra-passe e autenticação", action: onOpenSecurity, color: "#5B3FCF" },
       ],
     },
     {
       title: "Suporte",
       items: [
-        { icon: HelpCircle, label: "Ajuda", desc: "Perguntas frequentes", action: onOpenHelp, color: "#1FAFA6" },
+        { icon: HelpCircle, label: t("settings.help"), desc: "Perguntas frequentes", action: onOpenHelp, color: "#1FAFA6" },
         { icon: Info, label: "Sobre a Hooda", desc: "Versão e informações legais", action: onOpenAbout, color: "#E94B8A" },
       ],
     },
     {
-      title: "Idioma",
+      title: t("settings.language"),
       items: [
-        { icon: Globe, label: "Idioma", desc: (() => { const l = LANGUAGES.find(l => l.code === getCurrentLang()); return `${l?.flag ?? "🇵🇹"} ${l?.label ?? "Português"}`; })(), action: onOpenLanguage, color: "#F26B3A" },
+        { icon: Globe, label: t("settings.language"), desc: (() => { const l = LANGUAGES.find(l => l.code === getCurrentLang()); return `${l?.flag ?? "🇵🇹"} ${l?.label ?? "Português"}`; })(), action: onOpenLanguage, color: "#F26B3A" },
       ],
     },
   ];
@@ -1102,7 +1102,7 @@ function SettingsDrawer({
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold leading-tight" style={{ color: "var(--text-primary)" }}>
-                    {theme === "dark" ? "Modo escuro" : "Modo claro"}
+                    {theme === "dark" ? t("settings.dark_mode") : t("settings.light_mode")}
                   </p>
                   <p className="text-[11px] mt-0.5" style={{ color: "var(--text-muted)" }}>Altera o tema da app</p>
                 </div>
@@ -1302,7 +1302,7 @@ function NotificationsPanel({ onBack }: { onBack: () => void }) {
   ];
 
   return (
-    <SettingsSubPanel title="Notificações" onBack={onBack}>
+    <SettingsSubPanel title={t("settings.notifications")} onBack={onBack}>
       {loading ? (
         <div className="flex justify-center py-10">
           <div className="h-6 w-6 rounded-full border-2 animate-spin" style={{ borderColor: ACCENT, borderTopColor: "transparent" }} />
@@ -1372,7 +1372,7 @@ function ActivityPanel({ onBack }: { onBack: () => void }) {
   };
 
   return (
-    <SettingsSubPanel title="Atividade" onBack={onBack}>
+    <SettingsSubPanel title={t("settings.activity")} onBack={onBack}>
       {loading ? (
         <div className="flex justify-center py-10">
           <div className="h-6 w-6 rounded-full border-2 animate-spin" style={{ borderColor: ACCENT, borderTopColor: "transparent" }} />
@@ -1437,7 +1437,7 @@ function PrivacyPanel({ onBack }: { onBack: () => void }) {
   }
 
   return (
-    <SettingsSubPanel title="Privacidade" onBack={onBack}>
+    <SettingsSubPanel title={t("settings.privacy")} onBack={onBack}>
       {loading ? (
         <div className="flex justify-center py-10">
           <div className="h-6 w-6 rounded-full border-2 animate-spin" style={{ borderColor: ACCENT, borderTopColor: "transparent" }} />
@@ -1485,7 +1485,7 @@ function SecurityPanel({ onBack, email }: { onBack: () => void; email: string })
   }
 
   return (
-    <SettingsSubPanel title="Segurança" onBack={onBack}>
+    <SettingsSubPanel title={t("settings.security")} onBack={onBack}>
       <div className="mb-2">
         <p className="px-5 pb-1.5 text-[11px] font-bold text-neutral-400 uppercase tracking-wider">Conta</p>
         <div className="bg-white mx-3 rounded-2xl overflow-hidden border border-neutral-100 shadow-sm px-4 py-3.5">
@@ -1601,7 +1601,7 @@ function HelpPanel({ onBack }: { onBack: () => void }) {
   const [open, setOpen] = useState<number | null>(null);
 
   return (
-    <SettingsSubPanel title="Ajuda" onBack={onBack}>
+    <SettingsSubPanel title={t("settings.help")} onBack={onBack}>
       <div className="px-3 space-y-2 mb-6">
         <p className="px-2 pb-1 text-[11px] font-bold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Perguntas frequentes</p>
         {faqs.map((faq, i) => (
@@ -1971,8 +1971,8 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
   }
 
   const tabs = [
-    { key: "posts", label: "Publicações", icon: Type },
-    { key: "saved", label: "Guardado", icon: Bookmark },
+    { key: "posts", label: t("profile.publications"), icon: Type },
+    { key: "saved", label: t("post.save"), icon: Bookmark },
     { key: "info", label: "Info", icon: Info },
     { key: "monetization", label: "Studio", icon: Tv },
   ] as const;
@@ -1987,7 +1987,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
           <HoodaLogo size="sm" className="lg:hidden" />
           <span className="hidden lg:block text-sm font-bold" style={{ color: "var(--text-primary)" }}>Perfil</span>
           <button onClick={() => setShowSettings(true)}
-            className="p-2 hover:bg-neutral-100 rounded-full transition active:scale-90" aria-label="Configurações">
+            className="p-2 hover:bg-neutral-100 rounded-full transition active:scale-90" aria-label={t("settings.title")}>
             <Settings className="h-5 w-5 text-neutral-600" />
           </button>
         </div>
@@ -2317,7 +2317,7 @@ function PublicProfile({ profile, email }: { profile: Profile | null; email: str
           <button onClick={toggleFollow}
             className={`text-sm font-bold rounded-full px-5 py-1.5 transition shadow-sm ${following ? "border border-neutral-300 bg-white text-black" : "text-white"}`}
             style={{ background: following ? undefined : ACCENT }}>
-            {following ? "Seguindo" : "Seguir"}
+            {following ? t("profile.unfollow") : t("profile.follow")}
           </button>
         </div>
         <div className="px-5 pt-9 pb-4">
@@ -2353,6 +2353,7 @@ function PublicProfile({ profile, email }: { profile: Profile | null; email: str
 
 /* ─── Página principal ─── */
 function ProfilePage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [email, setEmail] = useState("");

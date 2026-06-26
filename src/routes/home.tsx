@@ -567,7 +567,7 @@ function StoryCreator({ onClose, onPublish }: {
 
   const tabItems: { id: EditorTab; icon: React.ReactNode; label: string }[] = [
     { id: "bg",       icon: <Layers className="h-4 w-4" />,           label: "Fundo" },
-    { id: "text",     icon: <TypeIcon className="h-4 w-4" />,         label: "Texto" },
+    { id: "text",     icon: <TypeIcon className="h-4 w-4" />,         label: t("post.text") },
     { id: "sticker",  icon: <Smile className="h-4 w-4" />,            label: "Stickers" },
     { id: "filter",   icon: <SlidersHorizontal className="h-4 w-4" />,label: "Filtros" },
     { id: "music",    icon: <Music className="h-4 w-4" />,            label: "Música" },
@@ -583,8 +583,8 @@ function StoryCreator({ onClose, onPublish }: {
         <p className="text-white/50 text-xs font-semibold tracking-widest uppercase mb-2">Criar história</p>
         <div className="flex flex-col gap-4 w-full max-w-xs">
           {[
-            { m: "photo" as CreatorMode,  icon: <ImageIcon className="h-6 w-6 text-white" />, grad: "linear-gradient(135deg,#5B3FCF,#E94B8A)", title: "Foto",  sub: "Adiciona uma imagem ou fundo" },
-            { m: "text"  as CreatorMode,  icon: <TypeIcon  className="h-6 w-6 text-white" />, grad: "linear-gradient(135deg,#F26B3A,#FFC93C)", title: "Texto", sub: "Cria uma história de texto" },
+            { m: "photo" as CreatorMode,  icon: <ImageIcon className="h-6 w-6 text-white" />, grad: "linear-gradient(135deg,#5B3FCF,#E94B8A)", title: t("post.photo"),  sub: "Adiciona uma imagem ou fundo" },
+            { m: "text"  as CreatorMode,  icon: <TypeIcon  className="h-6 w-6 text-white" />, grad: "linear-gradient(135deg,#F26B3A,#FFC93C)", title: t("post.text"), sub: "Cria uma história de texto" },
             { m: "audio" as CreatorMode,  icon: <Music     className="h-6 w-6 text-white" />, grad: "linear-gradient(135deg,#1FAFA6,#6BA547)", title: "Áudio", sub: "Partilha um momento sonoro" },
           ].map((item) => (
             <button key={item.m}
@@ -620,7 +620,7 @@ function StoryCreator({ onClose, onPublish }: {
           {mode === "photo" && (
             <button onClick={() => photoInputRef.current?.click()}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-sm text-white text-xs font-semibold">
-              <ImageIcon className="h-3.5 w-3.5" /> {photo ? "Trocar" : "Foto"}
+              <ImageIcon className="h-3.5 w-3.5" /> {photo ? "Trocar" : t("post.photo")}
             </button>
           )}
           <button onClick={() => { setShowTextPanel(true); setTab("text"); }}
@@ -1934,7 +1934,7 @@ function PostCard({ p }: { p: any }) {
           <button onClick={toggleFollow}
             className={`text-xs font-bold px-3 py-1.5 rounded-full transition-all ${following ? "btn-follow-active" : ""}`}
             style={following ? undefined : { background: "#f0edff", color: "#5B3FCF" }}>
-            {following ? "A seguir" : "Seguir"}
+            {following ? t("profile.unfollow") : t("profile.follow")}
           </button>
         )}
       </div>
@@ -2077,6 +2077,7 @@ function PostCard({ p }: { p: any }) {
 /* ─── Home Page ─── */
 
 function HomePage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { session } = useAuth();
   const qc = useQueryClient();
