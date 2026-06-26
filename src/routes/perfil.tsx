@@ -11,7 +11,7 @@ import {
   Info, Camera, Link, MapPin, Calendar, Bell, HelpCircle,
   Banknote, BarChart3, Users, Eye, Star, Heart, Share2,
   MoreHorizontal, Trash2, Send, Copy, Moon, Sun, ExternalLink,
-  Twitter, Instagram, Youtube, Facebook, Linkedin, Music2, Loader, Tv,
+  Twitter, Instagram, Youtube, Facebook, Linkedin, Music2, Loader, Tv, Film,
 } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useAvatar } from "@/contexts/AvatarContext";
@@ -495,6 +495,7 @@ function CreatePostModal({
   onClose: () => void;
   onPublish: (post: Post) => void;
 }) {
+  const navigate = useNavigate();
   const name = profile?.full_name || email || "?";
   const [text, setText] = useState("");
   const [bgColor, setBgColor] = useState<string | null>(null);
@@ -626,10 +627,16 @@ function CreatePostModal({
         <div className="px-4 py-3 border-t border-neutral-100">
           <div className="flex items-center justify-between mb-3">
             <span className="text-sm text-neutral-500 font-medium">Adicionar à publicação</span>
-            <button onClick={() => fileRef.current?.click()}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-neutral-100 hover:bg-neutral-200 transition text-sm font-semibold text-neutral-700 active:scale-95">
-              <Image className="h-4 w-4 text-[#6BA547]" /> Foto
-            </button>
+            <div className="flex items-center gap-2">
+              <button onClick={() => fileRef.current?.click()}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-neutral-100 hover:bg-neutral-200 transition text-sm font-semibold text-neutral-700 active:scale-95">
+                <Image className="h-4 w-4 text-[#6BA547]" /> Foto
+              </button>
+              <button onClick={() => { onClose?.(); navigate({ to: "/studio/upload" }); }}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-neutral-100 hover:bg-neutral-200 transition text-sm font-semibold text-neutral-700 active:scale-95">
+                <Film className="h-4 w-4 text-[#E94B8A]" /> Vídeo
+              </button>
+            </div>
           </div>
           <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={pickPhoto} />
           {publishErr && <p className="mb-2 text-sm text-red-600">{publishErr}</p>}
@@ -1845,14 +1852,18 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
               <span className="text-neutral-400 text-sm flex-1">Em que estás a pensar?</span>
               <Plus className="h-5 w-5 text-[#5B3FCF]" />
             </button>
-            <div className="flex gap-3 mt-2">
+            <div className="flex gap-2 mt-2">
               <button onClick={() => setShowCreate(true)}
-                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-neutral-200 bg-white text-sm font-semibold text-neutral-600 hover:bg-neutral-50 transition active:scale-95 shadow-sm">
+                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-neutral-200 bg-white text-sm font-semibold text-neutral-600 hover:bg-neutral-50 transition active:scale-95 shadow-sm">
                 <Image className="h-4 w-4 text-[#6BA547]" /> Foto
               </button>
               <button onClick={() => setShowCreate(true)}
-                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-neutral-200 bg-white text-sm font-semibold text-neutral-600 hover:bg-neutral-50 transition active:scale-95 shadow-sm">
+                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-neutral-200 bg-white text-sm font-semibold text-neutral-600 hover:bg-neutral-50 transition active:scale-95 shadow-sm">
                 <Type className="h-4 w-4 text-[#5B3FCF]" /> Texto
+              </button>
+              <button onClick={() => navigate({ to: "/studio/upload" })}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-neutral-200 bg-white text-sm font-semibold text-neutral-600 hover:bg-neutral-50 transition active:scale-95 shadow-sm">
+                <Film className="h-4 w-4 text-[#E94B8A]" /> Vídeo
               </button>
             </div>
           </div>
