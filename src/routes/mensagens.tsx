@@ -401,11 +401,11 @@ function AddContactModal({ myId, onClose, onAdd, existingContacts }: {
         <div className="relative w-full max-w-sm mx-4 mb-4 sm:mb-0 rounded-3xl overflow-hidden shadow-2xl z-10"
           style={{ background: "var(--bg-card,white)" }}>
           <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: "var(--border,#f0f0f0)" }}>
-            <button onClick={() => setRequestTarget(null)} className="p-1.5 rounded-full hover:bg-neutral-100">
+            <button onClick={() => setRequestTarget(null)} className="p-1.5 rounded-full hover:bg-[var(--s2)]">
               <ChevronLeft className="h-5 w-5" />
             </button>
             <p className="font-extrabold text-base">Enviar pedido</p>
-            <button onClick={onClose} className="p-1.5 rounded-full hover:bg-neutral-100"><X className="h-5 w-5" /></button>
+            <button onClick={onClose} className="p-1.5 rounded-full hover:bg-[var(--s2)]"><X className="h-5 w-5" /></button>
           </div>
           <div className="px-5 py-4 space-y-4">
             <div className="flex items-center gap-3 p-3 rounded-2xl" style={{ background: "var(--s2,#f5f5f5)" }}>
@@ -449,11 +449,11 @@ function AddContactModal({ myId, onClose, onAdd, existingContacts }: {
         style={{ background: "var(--bg-card,white)" }}>
         <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: "var(--border,#f0f0f0)" }}>
           <p className="font-extrabold text-base">Adicionar contacto</p>
-          <button onClick={onClose} className="p-1.5 rounded-full hover:bg-neutral-100 dark:hover:bg-[var(--s3)]"><X className="h-5 w-5" /></button>
+          <button onClick={onClose} className="p-1.5 rounded-full hover:bg-[var(--s2)] dark:hover:bg-[var(--s3)]"><X className="h-5 w-5" /></button>
         </div>
         <div className="px-5 py-4 space-y-4">
           <div className="relative">
-            <AtSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
+            <AtSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-muted)]" />
             <input
               value={search}
               onChange={e => setSearch(e.target.value)}
@@ -623,7 +623,7 @@ function RequestsPanel({ myId, onApprove, onClose }: {
             <Bell className="h-5 w-5" style={{ color: "#5B3FCF" }} />
             <p className="font-extrabold text-base">Pedidos de mensagem</p>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-full hover:bg-neutral-100 dark:hover:bg-[var(--s3)]"><X className="h-5 w-5" /></button>
+          <button onClick={onClose} className="p-1.5 rounded-full hover:bg-[var(--s2)] dark:hover:bg-[var(--s3)]"><X className="h-5 w-5" /></button>
         </div>
 
         <div className="overflow-y-auto flex-1 px-5 py-4 space-y-3">
@@ -1151,7 +1151,7 @@ function ChatMediaSendPreview({ item, onCancel, onSend, sending }: {
         <div className="flex items-center gap-1">
           {tools.map((t, i) => (
             <button key={i} onClick={() => openEditor(t.id)} title={t.title}
-              className="w-9 h-9 rounded-full flex items-center justify-center active:scale-90 transition hover:bg-white/10"
+              className="w-9 h-9 rounded-full flex items-center justify-center active:scale-90 transition hover:bg-[var(--s2)]/10"
               style={{ color: "white" }}>
               {t.icon}
             </button>
@@ -1178,7 +1178,7 @@ function ChatMediaSendPreview({ item, onCancel, onSend, sending }: {
           <div className="grid grid-cols-10 gap-1 p-2 rounded-2xl" style={{ background: "rgba(255,255,255,0.08)" }}>
             {captionEmojis.map(e => (
               <button key={e} onClick={() => { setCaption(p => p + e); setShowCaptionEmoji(false); }}
-                className="h-9 flex items-center justify-center text-xl rounded-lg active:scale-90 transition hover:bg-white/10">
+                className="h-9 flex items-center justify-center text-xl rounded-lg active:scale-90 transition hover:bg-[var(--s2)]/10">
                 {e}
               </button>
             ))}
@@ -1340,7 +1340,7 @@ function ChatMediaLightbox({ items, index, onIndexChange, onClose, onReact, cont
           </button>
           {/* Encaminhar / partilhar */}
           <button title={"Partilhar"} onClick={handleForward}
-            className="w-9 h-9 rounded-full flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 transition active:scale-90">
+            className="w-9 h-9 rounded-full flex items-center justify-center text-white/70 hover:text-white hover:bg-[var(--s2)]/10 transition active:scale-90">
             <Forward className="h-[18px] w-[18px]" />
           </button>
           {/* Favorito */}
@@ -1361,7 +1361,7 @@ function ChatMediaLightbox({ items, index, onIndexChange, onClose, onReact, cont
                 style={{ background: "#2a2a2a" }}>
                 {REACT_EMOJIS.map(e => (
                   <button key={e} onClick={() => handleReact(e)}
-                    className="w-9 h-9 flex items-center justify-center text-xl rounded-xl transition active:scale-90 hover:bg-white/10">
+                    className="w-9 h-9 flex items-center justify-center text-xl rounded-xl transition active:scale-90 hover:bg-[var(--s2)]/10">
                     {e}
                   </button>
                 ))}
@@ -1370,24 +1370,24 @@ function ChatMediaLightbox({ items, index, onIndexChange, onClose, onReact, cont
           </div>
           {/* Download */}
           <button title="Transferir" onClick={handleDownload}
-            className="w-9 h-9 rounded-full flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 transition active:scale-90">
+            className="w-9 h-9 rounded-full flex items-center justify-center text-white/70 hover:text-white hover:bg-[var(--s2)]/10 transition active:scale-90">
             <Download className="h-[18px] w-[18px]" />
           </button>
           {/* Mais opções */}
           <div className="relative">
             <button title="Mais opções" onClick={() => { setShowMore(v => !v); setShowReact(false); }}
-              className="w-9 h-9 rounded-full flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 transition active:scale-90">
+              className="w-9 h-9 rounded-full flex items-center justify-center text-white/70 hover:text-white hover:bg-[var(--s2)]/10 transition active:scale-90">
               <MoreVertical className="h-[18px] w-[18px]" />
             </button>
             {showMore && (
               <div className="absolute right-0 top-full mt-1 rounded-2xl overflow-hidden shadow-2xl z-50 min-w-[160px]"
                 style={{ background: "#2a2a2a" }}>
                 <button onClick={handleCopyLink}
-                  className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-white hover:bg-white/10 transition">
+                  className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-white hover:bg-[var(--s2)]/10 transition">
                   <RefreshCw className="h-4 w-4 opacity-70" /> Copiar link
                 </button>
                 <button onClick={() => { handleDownload(); setShowMore(false); }}
-                  className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-white hover:bg-white/10 transition">
+                  className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-white hover:bg-[var(--s2)]/10 transition">
                   <Download className="h-4 w-4 opacity-70" /> Guardar
                 </button>
               </div>
@@ -1395,7 +1395,7 @@ function ChatMediaLightbox({ items, index, onIndexChange, onClose, onReact, cont
           </div>
           {/* Fechar */}
           <button title={"Fechar"} onClick={onClose}
-            className="w-9 h-9 rounded-full flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 transition active:scale-90">
+            className="w-9 h-9 rounded-full flex items-center justify-center text-white/70 hover:text-white hover:bg-[var(--s2)]/10 transition active:scale-90">
             <X className="h-[18px] w-[18px]" />
           </button>
         </div>
@@ -1633,7 +1633,7 @@ function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit
     return (
       <div className={`flex ${isMe ? "justify-end" : "justify-start"} px-1`}>
         <div className="flex items-center gap-1.5 px-3 py-2 rounded-2xl text-xs italic"
-          style={{ background: isMe ? "#5B3FCF22" : "var(--s2)", color: "#999" }}>
+          style={{ background: isMe ? "#5B3FCF22" : "var(--s2)", color: "var(--text-muted)" }}>
           <EyeOff className="h-3.5 w-3.5" />
           <span>{isMe ? "Enviado" : "Visionado"} · ver uma vez</span>
         </div>
@@ -1649,13 +1649,13 @@ function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit
         <div className={`absolute ${isMe ? "right-full mr-1" : "left-full ml-1"} top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition flex items-center gap-0.5 z-10`}>
           <button onClick={onReply}
             className="w-7 h-7 rounded-full flex items-center justify-center"
-            style={{ background: "rgba(0,0,0,0.12)", color: "#555" }}>
+            style={{ background: "rgba(0,0,0,0.12)", color: "var(--text-secondary)" }}>
             <Reply className="h-3.5 w-3.5" />
           </button>
           <div className="relative" ref={menuRef}>
             <button onClick={() => setShowMenu(v => !v)}
               className="w-7 h-7 rounded-full flex items-center justify-center"
-              style={{ background: "rgba(0,0,0,0.12)", color: "#555" }}>
+              style={{ background: "rgba(0,0,0,0.12)", color: "var(--text-secondary)" }}>
               <MoreVertical className="h-3.5 w-3.5" />
             </button>
             {showMenu && (
@@ -1793,7 +1793,7 @@ function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit
             <p className="font-bold text-sm mb-1" style={{ color: "var(--text-primary)" }}>
               {confirmDel === "all" ? "Eliminar para todos?" : "Eliminar para mim?"}
             </p>
-            <p className="text-xs mb-4" style={{ color: "#999" }}>
+            <p className="text-xs mb-4" style={{ color: "var(--text-muted)" }}>
               {confirmDel === "all" ? "A mensagem será removida para ambos." : "A mensagem desaparece só para ti."}
             </p>
             <div className="flex gap-2">
@@ -1830,7 +1830,7 @@ function BgPickerModal({ current, onPick, onClose }: {
         style={{ background: "var(--bg-card,white)" }}>
         <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: "var(--border,#f0f0f0)" }}>
           <p className="font-extrabold text-base">Fundo do chat</p>
-          <button onClick={onClose} className="p-1.5 rounded-full hover:bg-neutral-100 dark:hover:bg-[var(--s3)]">
+          <button onClick={onClose} className="p-1.5 rounded-full hover:bg-[var(--s2)] dark:hover:bg-[var(--s3)]">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -3017,7 +3017,7 @@ function ChatPanel({ myId, contact, onBack }: {
                   </div>
                 </div>
                 <div className={`w-10 h-5 rounded-full transition-colors relative shrink-0 ${readReceipts ? "bg-[#5B3FCF]" : "bg-neutral-400"}`}>
-                  <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${readReceipts ? "translate-x-5" : "translate-x-0.5"}`} />
+                  <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-[var(--s2)] shadow transition-transform ${readReceipts ? "translate-x-5" : "translate-x-0.5"}`} />
                 </div>
               </button>
               {/* Última vez ativo */}
@@ -3032,7 +3032,7 @@ function ChatPanel({ myId, contact, onBack }: {
                   </div>
                 </div>
                 <div className={`w-10 h-5 rounded-full transition-colors relative shrink-0 ${showLastSeen ? "bg-[#5B3FCF]" : "bg-neutral-400"}`}>
-                  <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${showLastSeen ? "translate-x-5" : "translate-x-0.5"}`} />
+                  <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-[var(--s2)] shadow transition-transform ${showLastSeen ? "translate-x-5" : "translate-x-0.5"}`} />
                 </div>
               </button>
               {/* Silenciar */}
@@ -3047,7 +3047,7 @@ function ChatPanel({ myId, contact, onBack }: {
                   </div>
                 </div>
                 <div className={`w-10 h-5 rounded-full transition-colors relative shrink-0 ${mutedConv ? "bg-neutral-400" : "bg-[#5B3FCF]"}`}>
-                  <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${mutedConv ? "translate-x-5" : "translate-x-0.5"}`} />
+                  <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-[var(--s2)] shadow transition-transform ${mutedConv ? "translate-x-5" : "translate-x-0.5"}`} />
                 </div>
               </button>
               {/* Limpar conversa */}
@@ -3162,7 +3162,7 @@ function ChatPanel({ myId, contact, onBack }: {
           <button onClick={confirmEdit}
             className="px-3 py-1 rounded-xl text-xs font-bold text-white"
             style={{ background:"linear-gradient(135deg,#5B3FCF,#7B5CE8)" }}>Guardar</button>
-          <button onClick={() => setEditingMsgId(null)}><X className="h-4 w-4 text-neutral-400" /></button>
+          <button onClick={() => setEditingMsgId(null)}><X className="h-4 w-4 text-[var(--text-muted)]" /></button>
         </div>
       )}
 
@@ -3422,7 +3422,7 @@ function ChatPanel({ myId, contact, onBack }: {
         </button>
         {/* Campo de texto — igual ao WhatsApp */}
         <div className="flex-1 flex items-end rounded-3xl px-4 py-2 gap-2 min-h-[44px]"
-          style={{ background:"white", boxShadow: "0 1px 4px rgba(0,0,0,0.1)" }}>
+          style={{ background: "var(--s2)", boxShadow: "0 1px 4px rgba(0,0,0,0.1)" }}>
           <textarea ref={inputRef} value={input} onChange={e => setInput(e.target.value)} rows={1}
             onKeyDown={e => { if (e.key==="Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
             placeholder="Mensagem..." className="flex-1 bg-transparent outline-none text-sm resize-none py-1 max-h-28 leading-relaxed"
@@ -3618,7 +3618,7 @@ function ContactList({ contacts, loading, refreshing, search, setSearch, active,
           <button
             key={c.conversationId}
             onClick={() => setActive(c)}
-            className="w-full flex items-center gap-3 px-4 py-3.5 text-left transition-colors active:bg-neutral-50"
+            className="w-full flex items-center gap-3 px-4 py-3.5 text-left transition-colors active:bg-[var(--s1)]"
             style={{
               borderBottom: "1px solid var(--border-subtle,#f0f0f0)",
               background: active?.conversationId === c.conversationId ? "rgba(91,63,207,0.06)" : "transparent",
@@ -3631,7 +3631,7 @@ function ContactList({ contacts, loading, refreshing, search, setSearch, active,
                   background: active?.conversationId === c.conversationId
                     ? "linear-gradient(135deg,#5B3FCF,#E94B8A)" : "transparent",
                 }}>
-                <div style={{ borderRadius: "50%", padding: active?.conversationId === c.conversationId ? 1.5 : 0, background: "white" }}>
+                <div style={{ borderRadius: "50%", padding: active?.conversationId === c.conversationId ? 1.5 : 0, background: "var(--s2)" }}>
                   <Av name={c.username} color={c.color} size={46} src={c.avatar_url} />
                 </div>
               </div>

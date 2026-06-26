@@ -395,7 +395,7 @@ function UserProfilePage() {
           <div className="mx-auto max-w-2xl lg:max-w-3xl px-4 h-14 flex items-center gap-3">
             <button
               onClick={() => navigate({ to: "/home" })}
-              className="p-2 hover:bg-neutral-100 rounded-full transition active:scale-90"
+              className="p-2 hover:bg-[var(--s2)] rounded-full transition active:scale-90"
             >
               <ChevronLeft className="h-5 w-5" style={{ color: "var(--text-primary)" }} />
             </button>
@@ -448,7 +448,7 @@ function UserProfilePage() {
                       background: "linear-gradient(135deg,#5B3FCF 0%,#E94B8A 50%,#FFC93C 100%)",
                     }}
                   >
-                    <div className="rounded-full p-[2px] bg-white">
+                    <div className="rounded-full p-[2px] bg-[var(--s2)]">
                       <Avatar name={name} size={80} src={avatarUrl} color={color} />
                     </div>
                   </div>
@@ -460,7 +460,7 @@ function UserProfilePage() {
                 <button
                   onClick={openChat}
                   disabled={openingChat}
-                  className="text-sm font-semibold border border-neutral-300 rounded-full px-4 py-1.5 btn-ghost hover:bg-neutral-50 flex items-center gap-1.5 shadow-sm active:scale-95 transition disabled:opacity-60"
+                  className="text-sm font-semibold border border-neutral-300 rounded-full px-4 py-1.5 btn-ghost hover:bg-[var(--s1)] flex items-center gap-1.5 shadow-sm active:scale-95 transition disabled:opacity-60"
                 >
                   {openingChat ? (
                     <span
@@ -477,7 +477,7 @@ function UserProfilePage() {
                   className="text-sm font-bold rounded-full px-5 py-1.5 transition shadow-sm flex items-center gap-1.5 active:scale-95"
                   style={
                     following
-                      ? { background: "white", border: "1px solid #d1d1d1", color: "#333" }
+                      ? { background: "var(--s2)", border: "1px solid #d1d1d1", color: "var(--text-secondary)" }
                       : { background: "#5B3FCF", color: "white" }
                   }
                 >
@@ -520,7 +520,7 @@ function UserProfilePage() {
                 ].map((s) => (
                   <div
                     key={s.l}
-                    className="stat-card border border-neutral-100 rounded-2xl py-3 text-center shadow-sm"
+                    className="stat-card border border-[var(--border-subtle)] rounded-2xl py-3 text-center shadow-sm"
                   >
                     {statsQuery.isLoading ? (
                       <div className="h-[22px] flex items-center justify-center">
@@ -537,7 +537,7 @@ function UserProfilePage() {
                         {fmtNum(s.n)}
                       </p>
                     )}
-                    <p className="text-[11px] text-neutral-400 mt-0.5 font-medium">{s.l}</p>
+                    <p className="text-[11px] text-[var(--text-muted)] mt-0.5 font-medium">{s.l}</p>
                   </div>
                 ))}
               </div>
@@ -562,7 +562,7 @@ function UserProfilePage() {
                   {posts.map((post) => {
                     const isLiked = likeOverrides[post.id] ?? likedPosts.has(post.id);
                     return (
-                      <article key={post.id} className="hooda-card rounded-none border-b border-neutral-100">
+                      <article key={post.id} className="hooda-card rounded-none border-b border-[var(--border-subtle)]">
                         <div className="flex items-center gap-3 px-4 py-3">
                           <Avatar name={name} size={40} src={avatarUrl} color={color} />
                           <div className="flex-1 min-w-0">
@@ -576,8 +576,8 @@ function UserProfilePage() {
                               @{profile.username} · {timeAgo(post.createdAt)}
                             </p>
                           </div>
-                          <button className="p-1.5 rounded-full hover:bg-neutral-100 transition">
-                            <MoreHorizontal className="h-4 w-4 text-neutral-400" />
+                          <button className="p-1.5 rounded-full hover:bg-[var(--s2)] transition">
+                            <MoreHorizontal className="h-4 w-4 text-[var(--text-muted)]" />
                           </button>
                         </div>
 
@@ -604,17 +604,17 @@ function UserProfilePage() {
                         <div className="flex items-center px-3 pb-3 border-t border-neutral-50 pt-2 gap-1">
                           <button
                             onClick={() => toggleLike(post.id)}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all active:scale-95 ${isLiked ? "text-red-500" : "hover:bg-neutral-50"}`}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all active:scale-95 ${isLiked ? "text-red-500" : "hover:bg-[var(--s1)]"}`}
                           >
                             <Heart
-                              className={`h-5 w-5 ${isLiked ? "fill-red-500 text-red-500" : "text-neutral-400"}`}
+                              className={`h-5 w-5 ${isLiked ? "fill-red-500 text-red-500" : "text-[var(--text-muted)]"}`}
                             />
                           </button>
-                          <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-full hover:bg-neutral-50">
-                            <CommentIcon className="h-5 w-5 text-neutral-400" />
+                          <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-full hover:bg-[var(--s1)]">
+                            <CommentIcon className="h-5 w-5 text-[var(--text-muted)]" />
                           </button>
-                          <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-full hover:bg-neutral-50">
-                            <Share2 className="h-5 w-5 text-neutral-400" />
+                          <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-full hover:bg-[var(--s1)]">
+                            <Share2 className="h-5 w-5 text-[var(--text-muted)]" />
                           </button>
                         </div>
                       </article>
@@ -625,7 +625,7 @@ function UserProfilePage() {
 
               {/* Denunciar */}
               <div className="px-4 pb-6">
-                <button className="w-full h-11 rounded-xl border border-neutral-200 text-neutral-400 text-sm flex items-center justify-center gap-2 hover:bg-neutral-100 shadow-sm">
+                <button className="w-full h-11 rounded-xl border border-[var(--border-default)] text-[var(--text-muted)] text-sm flex items-center justify-center gap-2 hover:bg-[var(--s2)] shadow-sm">
                   <Flag className="h-4 w-4" /> Denunciar perfil
                 </button>
               </div>

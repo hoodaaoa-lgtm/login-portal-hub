@@ -120,7 +120,7 @@ function CategoryModal({ cat, userId, username, onClose }: { cat: Tile; userId: 
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
       style={{ background: "rgba(0,0,0,0.6)" }}
       onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="w-full sm:max-w-md bg-white sm:rounded-2xl rounded-t-3xl overflow-hidden flex flex-col"
+      <div className="w-full sm:max-w-md bg-[var(--s2)] sm:rounded-2xl rounded-t-3xl overflow-hidden flex flex-col"
         style={{ maxHeight: "90vh" }}>
         <div className="relative h-32 flex-shrink-0">
           <img src={cat.img} alt={cat.t} className="w-full h-full object-cover" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
@@ -131,20 +131,20 @@ function CategoryModal({ cat, userId, username, onClose }: { cat: Tile; userId: 
           <h2 className="absolute bottom-3 left-4 text-white font-extrabold text-xl">{cat.t}</h2>
         </div>
 
-        <div className="overflow-y-auto flex-1 bg-neutral-50">
+        <div className="overflow-y-auto flex-1 bg-[var(--s1)]">
           {loading ? (
-            <p className="text-xs text-neutral-400 text-center py-12">A carregar...</p>
+            <p className="text-xs text-[var(--text-muted)] text-center py-12">A carregar...</p>
           ) : posts.length === 0 ? (
             <div className="flex flex-col items-center gap-3 py-16 text-center px-5">
               <BookOpen className="h-8 w-8 text-neutral-300" />
-              <p className="text-sm text-neutral-400">Em breve publicações desta categoria</p>
+              <p className="text-sm text-[var(--text-muted)]">Em breve publicações desta categoria</p>
             </div>
           ) : (
             <div className="space-y-2 p-3">
               {posts.map((p) => {
                 const isL = liked.has(p.id), isS = saved.has(p.id);
                 return (
-                  <div key={p.id} className="bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden">
+                  <div key={p.id} className="bg-[var(--s2)] rounded-2xl border border-[var(--border-subtle)] shadow-sm overflow-hidden">
                     <div className="flex items-center gap-3 px-4 py-3">
                       <ProfileAvatarLink userId={p.author_id ?? ""} username={p.author_username ?? ""} disableStoryCheck={!p.author_id || !p.author_username}>
                         <div className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0 overflow-hidden"
@@ -157,14 +157,14 @@ function CategoryModal({ cat, userId, username, onClose }: { cat: Tile; userId: 
                       <p className="text-sm font-semibold text-black">@{p.author_username || "anon"}</p>
                     </div>
                     <p className="px-4 pb-3 text-[14px] text-neutral-800 leading-relaxed whitespace-pre-line">{p.content}</p>
-                    <div className="flex items-center gap-2 px-4 py-2.5 border-t border-neutral-100">
+                    <div className="flex items-center gap-2 px-4 py-2.5 border-t border-[var(--border-subtle)]">
                       <button onClick={() => toggleLike(p.id)} className="flex items-center gap-1.5 text-sm transition active:scale-90">
                         <ThumbsUp className={`h-4 w-4 ${isL ? "fill-[#FFC93C] stroke-[#FFC93C]" : "stroke-neutral-400"}`} strokeWidth={1.8} />
-                        <span className={`text-xs font-semibold ${isL ? "text-[#E5A800]" : "text-neutral-400"}`}>
+                        <span className={`text-xs font-semibold ${isL ? "text-[#E5A800]" : "text-[var(--text-muted)]"}`}>
                           {likeCounts[p.id] || 0}
                         </span>
                       </button>
-                      <button onClick={() => setOpenComments(p)} className="flex items-center gap-1.5 text-xs text-neutral-400 transition active:scale-90">
+                      <button onClick={() => setOpenComments(p)} className="flex items-center gap-1.5 text-xs text-[var(--text-muted)] transition active:scale-90">
                         <MessageCircle className="h-4 w-4" />
                         <span className="font-semibold">{commentCounts[p.id] || 0}</span>
                       </button>
@@ -319,19 +319,19 @@ function ExplorePage() {
     <>
     <SideNav />
     <PageWrapper className="pb-20 lg:pb-0">
-      <header className="sticky top-0 z-30 bg-white border-b border-neutral-100 shadow-sm">
+      <header className="sticky top-0 z-30 bg-[var(--s2)] border-b border-[var(--border-subtle)] shadow-sm">
         <div className="mx-auto max-w-2xl lg:max-w-3xl px-4 h-14 flex items-center">
           <HoodaLogo size="sm" />
         </div>
         <div className="mx-auto max-w-2xl lg:max-w-3xl px-4 pb-3">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-muted)]" />
             <input value={query} onChange={(e) => setQuery(e.target.value)}
               placeholder="Buscar livros, criadores, comunidades..."
-              className="w-full h-11 pl-10 pr-10 rounded-xl bg-neutral-100 text-sm outline-none focus:bg-white focus:ring-2 transition" />
+              className="w-full h-11 pl-10 pr-10 rounded-xl bg-[var(--s2)] text-sm outline-none focus:bg-[var(--s2)] focus:ring-2 transition" />
             {query && (
-              <button onClick={() => setQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 rounded-full hover:bg-neutral-200 transition">
-                <X className="h-4 w-4 text-neutral-400" />
+              <button onClick={() => setQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 rounded-full hover:bg-[var(--s3)] transition">
+                <X className="h-4 w-4 text-[var(--text-muted)]" />
               </button>
             )}
           </div>
@@ -343,10 +343,10 @@ function ExplorePage() {
           <div className="mb-6 space-y-4">
             {profiles.length > 0 && (
               <div>
-                <p className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-2">Criadores</p>
+                <p className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2">Criadores</p>
                 <div className="space-y-2">
                   {profiles.map((p) => (
-                    <div key={p.id} className="flex items-center gap-3 bg-white rounded-2xl border border-neutral-100 px-4 py-3 shadow-sm">
+                    <div key={p.id} className="flex items-center gap-3 bg-[var(--s2)] rounded-2xl border border-[var(--border-subtle)] px-4 py-3 shadow-sm">
                       <ProfileAvatarLink userId={p.id} username={p.username}>
                         <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
                           style={{
@@ -360,8 +360,8 @@ function ExplorePage() {
                       </ProfileAvatarLink>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-bold text-black truncate">{p.full_name || p.username}</p>
-                        <p className="text-xs text-neutral-400">@{p.username}</p>
-                        {p.bio && <p className="text-xs text-neutral-500 truncate">{p.bio}</p>}
+                        <p className="text-xs text-[var(--text-muted)]">@{p.username}</p>
+                        {p.bio && <p className="text-xs text-[var(--text-muted)] truncate">{p.bio}</p>}
                       </div>
                     </div>
                   ))}
@@ -370,17 +370,17 @@ function ExplorePage() {
             )}
             {books.length > 0 && (
               <div>
-                <p className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-2">Livros</p>
+                <p className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2">Livros</p>
                 <div className="grid grid-cols-2 gap-2">
                   {books.map((b) => (
-                    <div key={b.id} className="bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden">
+                    <div key={b.id} className="bg-[var(--s2)] rounded-2xl border border-[var(--border-subtle)] shadow-sm overflow-hidden">
                       <div className="h-20 flex items-center justify-center text-3xl text-white font-extrabold"
                         style={{ background: `linear-gradient(135deg,${b.cover_color}ee,${b.cover_color}88)` }}>
                         {b.title[0]?.toUpperCase()}
                       </div>
                       <div className="p-2.5">
                         <p className="text-xs font-bold text-black truncate">{b.title}</p>
-                        <p className="text-[10px] text-neutral-400">@{b.author_username} · {b.chapter_count} cap.</p>
+                        <p className="text-[10px] text-[var(--text-muted)]">@{b.author_username} · {b.chapter_count} cap.</p>
                       </div>
                     </div>
                   ))}
@@ -392,7 +392,7 @@ function ExplorePage() {
 
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-lg font-extrabold text-black">{query ? `Categorias com "${query}"` : "Categorias"}</h2>
-          {query && <span className="text-xs text-neutral-400 font-medium">{filtered.length} encontrada{filtered.length !== 1 ? "s" : ""}</span>}
+          {query && <span className="text-xs text-[var(--text-muted)] font-medium">{filtered.length} encontrada{filtered.length !== 1 ? "s" : ""}</span>}
         </div>
 
         {filtered.length === 0 ? (
@@ -400,7 +400,7 @@ function ExplorePage() {
             <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{ background: ACCENT + "18" }}>
               <Search className="h-6 w-6" style={{ color: ACCENT }} />
             </div>
-            <p className="text-sm font-semibold text-neutral-500">Sem resultados para "{query}"</p>
+            <p className="text-sm font-semibold text-[var(--text-muted)]">Sem resultados para "{query}"</p>
             <button onClick={() => setQuery("")} className="text-sm font-bold px-4 py-2 rounded-full text-white transition active:scale-95" style={{ background: ACCENT }}>
               Ver todas as categorias
             </button>

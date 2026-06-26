@@ -98,10 +98,10 @@ function StatsGrid({ publications, followers, following, onFollowersClick, onFol
     <div className="grid grid-cols-3 gap-2 px-5 pb-4">
       {items.map((s) => (
         <button key={s.l} onClick={s.onClick} disabled={!s.onClick}
-          className="bg-white border border-neutral-100 rounded-2xl py-3 text-center stat-card transition active:scale-[0.97] disabled:active:scale-100"
+          className="bg-[var(--s2)] border border-[var(--border-subtle)] rounded-2xl py-3 text-center stat-card transition active:scale-[0.97] disabled:active:scale-100"
           style={{ cursor: s.onClick ? "pointer" : "default" }}>
           <p className="text-lg font-extrabold text-black">{fmtNum(s.n)}</p>
-          <p className="text-[11px] text-neutral-400 mt-0.5 font-medium">{s.l}</p>
+          <p className="text-[11px] text-[var(--text-muted)] mt-0.5 font-medium">{s.l}</p>
         </button>
       ))}
     </div>
@@ -162,10 +162,10 @@ function FollowListModal({ mode, targetUsername, targetUserId, onClose }: {
     <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center overflow-hidden" style={{ background: "rgba(0,0,0,0.5)" }}
       onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="w-full sm:max-w-sm sm:rounded-2xl hooda-modal-sheet rounded-t-3xl overflow-hidden flex flex-col" style={{ maxHeight: "75vh" }}>
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-neutral-100 shrink-0">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-[var(--border-subtle)] shrink-0">
           <p className="font-extrabold text-base text-black">{mode === "followers" ? t("profile.followers") : t("profile.following")}</p>
-          <button onClick={onClose} className="p-1.5 rounded-full hover:bg-neutral-100">
-            <X className="h-5 w-5 text-neutral-400" />
+          <button onClick={onClose} className="p-1.5 rounded-full hover:bg-[var(--s2)]">
+            <X className="h-5 w-5 text-[var(--text-muted)]" />
           </button>
         </div>
         <div className="overflow-y-auto flex-1">
@@ -176,7 +176,7 @@ function FollowListModal({ mode, targetUsername, targetUserId, onClose }: {
           ) : err ? (
             <p className="text-sm text-red-500 text-center py-10 px-5">{err}</p>
           ) : users.length === 0 ? (
-            <p className="text-sm text-neutral-400 text-center py-10">
+            <p className="text-sm text-[var(--text-muted)] text-center py-10">
               {mode === "followers" ? "Ainda sem seguidores" : "Ainda não segue ninguém"}
             </p>
           ) : (
@@ -193,7 +193,7 @@ function FollowListModal({ mode, targetUsername, targetUserId, onClose }: {
                   </ProfileAvatarLink>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold text-black truncate">{u.fullName}</p>
-                    <p className="text-xs text-neutral-400">@{u.username}</p>
+                    <p className="text-xs text-[var(--text-muted)]">@{u.username}</p>
                   </div>
                 </div>
               ))}
@@ -320,7 +320,7 @@ function PostCard({
   const GROUPS = shareCommunities;
 
   return (
-    <article className="hooda-card rounded-none border-b border-neutral-100">
+    <article className="hooda-card rounded-none border-b border-[var(--border-subtle)]">
       {/* Header */}
       <div className="flex items-start gap-3 px-4 pt-4 pb-2">
         <Avatar name={name} size={42} src={avatarUrl} />
@@ -328,23 +328,23 @@ function PostCard({
           <div className="flex items-center justify-between gap-2">
             <div className="min-w-0">
               <span className="font-bold text-[15px] text-black">{name}</span>
-              <p className="text-[12px] text-neutral-400 mt-0.5">@{username} · {timeAgo(post.createdAt)}</p>
+              <p className="text-[12px] text-[var(--text-muted)] mt-0.5">@{username} · {timeAgo(post.createdAt)}</p>
             </div>
             {isOwner ? (
               <div className="relative shrink-0">
                 <button onClick={() => { setMenuOpen(o => !o); setShareOpen(false); }}
-                  className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-neutral-100 transition">
-                  <MoreHorizontal className="h-5 w-5 text-neutral-400" />
+                  className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-[var(--s2)] transition">
+                  <MoreHorizontal className="h-5 w-5 text-[var(--text-muted)]" />
                 </button>
                 {menuOpen && (
-                  <div className="absolute right-0 top-9 bg-white rounded-2xl shadow-xl border border-neutral-100 z-30 min-w-[180px] overflow-hidden">
+                  <div className="absolute right-0 top-9 bg-[var(--s2)] rounded-2xl shadow-xl border border-[var(--border-subtle)] z-30 min-w-[180px] overflow-hidden">
                     <button onClick={openShareSheet}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-neutral-50 text-neutral-700">
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-[var(--s1)] text-[var(--text-secondary)]">
                       <Send className="h-4 w-4 text-[#5B3FCF]" /> Partilhar em grupo
                     </button>
                     <button onClick={() => { navigator.clipboard?.writeText(post.text); setMenuOpen(false); toast.success("Texto copiado!"); }}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-neutral-50 text-neutral-700 border-t border-neutral-50">
-                      <Copy className="h-4 w-4 text-neutral-400" /> Copiar texto
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-[var(--s1)] text-[var(--text-secondary)] border-t border-neutral-50">
+                      <Copy className="h-4 w-4 text-[var(--text-muted)]" /> Copiar texto
                     </button>
                     <button onClick={handleDelete} disabled={deleting}
                       className="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-red-50 text-red-500 border-t border-neutral-50 disabled:opacity-50">
@@ -383,21 +383,21 @@ function PostCard({
 
       {/* Action bar */}
       <div className="flex items-center px-3 pb-3 border-t border-neutral-50 pt-2">
-        <button onClick={() => onLike(post.id)} className="flex items-center gap-1.5 px-2 py-1.5 rounded-xl hover:bg-neutral-50 transition group">
-          <Heart className={`h-[19px] w-[19px] transition ${post.likedByMe ? "fill-red-500 text-red-500" : "text-neutral-400 group-hover:text-red-400"}`} />
-          <span className={`text-[13px] font-semibold ${post.likedByMe ? "text-red-500" : "text-neutral-500"}`}>{fmtNum(post.likes)}</span>
+        <button onClick={() => onLike(post.id)} className="flex items-center gap-1.5 px-2 py-1.5 rounded-xl hover:bg-[var(--s1)] transition group">
+          <Heart className={`h-[19px] w-[19px] transition ${post.likedByMe ? "fill-red-500 text-red-500" : "text-[var(--text-muted)] group-hover:text-red-400"}`} />
+          <span className={`text-[13px] font-semibold ${post.likedByMe ? "text-red-500" : "text-[var(--text-muted)]"}`}>{fmtNum(post.likes)}</span>
         </button>
-        <button onClick={() => setShowComments(true)} className="flex items-center gap-1.5 px-2 py-1.5 rounded-xl hover:bg-neutral-50 transition group">
-          <MessageCircle className="h-[19px] w-[19px] text-neutral-400 group-hover:text-blue-400 transition" />
-          <span className="text-[13px] font-semibold text-neutral-500">{fmtNum(commentCount)}</span>
+        <button onClick={() => setShowComments(true)} className="flex items-center gap-1.5 px-2 py-1.5 rounded-xl hover:bg-[var(--s1)] transition group">
+          <MessageCircle className="h-[19px] w-[19px] text-[var(--text-muted)] group-hover:text-blue-400 transition" />
+          <span className="text-[13px] font-semibold text-[var(--text-muted)]">{fmtNum(commentCount)}</span>
         </button>
         <button onClick={openShareSheet}
-          className="flex items-center gap-1.5 px-2 py-1.5 rounded-xl hover:bg-neutral-50 transition group">
-          <Share2 className="h-[19px] w-[19px] text-neutral-400 group-hover:text-green-500 transition" />
+          className="flex items-center gap-1.5 px-2 py-1.5 rounded-xl hover:bg-[var(--s1)] transition group">
+          <Share2 className="h-[19px] w-[19px] text-[var(--text-muted)] group-hover:text-green-500 transition" />
         </button>
         <div className="flex-1" />
-        <button onClick={() => onBookmark(post.id)} className="px-2 py-1.5 rounded-xl hover:bg-neutral-50 transition">
-          <Bookmark className={`h-[19px] w-[19px] transition ${post.bookmarked ? "fill-[#5B3FCF] text-[#5B3FCF]" : "text-neutral-400"}`} />
+        <button onClick={() => onBookmark(post.id)} className="px-2 py-1.5 rounded-xl hover:bg-[var(--s1)] transition">
+          <Bookmark className={`h-[19px] w-[19px] transition ${post.bookmarked ? "fill-[#5B3FCF] text-[#5B3FCF]" : "text-[var(--text-muted)]"}`} />
         </button>
       </div>
 
@@ -410,7 +410,7 @@ function PostCard({
               <Avatar name={name} size={36} src={avatarUrl} />
               <div>
                 <p className="text-sm font-bold text-black">{name}</p>
-                <p className="text-[11px] text-neutral-400">@{username} · {timeAgo(post.createdAt)}</p>
+                <p className="text-[11px] text-[var(--text-muted)]">@{username} · {timeAgo(post.createdAt)}</p>
               </div>
             </div>
           }
@@ -430,7 +430,7 @@ function PostCard({
                     </div>
                   </div>
                 ) : (
-                  <p className="px-4 pb-3 text-sm leading-relaxed text-neutral-700">{post.text}</p>
+                  <p className="px-4 pb-3 text-sm leading-relaxed text-[var(--text-secondary)]">{post.text}</p>
                 )
               )}
             </>
@@ -438,10 +438,10 @@ function PostCard({
           actions={
             <div className="flex items-center gap-1 pt-2 pb-1">
               <button onClick={() => onLike(post.id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all active:scale-95 ${post.likedByMe ? "text-red-500" : "hover:bg-neutral-50"}`}>
-                <Heart className={`h-5 w-5 ${post.likedByMe ? "fill-red-500 text-red-500" : "text-neutral-400"}`} />
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all active:scale-95 ${post.likedByMe ? "text-red-500" : "hover:bg-[var(--s1)]"}`}>
+                <Heart className={`h-5 w-5 ${post.likedByMe ? "fill-red-500 text-red-500" : "text-[var(--text-muted)]"}`} />
               </button>
-              <Share2 className="h-5 w-5 text-neutral-400 ml-1" />
+              <Share2 className="h-5 w-5 text-[var(--text-muted)] ml-1" />
             </div>
           }
           comments={comments}
@@ -458,7 +458,7 @@ function PostCard({
         <div className="fixed inset-0 z-[100] flex items-end lg:items-center justify-center overflow-hidden" style={{ background: "rgba(0,0,0,0.6)" }}
           onClick={(e) => e.target === e.currentTarget && setShareOpen(false)}>
           <div className="w-full lg:max-w-md lg:rounded-3xl rounded-t-3xl hooda-modal-sheet flex flex-col overflow-hidden shadow-2xl max-h-[80vh]">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-100 shrink-0">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border-subtle)] shrink-0">
             </div>
             <div className="overflow-y-auto px-3 py-2">
               {loadingShareTargets ? (
@@ -466,13 +466,13 @@ function PostCard({
                   <Loader className="h-6 w-6 animate-spin" style={{ color: ACCENT }} />
                 </div>
               ) : GROUPS.length === 0 ? (
-                <p className="text-sm text-neutral-400 text-center py-10 px-4">
+                <p className="text-sm text-[var(--text-muted)] text-center py-10 px-4">
                   Ainda não fazes parte de nenhuma comunidade onde possas publicar.
                 </p>
               ) : (
                 GROUPS.map((g) => (
                   <button key={g.id} onClick={() => handleShareTo(g.id)} disabled={!!sharingToId}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-neutral-50 transition disabled:opacity-50">
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[var(--s1)] transition disabled:opacity-50">
                     <div className="w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center text-lg shrink-0"
                       style={{ background: g.color }}>
                       {g.photo ? <img src={g.photo} alt="" className="w-full h-full object-cover" /> : g.emoji}
@@ -481,7 +481,7 @@ function PostCard({
                     {sharingToId === g.id ? (
                       <Loader className="h-4 w-4 animate-spin" style={{ color: ACCENT }} />
                     ) : (
-                      <Send className="h-4 w-4 text-neutral-400" />
+                      <Send className="h-4 w-4 text-[var(--text-muted)]" />
                     )}
                   </button>
                 ))
@@ -505,8 +505,8 @@ function PostsFeed({ posts, name, username, avatarUrl, onLike, onBookmark, onDel
       <div className="w-16 h-16 rounded-full bg-[#5B3FCF]/10 flex items-center justify-center">
         <BookOpen className="h-7 w-7 text-[#5B3FCF]" />
       </div>
-      <p className="text-sm font-semibold text-neutral-500">Ainda não tens publicações</p>
-      <p className="text-xs text-neutral-400">Cria a tua primeira publicação acima!</p>
+      <p className="text-sm font-semibold text-[var(--text-muted)]">Ainda não tens publicações</p>
+      <p className="text-xs text-[var(--text-muted)]">Cria a tua primeira publicação acima!</p>
     </div>
   );
   return (
@@ -654,17 +654,17 @@ function CreatePostModal({
       style={{ background: "rgba(0,0,0,0.55)" }}
       onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="w-full lg:max-w-lg lg:rounded-3xl rounded-t-2xl hooda-modal-sheet flex flex-col" style={{ maxHeight: "80vh", overflow: "hidden" }}>
-        <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-100">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border-subtle)]">
           <span className="text-base font-bold text-black">Criar publicação</span>
-          <button onClick={onClose} className="p-1.5 rounded-full hover:bg-neutral-100 transition">
-            <X className="h-5 w-5 text-neutral-500" />
+          <button onClick={onClose} className="p-1.5 rounded-full hover:bg-[var(--s2)] transition">
+            <X className="h-5 w-5 text-[var(--text-muted)]" />
           </button>
         </div>
         <div className="flex items-center gap-3 px-4 py-3">
           <Avatar name={name} size={42} />
           <div>
             <p className="text-sm font-bold text-black">{name}</p>
-            <span className="text-[11px] bg-neutral-100 text-neutral-600 px-2 py-0.5 rounded-full font-medium">
+            <span className="text-[11px] bg-[var(--s2)] text-[var(--text-secondary)] px-2 py-0.5 rounded-full font-medium">
               @{profile?.username || "utilizador"}
             </span>
           </div>
@@ -700,7 +700,7 @@ function CreatePostModal({
           </div>
           {!photo && (
             <div className="mt-4">
-              <p className="text-[11px] text-neutral-400 font-semibold uppercase tracking-wide mb-2">Cor de fundo</p>
+              <p className="text-[11px] text-[var(--text-muted)] font-semibold uppercase tracking-wide mb-2">Cor de fundo</p>
               <div className="flex gap-2 flex-wrap">
                 {BG_COLORS.map((c) => (
                   <button key={c.label} onClick={() => setBgColor(c.value)} title={c.label}
@@ -712,16 +712,16 @@ function CreatePostModal({
             </div>
           )}
         </div>
-        <div className="px-4 py-3 border-t border-neutral-100">
+        <div className="px-4 py-3 border-t border-[var(--border-subtle)]">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-sm text-neutral-500 font-medium">Adicionar à publicação</span>
+            <span className="text-sm text-[var(--text-muted)] font-medium">Adicionar à publicação</span>
             <div className="flex items-center gap-2">
               <button onClick={() => fileRef.current?.click()}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-neutral-100 hover:bg-neutral-200 transition text-sm font-semibold text-neutral-700 active:scale-95">
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[var(--s2)] hover:bg-[var(--s3)] transition text-sm font-semibold text-[var(--text-secondary)] active:scale-95">
                 <Image className="h-4 w-4 text-[#6BA547]" /> {t("post.photo")}
               </button>
               <button onClick={() => videoRef.current?.click()}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-neutral-100 hover:bg-neutral-200 transition text-sm font-semibold text-neutral-700 active:scale-95">
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[var(--s2)] hover:bg-[var(--s3)] transition text-sm font-semibold text-[var(--text-secondary)] active:scale-95">
                 <Film className="h-4 w-4 text-[#E94B8A]" /> {"Vídeo"}
               </button>
             </div>
@@ -835,9 +835,9 @@ function EditProfileModal({
       <div className="w-full lg:max-w-lg lg:rounded-3xl rounded-t-3xl hooda-modal-sheet flex flex-col"
         style={{ maxHeight: "96vh", overflow: "hidden" }}>
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100">
-          <button onClick={onClose} className="p-1.5 rounded-full hover:bg-neutral-100">
-            <X className="h-5 w-5 text-neutral-500" />
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border-subtle)]">
+          <button onClick={onClose} className="p-1.5 rounded-full hover:bg-[var(--s2)]">
+            <X className="h-5 w-5 text-[var(--text-muted)]" />
           </button>
           <span className="text-base font-extrabold text-black">{t("settings.edit_profile")}</span>
           <button onClick={save}
@@ -868,18 +868,18 @@ function EditProfileModal({
           <div className="pt-12 px-5 pb-6 space-y-4">
             {/* Nome */}
             <div>
-              <label className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider">Nome</label>
+              <label className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Nome</label>
               <input value={name} onChange={(e) => setName(e.target.value)}
                 placeholder="O teu nome completo"
-                className="mt-1 w-full border border-neutral-200 rounded-xl px-4 py-2.5 text-sm font-medium outline-none focus:border-[#5B3FCF] focus:ring-2 focus:ring-[#5B3FCF]/20 transition"
+                className="mt-1 w-full border border-[var(--border-default)] rounded-xl px-4 py-2.5 text-sm font-medium outline-none focus:border-[#5B3FCF] focus:ring-2 focus:ring-[#5B3FCF]/20 transition"
               />
             </div>
 
             {/* Username */}
             <div>
-              <label className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider">Nome de utilizador</label>
+              <label className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Nome de utilizador</label>
               <div className="relative mt-1">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400 text-sm">@</span>
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] text-sm">@</span>
                 <input value={username} onChange={(e) => handleUsernameChange(e.target.value)}
                   placeholder="nomedeutilizador"
                   className="w-full rounded-xl pl-8 pr-10 py-2.5 text-sm font-medium outline-none transition"
@@ -905,44 +905,44 @@ function EditProfileModal({
 
             {/* Bio */}
             <div>
-              <label className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider">Biografia</label>
+              <label className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Biografia</label>
               <textarea value={bio} onChange={(e) => setBio(e.target.value)}
                 placeholder="Fala um pouco sobre ti..."
                 rows={3}
-                className="mt-1 w-full border border-neutral-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#5B3FCF] focus:ring-2 focus:ring-[#5B3FCF]/20 transition resize-none leading-relaxed"
+                className="mt-1 w-full border border-[var(--border-default)] rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#5B3FCF] focus:ring-2 focus:ring-[#5B3FCF]/20 transition resize-none leading-relaxed"
               />
-              <p className="text-[11px] text-neutral-400 text-right mt-1">{bio.length}/160</p>
+              <p className="text-[11px] text-[var(--text-muted)] text-right mt-1">{bio.length}/160</p>
             </div>
 
             {/* Website */}
             <div>
-              <label className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider">Website</label>
+              <label className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Website</label>
               <div className="relative mt-1">
-                <Link className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
+                <Link className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-muted)]" />
                 <input value={website} onChange={(e) => setWebsite(e.target.value)}
                   placeholder="https://..."
-                  className="w-full border border-neutral-200 rounded-xl pl-10 pr-4 py-2.5 text-sm outline-none focus:border-[#5B3FCF] focus:ring-2 focus:ring-[#5B3FCF]/20 transition"
+                  className="w-full border border-[var(--border-default)] rounded-xl pl-10 pr-4 py-2.5 text-sm outline-none focus:border-[#5B3FCF] focus:ring-2 focus:ring-[#5B3FCF]/20 transition"
                 />
               </div>
             </div>
 
             {/* Localização */}
             <div>
-              <label className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider">Localização</label>
+              <label className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Localização</label>
               <div className="relative mt-1">
-                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
+                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-muted)]" />
                 <input value={location} onChange={(e) => setLocation(e.target.value)}
                   placeholder="Lisboa, Portugal"
-                  className="w-full border border-neutral-200 rounded-xl pl-10 pr-4 py-2.5 text-sm outline-none focus:border-[#5B3FCF] focus:ring-2 focus:ring-[#5B3FCF]/20 transition"
+                  className="w-full border border-[var(--border-default)] rounded-xl pl-10 pr-4 py-2.5 text-sm outline-none focus:border-[#5B3FCF] focus:ring-2 focus:ring-[#5B3FCF]/20 transition"
                 />
               </div>
             </div>
 
             {/* Email (readonly) */}
             <div>
-              <label className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider">Email</label>
+              <label className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Email</label>
               <input value={email} readOnly
-                className="mt-1 w-full border border-neutral-100 rounded-xl px-4 py-2.5 text-sm text-neutral-400 bg-neutral-50 cursor-not-allowed"
+                className="mt-1 w-full border border-[var(--border-subtle)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-muted)] bg-[var(--s1)] cursor-not-allowed"
               />
             </div>
           </div>
@@ -961,9 +961,9 @@ function MonetizationPanel() {
         <TrendingUp className="h-8 w-8 text-white" />
       </div>
       <p className="text-xl font-extrabold text-black">ClickAds</p>
-      <div className="flex items-center gap-2 bg-neutral-100 rounded-full px-5 py-2.5">
+      <div className="flex items-center gap-2 bg-[var(--s2)] rounded-full px-5 py-2.5">
         <div className="w-2 h-2 rounded-full bg-[#E94B8A] animate-pulse" />
-        <p className="text-sm font-bold text-neutral-600">Em breve</p>
+        <p className="text-sm font-bold text-[var(--text-secondary)]">Em breve</p>
       </div>
     </div>
   );
@@ -1118,7 +1118,7 @@ function SettingsDrawer({
                 <button onClick={toggle}
                   className="relative w-12 h-6 rounded-full transition-all duration-300 shrink-0"
                   style={{ background: theme === "dark" ? ACCENT : "#D1D5DB" }}>
-                  <span className="absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all duration-300"
+                  <span className="absolute top-0.5 h-5 w-5 rounded-full bg-[var(--s2)] shadow transition-all duration-300"
                     style={{ left: theme === "dark" ? "calc(100% - 22px)" : "2px" }} />
                 </button>
               </div>
@@ -1257,12 +1257,12 @@ function ToggleRow({ icon: Icon, color, label, desc, checked, onChange }: {
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold text-black leading-tight">{label}</p>
-        <p className="text-[11px] text-neutral-400 mt-0.5">{desc}</p>
+        <p className="text-[11px] text-[var(--text-muted)] mt-0.5">{desc}</p>
       </div>
       <button onClick={() => onChange(!checked)}
         className="relative w-12 h-6 rounded-full transition-all duration-300 flex-shrink-0"
         style={{ background: checked ? ACCENT : "#D1D5DB" }}>
-        <span className="absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all duration-300"
+        <span className="absolute top-0.5 h-5 w-5 rounded-full bg-[var(--s2)] shadow transition-all duration-300"
           style={{ left: checked ? "calc(100% - 22px)" : "2px" }} />
       </button>
     </div>
@@ -1398,7 +1398,7 @@ function ActivityPanel({ onBack }: { onBack: () => void }) {
         <div className="mx-3 rounded-2xl overflow-hidden border shadow-sm divide-y"
           style={{ background: "var(--s2)", borderColor: "var(--border-default)" }}>
           {items.map(it => {
-            const cfg = ICONS[it.type] ?? { icon: Calendar, color: "#888" };
+            const cfg = ICONS[it.type] ?? { icon: Calendar, color: "var(--text-muted)" };
             return (
               <div key={it.id} className="flex items-center gap-3 px-4 py-3">
                 <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: cfg.color + "18" }}>
@@ -1496,20 +1496,20 @@ function SecurityPanel({ onBack, email }: { onBack: () => void; email: string })
   return (
     <SettingsSubPanel title={t("settings.security")} onBack={onBack}>
       <div className="mb-2">
-        <p className="px-5 pb-1.5 text-[11px] font-bold text-neutral-400 uppercase tracking-wider">Conta</p>
-        <div className="bg-white mx-3 rounded-2xl overflow-hidden border border-neutral-100 shadow-sm px-4 py-3.5">
-          <p className="text-[11px] text-neutral-400">Email associado</p>
+        <p className="px-5 pb-1.5 text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Conta</p>
+        <div className="bg-[var(--s2)] mx-3 rounded-2xl overflow-hidden border border-[var(--border-subtle)] shadow-sm px-4 py-3.5">
+          <p className="text-[11px] text-[var(--text-muted)]">Email associado</p>
           <p className="text-sm font-semibold text-black mt-0.5">{email}</p>
         </div>
       </div>
 
       <div className="mb-2">
-        <p className="px-5 pb-1.5 pt-3 text-[11px] font-bold text-neutral-400 uppercase tracking-wider">Alterar palavra-passe</p>
-        <div className="bg-white mx-3 rounded-2xl overflow-hidden border border-neutral-100 shadow-sm px-4 py-3.5 space-y-3">
+        <p className="px-5 pb-1.5 pt-3 text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Alterar palavra-passe</p>
+        <div className="bg-[var(--s2)] mx-3 rounded-2xl overflow-hidden border border-[var(--border-subtle)] shadow-sm px-4 py-3.5 space-y-3">
           <input type="password" value={pwd} onChange={e => setPwd(e.target.value)}
-            placeholder={t("settings.new_password")} className="w-full h-10 px-3 rounded-xl text-sm outline-none bg-neutral-50 border border-neutral-100" />
+            placeholder={t("settings.new_password")} className="w-full h-10 px-3 rounded-xl text-sm outline-none bg-[var(--s1)] border border-[var(--border-subtle)]" />
           <input type="password" value={pwd2} onChange={e => setPwd2(e.target.value)}
-            placeholder={t("settings.confirm_new_password")} className="w-full h-10 px-3 rounded-xl text-sm outline-none bg-neutral-50 border border-neutral-100" />
+            placeholder={t("settings.confirm_new_password")} className="w-full h-10 px-3 rounded-xl text-sm outline-none bg-[var(--s1)] border border-[var(--border-subtle)]" />
           {msg && (
             <p className={`text-xs ${msg.type === "ok" ? "text-green-600" : "text-red-500"}`}>{msg.text}</p>
           )}
@@ -1574,7 +1574,7 @@ function MsgPrivacyPanel({ onBack, msgPermission, onMsgPermissionChange }: {
                   borderColor: msgPermission === opt.value ? ACCENT : "var(--border-default)",
                   background:  msgPermission === opt.value ? ACCENT : "transparent",
                 }}>
-                {msgPermission === opt.value && <div className="w-2 h-2 rounded-full bg-white" />}
+                {msgPermission === opt.value && <div className="w-2 h-2 rounded-full bg-[var(--s2)]" />}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold leading-tight" style={{ color: "var(--text-primary)" }}>{opt.label}</p>
@@ -1726,7 +1726,7 @@ function MyVideosFeed({ userId }: { userId: string }) {
             {v.thumbnail_url
               ? <img src={v.thumbnail_url} alt={v.title} className="w-full h-full object-cover" />
               : <div className="w-full h-full flex items-center justify-center">
-                  <Tv className="h-8 w-8 text-neutral-600" />
+                  <Tv className="h-8 w-8 text-[var(--text-secondary)]" />
                 </div>
             }
             {/* Duração */}
@@ -2022,8 +2022,8 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
           <HoodaLogo size="sm" className="lg:hidden" />
           <span className="hidden lg:block text-sm font-bold" style={{ color: "var(--text-primary)" }}>Perfil</span>
           <button onClick={() => setShowSettings(true)}
-            className="p-2 hover:bg-neutral-100 rounded-full transition active:scale-90" aria-label={t("settings.title")}>
-            <Settings className="h-5 w-5 text-neutral-600" />
+            className="p-2 hover:bg-[var(--s2)] rounded-full transition active:scale-90" aria-label={t("settings.title")}>
+            <Settings className="h-5 w-5 text-[var(--text-secondary)]" />
           </button>
         </div>
       </header>
@@ -2050,7 +2050,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
               {/* Anel gradiente estilo Instagram */}
               <div className="rounded-full p-[3px]"
                 style={{ background: "linear-gradient(135deg, #5B3FCF 0%, #E94B8A 50%, #FFC93C 100%)" }}>
-                <div className="rounded-full p-[2px] bg-white">
+                <div className="rounded-full p-[2px] bg-[var(--s2)]">
                   <div
                     onClick={() => avatarUrl && setPhotoViewerSrc(avatarUrl)}
                     style={{
@@ -2078,7 +2078,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
         {/* Editar perfil */}
         <div className="flex justify-end gap-2 px-4 pt-3 pb-0">
           <button onClick={() => setShowEditProfile(true)}
-            className="text-sm font-bold border border-neutral-300 rounded-full px-5 py-1.5 bg-white hover:bg-neutral-50 transition active:scale-95">
+            className="text-sm font-bold border border-neutral-300 rounded-full px-5 py-1.5 bg-[var(--s2)] hover:bg-[var(--s1)] transition active:scale-95">
             {t("settings.edit_profile")}
           </button>
         </div>
@@ -2086,13 +2086,13 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
         {/* Info pessoal */}
         <div className="px-5 pt-10 pb-4">
           <p className="text-xl font-extrabold text-black leading-tight">{name}</p>
-          <p className="text-sm text-neutral-400 font-medium mt-0.5">@{profile?.username || "utilizador"}</p>
+          <p className="text-sm text-[var(--text-muted)] font-medium mt-0.5">@{profile?.username || "utilizador"}</p>
           {profile?.bio && (
-            <p className="text-sm text-neutral-700 mt-2 leading-relaxed">{profile.bio}</p>
+            <p className="text-sm text-[var(--text-secondary)] mt-2 leading-relaxed">{profile.bio}</p>
           )}
           <div className="flex flex-wrap gap-3 mt-2.5">
             {location && (
-              <span className="flex items-center gap-1 text-xs text-neutral-500">
+              <span className="flex items-center gap-1 text-xs text-[var(--text-muted)]">
                 <MapPin className="h-3.5 w-3.5" /> {location}
               </span>
             )}
@@ -2103,7 +2103,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
                 <Link className="h-3.5 w-3.5" /> {website.replace(/^https?:\/\//, "")}
               </a>
             )}
-            <span className="flex items-center gap-1 text-xs text-neutral-400">
+            <span className="flex items-center gap-1 text-xs text-[var(--text-muted)]">
               <Calendar className="h-3.5 w-3.5" /> {"Membro desde"} {new Date((profile as any)?.created_at ?? Date.now()).getFullYear()}
             </span>
           </div>
@@ -2115,22 +2115,22 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
         {tab === "posts" && (
           <div className="px-5 mb-4">
             <button onClick={() => setShowCreate(true)}
-              className="w-full flex items-center gap-3 bg-white border border-neutral-200 rounded-2xl px-4 py-3.5 hover:bg-neutral-50 transition active:scale-[0.99] text-left shadow-sm">
+              className="w-full flex items-center gap-3 bg-[var(--s2)] border border-[var(--border-default)] rounded-2xl px-4 py-3.5 hover:bg-[var(--s1)] transition active:scale-[0.99] text-left shadow-sm">
               <Avatar name={name} size={36} src={avatarUrl} />
-              <span className="text-neutral-400 text-sm flex-1">{t("post.placeholder")}</span>
+              <span className="text-[var(--text-muted)] text-sm flex-1">{t("post.placeholder")}</span>
               <Plus className="h-5 w-5 text-[#5B3FCF]" />
             </button>
             <div className="flex gap-2 mt-2">
               <button onClick={() => setShowCreate(true)}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-neutral-200 bg-white text-sm font-semibold text-neutral-600 hover:bg-neutral-50 transition active:scale-95 shadow-sm">
+                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-[var(--border-default)] bg-[var(--s2)] text-sm font-semibold text-[var(--text-secondary)] hover:bg-[var(--s1)] transition active:scale-95 shadow-sm">
                 <Image className="h-4 w-4 text-[#6BA547]" /> {t("post.photo")}
               </button>
               <button onClick={() => setShowCreate(true)}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-neutral-200 bg-white text-sm font-semibold text-neutral-600 hover:bg-neutral-50 transition active:scale-95 shadow-sm">
+                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-[var(--border-default)] bg-[var(--s2)] text-sm font-semibold text-[var(--text-secondary)] hover:bg-[var(--s1)] transition active:scale-95 shadow-sm">
                 <Type className="h-4 w-4 text-[#5B3FCF]" /> {"Texto"}
               </button>
               <button onClick={() => setShowCreate(true)}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-neutral-200 bg-white text-sm font-semibold text-neutral-600 hover:bg-neutral-50 transition active:scale-95 shadow-sm">
+                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-[var(--border-default)] bg-[var(--s2)] text-sm font-semibold text-[var(--text-secondary)] hover:bg-[var(--s1)] transition active:scale-95 shadow-sm">
                 <Film className="h-4 w-4 text-[#E94B8A]" /> {"Vídeo"}
               </button>
             </div>
@@ -2139,7 +2139,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
 
         {/* Tabs */}
         <div className="px-5 mb-3">
-          <div className="flex bg-white border border-neutral-100 rounded-2xl p-1 shadow-sm">
+          <div className="flex bg-[var(--s2)] border border-[var(--border-subtle)] rounded-2xl p-1 shadow-sm">
             {tabs.map((t) => (
               <button key={t.key}
                 onClick={async () => {
@@ -2149,7 +2149,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
                   }
                   setTab(t.key);
                 }}
-                className={`flex-1 flex flex-col items-center gap-0.5 py-2 rounded-xl text-[10px] font-bold transition-all ${tab === t.key ? "text-white shadow-sm" : "text-neutral-400 hover:text-neutral-600"}`}
+                className={`flex-1 flex flex-col items-center gap-0.5 py-2 rounded-xl text-[10px] font-bold transition-all ${tab === t.key ? "text-white shadow-sm" : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"}`}
                 style={{ background: tab === t.key ? ACCENT : "transparent" }}>
                 <t.icon className="h-4 w-4" />
                 {t.label}
@@ -2177,8 +2177,8 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
               <div className="w-16 h-16 rounded-full bg-[#F26B3A]/10 flex items-center justify-center">
                 <Bookmark className="h-7 w-7 text-[#F26B3A]" />
               </div>
-              <p className="text-sm font-semibold text-neutral-500">Nada guardado ainda</p>
-              <p className="text-xs text-neutral-400">As publicações que guardares aparecem aqui.</p>
+              <p className="text-sm font-semibold text-[var(--text-muted)]">Nada guardado ainda</p>
+              <p className="text-xs text-[var(--text-muted)]">As publicações que guardares aparecem aqui.</p>
             </div>
           ) : (
             <div className="pb-6">
@@ -2196,8 +2196,8 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
 
         {tab === "info" && (
           <div className="px-5 py-4 space-y-3">
-            <div className="bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden">
-              <p className="px-5 py-3 text-xs font-bold text-neutral-400 uppercase tracking-wider border-b border-neutral-100">Sobre</p>
+            <div className="bg-[var(--s2)] rounded-2xl border border-[var(--border-subtle)] shadow-sm overflow-hidden">
+              <p className="px-5 py-3 text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider border-b border-[var(--border-subtle)]">Sobre</p>
               {[
                 { label: t("profile.full_name"), value: name },
                 { label: "Username", value: `@${profile?.username || "—"}` },
@@ -2205,8 +2205,8 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
                 { label: t("profile.location"), value: location || "—" },
                 { label: t("profile.website"), value: website || "—" },
               ].map((row, i) => (
-                <div key={row.label} className={`flex items-center justify-between px-5 py-3.5 ${i > 0 ? "border-t border-neutral-100" : ""}`}>
-                  <span className="text-xs text-neutral-400 font-medium">{row.label}</span>
+                <div key={row.label} className={`flex items-center justify-between px-5 py-3.5 ${i > 0 ? "border-t border-[var(--border-subtle)]" : ""}`}>
+                  <span className="text-xs text-[var(--text-muted)] font-medium">{row.label}</span>
                   <span className="text-sm font-semibold text-black text-right max-w-[60%] truncate">{row.value}</span>
                 </div>
               ))}
@@ -2345,30 +2345,30 @@ function PublicProfile({ profile, email }: { profile: Profile | null; email: str
         <div className="flex justify-end gap-2 px-4 pt-3">
           <button
             onClick={() => navigate({ to: "/mensagens" })}
-            className="text-sm font-semibold border border-neutral-300 rounded-full px-4 py-1.5 bg-white hover:bg-neutral-50 flex items-center gap-1.5 shadow-sm active:scale-95 transition-transform"
+            className="text-sm font-semibold border border-neutral-300 rounded-full px-4 py-1.5 bg-[var(--s2)] hover:bg-[var(--s1)] flex items-center gap-1.5 shadow-sm active:scale-95 transition-transform"
           >
             <MessageCircle className="h-4 w-4" style={{ color: "#5B3FCF" }} /> Mensagem
           </button>
           <button onClick={toggleFollow}
-            className={`text-sm font-bold rounded-full px-5 py-1.5 transition shadow-sm ${following ? "border border-neutral-300 bg-white text-black" : "text-white"}`}
+            className={`text-sm font-bold rounded-full px-5 py-1.5 transition shadow-sm ${following ? "border border-neutral-300 bg-[var(--s2)] text-black" : "text-white"}`}
             style={{ background: following ? undefined : ACCENT }}>
             {following ? t("profile.unfollow") : t("profile.follow")}
           </button>
         </div>
         <div className="px-5 pt-9 pb-4">
           <p className="text-xl font-extrabold text-black">{name}</p>
-          <p className="text-sm text-neutral-400 mt-0.5">@{profile?.username || "..."}</p>
-          {profile?.bio && <p className="text-sm text-neutral-700 mt-2 leading-relaxed">{profile.bio}</p>}
+          <p className="text-sm text-[var(--text-muted)] mt-0.5">@{profile?.username || "..."}</p>
+          {profile?.bio && <p className="text-sm text-[var(--text-secondary)] mt-2 leading-relaxed">{profile.bio}</p>}
         </div>
         <StatsGrid publications={0} followers={followerCount} following={followingCount} onFollowersClick={() => setFollowListMode("followers")} onFollowingClick={() => setFollowListMode("following")} />
         <div className="px-5 py-12 flex flex-col items-center gap-3 text-center">
           <div className="w-16 h-16 rounded-full bg-[#5B3FCF]/10 flex items-center justify-center">
             <BookOpen className="h-7 w-7 text-[#5B3FCF]" />
           </div>
-          <p className="text-sm font-semibold text-neutral-500">Ainda não há publicações.</p>
+          <p className="text-sm font-semibold text-[var(--text-muted)]">Ainda não há publicações.</p>
         </div>
         <div className="px-4 pb-6">
-          <button className="w-full h-11 rounded-xl border border-neutral-200 text-neutral-400 text-sm flex items-center justify-center gap-2 hover:bg-neutral-100 shadow-sm">
+          <button className="w-full h-11 rounded-xl border border-[var(--border-default)] text-[var(--text-muted)] text-sm flex items-center justify-center gap-2 hover:bg-[var(--s2)] shadow-sm">
             <Flag className="h-4 w-4" /> Denunciar perfil
           </button>
         </div>

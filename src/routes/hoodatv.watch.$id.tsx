@@ -427,13 +427,13 @@ function VideoOptionsDropdown({
         {showSpeed ? (
           <>
             <button onClick={() => setShowSpeed(false)}
-              className="w-full flex items-center gap-2 px-4 py-3 text-sm font-semibold border-b transition hover:bg-white/10"
+              className="w-full flex items-center gap-2 px-4 py-3 text-sm font-semibold border-b transition hover:bg-[var(--s2)]/10"
               style={{ color: "#fff", borderColor: "rgba(255,255,255,0.1)" }}>
               <ChevronLeft className="w-4 h-4" /> Velocidade
             </button>
             {SPEEDS.map(s => (
               <button key={s} onClick={() => { onSpeedChange(s); setShowSpeed(false); onClose(); }}
-                className="w-full flex items-center justify-between px-4 py-2.5 text-sm transition hover:bg-white/10"
+                className="w-full flex items-center justify-between px-4 py-2.5 text-sm transition hover:bg-[var(--s2)]/10"
                 style={{ color: s === speed ? P : "#fff" }}>
                 <span>{s === 1 ? "Normal" : `${s}x`}</span>
                 {s === speed && <Check className="w-3.5 h-3.5" style={{ color: P }} />}
@@ -443,12 +443,12 @@ function VideoOptionsDropdown({
         ) : showQuality ? (
           <>
             <button onClick={() => setShowQuality(false)}
-              className="w-full flex items-center gap-2 px-4 py-3 text-sm font-semibold border-b transition hover:bg-white/10"
+              className="w-full flex items-center gap-2 px-4 py-3 text-sm font-semibold border-b transition hover:bg-[var(--s2)]/10"
               style={{ color: "#fff", borderColor: "rgba(255,255,255,0.1)" }}>
               <ChevronLeft className="w-4 h-4" /> Qualidade
             </button>
             <button onClick={() => { onQualityChange("auto"); setShowQuality(false); onClose(); }}
-              className="w-full flex items-center justify-between px-4 py-2.5 text-sm transition hover:bg-white/10"
+              className="w-full flex items-center justify-between px-4 py-2.5 text-sm transition hover:bg-[var(--s2)]/10"
               style={{ color: quality === "auto" ? P : "#fff" }}>
               <span>Automática</span>
               {quality === "auto" && <Check className="w-3.5 h-3.5" style={{ color: P }} />}
@@ -464,7 +464,7 @@ function VideoOptionsDropdown({
                   <button key={opt.height}
                     onClick={() => { if (disponivel) { onQualityChange(opt.height); setShowQuality(false); onClose(); } }}
                     disabled={!disponivel}
-                    className="w-full flex items-center justify-between px-4 py-2.5 text-sm transition hover:bg-white/10 disabled:hover:bg-transparent disabled:cursor-not-allowed"
+                    className="w-full flex items-center justify-between px-4 py-2.5 text-sm transition hover:bg-[var(--s2)]/10 disabled:hover:bg-transparent disabled:cursor-not-allowed"
                     style={{ color: !disponivel ? "rgba(255,255,255,0.3)" : quality === opt.height ? P : "#fff" }}>
                     <span>{opt.label}</span>
                     {quality === opt.height && <Check className="w-3.5 h-3.5" style={{ color: P }} />}
@@ -476,7 +476,7 @@ function VideoOptionsDropdown({
         ) : (
           items.map((item: any, i) => (
             <button key={i} onClick={item.action}
-              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm transition hover:bg-white/10 text-left"
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm transition hover:bg-[var(--s2)]/10 text-left"
               style={{ color: item.danger ? "#f87171" : item.active ? P : "#fff" }}>
               <span style={{ color: item.danger ? "#f87171" : item.active ? P : "rgba(255,255,255,0.6)" }}>{item.icon}</span>
               <span className="flex-1">{item.label}</span>
@@ -1323,13 +1323,13 @@ function WatchPage() {
                     <div className="flex items-center gap-1 px-3">
                       {/* Play/Pause */}
                       <button onClick={() => { const v = videoRef.current; if (v) { v.paused ? v.play() : v.pause(); } }}
-                        className="w-9 h-9 flex items-center justify-center rounded-full transition hover:bg-white/10 text-white">
+                        className="w-9 h-9 flex items-center justify-center rounded-full transition hover:bg-[var(--s2)]/10 text-white">
                         {isPlaying ? <Pause className="w-5 h-5 fill-white" /> : <Play className="w-5 h-5 fill-white" />}
                       </button>
 
                       {/* Volume */}
                       <button onClick={() => { const v = videoRef.current; if (v) { v.muted = !v.muted; setMuted(m => !m); } }}
-                        className="w-9 h-9 flex items-center justify-center rounded-full transition hover:bg-white/10 text-white">
+                        className="w-9 h-9 flex items-center justify-center rounded-full transition hover:bg-[var(--s2)]/10 text-white">
                         {muted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
                       </button>
 
@@ -1351,7 +1351,7 @@ function WatchPage() {
                       {/* ⋮ Menu */}
                       <div className="relative">
                         <button onClick={e => { e.stopPropagation(); setShowMenu(m => !m); }}
-                          className="w-9 h-9 flex items-center justify-center rounded-full transition hover:bg-white/10 text-white">
+                          className="w-9 h-9 flex items-center justify-center rounded-full transition hover:bg-[var(--s2)]/10 text-white">
                           <MoreVertical className="w-5 h-5" />
                         </button>
                         {showMenu && (
@@ -1384,7 +1384,7 @@ function WatchPage() {
                           if (document.fullscreenElement) document.exitFullscreen();
                           else el.requestFullscreen();
                         }}
-                        className="w-9 h-9 flex items-center justify-center rounded-full transition hover:bg-white/10 text-white">
+                        className="w-9 h-9 flex items-center justify-center rounded-full transition hover:bg-[var(--s2)]/10 text-white">
                         <Maximize className="w-4 h-4" />
                       </button>
                     </div>

@@ -65,7 +65,7 @@ function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen w-full flex bg-white">
+    <main className="min-h-screen w-full flex bg-[var(--s2)]">
 
       {/* ── LEFT — brand illustration ── */}
       <AuthLeftPanel />
@@ -74,7 +74,7 @@ function LoginPage() {
       <section
         className="flex-1 flex flex-col items-center justify-center min-h-screen px-6 py-12 lg:px-12"
         style={{
-          background: "#ffffff",
+          background: "var(--s2)",
           opacity: mounted ? 1 : 0,
           transform: mounted ? "translateY(0)" : "translateY(12px)",
           transition: "opacity 0.4s ease, transform 0.4s ease",
@@ -91,8 +91,8 @@ function LoginPage() {
             /* ── LOGIN FORM ── */
             <>
               <div className="mb-8">
-                <h2 className="text-[30px] font-extrabold tracking-tight text-neutral-900">Entrar</h2>
-                <p className="mt-1.5 text-[15px] text-neutral-500">
+                <h2 className="text-[30px] font-extrabold tracking-tight text-[var(--text-primary)]">Entrar</h2>
+                <p className="mt-1.5 text-[15px] text-[var(--text-muted)]">
                   Bem-vindo de volta à <span className="font-bold text-[#5B3FCF]">hooda</span>.
                 </p>
               </div>
@@ -147,22 +147,22 @@ function LoginPage() {
 
                 {/* Divider */}
                 <div className="flex items-center gap-3 py-1">
-                  <div className="flex-1 h-px bg-neutral-200" />
-                  <span className="text-xs font-medium text-neutral-400">ou</span>
-                  <div className="flex-1 h-px bg-neutral-200" />
+                  <div className="flex-1 h-px bg-[var(--s3)]" />
+                  <span className="text-xs font-medium text-[var(--text-muted)]">ou</span>
+                  <div className="flex-1 h-px bg-[var(--s3)]" />
                 </div>
 
                 {/* Google button */}
                 <button
                   type="button"
-                  className="w-full h-[52px] rounded-xl border border-neutral-300 bg-white text-neutral-800 font-semibold text-[15px] flex items-center justify-center gap-3 transition-all duration-200 hover:bg-neutral-50 hover:border-neutral-400 active:scale-[0.99]"
+                  className="w-full h-[52px] rounded-xl border border-neutral-300 bg-[var(--s2)] text-neutral-800 font-semibold text-[15px] flex items-center justify-center gap-3 transition-all duration-200 hover:bg-[var(--s1)] hover:border-neutral-400 active:scale-[0.99]"
                 >
                   <GoogleIcon />
                   Continuar com Google
                 </button>
 
                 {/* Sign up link */}
-                <p className="text-center text-[14px] text-neutral-500 pt-1">
+                <p className="text-center text-[14px] text-[var(--text-muted)] pt-1">
                   Ainda não tem uma conta?{" "}
                   <Link to="/signup" className="font-bold text-[#5B3FCF] hover:text-[#4a2db5] transition-colors">
                     Crie agora
@@ -171,7 +171,7 @@ function LoginPage() {
               </form>
 
               {/* Terms */}
-              <p className="mt-8 text-center text-[12px] text-neutral-400 leading-relaxed">
+              <p className="mt-8 text-center text-[12px] text-[var(--text-muted)] leading-relaxed">
                 Ao continuar, você concorda com os{" "}
                 <span className="text-[#5B3FCF] font-medium cursor-pointer hover:underline">Termos</span>{" "}
                 e a{" "}
@@ -184,7 +184,7 @@ function LoginPage() {
             <>
               <button
                 onClick={() => { setShowForgot(false); setForgotMsg(null); setForgotErr(null); }}
-                className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-neutral-500 hover:text-neutral-900 transition-colors mb-8 group"
+                className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors mb-8 group"
               >
                 <span className="transition-transform group-hover:-translate-x-0.5"><ArrowLeftIcon /></span>
                 Voltar ao login
@@ -199,8 +199,8 @@ function LoginPage() {
                     <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
                   </svg>
                 </div>
-                <h2 className="text-[28px] font-extrabold tracking-tight text-neutral-900">Recuperar senha</h2>
-                <p className="mt-1.5 text-[15px] text-neutral-500">
+                <h2 className="text-[28px] font-extrabold tracking-tight text-[var(--text-primary)]">Recuperar senha</h2>
+                <p className="mt-1.5 text-[15px] text-[var(--text-muted)]">
                   Sem problema. Enviamos um link para criares uma nova senha.
                 </p>
               </div>

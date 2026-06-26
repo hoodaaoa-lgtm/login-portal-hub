@@ -121,7 +121,7 @@ function SignupPage() {
 
   const usernameRightIcon = () => {
     if (usernameStatus === "checking") return (
-      <svg className="animate-spin h-4 w-4 text-neutral-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+      <svg className="animate-spin h-4 w-4 text-[var(--text-muted)]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
       </svg>
@@ -142,10 +142,10 @@ function SignupPage() {
   const usernameHint = usernameStatus === "ok" ? <span className="text-green-600">@{username.toLowerCase()} está disponível ✓</span>
     : usernameStatus === "taken" ? <span className="text-red-500">Este username já está ocupado.</span>
     : usernameStatus === "invalid" ? <span className="text-red-500">Username inválido — não uses emails, @, ou domínios (.com, .net…).</span>
-    : <span className="text-neutral-400">Será o teu @</span>;
+    : <span className="text-[var(--text-muted)]">Será o teu @</span>;
 
   return (
-    <main className="min-h-screen w-full flex bg-white">
+    <main className="min-h-screen w-full flex bg-[var(--s2)]">
 
       {/* ── LEFT — brand illustration (shared with login) ── */}
       <AuthLeftPanel />
@@ -154,7 +154,7 @@ function SignupPage() {
       <section
         className="flex-1 flex flex-col items-center justify-center min-h-screen px-6 py-12 lg:px-12"
         style={{
-          background: "#ffffff",
+          background: "var(--s2)",
           opacity: mounted ? 1 : 0,
           transform: mounted ? "translateY(0)" : "translateY(12px)",
           transition: "opacity 0.4s ease, transform 0.4s ease",
@@ -188,16 +188,16 @@ function SignupPage() {
               </div>
             </div>
 
-            <h2 className="text-[28px] font-extrabold tracking-tight text-neutral-900 mb-3">
+            <h2 className="text-[28px] font-extrabold tracking-tight text-[var(--text-primary)] mb-3">
               Verifica o teu email
             </h2>
-            <p className="text-[15px] text-neutral-500 mb-2 leading-relaxed">
+            <p className="text-[15px] text-[var(--text-muted)] mb-2 leading-relaxed">
               Enviámos um link de confirmação para
             </p>
             <p className="text-[16px] font-bold mb-6" style={{ color: "#5B3FCF" }}>
               {email}
             </p>
-            <p className="text-[14px] text-neutral-400 leading-relaxed mb-8">
+            <p className="text-[14px] text-[var(--text-muted)] leading-relaxed mb-8">
               Abre o teu email e clica no link para ativar a tua conta hooda. Verifica também a pasta de <span className="font-semibold">spam</span> caso não encontres.
             </p>
 
@@ -214,13 +214,13 @@ function SignupPage() {
                 Abrir email
               </a>
               <Link to="/"
-                className="w-full h-[52px] rounded-xl border font-semibold text-[15px] flex items-center justify-center gap-2 transition-all hover:bg-neutral-50"
-                style={{ borderColor: "#e5e7eb", color: "#6b7280" }}>
+                className="w-full h-[52px] rounded-xl border font-semibold text-[15px] flex items-center justify-center gap-2 transition-all hover:bg-[var(--s1)]"
+                style={{ borderColor: "var(--border-default)", color: "#6b7280" }}>
                 Voltar ao login
               </Link>
             </div>
 
-            <p className="mt-6 text-[12px] text-neutral-400">
+            <p className="mt-6 text-[12px] text-[var(--text-muted)]">
               Não recebeste o email?{" "}
               <button
                 onClick={async () => {
@@ -237,8 +237,8 @@ function SignupPage() {
         ) : (
           <div className="w-full max-w-[440px]">
           <div className="mb-8">
-            <h2 className="text-[30px] font-extrabold tracking-tight text-neutral-900">Criar conta</h2>
-            <p className="mt-1.5 text-[15px] text-neutral-500">
+            <h2 className="text-[30px] font-extrabold tracking-tight text-[var(--text-primary)]">Criar conta</h2>
+            <p className="mt-1.5 text-[15px] text-[var(--text-muted)]">
               Junte-se à <span className="font-bold text-[#5B3FCF]">hooda</span> e faça parte da comunidade.
             </p>
           </div>
@@ -304,7 +304,7 @@ function SignupPage() {
                 onChange={(e) => setAgreed(e.target.checked)}
                 className="mt-0.5 h-4 w-4 rounded border-neutral-300 text-[#5B3FCF] focus:ring-[#5B3FCF] focus:ring-offset-0 cursor-pointer"
               />
-              <span className="text-[13px] text-neutral-500 leading-relaxed">
+              <span className="text-[13px] text-[var(--text-muted)] leading-relaxed">
                 Ao continuar, você concorda com os{" "}
                 <span className="text-[#5B3FCF] font-medium hover:underline">Termos</span>{" "}
                 e a{" "}
@@ -342,22 +342,22 @@ function SignupPage() {
 
             {/* Divider */}
             <div className="flex items-center gap-3 py-1">
-              <div className="flex-1 h-px bg-neutral-200" />
-              <span className="text-xs font-medium text-neutral-400">ou</span>
-              <div className="flex-1 h-px bg-neutral-200" />
+              <div className="flex-1 h-px bg-[var(--s3)]" />
+              <span className="text-xs font-medium text-[var(--text-muted)]">ou</span>
+              <div className="flex-1 h-px bg-[var(--s3)]" />
             </div>
 
             {/* Google button */}
             <button
               type="button"
-              className="w-full h-[52px] rounded-xl border border-neutral-300 bg-white text-neutral-800 font-semibold text-[15px] flex items-center justify-center gap-3 transition-all duration-200 hover:bg-neutral-50 hover:border-neutral-400 active:scale-[0.99]"
+              className="w-full h-[52px] rounded-xl border border-neutral-300 bg-[var(--s2)] text-neutral-800 font-semibold text-[15px] flex items-center justify-center gap-3 transition-all duration-200 hover:bg-[var(--s1)] hover:border-neutral-400 active:scale-[0.99]"
             >
               <GoogleIcon />
               Continuar com Google
             </button>
 
             {/* Login link */}
-            <p className="text-center text-[14px] text-neutral-500 pt-1">
+            <p className="text-center text-[14px] text-[var(--text-muted)] pt-1">
               Já tem uma conta?{" "}
               <Link to="/" className="font-bold text-[#5B3FCF] hover:text-[#4a2db5] transition-colors">
                 Entrar

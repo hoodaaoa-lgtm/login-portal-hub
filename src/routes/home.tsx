@@ -235,13 +235,13 @@ function MusicLibrary({ onSelect, onClose }: { onSelect: (s: Song) => void; onCl
           <span className="text-white font-bold flex items-center gap-2">
             <Music className="h-4 w-4 text-[#5B3FCF]" /> Biblioteca Musical
           </span>
-          <button onClick={() => { preview?.audio.pause(); onClose(); }} className="p-1.5 rounded-full hover:bg-white/10">
+          <button onClick={() => { preview?.audio.pause(); onClose(); }} className="p-1.5 rounded-full hover:bg-[var(--s2)]/10">
             <X className="h-5 w-5 text-white/60" />
           </button>
         </div>
         <div className="px-4 py-3">
           <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Pesquisar…"
-            className="w-full h-10 px-4 rounded-xl bg-white/10 text-white text-sm placeholder:text-white/30 outline-none" />
+            className="w-full h-10 px-4 rounded-xl bg-[var(--s2)]/10 text-white text-sm placeholder:text-white/30 outline-none" />
         </div>
         <div className="overflow-y-auto flex-1 divide-y divide-white/5">
           {loading ? (
@@ -262,7 +262,7 @@ function MusicLibrary({ onSelect, onClose }: { onSelect: (s: Song) => void; onCl
             <div className="py-12 text-center text-white/40 text-sm">Sem resultados para "{query}".</div>
           ) : list.map((song) => (
             <div key={song.id} className="flex items-center gap-3 px-4 py-3">
-              <div className="h-11 w-11 rounded-xl overflow-hidden flex-shrink-0 bg-white/10">
+              <div className="h-11 w-11 rounded-xl overflow-hidden flex-shrink-0 bg-[var(--s2)]/10">
                 {song.cover_url
                   ? <img loading="lazy" decoding="async" src={song.cover_url} alt="" className="h-full w-full object-cover" onError={(e) => { e.currentTarget.style.display = "none"; }} />
                   : <div className="h-full w-full flex items-center justify-center text-xl">🎵</div>}
@@ -271,7 +271,7 @@ function MusicLibrary({ onSelect, onClose }: { onSelect: (s: Song) => void; onCl
                 <p className="text-white text-sm font-semibold truncate">{song.title}</p>
                 <p className="text-white/40 text-xs truncate">{song.artist ?? song.category}</p>
               </div>
-              <button onClick={() => togglePreview(song)} className="p-2 rounded-full bg-white/10">
+              <button onClick={() => togglePreview(song)} className="p-2 rounded-full bg-[var(--s2)]/10">
                 {preview?.id === song.id
                   ? <Pause className="h-3.5 w-3.5 text-white" />
                   : <Play className="h-3.5 w-3.5 text-white" />}
@@ -579,7 +579,7 @@ function StoryCreator({ onClose, onPublish }: {
   if (mode === "picker") {
     return (
       <div className="fixed inset-0 z-50 bg-black flex flex-col items-center justify-center gap-6 px-8">
-        <button onClick={onClose} className="absolute top-5 left-5 p-2 rounded-full bg-white/10">
+        <button onClick={onClose} className="absolute top-5 left-5 p-2 rounded-full bg-[var(--s2)]/10">
           <X className="h-5 w-5 text-white" />
         </button>
         <p className="text-white/50 text-xs font-semibold tracking-widest uppercase mb-2">{"Criar história"}</p>
@@ -748,12 +748,12 @@ function StoryCreator({ onClose, onPublish }: {
 
         {mode === "audio" && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-5 pointer-events-none">
-            <div className="w-20 h-20 rounded-full bg-white/10 flex items-center justify-center">
+            <div className="w-20 h-20 rounded-full bg-[var(--s2)]/10 flex items-center justify-center">
               <Music className="h-10 w-10 text-white/70" />
             </div>
             <div className="flex items-end gap-1 h-10">
               {[6,10,7,14,9,12,5,11,8,13].map((h, i) => (
-                <div key={i} className="w-1 rounded-full bg-white/70"
+                <div key={i} className="w-1 rounded-full bg-[var(--s2)]/70"
                   style={{ height: `${h * (audioUrl ? 1 : 0.3)}px`, animation: audioUrl ? `wave 1.2s ease-in-out ${i * 0.1}s infinite alternate` : "none" }} />
               ))}
             </div>
@@ -784,12 +784,12 @@ function StoryCreator({ onClose, onPublish }: {
                 className="flex-shrink-0 w-9 h-9 rounded-xl text-xs font-medium transition"
                 style={{ fontFamily: f.css, background: selectedLayer.fontCss === f.css ? "#5B3FCF" : "rgba(255,255,255,0.1)", color: selectedLayer.fontCss === f.css ? "#fff" : "rgba(255,255,255,0.5)" }}>Aa</button>
             ))}
-            <div className="w-px h-5 bg-white/20 mx-0.5 flex-shrink-0" />
+            <div className="w-px h-5 bg-[var(--s2)]/20 mx-0.5 flex-shrink-0" />
             <button onClick={() => updateLayer(selectedLayer.id, { sizePx: Math.max(10, selectedLayer.sizePx - 4) })}
-              className="flex-shrink-0 w-9 h-9 rounded-xl bg-white/10 text-white text-xl font-bold flex items-center justify-center">−</button>
+              className="flex-shrink-0 w-9 h-9 rounded-xl bg-[var(--s2)]/10 text-white text-xl font-bold flex items-center justify-center">−</button>
             <button onClick={() => updateLayer(selectedLayer.id, { sizePx: Math.min(80, selectedLayer.sizePx + 4) })}
-              className="flex-shrink-0 w-9 h-9 rounded-xl bg-white/10 text-white text-xl font-bold flex items-center justify-center">+</button>
-            <div className="w-px h-5 bg-white/20 mx-0.5 flex-shrink-0" />
+              className="flex-shrink-0 w-9 h-9 rounded-xl bg-[var(--s2)]/10 text-white text-xl font-bold flex items-center justify-center">+</button>
+            <div className="w-px h-5 bg-[var(--s2)]/20 mx-0.5 flex-shrink-0" />
             <button onClick={() => updateLayer(selectedLayer.id, { bold: !selectedLayer.bold })}
               className="flex-shrink-0 w-9 h-9 rounded-xl transition" style={{ background: selectedLayer.bold ? "#5B3FCF" : "rgba(255,255,255,0.1)" }}>
               <Bold className="h-4 w-4 text-white" />
@@ -799,7 +799,7 @@ function StoryCreator({ onClose, onPublish }: {
               <Italic className="h-4 w-4 text-white" />
             </button>
             <button onClick={() => updateLayer(selectedLayer.id, { rotation: (selectedLayer.rotation + 15) % 360 })}
-              className="flex-shrink-0 w-9 h-9 rounded-xl bg-white/10 text-white flex items-center justify-center text-lg">↻</button>
+              className="flex-shrink-0 w-9 h-9 rounded-xl bg-[var(--s2)]/10 text-white flex items-center justify-center text-lg">↻</button>
             <button onClick={() => deleteLayer(selectedLayer.id)}
               className="flex-shrink-0 w-9 h-9 rounded-xl bg-red-500/80 text-white flex items-center justify-center">
               <Trash2 className="h-4 w-4" />
@@ -823,7 +823,7 @@ function StoryCreator({ onClose, onPublish }: {
           <div className="bg-[#111] rounded-t-3xl px-4 pt-5 pb-8" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <p className="text-white font-bold text-base">{"Adicionar texto"}</p>
-              <button onClick={() => setShowTextPanel(false)} className="p-1.5 rounded-full bg-white/10"><X className="h-4 w-4 text-white/60" /></button>
+              <button onClick={() => setShowTextPanel(false)} className="p-1.5 rounded-full bg-[var(--s2)]/10"><X className="h-4 w-4 text-white/60" /></button>
             </div>
             <textarea autoFocus value={newText} onChange={(e) => setNewText(e.target.value)}
               placeholder={"Escreve o teu texto aqui..."}
@@ -861,7 +861,7 @@ function StoryCreator({ onClose, onPublish }: {
             {/* Style controls */}
             <div className="flex gap-2 mb-4 flex-wrap">
               <button onClick={() => setNewAlign(newAlign === "left" ? "center" : newAlign === "center" ? "right" : "left")}
-                className="p-2.5 rounded-xl bg-white/8 text-white/70">
+                className="p-2.5 rounded-xl bg-[var(--s2)]/8 text-white/70">
                 {newAlign === "left" ? <AlignLeft className="h-4 w-4" /> : newAlign === "center" ? <AlignCenter className="h-4 w-4" /> : <AlignRight className="h-4 w-4" />}
               </button>
               <button onClick={() => setNewBold(!newBold)} className="p-2.5 rounded-xl transition"
@@ -984,12 +984,12 @@ function StoryCreator({ onClose, onPublish }: {
               {music ? (
                 <>
                   <div className="flex items-center gap-3 rounded-xl px-3 py-2.5" style={{ background: "rgba(255,255,255,0.06)" }}>
-                    {music.cover_url ? <img loading="lazy" decoding="async" src={music.cover_url} alt="" className="w-10 h-10 rounded-lg object-cover flex-shrink-0" onError={(e) => { e.currentTarget.style.display = "none"; }} /> : <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center text-lg flex-shrink-0">🎵</div>}
+                    {music.cover_url ? <img loading="lazy" decoding="async" src={music.cover_url} alt="" className="w-10 h-10 rounded-lg object-cover flex-shrink-0" onError={(e) => { e.currentTarget.style.display = "none"; }} /> : <div className="w-10 h-10 rounded-lg bg-[var(--s2)]/10 flex items-center justify-center text-lg flex-shrink-0">🎵</div>}
                     <div className="flex-1 min-w-0">
                       <p className="text-white text-sm font-semibold truncate">{music.title}</p>
                       <p className="text-white/40 text-xs truncate">{music.artist ?? music.category}</p>
                     </div>
-                    <button onClick={() => { setMusic(null); setMusicStartTime(0); }} className="p-1.5 rounded-full bg-white/10 flex-shrink-0"><X className="h-4 w-4 text-white/60" /></button>
+                    <button onClick={() => { setMusic(null); setMusicStartTime(0); }} className="p-1.5 rounded-full bg-[var(--s2)]/10 flex-shrink-0"><X className="h-4 w-4 text-white/60" /></button>
                   </div>
                   <MusicStartPicker
                     url={music.url}
@@ -1468,7 +1468,7 @@ function StoryViewer({ stories, startIndex, onClose, onDelete, userAvatarUrl }: 
           {/* Sent feedback */}
           {replySent && (
             <div className="flex items-center justify-center mb-2">
-              <span className="text-white/80 text-xs font-semibold bg-white/15 rounded-full px-4 py-1.5 backdrop-blur">
+              <span className="text-white/80 text-xs font-semibold bg-[var(--s2)]/15 rounded-full px-4 py-1.5 backdrop-blur">
                 ✓ Resposta enviada
               </span>
             </div>
@@ -1926,7 +1926,7 @@ function PostCard({ p }: { p: any }) {
               <span
                 className="text-sm font-bold flex items-center gap-1.5 hover:underline text-left" style={{ color: "var(--text-primary)" }}>
                 {p.user}
-                {isAd && <span className="text-[9px] uppercase bg-neutral-100 text-neutral-400 px-1.5 py-0.5 rounded font-semibold">Patrocinado</span>}
+                {isAd && <span className="text-[9px] uppercase bg-[var(--s2)] text-[var(--text-muted)] px-1.5 py-0.5 rounded font-semibold">Patrocinado</span>}
               </span>
             </ProfileAvatarLink>
             {(p.name || dynamicTime) && <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>{p.name}{p.name && dynamicTime ? " · " : ""}{dynamicTime}</p>}
@@ -1985,7 +1985,7 @@ function PostCard({ p }: { p: any }) {
       {/* Música */}
       {!isAd && p.music_title && (
         <div className="mx-4 mb-3 flex items-center gap-3 px-3 py-2.5 rounded-xl music-bar-post" style={{ background: "var(--s3)" }}>
-          <div className="h-9 w-9 rounded-lg overflow-hidden flex-shrink-0 bg-white/10">
+          <div className="h-9 w-9 rounded-lg overflow-hidden flex-shrink-0 bg-[var(--s2)]/10">
             {p.music_cover ? <img loading="lazy" decoding="async" src={p.music_cover} alt="" className="h-full w-full object-cover" onError={(e) => { e.currentTarget.style.display = "none"; }} /> : <div className="h-full w-full flex items-center justify-center">🎵</div>}
           </div>
           <div className="flex-1 min-w-0">
@@ -1999,16 +1999,16 @@ function PostCard({ p }: { p: any }) {
         <div className="flex items-center justify-between px-3 py-2 border-t border-neutral-50">
           <div className="flex items-center gap-0.5">
             <button onClick={toggleLike}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all active:scale-95 ${liked ? "text-red-500" : "hover:bg-neutral-50"}`}>
-              <Heart className={`h-5 w-5 ${liked ? "fill-red-500 text-red-500" : "text-neutral-400"}`} />
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all active:scale-95 ${liked ? "text-red-500" : "hover:bg-[var(--s1)]"}`}>
+              <Heart className={`h-5 w-5 ${liked ? "fill-red-500 text-red-500" : "text-[var(--text-muted)]"}`} />
               <span className="text-xs font-semibold" style={{ color: liked ? "#ef4444" : "var(--text-muted)" }}>{likeCount}</span>
             </button>
-            <button onClick={() => setShowComments(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full hover:bg-neutral-50">
-              <MessageCircle className="h-5 w-5 text-neutral-400" />
-              <span className="text-xs font-semibold text-neutral-400">{p.comments ?? 0}</span>
+            <button onClick={() => setShowComments(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full hover:bg-[var(--s1)]">
+              <MessageCircle className="h-5 w-5 text-[var(--text-muted)]" />
+              <span className="text-xs font-semibold text-[var(--text-muted)]">{p.comments ?? 0}</span>
             </button>
-            <button className="p-2 rounded-full hover:bg-neutral-50">
-              <Share2 className="h-5 w-5 text-neutral-400" />
+            <button className="p-2 rounded-full hover:bg-[var(--s1)]">
+              <Share2 className="h-5 w-5 text-[var(--text-muted)]" />
             </button>
           </div>
           <BookmarkButton />
@@ -2051,17 +2051,17 @@ function PostCard({ p }: { p: any }) {
               {p.photos && p.photos.length > 0 && <PhotoGrid photos={p.photos} />}
               {p.photo && !p.photos && !p.video && <PhotoGrid photos={[p.photo]} />}
               {likeCount > 0 && (
-                <p className="px-4 pt-2 text-[12px] font-bold text-neutral-500">{likeCount} curtida{likeCount !== 1 ? "s" : ""}</p>
+                <p className="px-4 pt-2 text-[12px] font-bold text-[var(--text-muted)]">{likeCount} curtida{likeCount !== 1 ? "s" : ""}</p>
               )}
             </>
           }
           actions={
             <div className="flex items-center gap-1 pt-2 pb-1">
               <button onClick={toggleLike}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all active:scale-95 ${liked ? "text-red-500" : "hover:bg-neutral-50"}`}>
-                <Heart className={`h-5 w-5 ${liked ? "fill-red-500 text-red-500" : "text-neutral-400"}`} />
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all active:scale-95 ${liked ? "text-red-500" : "hover:bg-[var(--s1)]"}`}>
+                <Heart className={`h-5 w-5 ${liked ? "fill-red-500 text-red-500" : "text-[var(--text-muted)]"}`} />
               </button>
-              <Share2 className="h-5 w-5 text-neutral-400 ml-1" />
+              <Share2 className="h-5 w-5 text-[var(--text-muted)] ml-1" />
             </div>
           }
           comments={comments}
@@ -2589,7 +2589,7 @@ function HomePage() {
   // visíveis e a busca acontece silenciosamente atrás deles.
   const loadingStories = storiesQuery.isLoading && !storiesQuery.data;
 
-  if (!ready) return <div className="min-h-screen bg-white" />;
+  if (!ready) return <div className="min-h-screen bg-[var(--s2)]" />;
 
   return (
     <>
@@ -2608,12 +2608,12 @@ function HomePage() {
           <HoodaLogo size="sm" className="lg:hidden" />
           <span className="hidden lg:block" />
           <div className="flex items-center gap-1">
-            <button className="p-2 hover:bg-neutral-100 rounded-full text-neutral-600">
+            <button className="p-2 hover:bg-[var(--s2)] rounded-full text-[var(--text-secondary)]">
               <Search className="h-5 w-5" />
             </button>
             <button
               onClick={() => { setShowNotifCenter(true); setToast(null); }}
-              className="p-2 hover:bg-neutral-100 rounded-full text-neutral-600 relative"
+              className="p-2 hover:bg-[var(--s2)] rounded-full text-[var(--text-secondary)] relative"
             >
               <Bell className="h-5 w-5" />
               {unreadCount > 0 && (
@@ -2646,7 +2646,7 @@ function HomePage() {
                         className="block">
                         <div className="h-14 w-14 rounded-full p-[2.5px]"
                           style={{ background: `conic-gradient(${s.color},#FFC93C,${s.color})` }}>
-                          <div className="h-full w-full rounded-full bg-white p-[2px]">
+                          <div className="h-full w-full rounded-full bg-[var(--s2)] p-[2px]">
                             {s.photo
                               ? <img loading="eager" decoding="async" src={s.photo} alt={s.name}
                                   width={48} height={48}
@@ -2677,7 +2677,7 @@ function HomePage() {
                         className="block">
                         <div className="h-14 w-14 rounded-full p-[2.5px]"
                           style={{ background: "linear-gradient(135deg,#5B3FCF,#E94B8A)" }}>
-                          <div className="h-full w-full rounded-full bg-white p-[2px]">
+                          <div className="h-full w-full rounded-full bg-[var(--s2)] p-[2px]">
                             <div className="h-full w-full rounded-full flex items-center justify-center text-white font-bold"
                               style={{ background: s.color }}>
                               <Plus className="h-4 w-4" />
@@ -2692,7 +2692,7 @@ function HomePage() {
                   <button onClick={() => setViewerIdx(i)} aria-label={s.name} className="relative">
                     <div className="h-14 w-14 rounded-full p-[2.5px]"
                       style={{ background: `conic-gradient(${s.color},#FFC93C,${s.color})` }}>
-                      <div className="h-full w-full rounded-full bg-white p-[2px]">
+                      <div className="h-full w-full rounded-full bg-[var(--s2)] p-[2px]">
                         {s.photo
                           ? <img loading="eager" decoding="async" src={s.photo} alt={s.name}
                               width={48} height={48}

@@ -89,7 +89,7 @@ function VideoRow({ v, onEdit, onDelete }: { v: any; onEdit: (v: any) => void; o
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>{v.title}</p>
         <p className="text-xs mt-0.5 flex items-center gap-1.5" style={{ color: "var(--text-muted)" }}>
-          <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${isPublic ? "text-green-700 bg-green-50" : "text-neutral-500 bg-neutral-100"}`}>
+          <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${isPublic ? "text-green-700 bg-green-50" : "text-[var(--text-muted)] bg-[var(--s2)]"}`}>
             {isPublic ? <Globe className="h-2.5 w-2.5" /> : <Lock className="h-2.5 w-2.5" />}
             {isPublic ? t("studio.public") : t("studio.private")}
           </span>
@@ -238,7 +238,7 @@ export default function DashboardPage() {
               {liveCount > 0 && (
                 <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold text-white"
                   style={{ background: "#10b981" }}>
-                  <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-[var(--s2)] animate-pulse" />
                   {liveCount} em directo
                 </span>
               )}
@@ -412,12 +412,12 @@ export default function DashboardPage() {
 
           {/* Upload CTA */}
           <div className="rounded-2xl p-5 text-white relative overflow-hidden" style={{ background: GRAD }}>
-            <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-white/10" />
-            <div className="absolute -right-2 -bottom-8 h-20 w-20 rounded-full bg-white/10" />
+            <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-[var(--s2)]/10" />
+            <div className="absolute -right-2 -bottom-8 h-20 w-20 rounded-full bg-[var(--s2)]/10" />
             <p className="text-sm font-bold relative">Pronto para publicar?</p>
             <p className="text-xs opacity-80 mt-1 mb-4 relative">O teu próximo vídeo pode mudar tudo.</p>
             <Link to="/studio/upload"
-              className="inline-flex items-center gap-2 bg-white rounded-xl px-4 py-2 text-xs font-bold relative hover:opacity-90 transition"
+              className="inline-flex items-center gap-2 bg-[var(--s2)] rounded-xl px-4 py-2 text-xs font-bold relative hover:opacity-90 transition"
               style={{ color: PURPLE }}>
               <Upload className="h-3.5 w-3.5" /> Enviar agora
             </Link>
