@@ -12,6 +12,7 @@ import {
   Banknote, BarChart3, Users, Eye, Star, Heart, Share2,
   MoreHorizontal, Trash2, Send, Copy, Moon, Sun, ExternalLink,
   Twitter, Instagram, Youtube, Facebook, Linkedin, Music2, Loader, Tv, Film,
+  ArrowLeft,
 } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useAvatar } from "@/contexts/AvatarContext";
@@ -747,11 +748,11 @@ function EditProfileModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end lg:items-center justify-center overflow-hidden"
+    <div className="fixed inset-0 z-50 flex items-end lg:items-center justify-center"
       style={{ background: "rgba(0,0,0,0.6)" }}
       onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="w-full lg:max-w-lg lg:rounded-3xl rounded-t-3xl hooda-modal-sheet overflow-hidden flex flex-col"
-        style={{ maxHeight: "96vh" }}>
+      <div className="w-full lg:max-w-lg lg:rounded-3xl rounded-t-3xl hooda-modal-sheet flex flex-col"
+        style={{ maxHeight: "96vh", overflow: "hidden" }}>
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100">
           <button onClick={onClose} className="p-1.5 rounded-full hover:bg-neutral-100">
@@ -941,12 +942,6 @@ function SettingsDrawer({
         { icon: Shield, label: "Segurança", desc: "Palavra-passe e autenticação", action: onOpenSecurity, color: "#5B3FCF" },
       ],
     },
-    {
-      title: "Suporte",
-      items: [
-        { icon: HelpCircle, label: "Ajuda", desc: "Perguntas frequentes e contacto", action: onOpenHelp, color: "#1FAFA6" },
-      ],
-    },
   ];
 
   const displayName = profile?.full_name || profile?.username || "Utilizador";
@@ -1056,19 +1051,8 @@ function SettingsDrawer({
             </div>
           ))}
 
-          {/* Terminar sessão — sempre acessível */}
-          <div className="mx-3 mb-2">
-            <button onClick={onSignOut}
-              className="w-full h-12 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition active:scale-[0.98]"
-              style={{ background: "#fee2e2", color: "#dc2626", border: "1.5px solid #fca5a5" }}
-              onMouseOver={e => (e.currentTarget.style.background = "#fecaca")}
-              onMouseOut={e => (e.currentTarget.style.background = "#fee2e2")}>
-              <LogOut className="h-4 w-4" /> Terminar sessão
-            </button>
-          </div>
-
-          {/* Privacidade de Mensagens — botão que abre sub-painel */}
-          <div className="mb-4">
+          {/* Privacidade de Mensagens */}
+          <div className="mb-1">
             <p className="px-5 py-2 text-[11px] font-bold uppercase tracking-wider"
               style={{ color: "var(--text-muted)" }}>Mensagens</p>
             <div className="mx-3 rounded-2xl overflow-hidden border shadow-sm"
@@ -1083,15 +1067,34 @@ function SettingsDrawer({
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold leading-tight" style={{ color: "var(--text-primary)" }}>Privacidade de mensagens</p>
-                  <p className="text-[11px] mt-0.5" style={{ color: "var(--text-muted)" }}>Quem pode enviar-te mensagens</p>
+                  <p className="text-[11px] mt-0.5" style={{ color: "var(--text-muted)" }}>
+                    {msgPermission === "todos" ? "Todos podem enviar-te mensagens"
+                      : msgPermission === "seguidos" ? "Apenas quem segues"
+                      : "Ninguém pode enviar-te mensagens"}
+                  </p>
                 </div>
-                <ChevronRight className="h-4 w-4 shrink-0" style={{ color: "var(--text-muted)" }} />
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full"
+                    style={{ background: "#F26B3A18", color: "#F26B3A" }}>
+                    {msgPermission === "todos" ? "Todos" : msgPermission === "seguidos" ? "Seguidos" : "Ninguém"}
+                  </span>
+                  <ChevronRight className="h-4 w-4" style={{ color: "var(--text-muted)" }} />
+                </div>
               </button>
             </div>
           </div>
+
+          {/* Terminar sessão */}
+          <div className="mx-3 mb-4">
+            <button onClick={onSignOut}
+              className="w-full h-12 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition active:scale-[0.98]"
+              style={{ background: "#fee2e2", color: "#dc2626", border: "1.5px solid #fca5a5" }}
+              onMouseOver={e => (e.currentTarget.style.background = "#fecaca")}
+              onMouseOut={e => (e.currentTarget.style.background = "#fee2e2")}>
+              <LogOut className="h-4 w-4" /> Terminar sessão
+            </button>
+          </div>
         </div>
-
-
       </div>
     </div>
   );
@@ -1126,16 +1129,16 @@ function SettingsSubPanel({ title, onBack, children }: { title: string; onBack: 
       }}
     >
       {/* Header */}
-      <div className="flex items-center gap-2 px-3 py-4 border-b shrink-0"
-        style={{ background: "var(--s2, #fff)", borderColor: "var(--border-default, #eee)" }}>
+      <div className="flex items-center gap-3 px-4 py-4 border-b shrink-0"
+        style={{ background: "var(--s0, #fff)", borderColor: "var(--border-default, #eee)" }}>
         <button onClick={handleBack}
-          className="p-2 rounded-full transition active:scale-90"
-          style={{ background: "var(--s3, #f0f0f0)" }}>
-          <ChevronRight className="h-5 w-5 rotate-180" style={{ color: "var(--text-primary)" }} />
+          className="flex items-center justify-center w-9 h-9 rounded-full transition active:scale-90"
+          style={{ background: "var(--s2, #f0f0f0)" }}>
+          <ArrowLeft className="h-5 w-5" style={{ color: "var(--text-primary)" }} />
         </button>
-        <span className="text-base font-extrabold" style={{ color: "var(--text-primary)" }}>{title}</span>
+        <span className="text-base font-extrabold flex-1" style={{ color: "var(--text-primary)" }}>{title}</span>
       </div>
-      {/* Conteúdo */}
+      {/* Conteúdo scrollável */}
       <div className="overflow-y-auto flex-1 py-3">{children}</div>
     </div>
   );
