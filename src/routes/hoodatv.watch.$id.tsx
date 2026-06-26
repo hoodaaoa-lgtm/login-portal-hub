@@ -765,23 +765,43 @@ function WatchPage() {
 
   const bg = avatarColor(ch?.name ?? "");
 
-  /* ── Gravar view + incrementar contador (1x por sessão) ── */
+  /* ── Gravar view — deduplicada na BD (6h cooldown por utilizador) ── */
   useEffect(() => {
     if (!id || !video) return;
-    const key = `htv-viewed-${id}`;
-    if (sessionStorage.getItem(key)) return;
-    sessionStorage.setItem(key, "1");
-    // RPC grava em video_views (para o Studio) E incrementa views_count
+
+    // Fingerprint leve para anónimos (sem dados pessoais)
+    const fp = [
+      navigator.language,
+      screen.width,
+      screen.height,
+      Intl.DateTimeFormat().resolvedOptions().timeZone,
+    ].join("|");
+    const fpHash = btoa(fp).slice(0, 32);
+
+    // Chave local para evitar chamadas repetidas na mesma sessão de browser
+    // (a BD já tem o cooldown de 6h, isto é só para não fazer chamadas desnecessárias)
+    const lsKey = `htv-view-${id}`;
+    const lastSeen = localStorage.getItem(lsKey);
+    const SIX_HOURS = 6 * 60 * 60 * 1000;
+    if (lastSeen && Date.now() - Number(lastSeen) < SIX_HOURS) return;
+
     (supabase as any).rpc("record_video_view", {
-      p_video_id:   id,
-      p_channel_id: video.channel_id ?? null,
-    }).then(({ error }: { error: any }) => {
+      p_video_id:           id,
+      p_channel_id:         video.channel_id ?? null,
+      p_viewer_fingerprint: fpHash,
+    }).then(({ data, error }: { data: any; error: any }) => {
       if (error) {
         console.error("[HoodaTV] Erro ao registar view:", error);
-        sessionStorage.removeItem(key); // permite tentar de novo no próximo refresh
         return;
       }
-      qc.invalidateQueries({ queryKey: ["htv-watch", id] });
+      // Só guarda o timestamp se a view foi efectivamente contada
+      if (data?.counted) {
+        localStorage.setItem(lsKey, String(Date.now()));
+        qc.invalidateQueries({ queryKey: ["htv-watch", id] });
+      } else {
+        // Mesmo que não contou, actualiza o timestamp local para evitar chamadas futuras
+        localStorage.setItem(lsKey, String(Date.now()));
+      }
     });
   }, [id, video?.channel_id]);
 
