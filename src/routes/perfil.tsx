@@ -1940,7 +1940,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
                 className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-neutral-200 bg-white text-sm font-semibold text-neutral-600 hover:bg-neutral-50 transition active:scale-95 shadow-sm">
                 <Type className="h-4 w-4 text-[#5B3FCF]" /> Texto
               </button>
-              <button onClick={() => navigate({ to: "/studio/upload" })}
+              <button onClick={() => setShowCreate(true)}
                 className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-neutral-200 bg-white text-sm font-semibold text-neutral-600 hover:bg-neutral-50 transition active:scale-95 shadow-sm">
                 <Film className="h-4 w-4 text-[#E94B8A]" /> Vídeo
               </button>
