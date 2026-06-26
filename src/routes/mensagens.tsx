@@ -940,7 +940,7 @@ function AudioMsg({ url, isMe, knownDur }: { url: string; isMe: boolean; knownDu
       borderRadius: isMe ? "12px 2px 12px 12px" : "2px 12px 12px 12px",
       boxShadow: "0 1px 2px rgba(0,0,0,0.13)",
     }}>
-      <audio ref={audioRef} src={url} preload="metadata" crossOrigin="anonymous"
+      <audio ref={audioRef} src={url} preload="metadata"
         onLoadedMetadata={e => {
           const a = e.target as HTMLAudioElement;
           const d = a.duration;
@@ -2803,8 +2803,10 @@ function ChatPanel({ myId, contact, onBack }: {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       audioChunksRef.current = [];
-      const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-        ? "audio/webm;codecs=opus"
+      // Ordem de preferência: mp4/aac funciona em iOS/Safari, webm funciona em Chrome/Firefox
+      const mimeType = MediaRecorder.isTypeSupported("audio/mp4")
+        ? "audio/mp4"
+        : MediaRecorder.isTypeSupported("audio/webm;codecs=opus") ? "audio/webm;codecs=opus"
         : MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm"
         : MediaRecorder.isTypeSupported("audio/ogg;codecs=opus") ? "audio/ogg;codecs=opus"
         : "audio/ogg";
@@ -2915,7 +2917,7 @@ function ChatPanel({ myId, contact, onBack }: {
     if (!audioPreview) return;
     // Usar o tipo MIME real do blob gravado (webm, ogg, etc.)
     const blobType = audioPreview.blob.type || "audio/webm";
-    const ext = blobType.includes("ogg") ? "ogg" : blobType.includes("mp4") ? "m4a" : "webm";
+    const ext = blobType.includes("ogg") ? "ogg" : blobType.includes("mp4") ? "m4a" : blobType.includes("webm") ? "webm" : "m4a";
     console.log("audioPreview.blob:", audioPreview.blob);
     console.log("blob.size:", audioPreview.blob.size, "| blob.type:", audioPreview.blob.type);
     if (audioPreview.blob.size === 0) {
