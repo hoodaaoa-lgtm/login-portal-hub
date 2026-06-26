@@ -10,7 +10,7 @@ import {
   BookOpen, ChevronRight, Lock, Shield, TrendingUp, Bookmark,
   Info, Camera, Link, MapPin, Calendar, Bell, HelpCircle, Globe,
   Banknote, BarChart3, Users, Eye, Star, Heart, Share2,
-  MoreHorizontal, Trash2, Send, Copy, Moon, Sun, ExternalLink, Globe,
+  MoreHorizontal, Trash2, Send, Copy, Moon, Sun, ExternalLink,
   Twitter, Instagram, Youtube, Facebook, Linkedin, Music2, Loader, Tv, Film,
   ArrowLeft, Check,
 } from "lucide-react";
@@ -18,8 +18,6 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useAvatar } from "@/contexts/AvatarContext";
 import { ProfileAvatarLink } from "@/components/ProfileAvatarLink";
 import { PostCommentsModal } from "@/components/PostCommentsModal";
-import { LanguagePanel } from "@/components/LanguageSwitcher";
-import { LANGUAGES, getCurrentLang } from "@/lib/i18n";
 import { LanguagePanel } from "@/components/LanguageSwitcher";
 import { LANGUAGES, getCurrentLang } from "@/lib/i18n";
 import { uploadImageToCloudinary, uploadToCloudinary } from "@/lib/cloudinary";
