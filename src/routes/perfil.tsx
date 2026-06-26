@@ -8,9 +8,9 @@ import { HoodaLogo } from "@/components/HoodaLogo";
 import {
   Settings, LogOut, MessageCircle, Flag, X, Image, Type, Plus,
   BookOpen, ChevronRight, Lock, Shield, TrendingUp, Bookmark,
-  Info, Camera, Link, MapPin, Calendar, Bell, HelpCircle,
+  Info, Camera, Link, MapPin, Calendar, Bell, HelpCircle, Globe,
   Banknote, BarChart3, Users, Eye, Star, Heart, Share2,
-  MoreHorizontal, Trash2, Send, Copy, Moon, Sun, ExternalLink,
+  MoreHorizontal, Trash2, Send, Copy, Moon, Sun, ExternalLink, Globe,
   Twitter, Instagram, Youtube, Facebook, Linkedin, Music2, Loader, Tv, Film,
   ArrowLeft, Check,
 } from "lucide-react";
@@ -18,6 +18,10 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useAvatar } from "@/contexts/AvatarContext";
 import { ProfileAvatarLink } from "@/components/ProfileAvatarLink";
 import { PostCommentsModal } from "@/components/PostCommentsModal";
+import { LanguagePanel } from "@/components/LanguageSwitcher";
+import { LANGUAGES, getCurrentLang } from "@/lib/i18n";
+import { LanguagePanel } from "@/components/LanguageSwitcher";
+import { LANGUAGES, getCurrentLang } from "@/lib/i18n";
 import { uploadImageToCloudinary, uploadToCloudinary } from "@/lib/cloudinary";
 import { fetchPostComments, sendPostComment, replyToPostComment, toggleCommentLike } from "@/lib/comments";
 import { deletePostForEveryone, fetchMyShareableCommunities, sharePostToCommunity, type MyCommunity } from "@/lib/posts";
@@ -963,7 +967,7 @@ function MonetizationPanel() {
 function SettingsDrawer({
   onClose, onEditProfile, onSignOut, msgPermission, onMsgPermissionChange,
   onOpenNotifications, onOpenActivity, onOpenPrivacy, onOpenSecurity,
-  onOpenHelp, onOpenMsgPrivacy, profile,
+  onOpenHelp, onOpenAbout, onOpenLanguage, onOpenMsgPrivacy, profile,
 }: {
   onClose: () => void;
   onEditProfile: () => void;
@@ -975,6 +979,8 @@ function SettingsDrawer({
   onOpenPrivacy: () => void;
   onOpenSecurity: () => void;
   onOpenHelp: () => void;
+  onOpenAbout: () => void;
+  onOpenLanguage: () => void;
   onOpenMsgPrivacy: () => void;
   profile?: Profile | null;
 }) {
@@ -1011,6 +1017,19 @@ function SettingsDrawer({
       items: [
         { icon: Lock, label: "Privacidade", desc: "Quem pode ver o teu perfil", action: onOpenPrivacy, color: "#6BA547" },
         { icon: Shield, label: "Segurança", desc: "Palavra-passe e autenticação", action: onOpenSecurity, color: "#5B3FCF" },
+      ],
+    },
+    {
+      title: "Suporte",
+      items: [
+        { icon: HelpCircle, label: "Ajuda", desc: "Perguntas frequentes", action: onOpenHelp, color: "#1FAFA6" },
+        { icon: Info, label: "Sobre a Hooda", desc: "Versão e informações legais", action: onOpenAbout, color: "#E94B8A" },
+      ],
+    },
+    {
+      title: "Idioma",
+      items: [
+        { icon: Globe, label: "Idioma", desc: (() => { const l = LANGUAGES.find(l => l.code === getCurrentLang()); return `${l?.flag ?? "🇵🇹"} ${l?.label ?? "Português"}`; })(), action: onOpenLanguage, color: "#F26B3A" },
       ],
     },
   ];
@@ -1717,6 +1736,8 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showSecurity, setShowSecurity] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+  const [showAbout, setShowAbout] = useState(false);
+  const [showLanguage, setShowLanguage] = useState(false);
   const [showMsgPrivacy, setShowMsgPrivacy] = useState(false);
   const [posts, setPosts] = useState<Post[]>([]);
   const [website, setWebsite] = useState("");
@@ -2180,6 +2201,8 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
           onOpenPrivacy={() => setShowPrivacy(true)}
           onOpenSecurity={() => setShowSecurity(true)}
           onOpenHelp={() => { setShowSettings(false); setShowHelp(true); }}
+          onOpenAbout={() => { setShowSettings(false); setShowAbout(true); }}
+          onOpenLanguage={() => { setShowSettings(false); setShowLanguage(true); }}
           onOpenMsgPrivacy={() => { setShowSettings(false); setShowMsgPrivacy(true); }}
         />
       )}
@@ -2188,6 +2211,8 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
       {showPrivacy && <PrivacyPanel onBack={() => setShowPrivacy(false)} />}
       {showSecurity && <SecurityPanel onBack={() => setShowSecurity(false)} email={email} />}
       {showHelp && <HelpPanel onBack={() => setShowHelp(false)} />}
+      {showAbout && <AboutPanel onBack={() => setShowAbout(false)} />}
+      {showLanguage && <LanguagePanel onBack={() => setShowLanguage(false)} />}
       {showMsgPrivacy && <MsgPrivacyPanel onBack={() => setShowMsgPrivacy(false)} msgPermission={msgPermission} onMsgPermissionChange={async (v) => {
         setMsgPermission(v);
         const { data: { session } } = await supabase.auth.getSession();

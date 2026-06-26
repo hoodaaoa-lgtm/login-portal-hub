@@ -23,6 +23,7 @@ import { SplashScreen, SPLASH_EXIT_MS } from "../components/SplashScreen";
 import { useGlobalMediaFadeIn } from "../hooks/useGlobalMediaFadeIn";
 
 import appCss from "../styles.css?url";
+import "../lib/i18n";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 
 // Routes that don't require an authenticated session.
