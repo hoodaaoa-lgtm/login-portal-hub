@@ -145,7 +145,7 @@ function FollowListModal({ mode, targetUsername, targetUserId, onClose }: {
   const err = queryError ? (queryError instanceof Error ? queryError.message : "Erro ao carregar lista") : "";
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center" style={{ background: "rgba(0,0,0,0.5)" }}
+    <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center overflow-hidden" style={{ background: "rgba(0,0,0,0.5)" }}
       onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="w-full sm:max-w-sm sm:rounded-2xl hooda-modal-sheet rounded-t-3xl overflow-hidden flex flex-col" style={{ maxHeight: "75vh" }}>
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-neutral-100 shrink-0">
@@ -422,7 +422,7 @@ function PostCard({
 
       {/* Share to group picker */}
       {shareOpen && (
-        <div className="fixed inset-0 z-[100] flex items-end lg:items-center justify-center" style={{ background: "rgba(0,0,0,0.6)" }}
+        <div className="fixed inset-0 z-[100] flex items-end lg:items-center justify-center overflow-hidden" style={{ background: "rgba(0,0,0,0.6)" }}
           onClick={(e) => e.target === e.currentTarget && setShareOpen(false)}>
           <div className="w-full lg:max-w-md lg:rounded-3xl rounded-t-3xl hooda-modal-sheet flex flex-col overflow-hidden shadow-2xl max-h-[80vh]">
             <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-100 shrink-0">
@@ -570,7 +570,7 @@ function CreatePostModal({
   const canPublish = (text.trim().length > 0 || photo !== null) && !publishing && !done;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end lg:items-center justify-center"
+    <div className="fixed inset-0 z-50 flex items-end lg:items-center justify-center overflow-hidden"
       style={{ background: "rgba(0,0,0,0.55)" }}
       onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="w-full lg:max-w-lg lg:rounded-3xl rounded-t-2xl hooda-modal-sheet overflow-hidden flex flex-col" style={{ maxHeight: "92vh" }}>
@@ -700,7 +700,7 @@ function EditProfileModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end lg:items-center justify-center"
+    <div className="fixed inset-0 z-50 flex items-end lg:items-center justify-center overflow-hidden"
       style={{ background: "rgba(0,0,0,0.6)" }}
       onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="w-full lg:max-w-lg lg:rounded-3xl rounded-t-3xl hooda-modal-sheet overflow-hidden flex flex-col"
@@ -1065,6 +1065,11 @@ function SettingsSubPanel({ title, onBack, children }: { title: string; onBack: 
   useEffect(() => {
     const id = requestAnimationFrame(() => setVisible(true));
     return () => cancelAnimationFrame(id);
+  }, []);
+
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = ""; };
   }, []);
 
   const handleBack = () => {
