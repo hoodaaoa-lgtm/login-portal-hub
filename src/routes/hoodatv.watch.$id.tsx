@@ -152,7 +152,6 @@ function useComments(videoId: string) {
       const { data, error } = await (supabase as any)
         .from("video_comments")
         .select(`id,content,created_at,parent_id,user_id,
-                 profiles(username,avatar_url,display_name),
                  video_comment_reactions(id,emoji,user_id)`)
         .eq("video_id", videoId)
         .is("parent_id", null)
@@ -161,7 +160,18 @@ function useComments(videoId: string) {
         console.error("[HoodaTV] Erro ao carregar comentários:", error);
         throw error;
       }
-      return data ?? [];
+      const comments = data ?? [];
+      // Buscar profiles separadamente (evita erro de FK em falta)
+      const userIds = [...new Set(comments.map((c: any) => c.user_id).filter(Boolean))];
+      const { data: profilesData } = userIds.length > 0
+        ? await (supabase as any).from("profiles").select("id,username,avatar_url,full_name").in("id", userIds)
+        : { data: [] };
+      const profileMap: Record<string, any> = {};
+      (profilesData ?? []).forEach((p: any) => { profileMap[p.id] = p; });
+      return comments.map((c: any) => ({
+        ...c,
+        profiles: profileMap[c.user_id] ?? null,
+      }));
     },
     staleTime: 30_000,
   });
@@ -174,11 +184,17 @@ function useReplies(commentId: string) {
       const { data } = await (supabase as any)
         .from("video_comments")
         .select(`id,content,created_at,parent_id,user_id,
-                 profiles(username,avatar_url,display_name),
                  video_comment_reactions(id,emoji,user_id)`)
         .eq("parent_id", commentId)
         .order("created_at", { ascending: true });
-      return data ?? [];
+      const replies = data ?? [];
+      const userIds = [...new Set(replies.map((c: any) => c.user_id).filter(Boolean))];
+      const { data: profilesData } = userIds.length > 0
+        ? await (supabase as any).from("profiles").select("id,username,avatar_url,full_name").in("id", userIds)
+        : { data: [] };
+      const profileMap: Record<string, any> = {};
+      (profilesData ?? []).forEach((p: any) => { profileMap[p.id] = p; });
+      return replies.map((c: any) => ({ ...c, profiles: profileMap[c.user_id] ?? null }));
     },
     staleTime: 30_000,
   });
