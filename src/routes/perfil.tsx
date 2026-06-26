@@ -531,6 +531,8 @@ function CreatePostModal({
   const [publishing, setPublishing] = useState(false);
   const [done, setDone] = useState(false);
   const [publishErr, setPublishErr] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadStage, setUploadStage] = useState<"idle"|"uploading"|"saving"|"done">("idle");
   const fileRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLInputElement>(null);
   const [videoFile, setVideoFile] = useState<File | null>(null);
@@ -554,27 +556,46 @@ function CreatePostModal({
     setVideoPreview(URL.createObjectURL(file));
   }
 
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadStage, setUploadStage]       = useState<"idle"|"upload"|"saving"|"done">("idle");
+
   async function publish() {
-    if (!text.trim() && !photoFile && !photo) return;
+    if (!text.trim() && !photoFile && !photo && !videoFile) return;
     if (publishing || done) return;
     setPublishing(true);
     setPublishErr(null);
+    setUploadProgress(0);
+    setUploadStage("idle");
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { setPublishErr("É preciso iniciar sessão para publicar."); return; }
 
-      // Upload foto ou vídeo para Cloudinary
       let imageUrl: string | null = photo;
       let videoUrl: string | null = null;
+
       if (photoFile) {
-        const { url } = await uploadImageToCloudinary(photoFile, `hooda/posts/${session.user.id}`);
+        setUploadStage("upload");
+        const { url } = await uploadImageToCloudinary(
+          photoFile,
+          `hooda/posts/${session.user.id}`,
+          (pct) => setUploadProgress(pct),
+        );
         imageUrl = url;
-      }
-      if (videoFile) {
-        const { url } = await uploadImageToCloudinary(videoFile, `hooda/posts/videos/${session.user.id}`);
-        videoUrl = url;
+        setUploadProgress(100);
       }
 
+      if (videoFile) {
+        setUploadStage("upload");
+        const { url } = await uploadImageToCloudinary(
+          videoFile,
+          `hooda/posts/videos/${session.user.id}`,
+          (pct) => setUploadProgress(pct),
+        );
+        videoUrl = url;
+        setUploadProgress(100);
+      }
+
+      setUploadStage("saving");
       const { data: prof } = await supabase.from("profiles").select("username, full_name").eq("id", session.user.id).single();
       const contentJson = bgColor ? JSON.stringify({ text, bgColor }) : text;
 
@@ -594,11 +615,11 @@ function CreatePostModal({
         .single();
 
       if (error || !inserted?.id) {
-        console.error("[hooda:perfil] falha ao publicar:", error);
         setPublishErr("Não foi possível publicar. Tenta novamente.");
         return;
       }
 
+      setUploadStage("done");
       onPublish({
         id: inserted.id, text, photo: imageUrl, bgColor,
         videoUrl: videoUrl ?? undefined,
@@ -606,9 +627,10 @@ function CreatePostModal({
         likes: 0, likedByMe: false, comments: 0, bookmarked: false,
       });
       setDone(true);
-      setTimeout(onClose, 700);
+      setTimeout(onClose, 900);
     } catch (err: any) {
       setPublishErr(err.message ?? "Erro ao publicar.");
+      setUploadStage("idle");
     } finally {
       setPublishing(false);
     }
@@ -701,10 +723,42 @@ function CreatePostModal({
           <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={pickPhoto} />
           <input ref={videoRef} type="file" accept="video/*" className="hidden" onChange={pickVideo} />
           {publishErr && <p className="mb-2 text-sm text-red-600">{publishErr}</p>}
+
+          {/* Barra de progresso real durante upload */}
+          {publishing && (
+            <div className="mb-3">
+              <div className="flex justify-between text-xs font-semibold mb-1.5"
+                style={{ color: "var(--text-muted)" }}>
+                <span>
+                  {uploadStage === "upload" && (photoFile ? "A enviar foto…" : "A enviar vídeo…")}
+                  {uploadStage === "saving" && "A guardar publicação…"}
+                  {uploadStage === "done"   && "Publicado! ✓"}
+                </span>
+                {uploadStage === "upload" && (
+                  <span style={{ color: ACCENT }}>{uploadProgress}%</span>
+                )}
+              </div>
+              <div className="h-2 rounded-full overflow-hidden" style={{ background: "var(--s3)" }}>
+                <div
+                  className="h-full rounded-full transition-all duration-300"
+                  style={{
+                    width: uploadStage === "saving" ? "95%" : uploadStage === "done" ? "100%" : `${uploadProgress}%`,
+                    background: `linear-gradient(90deg, ${ACCENT}, #E94B8A)`,
+                    boxShadow: `0 0 8px ${ACCENT}80`,
+                  }}
+                />
+              </div>
+            </div>
+          )}
+
           <button onClick={publish} disabled={!canPublish}
-            className="w-full h-12 rounded-xl font-bold text-base transition-all active:scale-[0.99] disabled:opacity-40"
+            className="w-full h-12 rounded-xl font-bold text-base transition-all active:scale-[0.99] disabled:opacity-40 flex items-center justify-center gap-2"
             style={{ background: canPublish ? ACCENT : "var(--s3)", color: canPublish ? "#fff" : "var(--text-muted)" }}>
-            {done ? "Publicado! ✓" : publishing ? "A publicar..." : "Publicar"}
+            {done
+              ? "Publicado! ✓"
+              : publishing
+                ? <><div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />A publicar…</>
+                : "Publicar"}
           </button>
         </div>
       </div>
