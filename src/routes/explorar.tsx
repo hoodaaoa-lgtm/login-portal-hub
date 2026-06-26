@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { t } from "@/lib/useT";
 import { BottomNav, SideNav, PageWrapper } from "@/components/AppShell";
 import { HoodaLogo } from "@/components/HoodaLogo";
 import { Search, X, BookOpen, ThumbsUp, MessageCircle, Bookmark, Send } from "lucide-react";

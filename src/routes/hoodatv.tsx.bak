@@ -1,10 +1,8 @@
 import { createFileRoute, useNavigate, Outlet, useRouterState } from "@tanstack/react-router";
-import { t } from "@/lib/useT";
 import { BottomNav, SideNav, PageWrapper } from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, useEffect, useRef } from "react";
-import { toast } from "sonner";
+import { useState, useEffect } from "react";
 
 /* ══════════════════════════════════
    HOODATV INTRO
@@ -98,9 +96,8 @@ function HoodaTVIntro({ onDone }: { onDone: () => void }) {
 }
 
 import {
-  Search, Play, Star, Users,
-  UserPlus, X, Sparkles, Clapperboard, CheckCircle2, Video, Heart,
-  MoreVertical, Share2, Bookmark, Flag, ThumbsDown,
+  Search, Bell, Play, Eye, Clock, Star, Users,
+  UserPlus, X, Flame, Sparkles, Clapperboard, CheckCircle2,
 } from "lucide-react";
 
 export const Route = createFileRoute("/hoodatv")({
@@ -175,95 +172,15 @@ const avatarColor = (name: string) => AVATAR_COLORS[(name?.charCodeAt(0) ?? 0) %
 /* ── Skeleton ── */
 function VSkel() {
   return (
-    <div className="animate-pulse">
-      <div className="rounded-2xl" style={{ aspectRatio: "16/9", background: "var(--s3)" }} />
-      <div className="flex gap-2.5 pt-3 px-0.5">
-        <div className="w-9 h-9 rounded-full shrink-0" style={{ background: "var(--s3)" }} />
-        <div className="flex-1 space-y-2 pt-0.5">
-          <div className="h-3.5 rounded-full" style={{ background: "var(--s3)", width: "90%" }} />
-          <div className="h-3 rounded-full" style={{ background: "var(--s3)", width: "55%" }} />
-          <div className="h-3 rounded-full" style={{ background: "var(--s3)", width: "40%" }} />
+    <div className="animate-pulse space-y-3">
+      <div className="aspect-video rounded-2xl" style={{ background: "var(--s3)" }} />
+      <div className="flex gap-2.5">
+        <div className="w-8 h-8 rounded-full shrink-0" style={{ background: "var(--s3)" }} />
+        <div className="flex-1 space-y-2">
+          <div className="h-3 rounded-full" style={{ background: "var(--s3)", width: "80%" }} />
+          <div className="h-2.5 rounded-full" style={{ background: "var(--s3)", width: "55%" }} />
         </div>
       </div>
-    </div>
-  );
-}
-
-/* ── Three-dot menu ── */
-function VideoMenu({ v }: { v: any }) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [open]);
-
-  const items = [
-    {
-      icon: <Share2 className="w-4 h-4" />,
-      label: t("common.share"),
-      action: () => {
-        const url = `${window.location.origin}/hoodatv/watch/${v.id}`;
-        navigator.clipboard.writeText(url).then(() => toast.success("Link copiado!")).catch(() => toast.error("Não foi possível copiar."));
-        setOpen(false);
-      },
-    },
-    {
-      icon: <Bookmark className="w-4 h-4" />,
-      label: t("common.save"),
-      action: async () => {
-        setOpen(false);
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) { toast.error("Inicia sessão para guardar vídeos."); return; }
-        const { error } = await (supabase as any).from("saved_videos").upsert({ user_id: user.id, video_id: v.id }, { onConflict: "user_id,video_id" });
-        if (error) toast.error("Erro ao guardar.");
-        else toast.success("Vídeo guardado!");
-      },
-    },
-    {
-      icon: <ThumbsDown className="w-4 h-4" />,
-      label: t("post.no_interest"),
-      action: () => {
-        setOpen(false);
-        toast("Vídeo ocultado.", { description: "Vais ver menos conteúdo deste tipo." });
-      },
-    },
-    {
-      icon: <Flag className="w-4 h-4" />,
-      label: t("common.report"),
-      action: () => {
-        setOpen(false);
-        toast("Denúncia enviada.", { description: "Obrigado pelo teu feedback." });
-      },
-    },
-  ];
-
-  return (
-    <div ref={ref} className="relative" onClick={e => e.stopPropagation()}>
-      <button
-        onClick={() => setOpen(o => !o)}
-        className="w-8 h-8 rounded-full flex items-center justify-center transition-colors hover:bg-black/10"
-        style={{ color: "var(--text-muted)" }}>
-        <MoreVertical className="w-4 h-4" />
-      </button>
-      {open && (
-        <div className="absolute right-0 bottom-10 z-50 w-52 rounded-2xl overflow-hidden shadow-2xl py-1"
-          style={{ background: "var(--s0)", border: "1px solid var(--border-subtle)" }}>
-          {items.map(item => (
-            <button key={item.label} onClick={item.action}
-              className="w-full flex items-center gap-3 px-4 py-2.5 text-[13px] font-medium text-left transition-colors hover:bg-[var(--s2)]"
-              style={{ color: "var(--text-primary)" }}>
-              <span style={{ color: "var(--text-muted)" }}>{item.icon}</span>
-              {item.label}
-            </button>
-          ))}
-        </div>
-      )}
     </div>
   );
 }
@@ -275,79 +192,60 @@ function VideoCard({ v, rank }: { v: any; rank?: number }) {
   const bg = avatarColor(ch?.name ?? "");
 
   return (
-    <div
-      className="group cursor-pointer rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1"
-      style={{ background: "transparent" }}
-      onClick={() => navigate({ to: "/hoodatv/watch/$id", params: { id: v.id } })}
-    >
+    <div className="group cursor-pointer" onClick={() => navigate({ to: "/hoodatv/watch/$id", params: { id: v.id } })}>
       {/* Thumbnail */}
-      <div className="relative overflow-hidden rounded-2xl" style={{ aspectRatio: "16/9", background: `linear-gradient(135deg, ${bg}33, ${bg}11)`, boxShadow: "0 4px 20px rgba(0,0,0,0.10)" }}
-        onContextMenu={e => e.preventDefault()}>
+      <div className="relative aspect-video rounded-2xl overflow-hidden"
+        onContextMenu={e => e.preventDefault()}
+        style={{ background: "var(--s3)" }}>
         {v.thumbnail_url
           ? <img src={v.thumbnail_url} alt={v.title} loading="lazy"
               onContextMenu={e => e.preventDefault()}
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.06]" />
-          : <div className="w-full h-full flex flex-col items-center justify-center gap-2">
-              <Play className="w-12 h-12 opacity-30" style={{ color: bg }} />
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.04]" />
+          : <div className="w-full h-full flex items-center justify-center" style={{ background: `${bg}18` }}>
+              <Play className="w-10 h-10" style={{ color: bg, opacity: 0.45 }} />
             </div>}
-
-        {/* Gradiente bottom */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
         {/* Duração */}
         {v.duration_seconds && (
-          <span className="absolute bottom-2.5 right-2.5 text-[11px] font-bold text-white px-2 py-0.5 rounded-md z-10"
-            style={{ background: "rgba(0,0,0,0.85)", letterSpacing: "0.02em" }}>
+          <span className="absolute bottom-2 right-2 text-[11px] font-bold text-white px-1.5 py-0.5 rounded-lg"
+            style={{ background: "rgba(0,0,0,0.82)" }}>
             {fmtDur(v.duration_seconds)}
           </span>
         )}
 
         {/* Rank badge */}
         {rank !== undefined && rank < 3 && (
-          <div className="absolute top-2.5 left-2.5 w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black text-white shadow-lg z-10"
+          <div className="absolute top-2 left-2 w-7 h-7 rounded-xl flex items-center justify-center text-xs font-black text-white shadow-lg"
             style={{ background: rank === 0 ? "#FFC93C" : rank === 1 ? "#aaa" : "#cd7f32" }}>
             {rank + 1}
           </div>
         )}
 
         {/* Hover play overlay */}
-        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200">
-          <div className="w-12 h-12 rounded-full flex items-center justify-center shadow-2xl backdrop-blur-sm"
-            style={{ background: "rgba(255,255,255,0.92)" }}>
-            <Play className="w-5 h-5 ml-0.5" style={{ color: P }} fill={P} />
+        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200"
+          style={{ background: "rgba(0,0,0,0.25)" }}>
+          <div className="w-12 h-12 rounded-full flex items-center justify-center shadow-2xl"
+            style={{ background: "rgba(255,255,255,0.95)" }}>
+            <Play className="w-5 h-5 ml-0.5" style={{ color: P }} />
           </div>
         </div>
       </div>
 
       {/* Meta */}
-      <div className="flex gap-3 pt-3 px-0.5">
-        {/* Avatar canal */}
-        <div
-          className="w-9 h-9 rounded-full shrink-0 overflow-hidden flex items-center justify-center text-white text-sm font-bold cursor-pointer mt-0.5"
-          style={{ background: bg, ['--tw-ring-color' as any]: `${bg}33` }}
+      <div className="flex gap-2.5 mt-2.5">
+        <div className="w-8 h-8 rounded-full shrink-0 overflow-hidden flex items-center justify-center text-white text-xs font-bold mt-0.5 cursor-pointer"
+          style={{ background: bg }}
           onClick={e => { e.stopPropagation(); if (ch?.handle) navigate({ to: "/hoodatv/canal/$handle", params: { handle: ch.handle } }); }}>
           {ch?.avatar_url ? <img src={ch.avatar_url} alt="" className="w-full h-full object-cover" /> : (ch?.name?.[0] ?? "?").toUpperCase()}
         </div>
-
-        {/* Título + info */}
-        <div className="flex-1 min-w-0 flex items-start gap-1">
-          <div className="flex-1 min-w-0">
-            <p className="text-[14px] font-semibold leading-[1.35] line-clamp-2 mb-1"
-              style={{ color: "var(--text-primary)" }}>
-              {v.title?.replace(/\b\d{10,}\b/g, "").replace(/@\S+/g, "").trim()}
-            </p>
-            <p className="text-[12px] font-medium hover:underline cursor-pointer"
-              style={{ color: P }}
-              onClick={e => { e.stopPropagation(); if (ch?.handle) navigate({ to: "/hoodatv/canal/$handle", params: { handle: ch.handle } }); }}>
-              {ch?.name ?? "Canal"}
-            </p>
-            <p className="text-[11px] mt-0.5" style={{ color: "var(--text-muted)" }}>
-              {fmtV(Number(v.views_count ?? 0))} visualizações · {timeAgo(v.published_at ?? v.created_at)}
-            </p>
-          </div>
-          <div className="shrink-0 -mt-1">
-            <VideoMenu v={v} />
-          </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-[13px] font-semibold leading-[1.35] line-clamp-2"
+            style={{ color: "var(--text-primary)" }}>
+            {v.title?.replace(/\b\d{10,}\b/g, "").replace(/@\S+/g, "").trim()}
+          </p>
+          <p className="text-[11px] mt-0.5 font-medium" style={{ color: "var(--text-muted)" }}>
+            {ch?.name ?? "Canal"} · {fmtV(Number(v.views_count ?? 0))} views · {timeAgo(v.published_at ?? v.created_at)}
+          </p>
         </div>
       </div>
     </div>
@@ -377,7 +275,7 @@ function ChannelCard({ ch, isFollowing, onFollow }: { ch: any; isFollowing: bool
       <div className="flex flex-col items-center px-4 pb-4" style={{ marginTop: "-28px" }}>
         <div className="relative mb-2">
           <div className="w-14 h-14 rounded-full overflow-hidden flex items-center justify-center text-white text-lg font-extrabold ring-4 shadow-lg"
-            style={{ background: bg, ['--tw-ring-color' as any]: "var(--s0)" }}>
+            style={{ background: bg, ringColor: "var(--s0)" }}>
             {ch.avatar_url ? <img src={ch.avatar_url} alt="" className="w-full h-full object-cover" /> : (ch.name?.[0] ?? "?").toUpperCase()}
           </div>
           {isFollowing && (
@@ -412,10 +310,11 @@ function ChannelCard({ ch, isFollowing, onFollow }: { ch: any; isFollowing: bool
 
 /* ── Filter pills ── */
 const FILTERS = [
-  { key: "ti",       label: t("tv.videos"),    icon: <Video className="w-3.5 h-3.5" />,      accent: PINK   },
-  { key: "alta",     label: t("tv.for_you"),   icon: <Sparkles className="w-3.5 h-3.5" />,   accent: YELLOW },
-  { key: "canais",   label: t("tv.channels"),    icon: <Star className="w-3.5 h-3.5" />,        accent: ORANGE },
-  { key: "seguindo", label: t("tv.following"),  icon: <Users className="w-3.5 h-3.5" />,       accent: P      },
+  { key: "alta",     label: "Em Alta",   icon: <Flame className="w-3.5 h-3.5" />,    accent: PINK   },
+  { key: "recentes", label: "Recentes",  icon: <Clock className="w-3.5 h-3.5" />,    accent: TEAL   },
+  { key: "ti",       label: "Para Ti",   icon: <Sparkles className="w-3.5 h-3.5" />, accent: YELLOW },
+  { key: "canais",   label: "Canais",    icon: <Star className="w-3.5 h-3.5" />,     accent: ORANGE },
+  { key: "seguindo", label: "Seguindo",  icon: <Users className="w-3.5 h-3.5" />,    accent: P      },
 ] as const;
 type FilterKey = typeof FILTERS[number]["key"];
 
@@ -430,7 +329,7 @@ function HoodaTVPage() {
 
 function HoodaTVMain() {
   const [search, setSearch]   = useState("");
-  const [filter, setFilter]   = useState<FilterKey>("ti");
+  const [filter, setFilter]   = useState<FilterKey>("alta");
   const [showIntro, setShowIntro] = useState(() => !_introSeenThisSession);
 
   const handleIntroDone = () => {
@@ -481,7 +380,7 @@ function HoodaTVMain() {
     : [];
 
   const showVideos     = filter === "alta" ? trending : recent;
-  const loadingVideos  = filter === "alta" || filter === "ti" ? tL : rL;
+  const loadingVideos  = filter === "alta" ? tL : rL;
 
   return (
     <>
@@ -491,45 +390,48 @@ function HoodaTVMain() {
 
         {/* ── HEADER ── */}
         <div className="sticky top-0 z-40"
-          style={{ background: "rgba(var(--s1-rgb,250,250,252),.97)", backdropFilter: "blur(28px)", borderBottom: "1px solid var(--border-subtle)" }}>
+          style={{ background: "rgba(var(--s1-rgb,250,250,252),.96)", backdropFilter: "blur(24px)", borderBottom: "1px solid var(--border-subtle)" }}>
 
-          {/* Pesquisa centrada */}
-          <div className="flex justify-center px-4 pt-5 pb-4">
-            <div className="relative w-full max-w-xl">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 pointer-events-none" style={{ color: "var(--text-muted)" }} />
+          {/* Barra de pesquisa premium */}
+          <div className="px-4 pt-4 pb-3">
+            <div className="relative flex items-center">
+              <Search className="absolute left-4 w-4 h-4 pointer-events-none" style={{ color: "var(--text-muted)" }} />
               <input
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                placeholder={t("tv.search")}
-                className="w-full h-11 pl-11 pr-10 rounded-full text-sm outline-none transition-all"
+                placeholder="Pesquisar vídeos e canais…"
+                className="w-full h-11 pl-11 pr-11 rounded-2xl text-sm outline-none transition-all"
                 style={{
                   background: "var(--s2)",
                   border: `1.5px solid ${search ? P : "var(--border-default)"}`,
                   color: "var(--text-primary)",
-                  boxShadow: search ? `0 0 0 4px ${P}16` : "0 1px 4px rgba(0,0,0,0.06)",
+                  boxShadow: search ? `0 0 0 3px ${P}18` : "none",
                 }}
               />
-              {search && (
-                <button onClick={() => setSearch("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full flex items-center justify-center transition hover:opacity-70"
-                  style={{ background: "var(--s3)" }}>
-                  <X className="w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} />
-                </button>
-              )}
+              {search
+                ? <button onClick={() => setSearch("")}
+                    className="absolute right-3 w-6 h-6 rounded-full flex items-center justify-center transition hover:opacity-70"
+                    style={{ background: "var(--s3)" }}>
+                    <X className="w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} />
+                  </button>
+                : <button className="absolute right-3 w-8 h-8 rounded-xl flex items-center justify-center transition hover:opacity-80"
+                    style={{ background: "var(--s3)" }}>
+                    <Bell className="w-4 h-4" style={{ color: "var(--text-secondary)" }} />
+                  </button>}
             </div>
           </div>
 
-          {/* Filter pills centrados */}
+          {/* Filter pills */}
           {!search && (
-            <div className="flex justify-center gap-2 px-4 pb-4 overflow-x-auto no-scrollbar">
+            <div className="flex gap-2 px-4 pb-3 overflow-x-auto no-scrollbar">
               {FILTERS.map(f => {
                 const active = filter === f.key;
                 return (
                   <button key={f.key} onClick={() => setFilter(f.key)}
-                    className="shrink-0 flex items-center gap-2 px-5 h-9 rounded-full text-[13.5px] font-semibold transition-all duration-200 active:scale-95"
+                    className="shrink-0 flex items-center gap-1.5 px-4 h-8 rounded-full text-[13px] font-semibold transition-all duration-200 active:scale-95"
                     style={active
-                      ? { background: f.accent, color: "#fff", boxShadow: `0 4px 16px ${f.accent}50` }
-                      : { background: "var(--s0)", color: "var(--text-secondary)", border: "1.5px solid var(--border-default)" }}>
+                      ? { background: f.accent, color: "#fff", boxShadow: `0 4px 14px ${f.accent}55` }
+                      : { background: "var(--s2)", color: "var(--text-secondary)", border: "1px solid var(--border-subtle)" }}>
                     {f.icon} {f.label}
                   </button>
                 );
@@ -538,27 +440,27 @@ function HoodaTVMain() {
           )}
         </div>
 
-        <div className="max-w-6xl mx-auto px-3 sm:px-6 py-5 sm:py-8 space-y-8">
+        <div className="max-w-6xl mx-auto px-4 py-6 space-y-10">
 
           {/* ══ SEARCH RESULTS ══ */}
           {search && (
             <section>
-              <p className="text-sm font-semibold mb-6" style={{ color: "var(--text-muted)" }}>
+              <p className="text-sm font-semibold mb-5" style={{ color: "var(--text-muted)" }}>
                 {searchVideos.length > 0
                   ? `${searchVideos.length} resultado${searchVideos.length !== 1 ? "s" : ""} para "${search}"`
                   : `Sem resultados para "${search}"`}
               </p>
               {searchVideos.length > 0
                 ? <Grid>{searchVideos.map((v: any) => <VideoCard key={v.id} v={v} />)}</Grid>
-                : <Empty msg="Tenta pesquisar algo diferente." />}
+                : <Empty msg={`Tenta pesquisar algo diferente.`} />}
             </section>
           )}
 
-          {/* ══ VÍDEOS / PARA TI ══ */}
-          {!search && (filter === "ti" || filter === "alta") && (
+          {/* ══ EM ALTA / RECENTES / PARA TI ══ */}
+          {!search && (filter === "alta" || filter === "recentes" || filter === "ti") && (
             <section>
               {loadingVideos
-                ? <Grid>{Array.from({length: 9}).map((_, i) => <VSkel key={i} />)}</Grid>
+                ? <Grid>{Array.from({length: 8}).map((_, i) => <VSkel key={i} />)}</Grid>
                 : !showVideos?.length && !recent?.length
                   ? <Empty msg="Ainda não há vídeos publicados." />
                   : <Grid>
@@ -575,7 +477,7 @@ function HoodaTVMain() {
           {/* ══ CANAIS ══ */}
           {!search && filter === "canais" && (
             <section>
-              <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center justify-between mb-5">
                 <div>
                   <h2 className="text-lg font-extrabold tracking-tight" style={{ color: "var(--text-primary)" }}>Canais</h2>
                   <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>Descobre criadores da Hooda</p>
@@ -640,7 +542,7 @@ function HoodaTVMain() {
 }
 
 function Grid({ children }: { children: React.ReactNode }) {
-  return <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-8">{children}</div>;
+  return <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">{children}</div>;
 }
 
 function Empty({ msg, icon }: { msg: string; icon?: React.ReactNode }) {

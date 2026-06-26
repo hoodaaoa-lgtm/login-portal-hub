@@ -1,4 +1,5 @@
 import { createFileRoute, Outlet, Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { t } from "@/lib/useT";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { myChannelQuery } from "@/lib/channel-queries";
 import { supabase } from "@/integrations/supabase/client";

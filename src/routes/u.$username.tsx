@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate, useParams } from "@tanstack/react-router";
+import { t } from "@/lib/useT";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -469,7 +470,7 @@ function UserProfilePage() {
                   ) : (
                     <MessageCircle className="h-4 w-4" style={{ color: "#5B3FCF" }} />
                   )}
-                  {openingChat ? "A abrir..." : "Mensagem"}
+                  {openingChat ? "A abrir..." : t("profile.message")}
                 </button>
                 <button
                   onClick={toggleFollow}

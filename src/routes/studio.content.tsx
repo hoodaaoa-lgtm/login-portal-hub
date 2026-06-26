@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { t } from "@/lib/useT";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { myChannelQuery, myVideosQuery } from "@/lib/channel-queries";
 import { supabase } from "@/integrations/supabase/client";
