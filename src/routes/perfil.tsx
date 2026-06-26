@@ -891,7 +891,7 @@ function MonetizationPanel() {
 function SettingsDrawer({
   onClose, onEditProfile, onSignOut, msgPermission, onMsgPermissionChange,
   onOpenNotifications, onOpenActivity, onOpenPrivacy, onOpenSecurity,
-  onOpenHelp, profile,
+  onOpenHelp, onOpenMsgPrivacy, profile,
 }: {
   onClose: () => void;
   onEditProfile: () => void;
@@ -903,6 +903,7 @@ function SettingsDrawer({
   onOpenPrivacy: () => void;
   onOpenSecurity: () => void;
   onOpenHelp: () => void;
+  onOpenMsgPrivacy: () => void;
   profile?: Profile | null;
 }) {
   const { theme, toggle } = useTheme();
@@ -1066,34 +1067,26 @@ function SettingsDrawer({
             </button>
           </div>
 
-          {/* Privacidade de Mensagens */}
+          {/* Privacidade de Mensagens — botão que abre sub-painel */}
           <div className="mb-4">
             <p className="px-5 py-2 text-[11px] font-bold uppercase tracking-wider"
-              style={{ color: "var(--text-muted)" }}>Privacidade de Mensagens</p>
-            <div className="mx-3 rounded-2xl overflow-hidden border shadow-sm px-4 py-3 space-y-3"
+              style={{ color: "var(--text-muted)" }}>Mensagens</p>
+            <div className="mx-3 rounded-2xl overflow-hidden border shadow-sm"
               style={{ background: "var(--s2, #f9f9f9)", borderColor: "var(--border-default, #eee)" }}>
-              <p className="text-xs leading-relaxed" style={{ color: "var(--text-muted)" }}>Quem pode enviar-te mensagens?</p>
-              {[
-                { value: "todos", label: "Toda a gente", desc: "Qualquer utilizador pode escrever-te" },
-                { value: "seguidores", label: "Seguidores", desc: "Apenas quem te segue" },
-                { value: "mutuos", label: "Seguimento mútuo", desc: "Quem segues e te segue" },
-                { value: "aprovados", label: "Apenas aprovados", desc: "Tens de aceitar cada pedido" },
-              ].map(opt => (
-                <button key={opt.value} onClick={() => onMsgPermissionChange(opt.value)}
-                  className="w-full flex items-center gap-3 text-left transition active:scale-[0.98]">
-                  <div className="w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition"
-                    style={{
-                      borderColor: msgPermission === opt.value ? ACCENT : "#d1d1d1",
-                      background: msgPermission === opt.value ? ACCENT : "transparent",
-                    }}>
-                    {msgPermission === opt.value && <div className="w-2 h-2 rounded-full bg-white" />}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold leading-tight" style={{ color: "var(--text-primary)" }}>{opt.label}</p>
-                    <p className="text-[11px] mt-0.5" style={{ color: "var(--text-muted)" }}>{opt.desc}</p>
-                  </div>
-                </button>
-              ))}
+              <button onClick={onOpenMsgPrivacy}
+                className="w-full flex items-center gap-3 px-4 py-3.5 text-left transition active:scale-[0.98]"
+                onMouseOver={e => (e.currentTarget.style.background = "var(--s3, #f0f0f0)")}
+                onMouseOut={e => (e.currentTarget.style.background = "transparent")}>
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                  style={{ background: "#F26B3A18" }}>
+                  <MessageCircle className="h-4 w-4" style={{ color: "#F26B3A" }} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold leading-tight" style={{ color: "var(--text-primary)" }}>Privacidade de mensagens</p>
+                  <p className="text-[11px] mt-0.5" style={{ color: "var(--text-muted)" }}>Quem pode enviar-te mensagens</p>
+                </div>
+                <ChevronRight className="h-4 w-4 shrink-0" style={{ color: "var(--text-muted)" }} />
+              </button>
             </div>
           </div>
         </div>
@@ -1398,6 +1391,49 @@ function SecurityPanel({ onBack, email }: { onBack: () => void; email: string })
 }
 
 
+/* ─── Privacidade de Mensagens ─── */
+function MsgPrivacyPanel({ onBack, msgPermission, onMsgPermissionChange }: {
+  onBack: () => void; msgPermission: string; onMsgPermissionChange: (v: string) => void;
+}) {
+  const OPTIONS = [
+    { value: "todos",      label: "Toda a gente",      desc: "Qualquer utilizador pode escrever-te" },
+    { value: "seguidores", label: "Seguidores",         desc: "Apenas quem te segue" },
+    { value: "mutuos",     label: "Seguimento mútuo",  desc: "Quem segues e te segue" },
+    { value: "aprovados",  label: "Apenas aprovados",  desc: "Tens de aceitar cada pedido" },
+  ];
+  return (
+    <SettingsSubPanel title="Privacidade de Mensagens" onBack={onBack}>
+      <div className="mb-2">
+        <p className="px-5 pb-1.5 text-[11px] font-bold text-neutral-400 uppercase tracking-wider">Quem pode enviar-te mensagens?</p>
+        <div className="mx-3 rounded-2xl overflow-hidden border border-neutral-100 shadow-sm divide-y divide-neutral-100"
+          style={{ background: "var(--s2)" }}>
+          {OPTIONS.map(opt => (
+            <button key={opt.value} onClick={() => onMsgPermissionChange(opt.value)}
+              className="w-full flex items-center gap-3 px-4 py-3.5 text-left transition active:scale-[0.98]"
+              onMouseOver={e => (e.currentTarget.style.background = "var(--s3)")}
+              onMouseOut={e => (e.currentTarget.style.background = "transparent")}>
+              <div className="w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition"
+                style={{
+                  borderColor: msgPermission === opt.value ? ACCENT : "#d1d1d1",
+                  background: msgPermission === opt.value ? ACCENT : "transparent",
+                }}>
+                {msgPermission === opt.value && <div className="w-2 h-2 rounded-full bg-white" />}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold leading-tight" style={{ color: "var(--text-primary)" }}>{opt.label}</p>
+                <p className="text-[11px] mt-0.5" style={{ color: "var(--text-muted)" }}>{opt.desc}</p>
+              </div>
+            </button>
+          ))}
+        </div>
+        <p className="px-5 pt-3 text-xs text-neutral-400 leading-relaxed">
+          Esta definição aplica-se a novos pedidos. Conversas existentes não são afetadas.
+        </p>
+      </div>
+    </SettingsSubPanel>
+  );
+}
+
 /* ─── Ajuda ─── */
 function HelpPanel({ onBack }: { onBack: () => void }) {
   const faqs = [
@@ -1538,7 +1574,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
   const navigate = useNavigate();
   const [profile, setProfile] = useState(initialProfile);
   const name = profile?.full_name || email || "?";
-  const [tab, setTab] = useState<"posts" | "videos" | "saved" | "info" | "monetization">("posts");
+  const [tab, setTab] = useState<"posts" | "saved" | "info" | "monetization">("posts");
   const [showCreate, setShowCreate] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
@@ -1547,6 +1583,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showSecurity, setShowSecurity] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+  const [showMsgPrivacy, setShowMsgPrivacy] = useState(false);
   const [posts, setPosts] = useState<Post[]>([]);
   const [website, setWebsite] = useState("");
   const [location, setLocation] = useState("");
@@ -1781,7 +1818,6 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
 
   const tabs = [
     { key: "posts", label: "Publicações", icon: Type },
-    { key: "videos", label: "Vídeos", icon: Tv },
     { key: "saved", label: "Guardado", icon: Bookmark },
     { key: "info", label: "Info", icon: Info },
     { key: "monetization", label: "Studio", icon: Tv },
@@ -1940,9 +1976,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
             myUserId={myUserId} />
         )}
 
-        {tab === "videos" && (
-          <MyVideosFeed userId={myUserId} />
-        )}
+
 
         {tab === "saved" && (
           savedLoading ? (
@@ -2012,6 +2046,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
           onOpenPrivacy={() => setShowPrivacy(true)}
           onOpenSecurity={() => setShowSecurity(true)}
           onOpenHelp={() => { setShowSettings(false); setShowHelp(true); }}
+          onOpenMsgPrivacy={() => { setShowSettings(false); setShowMsgPrivacy(true); }}
         />
       )}
       {showNotifications && <NotificationsPanel onBack={() => setShowNotifications(false)} />}
@@ -2019,6 +2054,11 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
       {showPrivacy && <PrivacyPanel onBack={() => setShowPrivacy(false)} />}
       {showSecurity && <SecurityPanel onBack={() => setShowSecurity(false)} email={email} />}
       {showHelp && <HelpPanel onBack={() => setShowHelp(false)} />}
+      {showMsgPrivacy && <MsgPrivacyPanel onBack={() => setShowMsgPrivacy(false)} msgPermission={msgPermission} onMsgPermissionChange={async (v) => {
+        setMsgPermission(v);
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) await supabase.from("profiles").update({ msg_permission: v } as any).eq("id", session.user.id);
+      }} />}
       {followListMode && profile && (
         <FollowListModal
           mode={followListMode}
