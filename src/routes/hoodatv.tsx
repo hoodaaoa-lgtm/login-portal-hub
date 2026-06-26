@@ -174,10 +174,9 @@ const avatarColor = (name: string) => AVATAR_COLORS[(name?.charCodeAt(0) ?? 0) %
 /* ── Skeleton ── */
 function VSkel() {
   return (
-    <div className="animate-pulse rounded-2xl overflow-hidden"
-      style={{ background: "var(--s0)", border: "1px solid var(--border-subtle)" }}>
-      <div style={{ aspectRatio: "16/9", background: "var(--s3)" }} />
-      <div className="flex gap-2.5 p-3">
+    <div className="animate-pulse">
+      <div className="rounded-2xl" style={{ aspectRatio: "16/9", background: "var(--s3)" }} />
+      <div className="flex gap-2.5 pt-3 px-0.5">
         <div className="w-9 h-9 rounded-full shrink-0" style={{ background: "var(--s3)" }} />
         <div className="flex-1 space-y-2 pt-0.5">
           <div className="h-3.5 rounded-full" style={{ background: "var(--s3)", width: "90%" }} />
@@ -276,16 +275,12 @@ function VideoCard({ v, rank }: { v: any; rank?: number }) {
 
   return (
     <div
-      className="group cursor-pointer rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
-      style={{
-        background: "var(--s0)",
-        border: "1px solid var(--border-subtle)",
-        boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-      }}
+      className="group cursor-pointer rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1"
+      style={{ background: "transparent" }}
       onClick={() => navigate({ to: "/hoodatv/watch/$id", params: { id: v.id } })}
     >
       {/* Thumbnail */}
-      <div className="relative overflow-hidden" style={{ aspectRatio: "16/9", background: `linear-gradient(135deg, ${bg}33, ${bg}11)` }}
+      <div className="relative overflow-hidden rounded-2xl" style={{ aspectRatio: "16/9", background: `linear-gradient(135deg, ${bg}33, ${bg}11)`, boxShadow: "0 4px 20px rgba(0,0,0,0.10)" }}
         onContextMenu={e => e.preventDefault()}>
         {v.thumbnail_url
           ? <img src={v.thumbnail_url} alt={v.title} loading="lazy"
@@ -324,10 +319,10 @@ function VideoCard({ v, rank }: { v: any; rank?: number }) {
       </div>
 
       {/* Meta */}
-      <div className="flex gap-3 p-3">
+      <div className="flex gap-3 pt-3 px-0.5">
         {/* Avatar canal */}
         <div
-          className="w-9 h-9 rounded-full shrink-0 overflow-hidden flex items-center justify-center text-white text-sm font-bold cursor-pointer mt-0.5 ring-2"
+          className="w-9 h-9 rounded-full shrink-0 overflow-hidden flex items-center justify-center text-white text-sm font-bold cursor-pointer mt-0.5"
           style={{ background: bg, ['--tw-ring-color' as any]: `${bg}33` }}
           onClick={e => { e.stopPropagation(); if (ch?.handle) navigate({ to: "/hoodatv/canal/$handle", params: { handle: ch.handle } }); }}>
           {ch?.avatar_url ? <img src={ch.avatar_url} alt="" className="w-full h-full object-cover" /> : (ch?.name?.[0] ?? "?").toUpperCase()}
@@ -336,7 +331,7 @@ function VideoCard({ v, rank }: { v: any; rank?: number }) {
         {/* Título + info */}
         <div className="flex-1 min-w-0 flex items-start gap-1">
           <div className="flex-1 min-w-0">
-            <p className="text-[13.5px] font-semibold leading-[1.35] line-clamp-2 mb-1"
+            <p className="text-[14px] font-semibold leading-[1.35] line-clamp-2 mb-1"
               style={{ color: "var(--text-primary)" }}>
               {v.title?.replace(/\b\d{10,}\b/g, "").replace(/@\S+/g, "").trim()}
             </p>
@@ -644,7 +639,7 @@ function HoodaTVMain() {
 }
 
 function Grid({ children }: { children: React.ReactNode }) {
-  return <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">{children}</div>;
+  return <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-8">{children}</div>;
 }
 
 function Empty({ msg, icon }: { msg: string; icon?: React.ReactNode }) {
