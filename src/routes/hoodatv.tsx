@@ -86,13 +86,13 @@ function HoodaTVIntro({ onDone }: { onDone: () => void }) {
           letterSpacing: "0.18em", color: "#fff",
           background: "linear-gradient(135deg, #5B3FCF, #E94B8A)",
           padding: "5px 12px 7px", borderRadius: "8px",
-          marginLeft: "10px", marginBottom: "clamp(6px, 1.5vw, 12px)",
+          marginLeft: "10px", marginBottom: 0,
           opacity: tvIn ? 1 : 0,
           transform: tvIn ? "scale(1)" : "scale(0)",
           transition: tvIn ? "opacity 0.4s ease, transform 0.5s cubic-bezier(0.34,1.56,0.64,1)" : "none",
         }}>TV</span>
       </div>
-      <div style={{ display: "flex", gap: "8px", marginTop: "22px" }}>
+      <div style={{ display: "flex", gap: "8px", marginTop: "12px" }}>
         {DOT_COLORS.map((color, i) => (
           <span key={i} style={{
             width: "8px", height: "8px", borderRadius: "50%", background: color,
