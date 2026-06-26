@@ -1432,7 +1432,9 @@ function ChatMediaLightbox({ items, index, onIndexChange, onClose, onReact, cont
             displayItem.editState ? (
               <EditedMediaDisplay src={displayItem.mediaUrl!} type="video" edit={displayItem.editState} maxH={(typeof window !== "undefined" ? window.innerHeight : 600) * 0.7} />
             ) : (
-              <video src={displayItem.mediaUrl} controls autoPlay playsInline className="max-w-full max-h-[72vh]" />
+              <div className="max-w-full w-full" style={{ maxHeight: "72vh" }}>
+                <HoodaPlayer src={displayItem.mediaUrl!} autoPlay rounded="rounded-xl" aspectRatio="16/9" />
+              </div>
             )
           )}
         </div>
