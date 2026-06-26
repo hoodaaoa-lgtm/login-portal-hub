@@ -1061,7 +1061,7 @@ function WatchPage() {
   if (isLoading) return (
     <><SideNav />
       <PageWrapper className="pb-20 lg:pb-0">
-        <div className="max-w-7xl mx-auto px-4 py-4 lg:grid lg:grid-cols-[1fr_360px] lg:gap-6">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 lg:grid lg:grid-cols-[1fr_360px] lg:gap-6">
           <div className="animate-pulse space-y-4">
             <div className="aspect-video rounded-2xl" style={{ background: "var(--s3)" }} />
             <div className="h-5 rounded-full w-3/4" style={{ background: "var(--s3)" }} />
@@ -1112,7 +1112,7 @@ function WatchPage() {
           )}
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 py-4 lg:grid lg:grid-cols-[1fr_360px] lg:gap-6">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 lg:grid lg:grid-cols-[1fr_360px] lg:gap-6">
 
           {/* ══ COLUNA ESQUERDA ══ */}
           <div className="space-y-4">
@@ -1316,9 +1316,9 @@ function WatchPage() {
             </div>
 
             {/* Acções */}
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
               <button onClick={toggleLike}
-                className="flex items-center gap-1.5 px-4 h-9 rounded-full text-sm font-bold border transition-all active:scale-95"
+                className="flex items-center gap-1.5 px-4 h-9 rounded-full text-sm font-bold border transition-all active:scale-95 shrink-0"
                 style={reactions?.userLiked
                   ? { background: GRAD, color: "#fff", border: "none" }
                   : { background: "var(--s2)", color: "var(--text-secondary)", borderColor: "var(--border-default)" }}>
@@ -1327,7 +1327,7 @@ function WatchPage() {
               </button>
 
               <button onClick={toggleDislike}
-                className="flex items-center gap-1.5 px-4 h-9 rounded-full text-sm font-bold border transition-all active:scale-95"
+                className="flex items-center gap-1.5 px-4 h-9 rounded-full text-sm font-bold border transition-all active:scale-95 shrink-0"
                 style={reactions?.userDisliked
                   ? { background: "#ef444420", color: "#ef4444", borderColor: "#ef4444" }
                   : { background: "var(--s2)", color: "var(--text-secondary)", borderColor: "var(--border-default)" }}>
@@ -1336,7 +1336,7 @@ function WatchPage() {
               </button>
 
               <button onClick={toggleSave}
-                className="flex items-center gap-1.5 px-4 h-9 rounded-full text-sm font-bold border transition-all active:scale-95"
+                className="flex items-center gap-1.5 px-4 h-9 rounded-full text-sm font-bold border transition-all active:scale-95 shrink-0"
                 style={isSaved
                   ? { background: `${P}18`, color: P, borderColor: P }
                   : { background: "var(--s2)", color: "var(--text-secondary)", borderColor: "var(--border-default)" }}>
@@ -1345,7 +1345,7 @@ function WatchPage() {
               </button>
 
               <button onClick={() => setShowShare(true)}
-                className="flex items-center gap-1.5 px-4 h-9 rounded-full text-sm font-bold border transition-all active:scale-95"
+                className="flex items-center gap-1.5 px-4 h-9 rounded-full text-sm font-bold border transition-all active:scale-95 shrink-0"
                 style={{ background: "var(--s2)", color: "var(--text-secondary)", borderColor: "var(--border-default)" }}>
                 <Share2 className="w-4 h-4" /> Partilhar
               </button>

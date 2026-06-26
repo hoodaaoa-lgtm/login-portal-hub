@@ -459,7 +459,7 @@ function ChannelPage() {
           </div>
         </div>
 
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6">
+        <div className="max-w-5xl mx-auto px-3 sm:px-6 py-5">
 
           {/* ══ TAB: VÍDEOS ══ */}
           {tab === "videos" && (
@@ -599,7 +599,7 @@ function ChannelPage() {
         <BottomNav />
       </PageWrapper>
       {photoViewerSrc && (
-        <PhotoViewer src={photoViewerSrc} alt={channel?.name ?? "Foto"} onClose={() => setPhotoViewerSrc(null)} />
+        <PhotoViewer src={photoViewerSrc} alt={channel?.name ?? "Foto"} subtitle={channel?.handle ? `@${channel.handle}` : undefined} onClose={() => setPhotoViewerSrc(null)} />
       )}
     </>
   );

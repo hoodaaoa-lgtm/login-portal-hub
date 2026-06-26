@@ -1721,7 +1721,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
         />
       )}
       {photoViewerSrc && (
-        <PhotoViewer src={photoViewerSrc} alt={name} onClose={() => setPhotoViewerSrc(null)} />
+        <PhotoViewer src={photoViewerSrc} alt={name} subtitle={profile?.username ? `@${profile.username}` : undefined} onClose={() => setPhotoViewerSrc(null)} />
       )}
     </PageWrapper>
     </>

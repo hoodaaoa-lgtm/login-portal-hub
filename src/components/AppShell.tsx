@@ -156,9 +156,9 @@ export function BottomNav() {
         borderTop: "1px solid var(--border-subtle)",
         backdropFilter: "blur(24px)",
         WebkitBackdropFilter: "blur(24px)",
-        paddingBottom: "env(safe-area-inset-bottom)",
+        paddingBottom: "max(env(safe-area-inset-bottom), 4px)",
       }}>
-      <ul className="grid grid-cols-5 h-[62px]">
+      <ul className="grid grid-cols-5 h-[58px]">
         {MOBILE_ITEMS.map(({ to, label, Icon }) => {
           const active = to === "/hoodatv" || to === "/studio"
             ? pathname.startsWith(to)
@@ -222,7 +222,7 @@ export function PageWrapper({ children, className = "" }: { children: React.Reac
   return (
     <div
       key={pathname}
-      className={`lg:ml-[260px] min-h-screen hooda-page-enter ${className}`}
+      className={`lg:ml-[260px] min-h-screen hooda-page-enter overflow-x-hidden ${className}`}
       style={{ background: "var(--s1)" }}
     >
       {children}
