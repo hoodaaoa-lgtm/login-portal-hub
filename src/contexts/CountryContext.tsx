@@ -1,9 +1,9 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 
 type CountryInfo = {
-  code: string;   // "AO", "BR", "PT", ...
-  suffix: string; // "AOA", "BR", "PT", "" ...
-  flag: string;   // "🇦🇴", "🇧🇷", ...
+  code: string;
+  suffix: string;
+  flag: string;
   loading: boolean;
 };
 
@@ -20,47 +20,56 @@ const COUNTRY_MAP: Record<string, { suffix: string; flag: string }> = {
   GB: { suffix: "UK",  flag: "🇬🇧" },
 };
 
-const CountryContext = createContext<CountryInfo>({
-  code: "", suffix: "", flag: "", loading: true,
-});
+const DEFAULT: CountryInfo = { code: "", suffix: "", flag: "", loading: false };
 
-const CACHE_KEY = "hooda_country";
-const CACHE_TTL = 1000 * 60 * 60 * 24; // 24h
+const CountryContext = createContext<CountryInfo>(DEFAULT);
 
 export function CountryProvider({ children }: { children: ReactNode }) {
-  const [info, setInfo] = useState<CountryInfo>({ code: "", suffix: "", flag: "", loading: true });
+  const [info, setInfo] = useState<CountryInfo>({ ...DEFAULT, loading: true });
 
   useEffect(() => {
-    // Check cache first
-    try {
-      const raw = sessionStorage.getItem(CACHE_KEY);
-      if (raw) {
-        const { code, ts } = JSON.parse(raw);
-        if (Date.now() - ts < CACHE_TTL) {
+    let cancelled = false;
+
+    async function detect() {
+      // Check sessionStorage cache
+      try {
+        const raw = sessionStorage.getItem("hooda_country");
+        if (raw) {
+          const { code } = JSON.parse(raw);
           const mapped = COUNTRY_MAP[code] ?? { suffix: "", flag: "" };
-          setInfo({ code, ...mapped, loading: false });
+          if (!cancelled) setInfo({ code, ...mapped, loading: false });
           return;
         }
-      }
-    } catch {}
+      } catch {}
 
-    // Detect via free IP API (no key needed)
-    fetch("https://ipapi.co/json/", { signal: AbortSignal.timeout(4000) })
-      .then(r => r.json())
-      .then(d => {
-        const code = (d.country_code ?? "").toUpperCase();
+      // Fetch IP info with timeout
+      try {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 3000);
+        const res = await fetch("https://ipapi.co/json/", { signal: controller.signal });
+        clearTimeout(timer);
+        const d = await res.json();
+        const code = (d?.country_code ?? "").toUpperCase();
         const mapped = COUNTRY_MAP[code] ?? { suffix: "", flag: "" };
-        setInfo({ code, ...mapped, loading: false });
-        try { sessionStorage.setItem(CACHE_KEY, JSON.stringify({ code, ts: Date.now() })); } catch {}
-      })
-      .catch(() => {
-        setInfo({ code: "", suffix: "", flag: "", loading: false });
-      });
+        if (!cancelled) setInfo({ code, ...mapped, loading: false });
+        try { sessionStorage.setItem("hooda_country", JSON.stringify({ code })); } catch {}
+      } catch {
+        // Silently fail — just show "hooda" without suffix
+        if (!cancelled) setInfo(DEFAULT);
+      }
+    }
+
+    detect();
+    return () => { cancelled = true; };
   }, []);
 
   return <CountryContext.Provider value={info}>{children}</CountryContext.Provider>;
 }
 
 export function useCountry() {
-  return useContext(CountryContext);
+  try {
+    return useContext(CountryContext);
+  } catch {
+    return DEFAULT;
+  }
 }
