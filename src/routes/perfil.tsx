@@ -532,7 +532,7 @@ function CreatePostModal({
   const [done, setDone] = useState(false);
   const [publishErr, setPublishErr] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [uploadStage, setUploadStage] = useState<"idle"|"uploading"|"saving"|"done">("idle");
+  const [uploadStage, setUploadStage] = useState<"idle"|"upload"|"saving"|"done">("idle");
   const fileRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLInputElement>(null);
   const [videoFile, setVideoFile] = useState<File | null>(null);
@@ -555,9 +555,6 @@ function CreatePostModal({
     setPhoto(null); setPhotoFile(null); setBgColor(null);
     setVideoPreview(URL.createObjectURL(file));
   }
-
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [uploadStage, setUploadStage]       = useState<"idle"|"upload"|"saving"|"done">("idle");
 
   async function publish() {
     if (!text.trim() && !photoFile && !photo && !videoFile) return;
