@@ -1053,20 +1053,40 @@ function SettingsDrawer({
 }
 
 
-/* ─── Painel genérico (header + voltar, usado pelos sub-ecrãs de Configurações) ─── */
+/* ─── Painel genérico — ocupa a página inteira (estilo Instagram) ─── */
 function SettingsSubPanel({ title, onBack, children }: { title: string; onBack: () => void; children: React.ReactNode }) {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setVisible(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+
+  const handleBack = () => {
+    setVisible(false);
+    setTimeout(onBack, 250);
+  };
+
   return (
-    <div className="fixed inset-0 z-[60] flex" onClick={(e) => e.target === e.currentTarget && onBack()}>
-      <div className="absolute inset-0 bg-black/50" onClick={onBack} />
-      <div className="absolute right-0 top-0 bottom-0 w-full max-w-xs bg-neutral-50 flex flex-col shadow-2xl overflow-hidden">
-        <div className="flex items-center gap-2 px-3 py-4 bg-white border-b border-neutral-100">
-          <button onClick={onBack} className="p-1.5 rounded-full hover:bg-neutral-100 transition">
-            <ChevronRight className="h-5 w-5 text-neutral-500 rotate-180" />
-          </button>
-          <span className="text-base font-extrabold text-black">{title}</span>
-        </div>
-        <div className="overflow-y-auto flex-1 py-3">{children}</div>
+    <div
+      className="fixed inset-0 z-[60] flex flex-col transition-transform duration-250 ease-out"
+      style={{
+        background: "var(--s1, #f8f8f8)",
+        transform: visible ? "translateX(0)" : "translateX(100%)",
+      }}
+    >
+      {/* Header */}
+      <div className="flex items-center gap-2 px-3 py-4 border-b shrink-0"
+        style={{ background: "var(--s2, #fff)", borderColor: "var(--border-default, #eee)" }}>
+        <button onClick={handleBack}
+          className="p-2 rounded-full transition active:scale-90"
+          style={{ background: "var(--s3, #f0f0f0)" }}>
+          <ChevronRight className="h-5 w-5 rotate-180" style={{ color: "var(--text-primary)" }} />
+        </button>
+        <span className="text-base font-extrabold" style={{ color: "var(--text-primary)" }}>{title}</span>
       </div>
+      {/* Conteúdo */}
+      <div className="overflow-y-auto flex-1 py-3">{children}</div>
     </div>
   );
 }
