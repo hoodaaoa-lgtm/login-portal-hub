@@ -765,11 +765,17 @@ function WatchPage() {
 
   const bg = avatarColor(ch?.name ?? "");
 
-  /* ── Gravar view — deduplicada na BD (6h cooldown por utilizador) ── */
+  /* ── Gravar view — só conta após 15s assistidos (como o YouTube mas 15s) ── */
   useEffect(() => {
     if (!id || !video) return;
 
-    // Fingerprint leve para anónimos (sem dados pessoais)
+    // Verificar cooldown local antes de sequer iniciar o timer
+    const lsKey = `htv-view-${id}`;
+    const lastSeen = localStorage.getItem(lsKey);
+    const SIX_HOURS = 6 * 60 * 60 * 1000;
+    if (lastSeen && Date.now() - Number(lastSeen) < SIX_HOURS) return;
+
+    // Fingerprint anónimo leve (sem dados pessoais)
     const fp = [
       navigator.language,
       screen.width,
@@ -778,31 +784,28 @@ function WatchPage() {
     ].join("|");
     const fpHash = btoa(fp).slice(0, 32);
 
-    // Chave local para evitar chamadas repetidas na mesma sessão de browser
-    // (a BD já tem o cooldown de 6h, isto é só para não fazer chamadas desnecessárias)
-    const lsKey = `htv-view-${id}`;
-    const lastSeen = localStorage.getItem(lsKey);
-    const SIX_HOURS = 6 * 60 * 60 * 1000;
-    if (lastSeen && Date.now() - Number(lastSeen) < SIX_HOURS) return;
+    let viewRegistered = false;
 
-    (supabase as any).rpc("record_video_view", {
-      p_video_id:           id,
-      p_channel_id:         video.channel_id ?? null,
-      p_viewer_fingerprint: fpHash,
-    }).then(({ data, error }: { data: any; error: any }) => {
-      if (error) {
-        console.error("[HoodaTV] Erro ao registar view:", error);
-        return;
-      }
-      // Só guarda o timestamp se a view foi efectivamente contada
-      if (data?.counted) {
+    // Só conta após 15 segundos de reprodução efectiva
+    const timer = setTimeout(() => {
+      const vid = videoRef.current;
+      // Confirmar que o vídeo está realmente a ser reproduzido
+      if (!vid || vid.paused || vid.ended) return;
+      if (viewRegistered) return;
+      viewRegistered = true;
+
+      (supabase as any).rpc("record_video_view", {
+        p_video_id:           id,
+        p_channel_id:         video.channel_id ?? null,
+        p_viewer_fingerprint: fpHash,
+      }).then(({ data, error }: { data: any; error: any }) => {
+        if (error) { console.error("[HoodaTV] view error:", error); return; }
         localStorage.setItem(lsKey, String(Date.now()));
-        qc.invalidateQueries({ queryKey: ["htv-watch", id] });
-      } else {
-        // Mesmo que não contou, actualiza o timestamp local para evitar chamadas futuras
-        localStorage.setItem(lsKey, String(Date.now()));
-      }
-    });
+        if (data?.counted) qc.invalidateQueries({ queryKey: ["htv-watch", id] });
+      });
+    }, 15_000); // 15 segundos
+
+    return () => clearTimeout(timer);
   }, [id, video?.channel_id]);
 
   /* ── Realtime: comentários novos ── */
