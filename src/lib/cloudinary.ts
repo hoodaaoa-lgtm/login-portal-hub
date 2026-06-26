@@ -5,7 +5,7 @@
 
 const CLOUD_NAME = "dy7o7tgmk";
 const UPLOAD_PRESET_VIDEO = "hooda_videos";  // preset unsigned para vídeos
-const UPLOAD_PRESET_IMAGE = "hooda_images";  // preset unsigned para imagens
+const UPLOAD_PRESET_IMAGE = "hooda_videos";  // usa o mesmo preset que já existe
 
 export interface CloudinaryUploadResult {
   publicId: string;
