@@ -918,7 +918,7 @@ function SettingsDrawer({
 
       {/* Painel */}
       <div
-        className="relative h-full w-full max-w-sm flex flex-col shadow-2xl transition-transform duration-300 ease-out"
+        className="relative h-full w-full max-w-sm flex flex-col shadow-2xl transition-transform duration-300 ease-out overflow-hidden"
         style={{
           background: "var(--s1, #fff)",
           transform: visible ? "translateX(0)" : "translateX(100%)",
@@ -1042,11 +1042,11 @@ function SettingsDrawer({
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="shrink-0 p-4 border-t" style={{ borderColor: "var(--border-default, #eee)", background: "var(--s1, #fff)" }}>
+        {/* Footer — sempre visível no fundo */}
+        <div className="shrink-0 p-4 border-t safe-area-bottom" style={{ borderColor: "var(--border-default, #eee)", background: "var(--s1, #fff)", paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}>
           <button onClick={onSignOut}
-            className="w-full h-11 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition active:scale-[0.98]"
-            style={{ background: "#fee2e2", color: "#dc2626", border: "1px solid #fca5a5" }}
+            className="w-full h-12 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition active:scale-[0.98]"
+            style={{ background: "#fee2e2", color: "#dc2626", border: "1.5px solid #fca5a5" }}
             onMouseOver={e => (e.currentTarget.style.background = "#fecaca")}
             onMouseOut={e => (e.currentTarget.style.background = "#fee2e2")}>
             <LogOut className="h-4 w-4" /> Terminar sessão
