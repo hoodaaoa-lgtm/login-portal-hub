@@ -32,6 +32,7 @@ type Profile = { id?: string; username: string; full_name: string; age: number |
 type Post = {
   id: string; text: string; photo: string | null; bgColor: string | null; createdAt: Date;
   likes: number; likedByMe: boolean; comments: number; bookmarked: boolean;
+  videoUrl?: string;
 };
 type SavedPost = Post & { authorId: string; authorName: string; authorUsername: string; authorAvatar: string | null };
 
@@ -340,7 +341,12 @@ function PostCard({
       </div>
 
       {/* Content */}
-      {post.photo && <img src={post.photo} alt="" className="w-full" style={{ display: "block" }} onError={(e) => { e.currentTarget.style.display = "none"; }} />}
+      {post.videoUrl && (
+        <div className="w-full bg-black">
+          <video src={post.videoUrl} controls playsInline className="w-full max-h-[480px]" style={{ display: "block" }} />
+        </div>
+      )}
+      {post.photo && !post.videoUrl && <img src={post.photo} alt="" className="w-full" style={{ display: "block" }} onError={(e) => { e.currentTarget.style.display = "none"; }} />}
       {post.text && (
         post.bgColor ? (
           <div className="px-4 pb-3">
@@ -388,7 +394,12 @@ function PostCard({
           }
           body={
             <>
-              {post.photo && <img src={post.photo} alt="" className="w-full" style={{ display: "block" }} />}
+              {post.videoUrl && (
+                <div className="w-full bg-black">
+                  <video src={post.videoUrl} controls playsInline className="w-full max-h-[320px]" style={{ display: "block" }} />
+                </div>
+              )}
+              {post.photo && !post.videoUrl && <img src={post.photo} alt="" className="w-full" style={{ display: "block" }} />}
               {post.text && (
                 post.bgColor ? (
                   <div className="px-4 pb-3">
@@ -505,14 +516,26 @@ function CreatePostModal({
   const [done, setDone] = useState(false);
   const [publishErr, setPublishErr] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLInputElement>(null);
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [videoPreview, setVideoPreview] = useState<string | null>(null);
 
   function pickPhoto(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     setPhotoFile(file);
+    setVideoFile(null); setVideoPreview(null);
     const reader = new FileReader();
     reader.onload = (ev) => { setPhoto(ev.target?.result as string); setBgColor(null); };
     reader.readAsDataURL(file);
+  }
+
+  function pickVideo(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setVideoFile(file);
+    setPhoto(null); setPhotoFile(null); setBgColor(null);
+    setVideoPreview(URL.createObjectURL(file));
   }
 
   async function publish() {
@@ -524,11 +547,16 @@ function CreatePostModal({
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { setPublishErr("É preciso iniciar sessão para publicar."); return; }
 
-      // Upload foto para Cloudinary se existir ficheiro
+      // Upload foto ou vídeo para Cloudinary
       let imageUrl: string | null = photo;
+      let videoUrl: string | null = null;
       if (photoFile) {
         const { url } = await uploadImageToCloudinary(photoFile, `hooda/posts/${session.user.id}`);
         imageUrl = url;
+      }
+      if (videoFile) {
+        const { url } = await uploadImageToCloudinary(videoFile, `hooda/posts/videos/${session.user.id}`);
+        videoUrl = url;
       }
 
       const { data: prof } = await supabase.from("profiles").select("username, full_name").eq("id", session.user.id).single();
@@ -542,8 +570,9 @@ function CreatePostModal({
           author_name: prof?.full_name ?? session.user.email ?? "",
           author_color: "#5B3FCF",
           content: contentJson,
-          kind: bgColor ? "bg" : imageUrl ? "photo" : "post",
+          kind: videoUrl ? "video" : bgColor ? "bg" : imageUrl ? "photo" : "post",
           image_url: imageUrl,
+          video_url: videoUrl,
         })
         .select("id, created_at")
         .single();
@@ -556,6 +585,7 @@ function CreatePostModal({
 
       onPublish({
         id: inserted.id, text, photo: imageUrl, bgColor,
+        videoUrl: videoUrl ?? undefined,
         createdAt: new Date(inserted.created_at ?? Date.now()),
         likes: 0, likedByMe: false, comments: 0, bookmarked: false,
       });
@@ -568,7 +598,7 @@ function CreatePostModal({
     }
   }
 
-  const canPublish = (text.trim().length > 0 || photo !== null) && !publishing && !done;
+  const canPublish = (text.trim().length > 0 || photo !== null || videoFile !== null) && !publishing && !done;
 
   return (
     <div className="fixed inset-0 z-50 flex items-end lg:items-center justify-center overflow-hidden"
@@ -594,7 +624,16 @@ function CreatePostModal({
           {photo && (
             <div className="relative mb-3 rounded-xl overflow-hidden">
               <img src={photo} alt="foto" className="w-full rounded-xl" style={{ display: "block" }} onError={(e) => { e.currentTarget.style.display = "none"; }} />
-              <button onClick={() => setPhoto(null)}
+              <button onClick={() => { setPhoto(null); setPhotoFile(null); }}
+                className="absolute top-2 right-2 bg-black/60 text-white rounded-full p-1">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          )}
+          {videoPreview && (
+            <div className="relative mb-3 rounded-xl overflow-hidden bg-black">
+              <video src={videoPreview} controls className="w-full rounded-xl max-h-64" />
+              <button onClick={() => { setVideoFile(null); setVideoPreview(null); }}
                 className="absolute top-2 right-2 bg-black/60 text-white rounded-full p-1">
                 <X className="h-4 w-4" />
               </button>
@@ -632,13 +671,14 @@ function CreatePostModal({
                 className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-neutral-100 hover:bg-neutral-200 transition text-sm font-semibold text-neutral-700 active:scale-95">
                 <Image className="h-4 w-4 text-[#6BA547]" /> Foto
               </button>
-              <button onClick={() => { onClose?.(); navigate({ to: "/studio/upload" }); }}
+              <button onClick={() => videoRef.current?.click()}
                 className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-neutral-100 hover:bg-neutral-200 transition text-sm font-semibold text-neutral-700 active:scale-95">
                 <Film className="h-4 w-4 text-[#E94B8A]" /> Vídeo
               </button>
             </div>
           </div>
           <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={pickPhoto} />
+          <input ref={videoRef} type="file" accept="video/*" className="hidden" onChange={pickVideo} />
           {publishErr && <p className="mb-2 text-sm text-red-600">{publishErr}</p>}
           <button onClick={publish} disabled={!canPublish}
             className="w-full h-12 rounded-xl font-bold text-base transition-all active:scale-[0.99] disabled:opacity-40"
@@ -1587,7 +1627,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
 
       const { data } = await supabase
         .from("posts")
-        .select("id, content, kind, created_at, image_url, photos")
+        .select("id, content, kind, created_at, image_url, video_url, photos")
         .eq("author_id", session.user.id)
         .order("created_at", { ascending: false });
       if (data && data.length > 0) {
@@ -1628,6 +1668,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
               } catch (_) {}
             }
             const photo = (p as any).image_url || ((p as any).photos && (p as any).photos[0]) || null;
+            const videoUrl = (p as any).video_url || undefined;
             const likeIds = likesByPost[p.id] ?? [];
             return {
               id: p.id, text, photo, bgColor, createdAt: new Date(p.created_at ?? Date.now()),
