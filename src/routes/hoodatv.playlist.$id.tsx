@@ -122,7 +122,7 @@ function PlaylistPage() {
   return (
     <>
       <SideNav />
-      <PageWrapper className="pb-20 lg:pb-0 flex flex-col" style={{ minHeight: "100dvh" }}>
+      <PageWrapper className="pb-20 lg:pb-0 flex flex-col min-h-[100dvh]">
 
         {/* ── Top bar ── */}
         <div

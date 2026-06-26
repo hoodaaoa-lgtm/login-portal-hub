@@ -16,6 +16,7 @@ import { ThemeProvider } from "../contexts/ThemeContext";
 import { AvatarProvider } from "../contexts/AvatarContext";
 import { BadgeProvider } from "../contexts/BadgeContext";
 import { CountryProvider } from "../contexts/CountryContext";
+import { AuthProvider, useAuth } from "../contexts/AuthContext";
 import { GlobalStoryViewer } from "../components/GlobalStoryViewer";
 import { BottomNav } from "../components/AppShell";
 import { SplashScreen, SPLASH_EXIT_MS } from "../components/SplashScreen";

@@ -328,7 +328,7 @@ function VideoCard({ v, rank }: { v: any; rank?: number }) {
         {/* Avatar canal */}
         <div
           className="w-9 h-9 rounded-full shrink-0 overflow-hidden flex items-center justify-center text-white text-sm font-bold cursor-pointer mt-0.5 ring-2"
-          style={{ background: bg, ringColor: `${bg}33` }}
+          style={{ background: bg, ['--tw-ring-color' as any]: `${bg}33` }}
           onClick={e => { e.stopPropagation(); if (ch?.handle) navigate({ to: "/hoodatv/canal/$handle", params: { handle: ch.handle } }); }}>
           {ch?.avatar_url ? <img src={ch.avatar_url} alt="" className="w-full h-full object-cover" /> : (ch?.name?.[0] ?? "?").toUpperCase()}
         </div>
@@ -381,7 +381,7 @@ function ChannelCard({ ch, isFollowing, onFollow }: { ch: any; isFollowing: bool
       <div className="flex flex-col items-center px-4 pb-4" style={{ marginTop: "-28px" }}>
         <div className="relative mb-2">
           <div className="w-14 h-14 rounded-full overflow-hidden flex items-center justify-center text-white text-lg font-extrabold ring-4 shadow-lg"
-            style={{ background: bg, ringColor: "var(--s0)" }}>
+            style={{ background: bg, ['--tw-ring-color' as any]: "var(--s0)" }}>
             {ch.avatar_url ? <img src={ch.avatar_url} alt="" className="w-full h-full object-cover" /> : (ch.name?.[0] ?? "?").toUpperCase()}
           </div>
           {isFollowing && (
