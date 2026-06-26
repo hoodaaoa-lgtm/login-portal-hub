@@ -251,7 +251,7 @@ function VideoMenu({ v }: { v: any }) {
         <MoreVertical className="w-4 h-4" />
       </button>
       {open && (
-        <div className="absolute right-0 top-9 z-50 w-52 rounded-2xl overflow-hidden shadow-2xl py-1"
+        <div className="absolute right-0 bottom-10 z-50 w-52 rounded-2xl overflow-hidden shadow-2xl py-1"
           style={{ background: "var(--s0)", border: "1px solid var(--border-subtle)" }}>
           {items.map(item => (
             <button key={item.label} onClick={item.action}
