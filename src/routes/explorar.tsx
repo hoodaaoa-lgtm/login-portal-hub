@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { t } from "@/lib/useT";
+import { useTranslation } from "react-i18next";
 import { BottomNav, SideNav, PageWrapper } from "@/components/AppShell";
 import { HoodaLogo } from "@/components/HoodaLogo";
 import { Search, X, BookOpen, ThumbsUp, MessageCircle, Bookmark, Send } from "lucide-react";
@@ -277,6 +277,7 @@ type SearchProfile = { id: string; username: string; full_name: string | null; b
 type SearchBook = { id: string; author_username: string; title: string; cover_color: string; chapter_count: number };
 
 function ExplorePage() {
+  const { t } = useTranslation();
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<Tile | null>(null);
   const [userId, setUserId] = useState("");

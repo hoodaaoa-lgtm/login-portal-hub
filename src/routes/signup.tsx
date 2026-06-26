@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { t } from "@/lib/useT";
+import { useTranslation } from "react-i18next";
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { HoodaLogo } from "@/components/HoodaLogo";
@@ -30,6 +30,7 @@ function suggestUsername(name: string): string {
 }
 
 function SignupPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [mounted, setMounted] = useState(false);
 

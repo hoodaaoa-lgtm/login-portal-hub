@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate, Outlet, useRouterState } from "@tanstack/react-router";
-import { t } from "@/lib/useT";
+import { useTranslation } from "react-i18next";
 import { BottomNav, SideNav, PageWrapper } from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -174,6 +174,7 @@ const avatarColor = (name: string) => AVATAR_COLORS[(name?.charCodeAt(0) ?? 0) %
 
 /* ── Skeleton ── */
 function VSkel() {
+  const { t } = useTranslation();
   return (
     <div className="animate-pulse">
       <div className="rounded-2xl" style={{ aspectRatio: "16/9", background: "var(--s3)" }} />
@@ -191,6 +192,7 @@ function VSkel() {
 
 /* ── Three-dot menu ── */
 function VideoMenu({ v }: { v: any }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -270,6 +272,7 @@ function VideoMenu({ v }: { v: any }) {
 
 /* ── Video Card ── */
 function VideoCard({ v, rank }: { v: any; rank?: number }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const ch = v.channel;
   const bg = avatarColor(ch?.name ?? "");
@@ -423,12 +426,14 @@ type FilterKey = typeof FILTERS[number]["key"];
    MAIN PAGE
 ══════════════════════════════════ */
 function HoodaTVPage() {
+  const { t } = useTranslation();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   if (pathname !== "/hoodatv") return <Outlet />;
   return <HoodaTVMain />;
 }
 
 function HoodaTVMain() {
+  const { t } = useTranslation();
   const [search, setSearch]   = useState("");
   const [filter, setFilter]   = useState<FilterKey>("ti");
   const [showIntro, setShowIntro] = useState(() => !_introSeenThisSession);
@@ -550,7 +555,7 @@ function HoodaTVMain() {
               </p>
               {searchVideos.length > 0
                 ? <Grid>{searchVideos.map((v: any) => <VideoCard key={v.id} v={v} />)}</Grid>
-                : <Empty msg="Tenta pesquisar algo diferente." />}
+                : <Empty msg={t("tv.try_different", "Tenta pesquisar algo diferente.")} />}
             </section>
           )}
 
@@ -560,7 +565,7 @@ function HoodaTVMain() {
               {loadingVideos
                 ? <Grid>{Array.from({length: 9}).map((_, i) => <VSkel key={i} />)}</Grid>
                 : !showVideos?.length && !recent?.length
-                  ? <Empty msg="Ainda não há vídeos publicados." />
+                  ? <Empty msg={t("tv.no_videos")} />
                   : <Grid>
                       {(filter === "ti"
                         ? [...(recent ?? [])].sort(() => Math.random() - .5)
@@ -610,7 +615,7 @@ function HoodaTVMain() {
           {!search && filter === "seguindo" && (
             <section>
               {!me
-                ? <Empty msg="Inicia sessão para ver os canais que segues." />
+                ? <Empty msg={t("tv.sign_in_channels", "Inicia sessão para ver os canais que segues.")} />
                 : followingIds.length === 0
                   ? (
                     <div className="rounded-3xl p-10 text-center border"
@@ -619,16 +624,16 @@ function HoodaTVMain() {
                         style={{ background: `${P}15` }}>
                         <UserPlus className="w-8 h-8" style={{ color: P }} />
                       </div>
-                      <p className="text-base font-bold mb-1" style={{ color: "var(--text-primary)" }}>Ainda não segues nenhum canal</p>
-                      <p className="text-sm mb-6" style={{ color: "var(--text-muted)" }}>Vai ao separador Canais e começa a seguir.</p>
+                      <p className="text-base font-bold mb-1" style={{ color: "var(--text-primary)" }}>{t("tv.not_following_channels", "Ainda não segues nenhum canal")}</p>
+                      <p className="text-sm mb-6" style={{ color: "var(--text-muted)" }}>{t("tv.go_to_channels", "Vai ao separador Canais e começa a seguir.")}</p>
                       <button onClick={() => setFilter("canais")}
                         className="px-6 py-2.5 rounded-full text-sm font-bold text-white transition-all active:scale-95"
                         style={{ background: GRAD, boxShadow: `0 4px 14px ${P}44` }}>
-                        Ver canais
+                        {t("tv.see_channels", "Ver canais")}
                       </button>
                     </div>
                   )
-                  : <Empty msg="Os canais que segues ainda não publicaram vídeos." />}
+                  : <Empty msg={t("tv.following_no_videos", "Os canais que segues ainda não publicaram vídeos.")} />}
             </section>
           )}
 
@@ -640,10 +645,12 @@ function HoodaTVMain() {
 }
 
 function Grid({ children }: { children: React.ReactNode }) {
+  const { t } = useTranslation();
   return <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-8">{children}</div>;
 }
 
 function Empty({ msg, icon }: { msg: string; icon?: React.ReactNode }) {
+  const { t } = useTranslation();
   return (
     <div className="py-16 text-center rounded-3xl border"
       style={{ background: "var(--s2)", borderColor: "var(--border-subtle)" }}>

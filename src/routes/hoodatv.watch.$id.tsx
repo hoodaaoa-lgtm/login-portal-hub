@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate, useParams } from "@tanstack/react-router";
-import { t } from "@/lib/useT";
+import { useTranslation } from "react-i18next";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { BottomNav, SideNav, PageWrapper } from "@/components/AppShell";
@@ -492,6 +492,7 @@ function VideoOptionsDropdown({
 
 /* ── Reações num comentário ── */
 function CommentReactions({ comment, me, qc, videoId }: { comment: any; me: any; qc: any; videoId: string }) {
+  const { t } = useTranslation();
   const [showPicker, setShowPicker] = useState(false);
   const reactions = comment.video_comment_reactions ?? [];
 
@@ -552,6 +553,7 @@ function CommentReactions({ comment, me, qc, videoId }: { comment: any; me: any;
 function CommentItem({ comment, me, videoId, qc, depth = 0 }: {
   comment: any; me: any; videoId: string; qc: any; depth?: number;
 }) {
+  const { t } = useTranslation();
   const [replying, setReplying]       = useState(false);
   const [showReplies, setShowReplies] = useState(false);
   const [replyText, setReplyText]     = useState("");
@@ -653,6 +655,7 @@ function CommentItem({ comment, me, videoId, qc, depth = 0 }: {
 
 /* ── Secção de comentários ── */
 function CommentsSection({ videoId, me }: { videoId: string; me: any }) {
+  const { t } = useTranslation();
   const qc = useQueryClient();
   const { data: comments = [], isLoading, isError, error } = useComments(videoId);
   const [text, setText] = useState("");
@@ -741,6 +744,7 @@ function CommentsSection({ videoId, me }: { videoId: string; me: any }) {
    PÁGINA PRINCIPAL
 ══════════════════════════════════ */
 function WatchPage() {
+  const { t } = useTranslation();
   const { id } = useParams({ from: "/hoodatv/watch/$id" });
   const navigate = useNavigate();
   const qc = useQueryClient();

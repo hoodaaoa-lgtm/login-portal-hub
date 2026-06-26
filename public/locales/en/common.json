@@ -137,7 +137,14 @@
     "description": "Description",
     "comments": "Comments",
     "likes": "Likes",
-    "upload_video": "Upload video"
+    "upload_video": "Upload video",
+    "try_different": "Try a different search.",
+    "sign_in_channels": "Sign in to see channels you follow.",
+    "following_no_videos": "Channels you follow haven't posted videos yet.",
+    "not_following_channels": "You're not following any channels",
+    "go_to_channels": "Go to Channels tab and start following.",
+    "see_channels": "See channels",
+    "music_start": "Music start"
   },
   "messages": {
     "new_message": "New message",
@@ -159,7 +166,10 @@
     "file": "File",
     "emoji": "Emoji",
     "today": "Today",
-    "yesterday": "Yesterday"
+    "yesterday": "Yesterday",
+    "search_user": "@username or name",
+    "add_caption": "Add caption…",
+    "select_conversation": "Select a conversation"
   },
   "explore": {
     "trending": "Trending",
@@ -230,6 +240,14 @@
     "today": "Today",
     "yesterday": "Yesterday",
     "online": "Online",
-    "offline": "Offline"
+    "offline": "Offline",
+    "search_placeholder": "Search...",
+    "add": "Add"
+  },
+  "home": {
+    "create_story": "Create story",
+    "add_text": "Add text",
+    "your_story": "Your story",
+    "stories": "Stories"
   }
 }

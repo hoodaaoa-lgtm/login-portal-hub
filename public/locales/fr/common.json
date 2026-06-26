@@ -137,7 +137,14 @@
     "description": "Description",
     "comments": "Commentaires",
     "likes": "J'aime",
-    "upload_video": "Publier une vidéo"
+    "upload_video": "Publier une vidéo",
+    "try_different": "Essaie une autre recherche.",
+    "sign_in_channels": "Connecte-toi pour voir les chaînes que tu suis.",
+    "following_no_videos": "Les chaînes que tu suis n'ont pas encore publié de vidéos.",
+    "not_following_channels": "Tu ne suis aucune chaîne",
+    "go_to_channels": "Va dans l'onglet Chaînes et commence à suivre.",
+    "see_channels": "Voir les chaînes",
+    "music_start": "Début de la musique"
   },
   "messages": {
     "new_message": "Nouveau message",
@@ -159,7 +166,10 @@
     "file": "Fichier",
     "emoji": "Emoji",
     "today": "Aujourd'hui",
-    "yesterday": "Hier"
+    "yesterday": "Hier",
+    "search_user": "@utilisateur ou nom",
+    "add_caption": "Ajouter une légende…",
+    "select_conversation": "Sélectionne une conversation"
   },
   "explore": {
     "trending": "Tendances",
@@ -230,6 +240,14 @@
     "today": "Aujourd'hui",
     "yesterday": "Hier",
     "online": "En ligne",
-    "offline": "Hors ligne"
+    "offline": "Hors ligne",
+    "search_placeholder": "Rechercher...",
+    "add": "Ajouter"
+  },
+  "home": {
+    "create_story": "Créer une histoire",
+    "add_text": "Ajouter du texte",
+    "your_story": "Ton hist.",
+    "stories": "Histoires"
   }
 }

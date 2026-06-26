@@ -137,7 +137,14 @@
     "description": "الوصف",
     "comments": "التعليقات",
     "likes": "الإعجابات",
-    "upload_video": "رفع فيديو"
+    "upload_video": "رفع فيديو",
+    "try_different": "جرب بحثاً مختلفاً.",
+    "sign_in_channels": "سجّل الدخول لترى القنوات التي تتابعها.",
+    "following_no_videos": "القنوات التي تتابعها لم تنشر مقاطع بعد.",
+    "not_following_channels": "لا تتابع أي قناة بعد",
+    "go_to_channels": "اذهب إلى تبويب القنوات وابدأ في المتابعة.",
+    "see_channels": "رؤية القنوات",
+    "music_start": "بداية الموسيقى"
   },
   "messages": {
     "new_message": "رسالة جديدة",
@@ -159,7 +166,10 @@
     "file": "ملف",
     "emoji": "إيموجي",
     "today": "اليوم",
-    "yesterday": "أمس"
+    "yesterday": "أمس",
+    "search_user": "@المستخدم أو الاسم",
+    "add_caption": "إضافة تعليق…",
+    "select_conversation": "اختر محادثة"
   },
   "explore": {
     "trending": "الأكثر تداولاً",
@@ -230,6 +240,14 @@
     "today": "اليوم",
     "yesterday": "أمس",
     "online": "متصل",
-    "offline": "غير متصل"
+    "offline": "غير متصل",
+    "search_placeholder": "بحث...",
+    "add": "إضافة"
+  },
+  "home": {
+    "create_story": "إنشاء قصة",
+    "add_text": "إضافة نص",
+    "your_story": "قصتك",
+    "stories": "القصص"
   }
 }

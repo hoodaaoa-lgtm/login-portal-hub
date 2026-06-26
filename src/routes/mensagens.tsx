@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { t } from "@/lib/useT";
+import { useTranslation } from "react-i18next";
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -82,6 +82,7 @@ function isValidUUID(id: string | null | undefined): id is string {
 
 // ── Avatar ──
 function Av({ name, color, size = 40, src }: { name: string; color?: string; size?: number; src?: string | null }) {
+  const { t } = useTranslation();
   return (
     <div style={{
       width: size, height: size, borderRadius: "50%",
@@ -99,6 +100,7 @@ function Av({ name, color, size = 40, src }: { name: string; color?: string; siz
 }
 
 function AvatarRing({ name, color, size = 46, src }: { name: string; color?: string; size?: number; src?: string | null }) {
+  const { t } = useTranslation();
   return (
     <div style={{ borderRadius: "50%", padding: 2, background: "linear-gradient(135deg,#5B3FCF 0%,#E94B8A 50%,#FFC93C 100%)", flexShrink: 0 }}>
       <div style={{ borderRadius: "50%", padding: 2, background: "var(--bg-card,white)" }}>
@@ -456,7 +458,7 @@ function AddContactModal({ myId, onClose, onAdd, existingContacts }: {
               value={search}
               onChange={e => setSearch(e.target.value)}
               onKeyDown={e => e.key === "Enter" && handleSearch(search)}
-              placeholder="@username ou nome"
+              placeholder={t("messages.search_user", "@username ou nome")}
               autoFocus
               className="w-full h-11 pl-9 pr-4 rounded-2xl text-sm outline-none"
               style={{ background: "var(--bg-secondary,#f5f5f5)" }}
@@ -865,6 +867,7 @@ function decodeMediaCaption(content: string): { caption: string; editState?: Med
 
 // ── MediaProgressRing ──
 function MediaProgressRing({ pct, size = 40, color = "#fff" }: { pct?: number; size?: number; color?: string }) {
+  const { t } = useTranslation();
   if (pct == null || pct <= 0) {
     return <Loader className="animate-spin" style={{ width: size * 0.55, height: size * 0.55, color }} />;
   }
@@ -886,6 +889,7 @@ function MediaProgressRing({ pct, size = 40, color = "#fff" }: { pct?: number; s
 
 // ── Audio Player — estilo WhatsApp ──
 function AudioMsg({ url, isMe, knownDur }: { url: string; isMe: boolean; knownDur?: number }) {
+  const { t } = useTranslation();
   const [playing, setPlaying]     = useState(false);
   const [progress, setProgress]   = useState(0);   // 0-100
   const [cur, setCur]             = useState(0);
@@ -1190,7 +1194,7 @@ function ChatMediaSendPreview({ item, onCancel, onSend, sending }: {
             value={caption}
             onChange={(e) => setCaption(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter" && !sending) onSend(caption, edit); }}
-            placeholder="Adicionar legenda…"
+            placeholder={t("messages.add_caption", "Adicionar legenda…")}
             className="flex-1 bg-transparent outline-none text-white placeholder:text-white/40 text-sm px-3 py-2.5"
             autoFocus
           />
@@ -1587,6 +1591,7 @@ function FailedMsgBadge({ onRetry }: { onRetry: () => void }) {
 
 // ── Upload progress overlay on image bubbles ──
 function UploadProgressOverlay({ progress }: { progress?: number }) {
+  const { t } = useTranslation();
   if (progress == null || progress >= 100) return null;
   return (
     <div className="absolute inset-0 flex items-center justify-center rounded-2xl"
@@ -3565,7 +3570,7 @@ function ContactList({ contacts, loading, refreshing, search, setSearch, active,
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Pesquisar..."
+            placeholder={t("common.search_placeholder", "Pesquisar...")}
             className="flex-1 bg-transparent text-sm outline-none placeholder:text-white/60 text-white"
           />
           {search && (
@@ -3648,6 +3653,7 @@ function ContactList({ contacts, loading, refreshing, search, setSearch, active,
 
 // ── Main Page ──
 function MensagensPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [myId, setMyId] = useState("");
   const [search, setSearch] = useState("");
@@ -3998,7 +4004,7 @@ function MensagensPage() {
               ? <ChatPanel key={active.conversationId} myId={myId} contact={active} onBack={() => setActive(null)} />
               : <div className="flex items-center justify-center h-full flex-col gap-3" style={{ color: "var(--text-muted,#888)" }}>
                   <MessageSquare className="h-12 w-12" style={{ color: "#d1d1d1" }} />
-                  <p>Seleciona uma conversa</p>
+                  <p>{t("messages.select_conversation", "Seleciona uma conversa")}</p>
                 </div>
             }
           </div>

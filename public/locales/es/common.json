@@ -137,7 +137,14 @@
     "description": "Descripción",
     "comments": "Comentarios",
     "likes": "Me gusta",
-    "upload_video": "Subir vídeo"
+    "upload_video": "Subir vídeo",
+    "try_different": "Intenta buscar algo diferente.",
+    "sign_in_channels": "Inicia sesión para ver los canales que sigues.",
+    "following_no_videos": "Los canales que sigues aún no han publicado vídeos.",
+    "not_following_channels": "Aún no sigues ningún canal",
+    "go_to_channels": "Ve a la pestaña Canales y empieza a seguir.",
+    "see_channels": "Ver canales",
+    "music_start": "Inicio de música"
   },
   "messages": {
     "new_message": "Nuevo mensaje",
@@ -159,7 +166,10 @@
     "file": "Archivo",
     "emoji": "Emoji",
     "today": "Hoy",
-    "yesterday": "Ayer"
+    "yesterday": "Ayer",
+    "search_user": "@usuario o nombre",
+    "add_caption": "Añadir subtítulo…",
+    "select_conversation": "Selecciona una conversación"
   },
   "explore": {
     "trending": "Tendencias",
@@ -230,6 +240,14 @@
     "today": "Hoy",
     "yesterday": "Ayer",
     "online": "En línea",
-    "offline": "Desconectado"
+    "offline": "Desconectado",
+    "search_placeholder": "Buscar...",
+    "add": "Añadir"
+  },
+  "home": {
+    "create_story": "Crear historia",
+    "add_text": "Añadir texto",
+    "your_story": "Tu hist.",
+    "stories": "Historias"
   }
 }
