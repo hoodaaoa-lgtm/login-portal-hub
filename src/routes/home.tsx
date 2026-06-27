@@ -3102,10 +3102,38 @@ function HomePage() {
   // substitui os dados quando a busca termina com sucesso — nunca antes.
   async function fetchStoriesPage(uid: string, username: string): Promise<Story[]> {
     const now = new Date().toISOString();
+
+    // 1 — Buscar IDs de quem me segue
+    const { data: followRows } = await (supabase as any)
+      .from("follows")
+      .select("follower_id")
+      .eq("following_id", uid);
+    const followerIds: string[] = (followRows ?? []).map((r: any) => r.follower_id);
+
+    // 2 — Buscar IDs de contactos de mensagens
+    const { data: convRows } = await (supabase as any)
+      .from("conversation_participants")
+      .select("conversation_id")
+      .eq("user_id", uid);
+    const convIds = (convRows ?? []).map((r: any) => r.conversation_id);
+    let contactIds: string[] = [];
+    if (convIds.length > 0) {
+      const { data: partRows } = await (supabase as any)
+        .from("conversation_participants")
+        .select("user_id")
+        .in("conversation_id", convIds)
+        .neq("user_id", uid);
+      contactIds = (partRows ?? []).map((r: any) => r.user_id);
+    }
+
+    // 3 — União de IDs permitidos (eu + seguidores + contactos)
+    const allowedIds = Array.from(new Set([uid, ...followerIds, ...contactIds]));
+
     const { data: rows, error } = await (supabase as any)
       .from("stories")
       .select("id, user_id, author_username, author_color, photo_url, bg_grad, text, story_data, expires_at, created_at")
       .gt("expires_at", now)
+      .in("user_id", allowedIds)
       .order("created_at", { ascending: false })
       .limit(200);
     if (error) throw error;
