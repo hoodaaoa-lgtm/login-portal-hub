@@ -1220,38 +1220,7 @@ function SettingsDrawer({
             </div>
           ))}
 
-          {/* Privacidade de Mensagens */}
-          <div className="mb-1">
-            <p className="px-5 py-2 text-[11px] font-bold uppercase tracking-wider"
-              style={{ color: "var(--text-muted)" }}>Mensagens</p>
-            <div className="mx-3 rounded-2xl overflow-hidden border shadow-sm"
-              style={{ background: "var(--s2, #f9f9f9)", borderColor: "var(--border-default, #eee)" }}>
-              <button onClick={onOpenMsgPrivacy}
-                className="w-full flex items-center gap-3 px-4 py-3.5 text-left transition active:scale-[0.98]"
-                onMouseOver={e => (e.currentTarget.style.background = "var(--s3, #f0f0f0)")}
-                onMouseOut={e => (e.currentTarget.style.background = "transparent")}>
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                  style={{ background: "#F26B3A18" }}>
-                  <MessageCircle className="h-4 w-4" style={{ color: "#F26B3A" }} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold leading-tight" style={{ color: "var(--text-primary)" }}>Privacidade de mensagens</p>
-                  <p className="text-[11px] mt-0.5" style={{ color: "var(--text-muted)" }}>
-                    {msgPermission === "todos" ? "Todos podem enviar-te mensagens"
-                      : msgPermission === "seguidos" ? "Apenas quem segues"
-                      : "Ninguém pode enviar-te mensagens"}
-                  </p>
-                </div>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full"
-                    style={{ background: "#F26B3A18", color: "#F26B3A" }}>
-                    {msgPermission === "todos" ? "Todos" : msgPermission === "seguidos" ? "Seguidos" : "Ninguém"}
-                  </span>
-                  <ChevronRight className="h-4 w-4" style={{ color: "var(--text-muted)" }} />
-                </div>
-              </button>
-            </div>
-          </div>
+
 
           {/* Terminar sessão */}
           <div className="mx-3 mb-4">
