@@ -1659,24 +1659,85 @@ function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit
               <MoreVertical className="h-3.5 w-3.5" />
             </button>
             {showMenu && (
-              <div className={`absolute ${isMe ? "right-0" : "left-0"} bottom-full mb-1 rounded-2xl shadow-2xl z-30 overflow-hidden min-w-[170px] border`}
+              <div className={`absolute ${isMe ? "right-0" : "left-0"} bottom-full mb-1 rounded-2xl shadow-2xl z-30 overflow-hidden min-w-[190px] border`}
                 style={{ background: "var(--s0)", borderColor: "var(--border-default)" }}>
+
+                {/* Reagir rápido */}
+                <div className="flex items-center gap-1 px-3 py-2.5 border-b" style={{ borderColor: "var(--border-subtle)" }}>
+                  {["❤️","🔥","😂","👍","😮","😢"].map(emoji => (
+                    <button key={emoji} onClick={() => { onReact?.(m.id, emoji); setShowMenu(false); }}
+                      className="text-xl transition active:scale-90 hover:scale-125 px-0.5">
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Responder */}
+                <button onClick={() => { onReply(); setShowMenu(false); }}
+                  className="w-full flex items-center gap-2.5 px-4 py-3 text-sm transition"
+                  onMouseOver={e => e.currentTarget.style.background = "var(--s2)"}
+                  onMouseOut={e => e.currentTarget.style.background = "transparent"}>
+                  <Reply className="h-4 w-4" style={{ color: "#5B3FCF" }} />
+                  <span style={{ color: "var(--text-primary)" }}>Responder</span>
+                </button>
+
+                {/* Copiar texto */}
+                {m.type === "text" && m.text && (
+                  <button onClick={() => { navigator.clipboard?.writeText(m.text ?? ""); toast.success("Copiado!"); setShowMenu(false); }}
+                    className="w-full flex items-center gap-2.5 px-4 py-3 text-sm transition border-t"
+                    style={{ borderColor: "var(--border-subtle)" }}
+                    onMouseOver={e => e.currentTarget.style.background = "var(--s2)"}
+                    onMouseOut={e => e.currentTarget.style.background = "transparent"}>
+                    <Copy className="h-4 w-4" style={{ color: "#1FAFA6" }} />
+                    <span style={{ color: "var(--text-primary)" }}>Copiar</span>
+                  </button>
+                )}
+
+                {/* Encaminhar */}
+                {m.mediaUrl && (
+                  <button onClick={() => {
+                    if (navigator.share && m.mediaUrl) {
+                      navigator.share({ url: m.mediaUrl }).catch(() => {});
+                    } else if (m.mediaUrl) {
+                      navigator.clipboard?.writeText(m.mediaUrl).then(() => toast.success("Link copiado!"));
+                    }
+                    setShowMenu(false);
+                  }}
+                    className="w-full flex items-center gap-2.5 px-4 py-3 text-sm transition border-t"
+                    style={{ borderColor: "var(--border-subtle)" }}
+                    onMouseOver={e => e.currentTarget.style.background = "var(--s2)"}
+                    onMouseOut={e => e.currentTarget.style.background = "transparent"}>
+                    <Forward className="h-4 w-4" style={{ color: "#F26B3A" }} />
+                    <span style={{ color: "var(--text-primary)" }}>Encaminhar</span>
+                  </button>
+                )}
+
+                {/* Editar */}
                 {isMe && m.type === "text" && (
                   <button onClick={() => { onEdit(); setShowMenu(false); }}
-                    className="w-full flex items-center gap-2.5 px-4 py-3 text-sm hover:bg-[var(--s2)] transition">
+                    className="w-full flex items-center gap-2.5 px-4 py-3 text-sm transition border-t"
+                    style={{ borderColor: "var(--border-subtle)" }}
+                    onMouseOver={e => e.currentTarget.style.background = "var(--s2)"}
+                    onMouseOut={e => e.currentTarget.style.background = "transparent"}>
                     <Pencil className="h-4 w-4" style={{ color: "#5B3FCF" }} />
                     <span style={{ color: "var(--text-primary)" }}>Editar</span>
                   </button>
                 )}
+
+                {/* Eliminar */}
                 <button onClick={() => { setConfirmDel("me"); setShowMenu(false); }}
-                  className="w-full flex items-center gap-2.5 px-4 py-3 text-sm hover:bg-[var(--s2)] transition">
+                  className="w-full flex items-center gap-2.5 px-4 py-3 text-sm transition border-t"
+                  style={{ borderColor: "var(--border-subtle)" }}
+                  onMouseOver={e => e.currentTarget.style.background = "var(--s2)"}
+                  onMouseOut={e => e.currentTarget.style.background = "transparent"}>
                   <Trash2 className="h-4 w-4" style={{ color: "#F97316" }} />
                   <span style={{ color: "var(--text-primary)" }}>Eliminar para mim</span>
                 </button>
                 {isMe && (
                   <button onClick={() => { setConfirmDel("all"); setShowMenu(false); }}
-                    className="w-full flex items-center gap-2.5 px-4 py-3 text-sm hover:bg-[var(--s2)] transition border-t"
-                    style={{ borderColor: "var(--border-default)" }}>
+                    className="w-full flex items-center gap-2.5 px-4 py-3 text-sm transition border-t"
+                    style={{ borderColor: "var(--border-subtle)" }}
+                    onMouseOver={e => e.currentTarget.style.background = "#fee2e2"}>
                     <Trash2 className="h-4 w-4" style={{ color: "#EF4444" }} />
                     <span style={{ color: "#EF4444" }}>Eliminar para todos</span>
                   </button>
