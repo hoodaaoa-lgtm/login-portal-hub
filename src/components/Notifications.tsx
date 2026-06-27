@@ -135,10 +135,12 @@ export function NotificationCenter({
   notifications,
   onClose,
   onMarkAll,
+  loading = false,
 }: {
   notifications: Notif[];
   onClose: () => void;
   onMarkAll: () => void;
+  loading?: boolean;
 }) {
   const [tab, setTab] = useState<"todas" | "nao_lidas">("todas");
 
