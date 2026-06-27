@@ -168,16 +168,20 @@ export const viewsByCountryQuery = (channelId: string | undefined) =>
       try {
         const { data } = await (supabase as any)
           .from("video_views")
-          .select("country")
+          .select("country, country_code")
           .eq("channel_id", channelId)
-          .not("country", "is", null);
+          .not("country_code", "is", null);
         const rows = (data as any[] | null) ?? [];
-        const map: Record<string, number> = {};
+        const map: Record<string, { views: number; name: string }> = {};
         rows.forEach(r => {
-          if (r.country) map[r.country] = (map[r.country] ?? 0) + 1;
+          const code = r.country_code;
+          if (code) {
+            if (!map[code]) map[code] = { views: 0, name: r.country ?? code };
+            map[code].views++;
+          }
         });
         return Object.entries(map)
-          .map(([country, views]) => ({ country, views }))
+          .map(([country, { views, name }]) => ({ country, views, name }))
           .sort((a, b) => b.views - a.views)
           .slice(0, 10);
       } catch (_) { return []; }

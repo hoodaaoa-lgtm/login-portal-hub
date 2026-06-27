@@ -790,13 +790,11 @@ function WatchPage() {
   useEffect(() => {
     if (!id || !video) return;
 
-    // Verificar cooldown local antes de sequer iniciar o timer
     const lsKey = `htv-view-${id}`;
     const lastSeen = localStorage.getItem(lsKey);
     const SIX_HOURS = 6 * 60 * 60 * 1000;
     if (lastSeen && Date.now() - Number(lastSeen) < SIX_HOURS) return;
 
-    // Fingerprint anónimo leve (sem dados pessoais)
     const fp = [
       navigator.language,
       screen.width,
@@ -805,26 +803,52 @@ function WatchPage() {
     ].join("|");
     const fpHash = btoa(fp).slice(0, 32);
 
+    // Detectar país via IP (sem dados pessoais, só país)
+    let countryName: string | null = null;
+    let countryCode: string | null = null;
+    const geoKey = "hooda-geo";
+    try {
+      const cached = sessionStorage.getItem(geoKey);
+      if (cached) {
+        const g = JSON.parse(cached);
+        countryName = g.country;
+        countryCode = g.countryCode;
+      }
+    } catch {}
+
+    const fetchGeo = countryName
+      ? Promise.resolve()
+      : fetch("https://ip-api.com/json/?fields=country,countryCode", { cache: "force-cache" })
+          .then(r => r.json())
+          .then(g => {
+            countryName = g.country ?? null;
+            countryCode = g.countryCode ?? null;
+            try { sessionStorage.setItem(geoKey, JSON.stringify({ country: countryName, countryCode })); } catch {}
+          })
+          .catch(() => {});
+
     let viewRegistered = false;
 
-    // Só conta após 15 segundos de reprodução efectiva
     const timer = setTimeout(() => {
       const vid = videoRef.current;
-      // Confirmar que o vídeo está realmente a ser reproduzido
       if (!vid || vid.paused || vid.ended) return;
       if (viewRegistered) return;
       viewRegistered = true;
 
-      (supabase as any).rpc("record_video_view", {
-        p_video_id:           id,
-        p_channel_id:         video.channel_id ?? null,
-        p_viewer_fingerprint: fpHash,
-      }).then(({ data, error }: { data: any; error: any }) => {
-        if (error) { console.error("[HoodaTV] view error:", error); return; }
-        localStorage.setItem(lsKey, String(Date.now()));
-        if (data?.counted) qc.invalidateQueries({ queryKey: ["htv-watch", id] });
+      fetchGeo.then(() => {
+        (supabase as any).rpc("record_video_view", {
+          p_video_id:           id,
+          p_channel_id:         video.channel_id ?? null,
+          p_viewer_fingerprint: fpHash,
+          p_country:            countryName,
+          p_country_code:       countryCode,
+        }).then(({ data, error }: { data: any; error: any }) => {
+          if (error) { console.error("[HoodaTV] view error:", error); return; }
+          localStorage.setItem(lsKey, String(Date.now()));
+          if (data?.counted) qc.invalidateQueries({ queryKey: ["htv-watch", id] });
+        });
       });
-    }, 15_000); // 15 segundos
+    }, 15_000);
 
     return () => clearTimeout(timer);
   }, [id, video?.channel_id]);

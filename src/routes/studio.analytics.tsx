@@ -238,7 +238,7 @@ export default function AnalyticsPage() {
                         <div className="flex items-center gap-2">
                           <span className="text-base">{flag(r.country)}</span>
                           <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
-                            {NAMES[r.country] ?? r.country}
+                            {(r as any).name ?? NAMES[r.country] ?? r.country}
                           </span>
                           {i === 0 && <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold text-white" style={{ background: PURPLE }}>Top</span>}
                         </div>
