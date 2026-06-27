@@ -1759,130 +1759,162 @@ function PhotoGrid({ photos }: { photos: string[] }) {
 }
 
 
-/* ── Card de Clipe no Feed (estilo Facebook grupo) ── */
+/* ── Card de Clipe no Feed ── */
 function ClipCard({ p, liked, likeCount, onLike, onComment }: {
   p: any; liked: boolean; likeCount: number;
   onLike: () => void; onComment: () => void;
 }) {
   const navigate = useNavigate();
-  const [playing, setPlaying] = useState(false);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
 
-  function fmtTime(s: number) {
-    const m = Math.floor(s / 60);
-    const sec = Math.floor(s % 60);
+  function fmt(s: number) {
+    const m = Math.floor((s ?? 0) / 60), sec = Math.floor((s ?? 0) % 60);
     return `${m}:${String(sec).padStart(2, "0")}`;
   }
 
-  const embedUrl = p.cf_embed_url
-    ? `${p.cf_embed_url}?autoplay=1&muted=0#t=${p.clip_start}`
-    : null;
+  // URL de stream: prefere cf_stream_url, fallback video_stream_url, fallback video_embed_url
+  const streamSrc = p.video_stream_url || p.cf_stream_url || null;
+  const dur = fmt((p.clip_end ?? 0) - (p.clip_start ?? 0));
 
   return (
     <article className="hooda-card overflow-hidden animate-fade-in-up" style={{ borderRadius: 16 }}>
 
-      {/* Header do canal — clica vai para perfil do canal */}
+      {/* ── Cabeçalho do canal ── */}
       <button
-        onClick={() => navigate({ to: `/hoodatv/canal/${p.channel_handle}` })}
-        className="flex items-center gap-2.5 px-3 py-2.5 w-full text-left transition active:scale-[0.99]"
-        onMouseOver={e => e.currentTarget.style.background = "var(--s2)"}
-        onMouseOut={e => e.currentTarget.style.background = "transparent"}
-      >
-        <div className="w-9 h-9 rounded-full overflow-hidden shrink-0 flex items-center justify-center"
+        onClick={() => p.channel_handle && navigate({ to: `/hoodatv/canal/${p.channel_handle}` })}
+        className="flex items-center gap-2.5 px-3 py-3 w-full text-left transition active:scale-[0.99]"
+        style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+        {/* Avatar canal */}
+        <div className="w-10 h-10 rounded-full overflow-hidden shrink-0 flex items-center justify-center"
           style={{ background: "#5B3FCF20" }}>
           {p.channel_avatar
             ? <img src={p.channel_avatar} alt="" className="w-full h-full object-cover" />
-            : <span className="text-sm font-bold" style={{ color: "#5B3FCF" }}>{p.channel_name?.[0]}</span>
-          }
+            : <span className="font-bold" style={{ color: "#5B3FCF" }}>
+                {p.channel_name?.[0]?.toUpperCase() ?? "?"}
+              </span>}
         </div>
-        <div className="flex-1 min-w-0 text-left">
-          <p className="font-bold text-sm leading-tight truncate" style={{ color: "var(--text-primary)" }}>{p.channel_name}</p>
-          <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>@{p.channel_handle} · HoodaTV</p>
+        <div className="flex-1 min-w-0">
+          <p className="font-bold text-sm leading-tight truncate" style={{ color: "var(--text-primary)" }}>
+            {p.channel_name ?? "Canal"}
+          </p>
+          <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
+            @{p.channel_handle} · HoodaTV
+          </p>
         </div>
-        <span className="text-[10px] px-2 py-0.5 rounded-full font-bold" style={{ background: "#5B3FCF15", color: "#5B3FCF" }}>
-          Clipe
+        {/* Badge clipe */}
+        <span className="text-[10px] px-2.5 py-0.5 rounded-full font-bold shrink-0"
+          style={{ background: "#5B3FCF15", color: "#5B3FCF" }}>
+          ✂ Clipe · {dur}
         </span>
       </button>
 
-      {/* Player do clipe */}
-      <div className="w-full aspect-video bg-black relative">
-        {playing && embedUrl ? (
-          <iframe ref={iframeRef} src={embedUrl}
-            className="w-full h-full" allow="autoplay; fullscreen" allowFullScreen />
-        ) : (
-          <button onClick={() => {
-            if (p.clip_video_id) {
-              navigate({ to: `/hoodatv/watch/${p.clip_video_id}` });
-            }
-          }} className="w-full h-full relative block">
-            {p.thumbnail_url
-              ? <img src={p.thumbnail_url} alt="" className="w-full h-full object-cover" />
-              : <div className="w-full h-full flex items-center justify-center bg-neutral-900" />
-            }
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-14 h-14 rounded-full flex items-center justify-center"
-                style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}>
-                <svg className="h-6 w-6 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+      {/* ── Player do clipe ── */}
+      {streamSrc ? (
+        <HoodaPlayer
+          src={streamSrc}
+          poster={p.clip_thumb_url || p.thumbnail_url || undefined}
+          rounded="rounded-none"
+          aspectRatio="16/9"
+        />
+      ) : (
+        /* Sem stream URL — mostra thumbnail clicável que vai para o vídeo */
+        <button
+          className="w-full relative block"
+          style={{ aspectRatio: "16/9", background: "#000" }}
+          onClick={() => p.clip_video_id && navigate({ to: `/hoodatv/watch/${p.clip_video_id}` })}>
+          {(p.clip_thumb_url || p.thumbnail_url)
+            ? <img src={p.clip_thumb_url || p.thumbnail_url} alt=""
+                className="w-full h-full object-cover" />
+            : <div className="w-full h-full flex items-center justify-center">
+                <svg className="h-10 w-10 text-white/20" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M8 5v14l11-7z" />
                 </svg>
-              </div>
+              </div>}
+          {/* Overlay play */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-14 h-14 rounded-full flex items-center justify-center shadow-2xl"
+              style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}>
+              <svg className="h-6 w-6 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M8 5v14l11-7z" />
+              </svg>
             </div>
-            {/* Badge com intervalo do clipe */}
-            <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded text-[10px] font-bold text-white"
-              style={{ background: "rgba(0,0,0,0.75)" }}>
-              {fmtTime(p.clip_start ?? 0)} – {fmtTime(p.clip_end ?? 0)}
-            </div>
-          </button>
-        )}
-      </div>
+          </div>
+          {/* Badge tempo */}
+          <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded text-[10px] font-bold text-white"
+            style={{ background: "rgba(0,0,0,0.78)" }}>
+            {fmt(p.clip_start ?? 0)} – {fmt(p.clip_end ?? 0)}
+          </div>
+        </button>
+      )}
 
-      {/* Título e acções */}
-      <div className="px-3 pt-2 pb-3">
+      {/* ── Título + ações ── */}
+      <div className="px-3 pt-2.5 pb-3">
+        {/* Título do clipe */}
         {p.clip_title && (
-          <p className="font-semibold text-sm mb-2" style={{ color: "var(--text-primary)" }}>{p.clip_title}</p>
+          <p className="font-semibold text-sm mb-2 leading-snug" style={{ color: "var(--text-primary)" }}>
+            {p.clip_title}
+          </p>
         )}
 
-        {/* Publicado por — clica vai para perfil do utilizador */}
+        {/* Quem partilhou */}
         <button
-          onClick={() => navigate({ to: `/u/${p.author_username}` })}
-          className="flex items-center gap-1.5 mb-2 transition active:scale-[0.98]"
-          onMouseOver={e => e.currentTarget.style.opacity = "0.7"}
-          onMouseOut={e => e.currentTarget.style.opacity = "1"}
-        >
+          onClick={() => p.author_username && navigate({ to: `/u/${p.author_username}` })}
+          className="flex items-center gap-1.5 mb-2.5 transition-opacity hover:opacity-70">
           <div className="w-5 h-5 rounded-full overflow-hidden shrink-0"
-            style={{ background: p.color || "#5B3FCF" }}>
+            style={{ background: p.author_color || "#5B3FCF" }}>
             {p.avatar_url
               ? <img src={p.avatar_url} alt="" className="w-full h-full object-cover" />
-              : <span className="text-[8px] font-bold text-white flex items-center justify-center h-full">{p.author_username?.[0]?.toUpperCase()}</span>
-            }
+              : <span className="text-[8px] font-bold text-white flex items-center justify-center h-full">
+                  {p.author_username?.[0]?.toUpperCase()}
+                </span>}
           </div>
           <span className="text-xs" style={{ color: "var(--text-muted)" }}>
-            Partilhado por <span className="font-semibold" style={{ color: "var(--text-secondary)" }}>@{p.author_username}</span>
+            Partilhado por{" "}
+            <span className="font-semibold" style={{ color: "var(--text-secondary)" }}>
+              @{p.author_username}
+            </span>
           </span>
         </button>
 
-        {/* Botões */}
-        <div className="flex items-center gap-1 pt-1 border-t" style={{ borderColor: "var(--border-subtle)" }}>
+        {/* Botões de ação */}
+        <div className="flex items-center gap-0.5 pt-2 border-t" style={{ borderColor: "var(--border-subtle)" }}>
+          {/* ❤️ Gosto */}
           <button onClick={onLike}
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl transition active:scale-90 group">
             <Heart className={`h-5 w-5 transition-all ${liked ? "fill-red-500 text-red-500 scale-110" : "group-hover:text-red-400"}`}
               style={{ color: liked ? undefined : "var(--text-primary)" }} />
-            {likeCount > 0 && <span className="text-xs font-semibold" style={{ color: liked ? "#ef4444" : "var(--text-muted)" }}>{likeCount}</span>}
+            {likeCount > 0 && (
+              <span className="text-xs font-semibold"
+                style={{ color: liked ? "#ef4444" : "var(--text-muted)" }}>
+                {likeCount}
+              </span>
+            )}
           </button>
+          {/* 💬 Comentar */}
           <button onClick={onComment}
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl transition active:scale-90">
             <MessageCircle className="h-5 w-5" style={{ color: "var(--text-primary)" }} />
           </button>
-          <button onClick={() => navigator.share?.({ url: window.location.origin + `/hoodatv/watch/${p.clip_video_id}` }).catch(() => {})}
+          {/* ↗️ Partilhar */}
+          <button
+            onClick={() => navigator.share?.({
+              title: p.clip_title ?? "Clipe HoodaTV",
+              url: `${window.location.origin}/hoodatv/watch/${p.clip_video_id}`,
+            }).catch(() => {})}
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl transition active:scale-90">
             <Share2 className="h-5 w-5" style={{ color: "var(--text-primary)" }} />
           </button>
+
           <div className="flex-1" />
-          <button onClick={() => navigate({ to: `/hoodatv/watch/${p.clip_video_id}` })}
-            className="text-xs font-bold px-3 py-1.5 rounded-xl transition active:scale-95"
-            style={{ color: "#5B3FCF", background: "#5B3FCF10" }}>
-            Ver vídeo completo →
-          </button>
+
+          {/* Ver vídeo completo */}
+          {p.clip_video_id && (
+            <button
+              onClick={() => navigate({ to: `/hoodatv/watch/${p.clip_video_id}` })}
+              className="text-xs font-bold px-3 py-1.5 rounded-xl transition active:scale-95"
+              style={{ color: "#5B3FCF", background: "#5B3FCF10" }}>
+              Ver completo →
+            </button>
+          )}
         </div>
       </div>
     </article>
