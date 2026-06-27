@@ -2287,38 +2287,69 @@ function HomePage() {
   const [myUserId, setMyUserId] = useState("");
   const [myUsername, setMyUsername] = useState("");
 
-  // Busca pura dos posts reais do Supabase (sem tocar em estado React) —
-  // usada como queryFn do React Query, que cuida de cache, deduplicação
-  // de pedidos concorrentes e — com a persistência em localStorage — faz
-  // o feed aparecer instantaneamente ao reabrir a app, mesmo offline.
+  // ─── ALGORITMO DE FEED ──────────────────────────────────────────────────────
+  //
+  // Score de cada post = soma ponderada de sinais:
+  //
+  //  RELEVÂNCIA (quem publicou)
+  //    +120  post do próprio utilizador
+  //    +100  post de alguém que o utilizador segue
+  //    +20   post público/seed (descoberta)
+  //
+  //  ENGAGEMENT (popularidade do post)
+  //    +8    por gosto
+  //    +12   por comentário
+  //    +15   por guardado (save) — indica intenção forte
+  //
+  //  TIPO DE CONTEÚDO
+  //    +30   post com foto(s)
+  //    +25   clip de vídeo
+  //    +10   post de texto com fundo (bg)
+  //    +5    post de texto puro
+  //
+  //  FRESCURA (decaimento exponencial por hora)
+  //    score *= exp(-λ * horas)  onde λ = 0.08 (meia-vida ≈ 8.6h)
+  //    → um post de 24h vale ~15% do score de um post novo
+  //    → um post de 48h vale ~2% do score
+  //    → posts com 7+ dias desaparecem quasi completamente
+  //    (mas posts próprios têm decaimento 50% mais lento)
+  //
+  //  BOOST POR INTERAÇÃO DO UTILIZADOR
+  //    +50  se o utilizador já interagiu com o autor antes
+  //         (gostou de um post ou comentou → relação forte)
+  //
+  //  PENALIDADE
+  //    -999 clips > 5 minutos (nunca mostrar)
+  //    -50  posts repetidos do mesmo autor em sequência
+  //         (para variedade no feed)
+  // ────────────────────────────────────────────────────────────────────────────
+
   async function fetchFeedPage(uid: string) {
-    // A tabela follows usa target_username (não following_id, que nunca
-    // é preenchido pelo resto da app) — resolvemos os usernames seguidos
-    // para ids reais via profiles.
-    const { data: followData, error: followErr } = await supabase
+    // 1. Quem o utilizador segue
+    const { data: followData } = await supabase
       .from("follows").select("target_username").eq("follower_id", uid);
-    if (followErr) console.error("Erro ao carregar quem sigo:", followErr);
 
     const followedUsernames = [...new Set((followData || []).map((f: any) => f.target_username).filter(Boolean))];
     let followingIds: string[] = [];
     if (followedUsernames.length > 0) {
-      const { data: followedProfiles, error: profErr } = await supabase
+      const { data: followedProfiles } = await supabase
         .from("profiles").select("id,username").in("username", followedUsernames);
-      if (profErr) console.error("Erro ao resolver perfis seguidos:", profErr);
       followingIds = (followedProfiles || []).map((p: any) => p.id).filter(Boolean);
     }
 
-    // Load posts: own + followed + public seed posts, more items to avoid empty feed
+    // 2. Buscar posts recentes (7 dias)
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
     const { data: postsData, error: postsErr } = await supabase
       .from("posts")
       .select("id,author_id,author_username,author_name,author_color,content,kind,is_ad,created_at,photo_url,photos,video_url,clip_video_id,clip_start,clip_end,clip_title,channel_id,channel_handle,channel_name,channel_avatar,clip_thumb_url")
+      .gte("created_at", sevenDaysAgo)
       .order("created_at", { ascending: false })
-      .limit(60);
+      .limit(200);
 
-    if (postsErr) console.error("Erro ao carregar publicações:", postsErr);
+    if (postsErr) console.error("Feed error:", postsErr);
     if (!postsData || postsData.length === 0) return [];
 
-    // Deduplicate by id
+    // Deduplicate
     const seenIds = new Set<string>();
     const deduped = postsData.filter((p: any) => {
       if (!p.id || seenIds.has(p.id)) return false;
@@ -2326,40 +2357,40 @@ function HomePage() {
       return true;
     });
 
-    // Filter: show seed posts (no author_id) + own + followed
-    // If user has no follows, show all public posts so feed is never empty
-    const myIds = new Set([uid, ...followingIds]);
-    const filtered = deduped.filter((p: any) => {
-      // Always show seed/platform posts
-      if (!p.author_id) return true;
-      // Always show own posts
-      if (p.author_id === uid) return true;
-      // Show followed users posts
-      if (myIds.has(p.author_id)) return true;
-      // If user follows nobody, show everyone's posts as discovery
-      if (followingIds.length === 0) return true;
-      return false;
-    });
-
-    // Rule: never show clips longer than 5 minutes (300 seconds) in the home feed
+    // 3. Filtro duro: clips > 5 min nunca aparecem
     const MAX_CLIP_SECONDS = 300;
-    const withDurationFilter = filtered.filter((p: any) => {
+    const eligible = deduped.filter((p: any) => {
       if (p.kind !== "clip") return true;
-      const duration = (p.clip_end ?? 0) - (p.clip_start ?? 0);
-      return duration <= MAX_CLIP_SECONDS;
+      return ((p.clip_end ?? 0) - (p.clip_start ?? 0)) <= MAX_CLIP_SECONDS;
     });
 
-    // Fetch avatar_url for all authors
-    const authorIds = [...new Set(withDurationFilter.map((p: any) => p.author_id).filter(Boolean))];
-    const { data: authorProfiles } = authorIds.length > 0
-      ? await supabase.from("profiles").select("id,avatar_url").in("id", authorIds)
-      : { data: [] as any[] };
-    const avatarMap: Record<string, string | null> = {};
-    (authorProfiles || []).forEach((p: any) => { avatarMap[p.id] = p.avatar_url || null; });
+    if (eligible.length === 0) return [];
 
-    const postIds = withDurationFilter.map((p: any) => p.id);
-    const { data: likesData } = await supabase.from("post_likes").select("post_id,user_id").in("post_id", postIds);
-    const { data: commentsData } = await supabase.from("post_comments").select("post_id").in("post_id", postIds);
+    const postIds = eligible.map((p: any) => p.id);
+    const authorIds = [...new Set(eligible.map((p: any) => p.author_id).filter(Boolean))];
+
+    // 4. Buscar sinais de engagement em paralelo
+    const [
+      { data: likesData },
+      { data: commentsData },
+      { data: savesData },
+      { data: authorProfiles },
+      { data: myLikesData },
+      { data: myCommentsData },
+    ] = await Promise.all([
+      supabase.from("post_likes").select("post_id,user_id").in("post_id", postIds),
+      supabase.from("post_comments").select("post_id").in("post_id", postIds),
+      supabase.from("post_saves").select("post_id").in("post_id", postIds),
+      authorIds.length > 0
+        ? supabase.from("profiles").select("id,avatar_url").in("id", authorIds)
+        : Promise.resolve({ data: [] as any[] }),
+      // Posts que eu gostei (para detectar autores com quem interagi)
+      supabase.from("post_likes").select("post_id").eq("user_id", uid).limit(100),
+      // Posts onde comentei
+      supabase.from("post_comments").select("post_id").eq("user_id", uid).limit(100),
+    ]);
+
+    // Mapas de engagement
     const likesByPost: Record<string, string[]> = {};
     (likesData || []).forEach((l: any) => {
       if (!likesByPost[l.post_id]) likesByPost[l.post_id] = [];
@@ -2367,33 +2398,107 @@ function HomePage() {
     });
     const commentsByPost: Record<string, number> = {};
     (commentsData || []).forEach((c: any) => { commentsByPost[c.post_id] = (commentsByPost[c.post_id] || 0) + 1; });
+    const savesByPost: Record<string, number> = {};
+    (savesData || []).forEach((s: any) => { savesByPost[s.post_id] = (savesByPost[s.post_id] || 0) + 1; });
 
+    // Avatar map
+    const avatarMap: Record<string, string | null> = {};
+    (authorProfiles || []).forEach((p: any) => { avatarMap[p.id] = p.avatar_url || null; });
+
+    // Autores com quem interagi (boost de afinidade)
+    const myInteractedPostIds = new Set([
+      ...(myLikesData || []).map((l: any) => l.post_id),
+      ...(myCommentsData || []).map((c: any) => c.post_id),
+    ]);
+    // Encontrar os author_ids dos posts com que interagi
+    const interactedAuthorIds = new Set(
+      eligible
+        .filter((p: any) => myInteractedPostIds.has(p.id))
+        .map((p: any) => p.author_id)
+        .filter(Boolean)
+    );
+
+    const myIds = new Set([uid, ...followingIds]);
     const ACCENT_LOCAL = ["#5B3FCF","#F26B3A","#1FAFA6","#6BA547","#E94B8A","#FFC93C"];
-    return withDurationFilter.map((p: any) => {
+    const LAMBDA = 0.08; // decaimento por hora
+
+    // 5. Calcular score de cada post
+    const scored = eligible.map((p: any) => {
+      const hoursOld = (Date.now() - new Date(p.created_at).getTime()) / 3_600_000;
+      const isOwn = p.author_id === uid;
+      const isFollowed = followingIds.includes(p.author_id);
+      const isSeed = !p.author_id;
+
+      // Relevância
+      let score = isSeed ? 20 : isOwn ? 120 : isFollowed ? 100 : 15;
+
+      // Engagement
+      const likes = (likesByPost[p.id] || []).length;
+      const comments = commentsByPost[p.id] || 0;
+      const saves = savesByPost[p.id] || 0;
+      score += likes * 8 + comments * 12 + saves * 15;
+
+      // Tipo de conteúdo
+      if (p.kind === "clip") score += 25;
+      else if (p.photo_url || (Array.isArray(p.photos) && p.photos.length > 0)) score += 30;
+      else if (p.kind === "bg") score += 10;
+      else score += 5;
+
+      // Boost de afinidade
+      if (p.author_id && interactedAuthorIds.has(p.author_id)) score += 50;
+
+      // Decaimento temporal (posts próprios decaem mais devagar)
+      const lambda = isOwn ? LAMBDA * 0.5 : LAMBDA;
+      score *= Math.exp(-lambda * hoursOld);
+
+      // Frescura extra: posts < 2h têm boost
+      if (hoursOld < 2) score *= 1.3;
+
+      // Leve aleatoriedade para não ficar repetitivo (±10%)
+      score *= 0.9 + Math.random() * 0.2;
+
+      // Mapeamento dos campos
       const name = p.author_name || p.author_username || "hooda";
-      const diff = Math.floor((Date.now() - new Date(p.created_at).getTime()) / 1000);
-      const time = diff < 60 ? "agora" : diff < 3600 ? `${Math.floor(diff/60)}m` : diff < 86400 ? `${Math.floor(diff/3600)}h` : `${Math.floor(diff/86400)}d`;
       let text = p.content;
       let bg_color = null;
       if (p.kind === "bg") { try { const j = JSON.parse(p.content); text = j.text; bg_color = j.bgColor; } catch {} }
+
       return {
+        _score: score,
         id: p.id, user_id: p.author_id,
         user: name, name: `@${p.author_username || "?"}`,
         color: p.author_color || ACCENT_LOCAL[(name.charCodeAt(0) || 0) % ACCENT_LOCAL.length],
         avatar_url: p.author_id ? (avatarMap[p.author_id] ?? null) : null,
-        text,
-        photo: p.photo_url ?? null,
+        text, photo: p.photo_url ?? null,
         photos: Array.isArray(p.photos) && p.photos.length > 0 ? p.photos : (p.photo_url ? [p.photo_url] : null),
         video: p.video_url ?? null,
-        bg_color, time, created_at: p.created_at, kind: p.kind, is_ad: p.is_ad,
-        likes: (likesByPost[p.id] || []).length,
-        liked_by_me: (likesByPost[p.id] || []).includes(uid),
+        bg_color, created_at: p.created_at, kind: p.kind, is_ad: p.is_ad,
+        likes, liked_by_me: (likesByPost[p.id] || []).includes(uid),
         comments: commentsByPost[p.id] || 0,
+        clip_video_id: p.clip_video_id, clip_start: p.clip_start, clip_end: p.clip_end,
+        clip_title: p.clip_title, clip_thumb_url: p.clip_thumb_url,
+        channel_id: p.channel_id, channel_handle: p.channel_handle,
+        channel_name: p.channel_name, channel_avatar: p.channel_avatar,
       };
     });
-  }
 
-  // React Query cuida do cache (60s "fresco", 5min em memória) e, com a
+    // 6. Ordenar por score
+    scored.sort((a, b) => b._score - a._score);
+
+    // 7. Anti-repetição: nunca mais de 2 posts seguidos do mesmo autor
+    const result: typeof scored = [];
+    const recentAuthors: string[] = [];
+    for (const post of scored) {
+      const author = post.user_id || "seed";
+      const recentCount = recentAuthors.slice(-4).filter(a => a === author).length;
+      if (recentCount >= 2) continue;
+      result.push(post);
+      recentAuthors.push(author);
+      if (result.length >= 50) break;
+    }
+
+    return result;
+  }
   // persistência em localStorage configurada no root, restaura este
   // resultado instantaneamente na próxima visita — sem ecrã vazio nem
   // spinner — enquanto busca dados novos em segundo plano.
