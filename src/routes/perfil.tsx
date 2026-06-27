@@ -880,12 +880,18 @@ function EditProfileModal({
     setTimeout(onClose, 600);
   }
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-end lg:items-center justify-center"
       style={{ background: "rgba(0,0,0,0.6)" }}
       onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="w-full max-w-lg rounded-3xl flex flex-col"
-        style={{ maxHeight: "88vh", overflow: "hidden", background: "var(--s1)" }}>
+      <div className="w-full lg:max-w-lg lg:rounded-3xl rounded-t-3xl flex flex-col overflow-hidden shadow-2xl"
+        style={{ maxHeight: "92vh", height: "92vh", background: "var(--s1)" }}
+        onClick={(e) => e.stopPropagation()}>
+
+        {/* Drag indicator mobile */}
+        <div className="flex justify-center pt-2.5 pb-0 shrink-0 lg:hidden">
+          <div className="w-10 h-1 rounded-full" style={{ background: "var(--border-default)" }} />
+        </div>
 
         {/* Header fixo */}
         <div className="flex items-center justify-between px-5 py-4 border-b shrink-0"
@@ -1010,7 +1016,8 @@ function EditProfileModal({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
