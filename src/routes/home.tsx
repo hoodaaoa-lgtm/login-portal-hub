@@ -2648,6 +2648,8 @@ function HomePage() {
       return {
         _score: score,
         id: p.id, user_id: p.author_id,
+        author_id: p.author_id,
+        author_username: p.author_username || null,
         user: name, name: `@${p.author_username || "?"}`,
         color: p.author_color || ACCENT_LOCAL[(name.charCodeAt(0) || 0) % ACCENT_LOCAL.length],
         avatar_url: p.author_id ? (avatarMap[p.author_id] ?? null) : null,
