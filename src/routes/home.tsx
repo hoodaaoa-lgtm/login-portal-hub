@@ -1982,8 +1982,16 @@ function ClipCard({ p, liked, likeCount, onLike, onComment }: {
     return `${m}:${String(sec).padStart(2, "0")}`;
   }
 
-  // URL de stream: prefere cf_stream_url, fallback video_stream_url, fallback video_embed_url
-  const streamSrc = p.video_stream_url || p.cf_stream_url || null;
+  // URL de stream: para clipes, busca o vídeo original; para posts normais usa campos directos
+  const [clipVideoSrc, setClipVideoSrc] = useState<string | null>(null);
+  useEffect(() => {
+    if (p.kind !== "clip" || !p.clip_video_id) return;
+    (supabase as any).from("videos").select("cf_stream_url,cf_embed_url,video_path").eq("id", p.clip_video_id).maybeSingle()
+      .then(({ data }: any) => {
+        if (data) setClipVideoSrc(data.cf_stream_url || data.video_path || null);
+      });
+  }, [p.clip_video_id]);
+  const streamSrc = p.kind === "clip" ? clipVideoSrc : (p.video_stream_url || p.cf_stream_url || null);
   const dur = fmt((p.clip_end ?? 0) - (p.clip_start ?? 0));
 
   return (
