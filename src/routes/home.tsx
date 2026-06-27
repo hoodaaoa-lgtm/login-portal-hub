@@ -2384,6 +2384,91 @@ function HomePage() {
           pushNotif({ type: "follow", user: name, name, color: hashColor(name), text: "começou a seguir-te", time: "agora", read: false });
         }
       )
+      // ── Mensagens novas ──
+      .on(
+        "postgres_changes" as any,
+        { event: "INSERT", schema: "public", table: "messages" },
+        async (payload: any) => {
+          const msg = payload.new;
+          if (msg.sender_id === myUserId) return;
+          // Verificar se é para mim (conversa onde participo)
+          const { data: conv } = await supabase
+            .from("conversation_participants")
+            .select("conversation_id")
+            .eq("conversation_id", msg.conversation_id)
+            .eq("user_id", myUserId)
+            .maybeSingle();
+          if (!conv) return;
+          const { data: sender } = await supabase
+            .from("profiles").select("username, full_name").eq("id", msg.sender_id).maybeSingle();
+          const name = sender?.full_name || sender?.username || "alguém";
+          const preview = msg.content?.slice(0, 60) || (msg.type === "image" ? "📷 Imagem" : msg.type === "video" ? "🎥 Vídeo" : "Mensagem");
+          pushNotif({ type: "message", user: name, name, color: hashColor(name), text: "enviou-te uma mensagem", detail: preview, time: "agora", read: false });
+        }
+      )
+      // ── Vídeos novos de canais seguidos ──
+      .on(
+        "postgres_changes" as any,
+        { event: "INSERT", schema: "public", table: "videos", filter: `status=eq.published` },
+        async (payload: any) => {
+          const video = payload.new;
+          if (video.owner_id === myUserId) return;
+          // Verificar se sigo o canal
+          const { data: channelData } = await supabase
+            .from("channels").select("id, name, handle").eq("id", video.channel_id).maybeSingle();
+          if (!channelData) return;
+          const { data: followRow } = await (supabase as any)
+            .from("follows").select("id").eq("follower_id", myUserId).eq("following_id", video.channel_id).maybeSingle();
+          if (!followRow) return;
+          pushNotif({ type: "video_new", user: channelData.name, name: channelData.name, color: "#5B3FCF", text: "publicou um vídeo novo", detail: video.title?.slice(0, 60), time: "agora", read: false });
+        }
+      )
+      // ── Likes nos meus vídeos ──
+      .on(
+        "postgres_changes" as any,
+        { event: "INSERT", schema: "public", table: "video_likes" },
+        async (payload: any) => {
+          const vl = payload.new;
+          if (vl.user_id === myUserId) return;
+          const { data: video } = await supabase.from("videos").select("owner_id, title").eq("id", vl.video_id).eq("owner_id", myUserId).maybeSingle();
+          if (!video) return;
+          const { data: liker } = await supabase.from("profiles").select("username").eq("id", vl.user_id).maybeSingle();
+          const name = liker?.username || "alguém";
+          pushNotif({ type: "video_like", user: name, name, color: hashColor(name), text: "gostou do teu vídeo", detail: (video as any).title?.slice(0, 60), time: "agora", read: false });
+        }
+      )
+      // ── Comentários nos meus vídeos ──
+      .on(
+        "postgres_changes" as any,
+        { event: "INSERT", schema: "public", table: "video_comments" },
+        async (payload: any) => {
+          const vc = payload.new;
+          if (vc.user_id === myUserId) return;
+          const { data: video } = await supabase.from("videos").select("owner_id, title").eq("id", vc.video_id).eq("owner_id", myUserId).maybeSingle();
+          if (!video) return;
+          const { data: commenter } = await supabase.from("profiles").select("username").eq("id", vc.user_id).maybeSingle();
+          const name = commenter?.username || "alguém";
+          pushNotif({ type: "video_comment", user: name, name, color: hashColor(name), text: "comentou no teu vídeo", detail: vc.content?.slice(0, 60), time: "agora", read: false });
+        }
+      )
+      // ── Posts em comunidades que faço parte ──
+      .on(
+        "postgres_changes" as any,
+        { event: "INSERT", schema: "public", table: "community_posts" },
+        async (payload: any) => {
+          const cp = payload.new;
+          if (cp.author_id === myUserId) return;
+          // Verificar se sou membro da comunidade
+          const { data: membership } = await (supabase as any)
+            .from("community_members").select("id").eq("community_id", cp.community_id).eq("user_id", myUserId).maybeSingle();
+          if (!membership) return;
+          const { data: community } = await (supabase as any)
+            .from("communities").select("name").eq("id", cp.community_id).maybeSingle();
+          const { data: author } = await supabase.from("profiles").select("username").eq("id", cp.author_id).maybeSingle();
+          const name = author?.username || "alguém";
+          pushNotif({ type: "community_post", user: name, name, color: hashColor(name), text: `publicou em ${community?.name || "comunidade"}`, detail: cp.content?.slice(0, 60), time: "agora", read: false });
+        }
+      )
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
