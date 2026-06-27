@@ -232,7 +232,19 @@ export function NotificationCenter({
 
         {/* List */}
         <div className="overflow-y-auto flex-1">
-          {list.length === 0 ? (
+          {loading && list.length === 0 ? (
+            <ul className="hooda-fade-in">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <li key={i} className="flex items-start gap-3 px-4 py-3 border-b border-neutral-50 animate-pulse">
+                  <div className="w-10 h-10 rounded-full" style={{ background: "var(--surface-2,#eee)" }} />
+                  <div className="flex-1 space-y-2 py-1">
+                    <div className="h-3 w-3/4 rounded-full" style={{ background: "var(--surface-2,#eee)" }} />
+                    <div className="h-3 w-1/2 rounded-full" style={{ background: "var(--surface-2,#eee)" }} />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : list.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-3 py-12 px-6 text-center">
               <div
                 className="w-12 h-12 rounded-full flex items-center justify-center"
