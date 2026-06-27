@@ -1906,37 +1906,66 @@ function PhotoGrid({ photos }: { photos: string[] }) {
 }
 
 
-/* ── SimpleVideoPlayer — player simples para o feed, sem ecrã cheio nem HoodaPlayer ── */
+/* ── SimpleVideoPlayer — player simples para o feed ── */
 function SimpleVideoPlayer({ src, poster }: { src: string; poster?: string }) {
   const [isShort, setIsShort] = useState<boolean | null>(null);
+  const [playing, setPlaying] = useState(false);
   const ref = useRef<HTMLVideoElement>(null);
+
+  function togglePlay() {
+    const v = ref.current;
+    if (!v) return;
+    if (v.paused) { v.play(); setPlaying(true); }
+    else { v.pause(); setPlaying(false); }
+  }
 
   return (
     <div
-      className="w-full bg-black relative"
+      className="w-full bg-black relative cursor-pointer"
       style={{
-        aspectRatio: isShort === true ? "9/16" : "16/9",
-        maxHeight: isShort === true ? "75vh" : undefined,
+        aspectRatio: isShort === true ? "9/16" : "4/3",
+        maxHeight: isShort === true ? "75vh" : "600px",
         maxWidth: isShort === true ? "calc(75vh * 9 / 16)" : "100%",
         margin: "0 auto",
       }}
+      onClick={togglePlay}
     >
       <video
         ref={ref}
         src={src}
         poster={poster}
-        controls
         playsInline
         preload="metadata"
         onLoadedMetadata={() => {
           const v = ref.current;
           if (v) setIsShort(v.videoHeight > v.videoWidth);
         }}
-        className="w-full h-full object-contain"
-        style={{ display: "block" }}
-        controlsList="nodownload nofullscreen noremoteplayback"
-        disablePictureInPicture
+        onPlay={() => setPlaying(true)}
+        onPause={() => setPlaying(false)}
+        className="w-full h-full object-cover"
+        style={{ display: "block", pointerEvents: "none" }}
       />
+      {/* Overlay play/pause */}
+      {!playing && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="w-14 h-14 rounded-full flex items-center justify-center transition active:scale-90"
+            style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(4px)" }}>
+            <svg className="h-7 w-7 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M8 5v14l11-7z" />
+            </svg>
+          </div>
+        </div>
+      )}
+      {playing && (
+        <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+          <div className="w-14 h-14 rounded-full flex items-center justify-center"
+            style={{ background: "rgba(0,0,0,0.45)" }}>
+            <svg className="h-7 w-7 text-white" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+            </svg>
+          </div>
+        </div>
+      )}
       {isShort === null && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="w-7 h-7 rounded-full border-2 border-white/20 border-t-white animate-spin" />
