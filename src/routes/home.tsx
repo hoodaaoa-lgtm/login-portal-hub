@@ -1759,6 +1759,136 @@ function PhotoGrid({ photos }: { photos: string[] }) {
 }
 
 
+/* ── Card de Clipe no Feed (estilo Facebook grupo) ── */
+function ClipCard({ p, liked, likeCount, onLike, onComment }: {
+  p: any; liked: boolean; likeCount: number;
+  onLike: () => void; onComment: () => void;
+}) {
+  const navigate = useNavigate();
+  const [playing, setPlaying] = useState(false);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  function fmtTime(s: number) {
+    const m = Math.floor(s / 60);
+    const sec = Math.floor(s % 60);
+    return `${m}:${String(sec).padStart(2, "0")}`;
+  }
+
+  const embedUrl = p.cf_embed_url
+    ? `${p.cf_embed_url}?autoplay=1&muted=0#t=${p.clip_start}`
+    : null;
+
+  return (
+    <article className="hooda-card overflow-hidden animate-fade-in-up" style={{ borderRadius: 16 }}>
+
+      {/* Header do canal — clica vai para perfil do canal */}
+      <button
+        onClick={() => navigate({ to: `/hoodatv/canal/${p.channel_handle}` })}
+        className="flex items-center gap-2.5 px-3 py-2.5 w-full text-left transition active:scale-[0.99]"
+        onMouseOver={e => e.currentTarget.style.background = "var(--s2)"}
+        onMouseOut={e => e.currentTarget.style.background = "transparent"}
+      >
+        <div className="w-9 h-9 rounded-full overflow-hidden shrink-0 flex items-center justify-center"
+          style={{ background: "#5B3FCF20" }}>
+          {p.channel_avatar
+            ? <img src={p.channel_avatar} alt="" className="w-full h-full object-cover" />
+            : <span className="text-sm font-bold" style={{ color: "#5B3FCF" }}>{p.channel_name?.[0]}</span>
+          }
+        </div>
+        <div className="flex-1 min-w-0 text-left">
+          <p className="font-bold text-sm leading-tight truncate" style={{ color: "var(--text-primary)" }}>{p.channel_name}</p>
+          <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>@{p.channel_handle} · HoodaTV</p>
+        </div>
+        <span className="text-[10px] px-2 py-0.5 rounded-full font-bold" style={{ background: "#5B3FCF15", color: "#5B3FCF" }}>
+          Clipe
+        </span>
+      </button>
+
+      {/* Player do clipe */}
+      <div className="w-full aspect-video bg-black relative">
+        {playing && embedUrl ? (
+          <iframe ref={iframeRef} src={embedUrl}
+            className="w-full h-full" allow="autoplay; fullscreen" allowFullScreen />
+        ) : (
+          <button onClick={() => {
+            if (p.clip_video_id) {
+              navigate({ to: `/hoodatv/watch/${p.clip_video_id}` });
+            }
+          }} className="w-full h-full relative block">
+            {p.thumbnail_url
+              ? <img src={p.thumbnail_url} alt="" className="w-full h-full object-cover" />
+              : <div className="w-full h-full flex items-center justify-center bg-neutral-900" />
+            }
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-14 h-14 rounded-full flex items-center justify-center"
+                style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}>
+                <svg className="h-6 w-6 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+              </div>
+            </div>
+            {/* Badge com intervalo do clipe */}
+            <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded text-[10px] font-bold text-white"
+              style={{ background: "rgba(0,0,0,0.75)" }}>
+              {fmtTime(p.clip_start ?? 0)} – {fmtTime(p.clip_end ?? 0)}
+            </div>
+          </button>
+        )}
+      </div>
+
+      {/* Título e acções */}
+      <div className="px-3 pt-2 pb-3">
+        {p.clip_title && (
+          <p className="font-semibold text-sm mb-2" style={{ color: "var(--text-primary)" }}>{p.clip_title}</p>
+        )}
+
+        {/* Publicado por — clica vai para perfil do utilizador */}
+        <button
+          onClick={() => navigate({ to: `/u/${p.author_username}` })}
+          className="flex items-center gap-1.5 mb-2 transition active:scale-[0.98]"
+          onMouseOver={e => e.currentTarget.style.opacity = "0.7"}
+          onMouseOut={e => e.currentTarget.style.opacity = "1"}
+        >
+          <div className="w-5 h-5 rounded-full overflow-hidden shrink-0"
+            style={{ background: p.color || "#5B3FCF" }}>
+            {p.avatar_url
+              ? <img src={p.avatar_url} alt="" className="w-full h-full object-cover" />
+              : <span className="text-[8px] font-bold text-white flex items-center justify-center h-full">{p.author_username?.[0]?.toUpperCase()}</span>
+            }
+          </div>
+          <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+            Partilhado por <span className="font-semibold" style={{ color: "var(--text-secondary)" }}>@{p.author_username}</span>
+          </span>
+        </button>
+
+        {/* Botões */}
+        <div className="flex items-center gap-1 pt-1 border-t" style={{ borderColor: "var(--border-subtle)" }}>
+          <button onClick={onLike}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl transition active:scale-90 group">
+            <Heart className={`h-5 w-5 transition-all ${liked ? "fill-red-500 text-red-500 scale-110" : "group-hover:text-red-400"}`}
+              style={{ color: liked ? undefined : "var(--text-primary)" }} />
+            {likeCount > 0 && <span className="text-xs font-semibold" style={{ color: liked ? "#ef4444" : "var(--text-muted)" }}>{likeCount}</span>}
+          </button>
+          <button onClick={onComment}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl transition active:scale-90">
+            <MessageCircle className="h-5 w-5" style={{ color: "var(--text-primary)" }} />
+          </button>
+          <button onClick={() => navigator.share?.({ url: window.location.origin + `/hoodatv/watch/${p.clip_video_id}` }).catch(() => {})}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl transition active:scale-90">
+            <Share2 className="h-5 w-5" style={{ color: "var(--text-primary)" }} />
+          </button>
+          <div className="flex-1" />
+          <button onClick={() => navigate({ to: `/hoodatv/watch/${p.clip_video_id}` })}
+            className="text-xs font-bold px-3 py-1.5 rounded-xl transition active:scale-95"
+            style={{ color: "#5B3FCF", background: "#5B3FCF10" }}>
+            Ver vídeo completo →
+          </button>
+        </div>
+      </div>
+    </article>
+  );
+}
+
 function PostCard({ p }: { p: any }) {
   const [following, setFollowing] = useState<boolean | null>(null);
   const [showComments, setShowComments] = useState(false);
@@ -1903,6 +2033,25 @@ function PostCard({ p }: { p: any }) {
       setLikeCount((n: number) => n + 1);
     }
     setLiked((v: boolean) => !v);
+  }
+
+  // Card especial para clipes
+  if (p.kind === "clip" && p.clip_video_id) {
+    return (
+      <ClipCard p={p} liked={liked} likeCount={likeCount}
+        onLike={async () => {
+          if (!meRef.current) return;
+          setLiked(l => !l);
+          setLikeCount(c => liked ? c - 1 : c + 1);
+          if (liked) {
+            await supabase.from("post_likes").delete().eq("post_id", p.id).eq("user_id", meRef.current!.id);
+          } else {
+            await supabase.from("post_likes").insert({ post_id: p.id, user_id: meRef.current!.id });
+          }
+        }}
+        onComment={() => setShowComments(true)}
+      />
+    );
   }
 
   return (
@@ -2130,7 +2279,7 @@ function HomePage() {
     // Load posts: all public (author_id null = seed) + own + followed
     const { data: postsData, error: postsErr } = await supabase
       .from("posts")
-      .select("id,author_id,author_username,author_name,author_color,content,kind,is_ad,created_at,photo_url,photos,video_url")
+      .select("id,author_id,author_username,author_name,author_color,content,kind,is_ad,created_at,photo_url,photos,video_url,clip_video_id,clip_start,clip_end,clip_title,channel_id,channel_handle,channel_name,channel_avatar")
       .order("created_at", { ascending: false })
       .limit(15);
 

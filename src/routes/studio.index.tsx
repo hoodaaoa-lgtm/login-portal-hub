@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { t } from "@/lib/useT";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   myChannelQuery, channelStatsQuery, myVideosQuery,
@@ -10,7 +10,7 @@ import {
 import {
   Eye, Video as VideoIcon, Upload, ArrowUpRight, TrendingUp,
   Clock, Users, PlayCircle, MoreVertical, Globe, Lock, Tv2,
-  X, Activity, BarChart2, Map,
+  X, Activity, BarChart2, Map, Scissors, ChevronRight,
 } from "lucide-react";
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
@@ -146,6 +146,7 @@ export default function DashboardPage() {
   const [tab,       setTab]       = useState<"all" | "public" | "private">("all");
   const [editVideo, setEditVideo] = useState<any | null>(null);
   const [liveCount, setLiveCount] = useState<number>(0);
+  const [showClipModal, setShowClipModal] = useState(false);
 
   /* Realtime — novos vídeos e views */
   useEffect(() => {
@@ -245,11 +246,18 @@ export default function DashboardPage() {
             </p>
           )}
         </div>
-        <Link to="/studio/upload"
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-semibold text-white shadow-lg transition-all active:scale-95 hover:opacity-90"
-          style={{ background: GRAD, boxShadow: "0 4px 16px #5B3FCF44" }}>
-          <Upload className="h-4 w-4" /> Enviar vídeo
-        </Link>
+        <div className="flex items-center gap-2">
+          <button onClick={() => setShowClipModal(true)}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-semibold transition-all active:scale-95 border"
+            style={{ color: PURPLE, borderColor: PURPLE, background: PURPLE + "10" }}>
+            <Scissors className="h-4 w-4" /> Criar Clipe
+          </button>
+          <Link to="/studio/upload"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-semibold text-white shadow-lg transition-all active:scale-95 hover:opacity-90"
+            style={{ background: GRAD, boxShadow: "0 4px 16px #5B3FCF44" }}>
+            <Upload className="h-4 w-4" /> Enviar vídeo
+          </Link>
+        </div>
       </div>
 
       {/* Stats grid — 4+4 */}
@@ -526,3 +534,274 @@ const COUNTRY_NAMES: Record<string, string> = {
   FR:"França", DE:"Alemanha", ES:"Espanha", MZ:"Moçambique", CV:"Cabo Verde",
   GW:"Guiné-Bissau", ST:"S. Tomé e Príncipe", TL:"Timor-Leste",
 };
+
+/* ── Modal de Criação de Clipe ── */
+function ClipModal({ channel, videos, onClose }: {
+  channel: any;
+  videos: any[];
+  onClose: () => void;
+}) {
+  const [step, setStep]           = useState<"pick" | "trim" | "publish">("pick");
+  const [selected, setSelected]   = useState<any>(null);
+  const [clipStart, setClipStart] = useState(0);
+  const [clipEnd, setClipEnd]     = useState(0);
+  const [title, setTitle]         = useState("");
+  const [publishing, setPublishing] = useState(false);
+  const [visible, setVisible]     = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => { requestAnimationFrame(() => setVisible(true)); }, []);
+
+  function handleClose() {
+    setVisible(false);
+    setTimeout(onClose, 250);
+  }
+
+  function pickVideo(v: any) {
+    setSelected(v);
+    setTitle(v.title ?? "");
+    setClipStart(0);
+    setClipEnd(v.duration_seconds ?? 60);
+    setStep("trim");
+  }
+
+  function fmtTime(s: number) {
+    const m = Math.floor(s / 60);
+    const sec = Math.floor(s % 60);
+    return `${m}:${String(sec).padStart(2, "0")}`;
+  }
+
+  async function publish() {
+    if (!title.trim() || !selected || !channel) return;
+    setPublishing(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { toast.error("Sessão expirada"); return; }
+
+      const { error } = await supabase.from("posts").insert({
+        author_id:       session.user.id,
+        author_username: channel.handle ?? "",
+        author_name:     channel.name ?? "",
+        author_color:    PURPLE,
+        content:         title,
+        kind:            "clip",
+        clip_video_id:   selected.id,
+        clip_start:      clipStart,
+        clip_end:        clipEnd,
+        clip_title:      title,
+        channel_id:      channel.id,
+        channel_handle:  channel.handle,
+        channel_name:    channel.name,
+        channel_avatar:  channel.avatar_url,
+      } as any);
+
+      if (error) { toast.error("Erro ao publicar clipe"); return; }
+      toast.success("Clipe publicado no feed! 🎬");
+      handleClose();
+    } finally {
+      setPublishing(false);
+    }
+  }
+
+  const dur = selected?.duration_seconds ?? 60;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={handleClose} />
+      <div
+        className="relative w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl flex flex-col shadow-2xl overflow-hidden transition-transform duration-250"
+        style={{
+          background: "var(--s1)",
+          transform: visible ? "translateY(0)" : "translateY(100%)",
+          maxHeight: "90vh",
+        }}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b shrink-0"
+          style={{ borderColor: "var(--border-default)" }}>
+          <div className="flex items-center gap-2">
+            {step !== "pick" && (
+              <button onClick={() => setStep(step === "publish" ? "trim" : "pick")}
+                className="p-1.5 rounded-full transition active:scale-90"
+                style={{ background: "var(--s2)" }}>
+                <ChevronRight className="h-4 w-4 rotate-180" style={{ color: "var(--text-primary)" }} />
+              </button>
+            )}
+            <Scissors className="h-5 w-5" style={{ color: PURPLE }} />
+            <span className="font-bold text-base" style={{ color: "var(--text-primary)" }}>
+              {step === "pick" ? "Escolher vídeo" : step === "trim" ? "Recortar clipe" : "Publicar clipe"}
+            </span>
+          </div>
+          <button onClick={handleClose} className="p-2 rounded-full transition active:scale-90"
+            style={{ background: "var(--s2)" }}>
+            <X className="h-4 w-4" style={{ color: "var(--text-primary)" }} />
+          </button>
+        </div>
+
+        <div className="overflow-y-auto flex-1">
+
+          {/* Step 1 — Escolher vídeo */}
+          {step === "pick" && (
+            <div className="p-4 space-y-2">
+              {videos.filter(v => v.status === "published").length === 0 ? (
+                <div className="text-center py-12">
+                  <p className="text-sm" style={{ color: "var(--text-muted)" }}>Nenhum vídeo publicado ainda</p>
+                </div>
+              ) : (
+                videos.filter(v => v.status === "published").map(v => (
+                  <button key={v.id} onClick={() => pickVideo(v)}
+                    className="w-full flex items-center gap-3 p-3 rounded-2xl text-left transition active:scale-[0.98] border"
+                    style={{ borderColor: "var(--border-subtle)", background: "var(--s2)" }}
+                    onMouseOver={e => e.currentTarget.style.background = "var(--s3)"}
+                    onMouseOut={e => e.currentTarget.style.background = "var(--s2)"}>
+                    <div className="w-20 h-12 rounded-xl overflow-hidden bg-black shrink-0">
+                      {v.thumbnail_url
+                        ? <img src={v.thumbnail_url} alt="" className="w-full h-full object-cover" />
+                        : <div className="w-full h-full flex items-center justify-center">
+                            <PlayCircle className="h-5 w-5 text-neutral-500" />
+                          </div>
+                      }
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-sm truncate" style={{ color: "var(--text-primary)" }}>{v.title}</p>
+                      <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
+                        {v.duration_seconds ? fmtTime(v.duration_seconds) : "--"} · {v.views_count ?? 0} views
+                      </p>
+                    </div>
+                    <ChevronRight className="h-4 w-4 shrink-0" style={{ color: "var(--text-muted)" }} />
+                  </button>
+                ))
+              )}
+            </div>
+          )}
+
+          {/* Step 2 — Recortar */}
+          {step === "trim" && selected && (
+            <div className="p-4 space-y-4">
+              {/* Preview do vídeo */}
+              <div className="w-full rounded-2xl overflow-hidden bg-black aspect-video">
+                {selected.cf_embed_url
+                  ? <iframe src={`${selected.cf_embed_url}#t=${clipStart}`}
+                      className="w-full h-full" allowFullScreen />
+                  : selected.cf_stream_url
+                  ? <video ref={videoRef} src={`${selected.cf_stream_url}#t=${clipStart}`}
+                      className="w-full h-full" controls playsInline />
+                  : <div className="w-full h-full flex items-center justify-center">
+                      <p className="text-white/50 text-sm">Pré-visualização não disponível</p>
+                    </div>
+                }
+              </div>
+
+              {/* Duração do clipe */}
+              <div className="flex items-center justify-between text-sm font-semibold"
+                style={{ color: "var(--text-primary)" }}>
+                <span>Início: {fmtTime(clipStart)}</span>
+                <span className="text-xs px-2 py-1 rounded-full" style={{ background: PURPLE + "20", color: PURPLE }}>
+                  Duração: {fmtTime(clipEnd - clipStart)}
+                </span>
+                <span>Fim: {fmtTime(clipEnd)}</span>
+              </div>
+
+              {/* Slider início */}
+              <div>
+                <label className="text-xs font-bold mb-1 block" style={{ color: "var(--text-muted)" }}>INÍCIO</label>
+                <input type="range" min={0} max={Math.max(0, clipEnd - 1)} step={0.5}
+                  value={clipStart}
+                  onChange={e => {
+                    const v = Number(e.target.value);
+                    setClipStart(v);
+                    if (videoRef.current) videoRef.current.currentTime = v;
+                  }}
+                  className="w-full accent-purple-600" />
+              </div>
+
+              {/* Slider fim */}
+              <div>
+                <label className="text-xs font-bold mb-1 block" style={{ color: "var(--text-muted)" }}>FIM</label>
+                <input type="range" min={Math.min(clipStart + 1, dur)} max={dur} step={0.5}
+                  value={clipEnd}
+                  onChange={e => setClipEnd(Number(e.target.value))}
+                  className="w-full accent-purple-600" />
+              </div>
+
+              {/* Aviso duração máxima */}
+              {(clipEnd - clipStart) > 90 && (
+                <p className="text-xs text-amber-500 font-medium">
+                  ⚠️ Recomendamos clipes até 90 segundos para o feed
+                </p>
+              )}
+
+              <button onClick={() => setStep("publish")}
+                className="w-full h-11 rounded-2xl font-bold text-white text-sm transition active:scale-[0.98]"
+                style={{ background: GRAD }}>
+                Continuar →
+              </button>
+            </div>
+          )}
+
+          {/* Step 3 — Publicar */}
+          {step === "publish" && selected && (
+            <div className="p-4 space-y-4">
+              {/* Preview card estilo feed */}
+              <div className="rounded-2xl overflow-hidden border" style={{ borderColor: "var(--border-default)", background: "var(--s2)" }}>
+                {/* Header do canal */}
+                <div className="flex items-center gap-2.5 px-3 py-2.5">
+                  <div className="w-9 h-9 rounded-full overflow-hidden bg-purple-100 flex items-center justify-center shrink-0">
+                    {channel?.avatar_url
+                      ? <img src={channel.avatar_url} alt="" className="w-full h-full object-cover" />
+                      : <span className="font-bold text-sm" style={{ color: PURPLE }}>{channel?.name?.[0]}</span>
+                    }
+                  </div>
+                  <div>
+                    <p className="font-bold text-sm leading-tight" style={{ color: "var(--text-primary)" }}>{channel?.name}</p>
+                    <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>@{channel?.handle} · HoodaTV</p>
+                  </div>
+                </div>
+                {/* Thumbnail */}
+                <div className="w-full aspect-video bg-black">
+                  {selected.thumbnail_url
+                    ? <img src={selected.thumbnail_url} alt="" className="w-full h-full object-cover" />
+                    : <div className="w-full h-full flex items-center justify-center">
+                        <PlayCircle className="h-10 w-10 text-white/30" />
+                      </div>
+                  }
+                </div>
+                <div className="px-3 py-2">
+                  <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+                    Clipe · {fmtTime(clipStart)} – {fmtTime(clipEnd)} ({fmtTime(clipEnd - clipStart)})
+                  </p>
+                </div>
+              </div>
+
+              {/* Título */}
+              <div>
+                <label className="text-xs font-bold mb-1 block" style={{ color: "var(--text-muted)" }}>TÍTULO DO CLIPE</label>
+                <input
+                  value={title}
+                  onChange={e => setTitle(e.target.value)}
+                  maxLength={120}
+                  placeholder="Dá um título ao clipe..."
+                  className="w-full px-4 py-3 rounded-2xl text-sm outline-none border transition"
+                  style={{
+                    background: "var(--s1)",
+                    borderColor: "var(--border-default)",
+                    color: "var(--text-primary)",
+                  }}
+                />
+              </div>
+
+              <button onClick={publish} disabled={publishing || !title.trim()}
+                className="w-full h-12 rounded-2xl font-bold text-white text-sm transition active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
+                style={{ background: GRAD }}>
+                {publishing
+                  ? <><div className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" /> A publicar...</>
+                  : <><Scissors className="h-4 w-4" /> Publicar no feed</>
+                }
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
