@@ -884,40 +884,46 @@ function EditProfileModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{ background: "rgba(0,0,0,0.6)" }}
       onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="w-full max-w-lg rounded-3xl hooda-modal-sheet flex flex-col"
-        style={{ maxHeight: "92vh", overflow: "hidden" }}>
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border-subtle)]">
-          <button onClick={onClose} className="p-1.5 rounded-full hover:bg-[var(--s2)]">
-            <X className="h-5 w-5 text-[var(--text-muted)]" />
+      <div className="w-full max-w-lg rounded-3xl flex flex-col"
+        style={{ maxHeight: "88vh", overflow: "hidden", background: "var(--s1)" }}>
+
+        {/* Header fixo */}
+        <div className="flex items-center justify-between px-5 py-4 border-b shrink-0"
+          style={{ borderColor: "var(--border-subtle)" }}>
+          <button onClick={onClose} className="p-2 rounded-full transition"
+            style={{ background: "var(--s2)" }}>
+            <X className="h-5 w-5" style={{ color: "var(--text-primary)" }} />
           </button>
-          <span className="text-base font-extrabold" style={{ color: "var(--text-primary)" }}>{t("settings.edit_profile")}</span>
+          <span className="text-base font-extrabold" style={{ color: "var(--text-primary)" }}>Editar perfil</span>
           <button onClick={save}
             disabled={saving || done || usernameStatus === "taken" || usernameStatus === "invalid" || usernameStatus === "checking"}
-            className="text-sm font-bold px-4 py-1.5 rounded-full text-white transition active:scale-95 disabled:opacity-50"
+            className="text-sm font-bold px-5 py-2 rounded-full text-white transition active:scale-95 disabled:opacity-50"
             style={{ background: ACCENT }}>
-            {done ? "✓" : saving ? "..." : t("post.save")}
+            {done ? "✓" : saving ? "..." : "Guardar"}
           </button>
         </div>
 
+        {/* Conteúdo scrollável */}
         <div className="overflow-y-auto flex-1">
-          {/* Avatar + foto de capa (placeholder) */}
-          <div className="relative">
-            <div className="h-24 w-full" style={{ background: "linear-gradient(135deg,#5B3FCF,#1FAFA6,#FFC93C)" }} />
-            <button className="absolute top-2 right-2 bg-black/40 rounded-full p-1.5">
+
+          {/* Avatar + capa */}
+          <div className="relative mb-12">
+            <div className="h-28 w-full" style={{ background: "linear-gradient(135deg,#5B3FCF,#1FAFA6,#FFC93C)" }} />
+            <button className="absolute top-3 right-3 bg-black/50 rounded-full p-2">
               <Camera className="h-4 w-4 text-white" />
             </button>
-            <div className="absolute" style={{ bottom: -28, left: 20 }}>
+            <div className="absolute left-5" style={{ bottom: -40 }}>
               <div className="relative">
-                <Avatar name={name || email || "?"} size={64} />
-                <button className="absolute -bottom-1 -right-1 bg-neutral-800 rounded-full p-1 border-2 border-white">
-                  <Camera className="h-3 w-3 text-white" />
+                <Avatar name={name || email || "?"} size={72} />
+                <button className="absolute -bottom-1 -right-1 rounded-full p-1.5 border-2"
+                  style={{ background: "var(--s1)", borderColor: "var(--s1)" }}>
+                  <Camera className="h-3.5 w-3.5" style={{ color: "var(--text-primary)" }} />
                 </button>
               </div>
             </div>
           </div>
 
-          <div className="pt-12 px-5 pb-6 space-y-4">
+          <div className="px-5 pb-6 space-y-4">
             {/* Nome */}
             <div>
               <label className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Nome</label>
