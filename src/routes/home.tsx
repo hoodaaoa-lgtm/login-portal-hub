@@ -718,7 +718,7 @@ function StoryCreator({ onClose, onPublish }: {
   ];
 
   if (mode === "picker") {
-    return (
+    return createPortal(
       <div className="fixed inset-0 z-50 bg-black flex flex-col items-center justify-center gap-6 px-8">
         <button onClick={onClose} className="absolute top-5 left-5 p-2 rounded-full bg-[var(--s2)]/10">
           <X className="h-5 w-5 text-white" />
@@ -747,11 +747,12 @@ function StoryCreator({ onClose, onPublish }: {
             </button>
           ))}
         </div>
-      </div>
+      </div>,
+      document.body
     );
   }
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 bg-black flex flex-col" style={{ touchAction: "none", overflow: "hidden" }}>
       {/* Top bar */}
       <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-4 py-3"
@@ -1208,7 +1209,8 @@ function StoryCreator({ onClose, onPublish }: {
           userAvatarUrl={userAvatarUrl}
         />
       )}
-    </div>
+    </div>,
+    document.body
   );
 }
 
