@@ -262,6 +262,38 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {/* Confirmar delete clip */}
+      {confirmDeleteClip && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}>
+          <div className="rounded-3xl p-6 flex flex-col gap-4 w-full max-w-sm"
+            style={{ background: "var(--s0)", border: "1px solid var(--border-subtle)" }}>
+            <div className="h-12 w-12 rounded-2xl flex items-center justify-center mx-auto"
+              style={{ background: "#fee2e2" }}>
+              <Scissors className="h-6 w-6" style={{ color: "#dc2626" }} />
+            </div>
+            <div className="text-center">
+              <p className="font-bold text-base mb-1" style={{ color: "var(--text-primary)" }}>Remover clip?</p>
+              <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+                "{confirmDeleteClip.title}" será removido do feed permanentemente.
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => setConfirmDeleteClip(null)}
+                className="flex-1 h-11 rounded-2xl font-semibold text-sm transition active:scale-95 border"
+                style={{ borderColor: "var(--border-default)", color: "var(--text-primary)" }}>
+                Cancelar
+              </button>
+              <button onClick={() => { deleteClip(confirmDeleteClip.id); setConfirmDeleteClip(null); }}
+                className="flex-1 h-11 rounded-2xl font-bold text-sm text-white transition active:scale-95"
+                style={{ background: "#dc2626" }}>
+                Remover
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showClipModal && (
         <ClipModal
           channel={channel}
@@ -412,6 +444,53 @@ export default function DashboardPage() {
 
         {/* Coluna direita */}
         <div className="flex flex-col gap-4">
+
+          {/* Meus Clips */}
+          {myClips && myClips.length > 0 && (
+            <div className="rounded-2xl overflow-hidden"
+              style={{ background: "var(--s0)", boxShadow: "var(--shadow-card)", border: "1px solid var(--border-subtle)" }}>
+              <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: "var(--border-subtle)" }}>
+                <h2 className="text-base font-bold flex items-center gap-2" style={{ color: "var(--text-primary)" }}>
+                  <Scissors className="h-4 w-4" style={{ color: PURPLE }} /> Meus Clips
+                </h2>
+                <span className="text-xs font-semibold px-2 py-0.5 rounded-full"
+                  style={{ background: PURPLE + "15", color: PURPLE }}>
+                  {myClips.length}
+                </span>
+              </div>
+              <ul className="divide-y" style={{ borderColor: "var(--border-subtle)" }}>
+                {myClips.map((clip: any) => {
+                  const dur = clip.clip_end - clip.clip_start;
+                  const fmt = (s: number) => `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,"0")}`;
+                  return (
+                    <li key={clip.id} className="flex items-center gap-3 px-5 py-3">
+                      <div className="h-10 w-16 rounded-lg overflow-hidden shrink-0 flex items-center justify-center"
+                        style={{ background: "var(--s2)" }}>
+                        {clip.clip_thumb_url
+                          ? <img src={clip.clip_thumb_url} className="h-full w-full object-cover" alt="" />
+                          : <Scissors className="h-4 w-4" style={{ color: "var(--text-muted)" }} />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>
+                          {clip.clip_title || "Clip sem título"}
+                        </p>
+                        <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+                          {fmt(clip.clip_start)} – {fmt(clip.clip_end)} · {fmt(dur)}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => setConfirmDeleteClip({ id: clip.id, title: clip.clip_title || "este clip" })}
+                        className="p-2 rounded-xl transition hover:opacity-80 shrink-0"
+                        style={{ background: "#fee2e2", color: "#dc2626" }}
+                        title="Remover clip do feed">
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
 
           {/* Top vídeos */}
           {topVideos && topVideos.length > 0 && (
