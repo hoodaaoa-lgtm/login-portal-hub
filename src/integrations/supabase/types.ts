@@ -867,6 +867,7 @@ export type Database = {
       post_comments: {
         Row: {
           author_color: string | null
+          author_id: string | null
           author_username: string
           content: string
           created_at: string
@@ -877,6 +878,7 @@ export type Database = {
         }
         Insert: {
           author_color?: string | null
+          author_id?: string | null
           author_username: string
           content: string
           created_at?: string
@@ -887,6 +889,7 @@ export type Database = {
         }
         Update: {
           author_color?: string | null
+          author_id?: string | null
           author_username?: string
           content?: string
           created_at?: string
@@ -1010,6 +1013,7 @@ export type Database = {
           music_cover: string | null
           music_title: string | null
           music_url: string | null
+          photo_url: string | null
           photos: string[] | null
           shared_from_post_id: string | null
           video_url: string | null
@@ -1033,6 +1037,7 @@ export type Database = {
           music_cover?: string | null
           music_title?: string | null
           music_url?: string | null
+          photo_url?: string | null
           photos?: string[] | null
           shared_from_post_id?: string | null
           video_url?: string | null
@@ -1056,6 +1061,7 @@ export type Database = {
           music_cover?: string | null
           music_title?: string | null
           music_url?: string | null
+          photo_url?: string | null
           photos?: string[] | null
           shared_from_post_id?: string | null
           video_url?: string | null
@@ -1290,6 +1296,80 @@ export type Database = {
           },
         ]
       }
+      story_message_notifications: {
+        Row: {
+          created_at: string
+          id: string
+          message_id: string
+          read_at: string | null
+          story_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message_id: string
+          read_at?: string | null
+          story_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message_id?: string
+          read_at?: string | null
+          story_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "story_message_notifications_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "story_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      story_messages: {
+        Row: {
+          author_color: string
+          author_id: string
+          author_username: string
+          content: string
+          created_at: string
+          id: string
+          media_url: string | null
+          message_type: string
+          story_id: string
+          updated_at: string
+        }
+        Insert: {
+          author_color?: string
+          author_id: string
+          author_username: string
+          content: string
+          created_at?: string
+          id?: string
+          media_url?: string | null
+          message_type?: string
+          story_id: string
+          updated_at?: string
+        }
+        Update: {
+          author_color?: string
+          author_id?: string
+          author_username?: string
+          content?: string
+          created_at?: string
+          id?: string
+          media_url?: string | null
+          message_type?: string
+          story_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       video_comment_reactions: {
         Row: {
           comment_id: string
@@ -1356,6 +1436,13 @@ export type Database = {
             columns: ["parent_id"]
             isOneToOne: false
             referencedRelation: "video_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_comments_user_id_profiles_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
@@ -1429,30 +1516,36 @@ export type Database = {
         Row: {
           channel_id: string
           country: string | null
+          country_code: string | null
           id: string
           user_id: string | null
           video_id: string
           viewed_at: string
+          viewer_fingerprint: string | null
           viewer_ip: string | null
           watch_pct: number | null
         }
         Insert: {
           channel_id: string
           country?: string | null
+          country_code?: string | null
           id?: string
           user_id?: string | null
           video_id: string
           viewed_at?: string
+          viewer_fingerprint?: string | null
           viewer_ip?: string | null
           watch_pct?: number | null
         }
         Update: {
           channel_id?: string
           country?: string | null
+          country_code?: string | null
           id?: string
           user_id?: string | null
           video_id?: string
           viewed_at?: string
+          viewer_fingerprint?: string | null
           viewer_ip?: string | null
           watch_pct?: number | null
         }
@@ -1601,6 +1694,16 @@ export type Database = {
       mark_view_once_opened: {
         Args: { p_msg_id: string; p_user_id: string }
         Returns: undefined
+      }
+      record_video_view: {
+        Args: {
+          p_channel_id?: string
+          p_country?: string
+          p_country_code?: string
+          p_video_id: string
+          p_viewer_fingerprint?: string
+        }
+        Returns: Json
       }
     }
     Enums: {
