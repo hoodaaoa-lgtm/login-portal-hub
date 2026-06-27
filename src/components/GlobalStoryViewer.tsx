@@ -239,9 +239,17 @@ export function GlobalStoryViewer() {
   const name = target.fullName || target.username;
 
   return (
-    <div className="hooda-scale-in fixed inset-0 z-[300] bg-black flex items-center justify-center select-none">
-      <div className="relative w-full h-full max-w-md mx-auto overflow-hidden"
-        style={{ background: slide.bgGrad || "#111" }}>
+    <div className="hooda-scale-in fixed inset-0 z-[300] bg-black flex items-center justify-center select-none"
+      onClick={(e) => { if (e.target === e.currentTarget) close(); }}>
+      {/* Overlay escuro nos lados no desktop */}
+      <div className="relative flex-shrink-0"
+        style={{
+          width: "min(100vw, 420px)",
+          height: "100dvh",
+          maxHeight: "100dvh",
+          overflow: "hidden",
+          background: slide.bgGrad || "#111",
+        }}>
         {slide.photoUrl && (
           <img src={slide.photoUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
         )}
