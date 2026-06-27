@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
@@ -668,13 +669,13 @@ function CreatePostModal({
     return () => { document.body.style.overflow = ""; };
   }, []);
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-end lg:items-center justify-center pb-0"
+  return createPortal(
+    <div className="fixed inset-0 z-[200] flex items-center justify-center"
       style={{ background: "rgba(0,0,0,0.55)" }}
       onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="w-full lg:max-w-lg lg:rounded-3xl rounded-t-2xl hooda-modal-sheet flex flex-col" style={{ maxHeight: "80vh", overflow: "hidden" }}>
+      <div className="w-full max-w-lg mx-4 rounded-3xl hooda-modal-sheet flex flex-col" style={{ maxHeight: "85vh", overflow: "hidden" }}>
         <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border-subtle)]">
-          <span className="text-base font-bold text-black">Criar publicação</span>
+          <span className="text-base font-bold" style={{ color: "var(--text-primary)" }}>Criar publicação</span>
           <button onClick={onClose} className="p-1.5 rounded-full hover:bg-[var(--s2)] transition">
             <X className="h-5 w-5 text-[var(--text-muted)]" />
           </button>
@@ -788,7 +789,7 @@ function CreatePostModal({
         </div>
       </div>
     </div>
-  );
+  , document.body);
 }
 
 /* ─── Modal Editar Perfil ─── */
