@@ -1921,12 +1921,8 @@ function SimpleVideoPlayer({ src, poster }: { src: string; poster?: string }) {
 
   return (
     <div
-      className="w-full bg-black relative cursor-pointer"
-      style={{
-        aspectRatio: isShort === true ? "9/16" : "4/3",
-        maxHeight: isShort === true ? "75vh" : "600px",
-        maxWidth: isShort === true ? "calc(75vh * 9 / 16)" : "100%",
-      }}
+      className="w-full bg-black relative cursor-pointer overflow-hidden"
+      style={{ maxHeight: "600px" }}
       onClick={togglePlay}
     >
       <video
@@ -1941,8 +1937,8 @@ function SimpleVideoPlayer({ src, poster }: { src: string; poster?: string }) {
         }}
         onPlay={() => setPlaying(true)}
         onPause={() => setPlaying(false)}
-        className="w-full h-full object-cover"
-        style={{ display: "block", pointerEvents: "none" }}
+        className="w-full block"
+        style={{ display: "block", pointerEvents: "none", objectFit: "cover", width: "100%" }}
       />
       {/* Overlay play/pause */}
       {!playing && (
