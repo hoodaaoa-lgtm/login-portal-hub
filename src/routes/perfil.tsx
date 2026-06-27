@@ -881,17 +881,17 @@ function EditProfileModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end lg:items-center justify-center"
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{ background: "rgba(0,0,0,0.6)" }}
       onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="w-full lg:max-w-lg lg:rounded-3xl rounded-t-3xl hooda-modal-sheet flex flex-col"
-        style={{ maxHeight: "96vh", overflow: "hidden" }}>
+      <div className="w-full max-w-lg rounded-3xl hooda-modal-sheet flex flex-col"
+        style={{ maxHeight: "92vh", overflow: "hidden" }}>
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border-subtle)]">
           <button onClick={onClose} className="p-1.5 rounded-full hover:bg-[var(--s2)]">
             <X className="h-5 w-5 text-[var(--text-muted)]" />
           </button>
-          <span className="text-base font-extrabold text-black">{t("settings.edit_profile")}</span>
+          <span className="text-base font-extrabold" style={{ color: "var(--text-primary)" }}>{t("settings.edit_profile")}</span>
           <button onClick={save}
             disabled={saving || done || usernameStatus === "taken" || usernameStatus === "invalid" || usernameStatus === "checking"}
             className="text-sm font-bold px-4 py-1.5 rounded-full text-white transition active:scale-95 disabled:opacity-50"
@@ -924,6 +924,7 @@ function EditProfileModal({
               <input value={name} onChange={(e) => setName(e.target.value)}
                 placeholder="O teu nome completo"
                 className="mt-1 w-full border border-[var(--border-default)] rounded-xl px-4 py-2.5 text-sm font-medium outline-none focus:border-[#5B3FCF] focus:ring-2 focus:ring-[#5B3FCF]/20 transition"
+                style={{ background: "var(--s2)", color: "var(--text-primary)" }}
               />
             </div>
 
@@ -936,7 +937,8 @@ function EditProfileModal({
                   placeholder="nomedeutilizador"
                   className="w-full rounded-xl pl-8 pr-10 py-2.5 text-sm font-medium outline-none transition"
                   style={{
-                    border: `1.5px solid ${usernameStatus === "available" ? "#6BA547" : usernameStatus === "taken" || usernameStatus === "invalid" ? "#ef4444" : "#e5e7eb"}`,
+                    background: "var(--s2)", color: "var(--text-primary)",
+                    border: `1.5px solid ${usernameStatus === "available" ? "#6BA547" : usernameStatus === "taken" || usernameStatus === "invalid" ? "#ef4444" : "var(--border-default)"}`,
                     boxShadow: usernameStatus === "available" ? "0 0 0 3px #6BA54720" : usernameStatus === "taken" ? "0 0 0 3px #ef444420" : "none",
                   }}
                 />
@@ -961,7 +963,7 @@ function EditProfileModal({
               <textarea value={bio} onChange={(e) => setBio(e.target.value)}
                 placeholder="Fala um pouco sobre ti..."
                 rows={3}
-                className="mt-1 w-full border border-[var(--border-default)] rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#5B3FCF] focus:ring-2 focus:ring-[#5B3FCF]/20 transition resize-none leading-relaxed"
+                className="mt-1 w-full border border-[var(--border-default)] rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#5B3FCF] focus:ring-2 focus:ring-[#5B3FCF]/20 transition resize-none leading-relaxed" style={{ background: "var(--s2)", color: "var(--text-primary)" }}
               />
               <p className="text-[11px] text-[var(--text-muted)] text-right mt-1">{bio.length}/160</p>
             </div>
@@ -974,6 +976,7 @@ function EditProfileModal({
                 <input value={website} onChange={(e) => setWebsite(e.target.value)}
                   placeholder="https://..."
                   className="w-full border border-[var(--border-default)] rounded-xl pl-10 pr-4 py-2.5 text-sm outline-none focus:border-[#5B3FCF] focus:ring-2 focus:ring-[#5B3FCF]/20 transition"
+                  style={{ background: "var(--s2)", color: "var(--text-primary)" }}
                 />
               </div>
             </div>
@@ -986,6 +989,7 @@ function EditProfileModal({
                 <input value={location} onChange={(e) => setLocation(e.target.value)}
                   placeholder="Lisboa, Portugal"
                   className="w-full border border-[var(--border-default)] rounded-xl pl-10 pr-4 py-2.5 text-sm outline-none focus:border-[#5B3FCF] focus:ring-2 focus:ring-[#5B3FCF]/20 transition"
+                  style={{ background: "var(--s2)", color: "var(--text-primary)" }}
                 />
               </div>
             </div>
