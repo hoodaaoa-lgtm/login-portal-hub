@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { HoodaLogo } from "@/components/HoodaLogo";
 import { BottomNav, SideNav, PageWrapper } from "@/components/AppShell";
@@ -1370,7 +1371,7 @@ function StoryViewer({ stories, startIndex, onClose, onDelete, userAvatarUrl }: 
 
   const storyBg = story.bg ?? `linear-gradient(160deg, ${story.color}cc, #0a0a10)`;
 
-  return (
+  return createPortal(
     <>
     <style>{`
       @keyframes storyBounce { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-7px) } }
@@ -1750,7 +1751,8 @@ function StoryViewer({ stories, startIndex, onClose, onDelete, userAvatarUrl }: 
           </div>
         </div>
       )}
-    </>
+    </>,
+    document.body
   );
 }
 
