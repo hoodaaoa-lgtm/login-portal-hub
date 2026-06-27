@@ -23,7 +23,7 @@ import {
   Smile, Mic, Image as ImageIcon, FileText, Video as VideoIcon,
   MoreVertical, Plus, RotateCw, Wand2, Pencil, Type as TypeIcon,
   Crop, Grid3x3, Download, ZoomIn, Forward, Star,
-  Eye, EyeOff, Trash2, Reply,
+  Eye, EyeOff, Trash2, Reply, Copy,
   AlertCircle, RefreshCw, ArrowDown,
 } from "lucide-react";
 import MediaEditor, { MediaEditState, DEFAULT_EDIT, EditedMediaDisplay } from "@/components/MediaEditor";
