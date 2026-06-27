@@ -12,7 +12,7 @@ import {
   Eye, Video as VideoIcon, Upload, ArrowUpRight, TrendingUp,
   Clock, Users, PlayCircle, Globe, Lock, Tv2,
   X, Activity, BarChart2, Scissors, ChevronRight, ChevronLeft,
-  Search, Heart, MessageCircle, Share2, MoreVertical, MapPin,
+  Search, Heart, MessageCircle, Share2, MoreVertical, MapPin, Trash2,
 } from "lucide-react";
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
