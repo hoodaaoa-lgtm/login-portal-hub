@@ -2193,9 +2193,12 @@ function PostCard({ p }: { p: any }) {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
       if (p.author_id === session.user.id) { setFollowing(null); return; }
+      // Tenta por following_id (novo schema) ou target_username (schema antigo)
       const { data: row } = await supabase.from("follows").select("follower_id")
-        .eq("follower_id", session.user.id).eq("following_id", p.author_id).maybeSingle();
-      setFollowing(!!row);
+        .eq("follower_id", session.user.id)
+        .or(`following_id.eq.${p.author_id},target_username.eq.${p.author_username ?? ""}`)
+        .maybeSingle();
+      setFollowing(!!row); // sempre sai de null → false ou true
     })();
   }, [p.author_id]);
 
@@ -2271,13 +2274,15 @@ function PostCard({ p }: { p: any }) {
             {(p.name || dynamicTime) && <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>{p.name}{p.name && dynamicTime ? " · " : ""}{dynamicTime}</p>}
           </div>
         </div>
-        {!isAd && p.author_id && following !== null && (
-          <button onClick={toggleFollow}
+        {!isAd && p.author_id && (
+          <button onClick={toggleFollow} disabled={following === null}
             className="text-xs font-bold px-3 py-1.5 rounded-full transition-all active:scale-95"
             style={following
               ? { background: "var(--s2)", color: "var(--text-secondary)", border: "1.5px solid var(--border-default)" }
-              : { background: "#5B3FCF", color: "#fff", boxShadow: "0 2px 8px rgba(91,63,207,0.35)" }}>
-            {following ? "A seguir ✓" : "+ Seguir"}
+              : following === null
+                ? { background: "var(--s2)", color: "var(--text-muted)", border: "1.5px solid var(--border-subtle)", opacity: 0.5 }
+                : { background: "#5B3FCF", color: "#fff", boxShadow: "0 2px 8px rgba(91,63,207,0.35)" }}>
+            {following === null ? "+ Seguir" : following ? "A seguir ✓" : "+ Seguir"}
           </button>
         )}
       </div>

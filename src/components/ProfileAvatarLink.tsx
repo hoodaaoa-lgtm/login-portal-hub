@@ -222,22 +222,26 @@ function QuickMenu({
   return (
     <div className="fixed inset-0 z-[200]" onClick={onClose}>
       <div
-        className="absolute bg-white rounded-2xl shadow-2xl border border-neutral-100 overflow-hidden py-1 w-44"
-        style={{ left, top }}
+        className="absolute rounded-2xl shadow-2xl overflow-hidden py-1 w-44"
+        style={{ left, top, background: "var(--s0)", border: "1px solid var(--border-default)" }}
         onClick={(e) => e.stopPropagation()}
       >
         <button
           onClick={onViewStory}
-          className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-left hover:bg-neutral-50 transition"
-          style={{ color: "var(--text-primary,#000)" }}
+          className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-left transition"
+          style={{ color: "var(--text-primary)", background: "transparent" }}
+          onMouseEnter={e => (e.currentTarget.style.background = "var(--s2)")}
+          onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
         >
           <Eye className="h-4 w-4" style={{ color: "#5B3FCF" }} />
           Ver Story
         </button>
         <button
           onClick={onViewProfile}
-          className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-left hover:bg-neutral-50 transition"
-          style={{ color: "var(--text-primary,#000)" }}
+          className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-left transition"
+          style={{ color: "var(--text-primary)", background: "transparent" }}
+          onMouseEnter={e => (e.currentTarget.style.background = "var(--s2)")}
+          onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
         >
           <UserRound className="h-4 w-4" style={{ color: "#5B3FCF" }} />
           Ver Perfil
