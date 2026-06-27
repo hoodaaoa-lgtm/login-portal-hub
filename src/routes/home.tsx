@@ -2041,8 +2041,8 @@ function PostCard({ p }: { p: any }) {
       <ClipCard p={p} liked={liked} likeCount={likeCount}
         onLike={async () => {
           if (!meRef.current) return;
-          setLiked(l => !l);
-          setLikeCount(c => liked ? c - 1 : c + 1);
+          setLiked((l: boolean) => !l);
+          setLikeCount((c: number) => liked ? c - 1 : c + 1);
           if (liked) {
             await supabase.from("post_likes").delete().eq("post_id", p.id).eq("user_id", meRef.current!.id);
           } else {

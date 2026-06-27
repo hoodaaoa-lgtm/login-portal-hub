@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate, Outlet, useRouterState } from "@tanstack/react-router";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { BottomNav, SideNav, PageWrapper } from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
