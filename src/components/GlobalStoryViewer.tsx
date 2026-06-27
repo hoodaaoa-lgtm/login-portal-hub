@@ -54,6 +54,15 @@ export function GlobalStoryViewer() {
   const [muted, setMuted] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // Bloquear scroll do body enquanto o story estiver aberto, para a tela
+  // ficar fixa e centralizada (sem permitir scroll da página de fundo)
+  useEffect(() => {
+    if (!target) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
+  }, [target]);
+
   const close = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
     setTarget(null);

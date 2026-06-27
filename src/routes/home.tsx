@@ -1259,6 +1259,14 @@ function StoryViewer({ stories, startIndex, onClose, onDelete, userAvatarUrl }: 
   const [deleting, setDeleting] = useState(false);
   const ridRef = useRef(0);
 
+  // Bloquear scroll do body enquanto o viewer está aberto, para a tela
+  // ficar fixa e centralizada (sem permitir scroll da página de fundo)
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
+  }, []);
+
   /* Reset reaction state whenever the viewed story changes */
   useEffect(() => {
     setAdored(false);
