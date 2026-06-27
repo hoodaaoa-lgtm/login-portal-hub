@@ -40,6 +40,7 @@ type Post = {
   id: string; text: string; photo: string | null; bgColor: string | null; createdAt: Date;
   likes: number; likedByMe: boolean; comments: number; bookmarked: boolean;
   videoUrl?: string;
+  views_count?: number;
 };
 type SavedPost = Post & { authorId: string; authorName: string; authorUsername: string; authorAvatar: string | null };
 
@@ -217,6 +218,7 @@ function PostCard({
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const [viewCount, setViewCount] = useState(post.views_count ?? 0);
   const [shareCommunities, setShareCommunities] = useState<MyCommunity[]>([]);
   const [loadingShareTargets, setLoadingShareTargets] = useState(false);
   const [sharingToId, setSharingToId] = useState<string | null>(null);
@@ -238,6 +240,15 @@ function PostCard({
     }
     return () => { document.body.style.overflow = ""; };
   }, [shareOpen, showComments]);
+
+  // Incrementar views (uma vez por sessão por post)
+  useEffect(() => {
+    const key = `post_view_${post.id}`;
+    if (sessionStorage.getItem(key)) return;
+    sessionStorage.setItem(key, "1");
+    setViewCount((c: number) => c + 1);
+    (supabase as any).from("posts").update({ views_count: (post.views_count ?? 0) + 1 } as any).eq("id", post.id).then(() => {});
+  }, [post.id]);
 
   useEffect(() => {
     if (!showComments) return;
@@ -402,13 +413,20 @@ function PostCard({
         </button>
       </div>
 
-      {/* Likes count + legenda — estilo Instagram */}
+      {/* Views + Likes count — estilo Facebook/Instagram */}
       <div className="px-3 pb-3">
-        {post.likes > 0 && (
-          <p className="text-[13px] font-bold mb-1" style={{ color: "var(--text-primary)" }}>
-            {post.likes === 1 ? "1 gosto" : `${fmtNum(post.likes)} gostos`}
-          </p>
-        )}
+        <div className="flex items-center gap-3 mb-1">
+          {viewCount > 0 && (
+            <p className="text-[12px] font-semibold" style={{ color: "var(--text-muted)" }}>
+              👁 {viewCount.toLocaleString("pt-PT")} visualizaç{viewCount === 1 ? "ão" : "ões"}
+            </p>
+          )}
+          {post.likes > 0 && (
+            <p className="text-[13px] font-bold" style={{ color: "var(--text-primary)" }}>
+              ❤️ {post.likes === 1 ? "1 gosto" : `${fmtNum(post.likes)} gostos`}
+            </p>
+          )}
+        </div>
         {post.text && !post.bgColor && (
           <p className="text-[14px] leading-snug" style={{ color: "var(--text-primary)" }}>
             <span className="font-bold mr-1">{username}</span>
@@ -1931,7 +1949,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
             const likeIds = likesByPost[p.id] ?? [];
             return {
               id: p.id, text, photo, bgColor, createdAt: new Date(p.created_at ?? Date.now()),
-              likes: likeIds.length, likedByMe: likeIds.includes(session.user.id),
+              likes: likeIds.length, likedByMe: likeIds.includes(session.user.id), views_count: (p as any).views_count ?? 0,
               comments: commentsByPost[p.id] ?? 0, bookmarked: savedSet.has(p.id),
             };
           });
@@ -1988,7 +2006,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
         const likeIds = likesByPost[p.id] ?? [];
         return {
           id: p.id, text, photo, bgColor, createdAt: new Date(p.created_at ?? Date.now()),
-          likes: likeIds.length, likedByMe: likeIds.includes(myUserId),
+          likes: likeIds.length, likedByMe: likeIds.includes(myUserId), views_count: (p as any).views_count ?? 0,
           comments: commentsByPost[p.id] ?? 0, bookmarked: true,
           authorId: p.author_id, authorName: p.author_name || p.author_username || "hooda",
           authorUsername: p.author_username || "utilizador",

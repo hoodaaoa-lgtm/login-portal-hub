@@ -161,7 +161,7 @@ export default function DashboardPage() {
       if (!session) return [];
       const { data } = await (supabase as any)
         .from("posts")
-        .select("id,clip_title,clip_thumb_url,clip_start,clip_end,created_at,content")
+        .select("id,clip_title,clip_thumb_url,clip_start,clip_end,created_at,content,likes_count,views_count")
         .eq("kind", "clip")
         .eq("author_id", session.user.id)
         .order("created_at", { ascending: false });
@@ -502,6 +502,16 @@ export default function DashboardPage() {
                         <p className="text-xs" style={{ color: "var(--text-muted)" }}>
                           {fmt(clip.clip_start)} – {fmt(clip.clip_end)} · {fmt(dur)}
                         </p>
+                        <div className="flex items-center gap-3 mt-1">
+                          <span className="flex items-center gap-1 text-[11px] font-semibold" style={{ color: "var(--text-muted)" }}>
+                            <Heart className="h-3 w-3" style={{ color: "#E94B8A" }} />
+                            {(clip.likes_count ?? 0).toLocaleString("pt-PT")}
+                          </span>
+                          <span className="flex items-center gap-1 text-[11px] font-semibold" style={{ color: "var(--text-muted)" }}>
+                            <Eye className="h-3 w-3" style={{ color: PURPLE }} />
+                            {(clip.views_count ?? 0).toLocaleString("pt-PT")}
+                          </span>
+                        </div>
                       </div>
                       <button
                         onClick={() => setConfirmDeleteClip({ id: clip.id, title: clip.clip_title || "este clip" })}

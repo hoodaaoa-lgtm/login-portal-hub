@@ -1971,8 +1971,8 @@ function SimpleVideoPlayer({ src, poster }: { src: string; poster?: string }) {
 }
 
 /* ── Card de Clipe no Feed ── */
-function ClipCard({ p, liked, likeCount, onLike, onComment }: {
-  p: any; liked: boolean; likeCount: number;
+function ClipCard({ p, liked, likeCount, viewCount, onLike, onComment }: {
+  p: any; liked: boolean; likeCount: number; viewCount: number;
   onLike: () => void; onComment: () => void;
 }) {
   const navigate = useNavigate();
@@ -2091,6 +2091,12 @@ function ClipCard({ p, liked, likeCount, onLike, onComment }: {
 
         {/* Botões de ação */}
         <div className="flex items-center gap-0.5 pt-2 border-t" style={{ borderColor: "var(--border-subtle)" }}>
+          {/* 👁 Views */}
+          {viewCount > 0 && (
+            <span className="flex items-center gap-1 text-xs font-semibold px-2" style={{ color: "var(--text-muted)" }}>
+              <Eye className="h-3.5 w-3.5" />{viewCount.toLocaleString("pt-PT")}
+            </span>
+          )}
           {/* ❤️ Gosto */}
           <button onClick={onLike}
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl transition active:scale-90 group">
@@ -2147,6 +2153,7 @@ function PostCard({ p }: { p: any }) {
   const meRef = useRef<{ id: string; username: string } | null>(null);
   const [liked, setLiked] = useState(p.liked_by_me ?? false);
   const [likeCount, setLikeCount] = useState(p.likes ?? 0);
+  const [viewCount, setViewCount] = useState(p.views_count ?? 0);
   const isAd = !!p.ad;
   const navigate = useNavigate();
   const cardVideoRef = useRef<HTMLVideoElement>(null);
@@ -2164,6 +2171,15 @@ function PostCard({ p }: { p: any }) {
       meRef.current = { id: session.user.id, username: (prof as any)?.username || "eu" };
     })();
   }, []);
+
+  // Incrementar views do post (uma vez por sessão por post)
+  useEffect(() => {
+    const key = `post_view_${p.id}`;
+    if (sessionStorage.getItem(key)) return;
+    sessionStorage.setItem(key, "1");
+    setViewCount((c: number) => c + 1);
+    (supabase as any).from("posts").update({ views_count: (p.views_count ?? 0) + 1 } as any).eq("id", p.id).then(() => {});
+  }, [p.id]);
 
   // Regista o vídeo do card no mediaManager
   useEffect(() => {
@@ -2293,7 +2309,7 @@ function PostCard({ p }: { p: any }) {
   // Card especial para clipes
   if (p.kind === "clip" && p.clip_video_id) {
     return (
-      <ClipCard p={p} liked={liked} likeCount={likeCount}
+      <ClipCard p={p} liked={liked} likeCount={likeCount} viewCount={viewCount}
         onLike={async () => {
           if (!meRef.current) return;
           setLiked((l: boolean) => !l);
@@ -2458,9 +2474,18 @@ function PostCard({ p }: { p: any }) {
               )}
               {p.photos && p.photos.length > 0 && <PhotoGrid photos={p.photos} />}
               {p.photo && !p.photos && !p.video && <PhotoGrid photos={[p.photo]} />}
-              {likeCount > 0 && (
-                <p className="px-4 pt-2 text-[12px] font-bold text-[var(--text-muted)]">{likeCount} curtida{likeCount !== 1 ? "s" : ""}</p>
-              )}
+              <div className="flex items-center gap-3 px-4 pt-2">
+                {viewCount > 0 && (
+                  <p className="text-[12px] font-semibold" style={{ color: "var(--text-muted)" }}>
+                    <Eye className="h-3 w-3 inline mr-1 mb-0.5" />{viewCount.toLocaleString("pt-PT")} visualizaç{viewCount === 1 ? "ão" : "ões"}
+                  </p>
+                )}
+                {likeCount > 0 && (
+                  <p className="text-[12px] font-bold" style={{ color: "var(--text-muted)" }}>
+                    <Heart className="h-3 w-3 inline mr-1 mb-0.5 fill-red-500 text-red-500" />{likeCount} curtida{likeCount !== 1 ? "s" : ""}
+                  </p>
+                )}
+              </div>
             </>
           }
           actions={
