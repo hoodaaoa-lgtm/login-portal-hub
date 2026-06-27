@@ -1752,6 +1752,13 @@ export type Database = {
           video_stream_url: string
         }[]
       }
+      get_library_book_file: {
+        Args: { p_book_id: string }
+        Returns: {
+          file_data: string
+          file_name: string
+        }[]
+      }
       get_my_profile_private: {
         Args: never
         Returns: {
