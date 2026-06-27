@@ -551,6 +551,12 @@ function StoryCreator({ onClose, onPublish }: {
   onClose: () => void;
   onPublish: (s: Partial<Story>) => void;
 }) {
+  // Bloquear scroll do body enquanto o creator está aberto
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
+  }, []);
   const { avatarUrl: userAvatarUrl } = useAvatar();
   const networkInfo = useNetworkInfo();
   const [mode, setMode] = useState<CreatorMode>("picker");
@@ -745,7 +751,7 @@ function StoryCreator({ onClose, onPublish }: {
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black flex flex-col" style={{ touchAction: "none" }}>
+    <div className="fixed inset-0 z-50 bg-black flex flex-col" style={{ touchAction: "none", overflow: "hidden" }}>
       {/* Top bar */}
       <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-4 py-3"
         style={{ background: "linear-gradient(to bottom,rgba(0,0,0,0.65),transparent)" }}>
@@ -1034,7 +1040,7 @@ function StoryCreator({ onClose, onPublish }: {
             </button>
           ))}
         </div>
-        <div className="overflow-y-auto" style={{ maxHeight: "38vh" }}>
+        <div className="overflow-y-auto overscroll-contain" style={{ maxHeight: "calc(38vh - 4px)", WebkitOverflowScrolling: "touch" }}>
           {tab === "bg" && (
             <div className="p-3">
               <p className="text-white/40 text-[10px] font-semibold uppercase tracking-wider mb-2">Temas</p>
