@@ -151,6 +151,29 @@ export default function DashboardPage() {
   const [liveCount, setLiveCount] = useState<number>(0);
   const [showClipModal, setShowClipModal] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<any | null>(null);
+  const [confirmDeleteClip, setConfirmDeleteClip] = useState<{ id: string; title: string } | null>(null);
+
+  const { data: myClips, refetch: refetchClips } = useQuery({
+    queryKey: ["studio-clips", channel?.id],
+    queryFn: async () => {
+      if (!channel?.id) return [];
+      const { data } = await (supabase as any)
+        .from("posts")
+        .select("id,clip_title,clip_thumb_url,clip_start,clip_end,created_at")
+        .eq("kind", "clip")
+        .eq("channel_id", channel.id)
+        .order("created_at", { ascending: false });
+      return data ?? [];
+    },
+    enabled: !!channel?.id,
+    staleTime: 30_000,
+  });
+
+  async function deleteClip(clipId: string) {
+    await (supabase as any).from("posts").delete().eq("id", clipId);
+    refetchClips();
+    toast.success("Clip removido do feed.");
+  }
 
   /* Realtime — novos vídeos e views */
   useEffect(() => {
