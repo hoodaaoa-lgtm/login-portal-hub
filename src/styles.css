@@ -765,7 +765,12 @@ img:not(.hooda-media), video:not(.hooda-media), canvas, svg,
 /* ── Page transitions (route changes via TanStack Router Outlet) ── */
 @keyframes hoodaPageIn {
   from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0); }
+  /* "transform: none" (em vez de translateY(0)) garante que, ao terminar,
+     este elemento NÃO crie um novo containing block para descendentes
+     com position:fixed (ex: StoryViewer, StoryCreator). Qualquer valor
+     de transform diferente de "none" — mesmo translateY(0) — confina
+     esses modais à área do PageWrapper em vez da janela inteira. */
+  to   { opacity: 1; transform: none; }
 }
 .hooda-page-enter {
   animation: hoodaPageIn var(--dur-base) var(--ease-out) both;
