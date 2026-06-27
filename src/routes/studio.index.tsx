@@ -229,8 +229,13 @@ export default function DashboardPage() {
 
   return (
     <div className="max-w-6xl mx-auto px-5 py-7">
-
-      {/* Header */}
+      {showClipModal && (
+        <ClipModal
+          channel={channel}
+          videos={videos ?? []}
+          onClose={() => setShowClipModal(false)}
+        />
+      )}
       <div className="flex items-start justify-between mb-7 gap-4 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--text-primary)" }}>
