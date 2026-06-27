@@ -93,6 +93,7 @@ class CommentsErrorBoundary extends React.Component<
 
 export type PostComment = {
   id: string;
+  authorId?: string;
   authorName: string;
   authorColor?: string;
   authorPhoto?: string;
@@ -107,6 +108,7 @@ function CommentRow({
   c,
   accent,
   isReply,
+  creatorId,
   onToggleLike,
   onStartReply,
   replyingTo,
@@ -118,6 +120,7 @@ function CommentRow({
   c: PostComment;
   accent: string;
   isReply?: boolean;
+  creatorId?: string;
   onToggleLike: (id: string) => void;
   onStartReply: (id: string | null) => void;
   replyingTo: string | null;
@@ -146,7 +149,15 @@ function CommentRow({
         </div>
         <div className="flex-1 min-w-0">
           <div className="bg-neutral-50 rounded-2xl px-3 py-2 inline-block max-w-full">
-            <p className="text-[11px] font-bold text-neutral-500 mb-0.5">{c.authorName}</p>
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <p className="text-[11px] font-bold text-neutral-500">{c.authorName}</p>
+              {creatorId && c.authorId && c.authorId === creatorId && (
+                <span className="inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full"
+                  style={{ background: accent + "20", color: accent, border: `1px solid ${accent}40` }}>
+                  ✦ Criador
+                </span>
+              )}
+            </div>
             <p className="text-sm text-neutral-800 whitespace-pre-line break-words">{c.text}</p>
           </div>
           {/* Linha de ações: Gostei · Responder · tempo · curtidas, como o Facebook */}
@@ -259,6 +270,7 @@ function PostCommentsModalInner({
   inputPlaceholder = "Escreve um comentário…",
   accent = "#5B3FCF",
   title = "Publicação",
+  creatorId,
 }: {
   onClose: () => void;
   header?: React.ReactNode;
@@ -275,6 +287,7 @@ function PostCommentsModalInner({
   inputPlaceholder?: string;
   accent?: string;
   title?: string;
+  creatorId?: string;
 }) {
   const [input, setInput] = useState("");
   const listRef = useRef<HTMLDivElement>(null);
@@ -458,7 +471,7 @@ function PostCommentsModalInner({
 
 /** Versão pública — envolvida com Error Boundary para que erros internos
  *  não derrubem a página inteira. */
-export function PostCommentsModal(props: Parameters<typeof PostCommentsModalInner>[0]) {
+export function PostCommentsModal(props: Parameters<typeof PostCommentsModalInner>[0] & { creatorId?: string }) {
   return (
     <CommentsErrorBoundary onClose={props.onClose}>
       <PostCommentsModalInner {...props} />

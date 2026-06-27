@@ -442,6 +442,7 @@ function PostCard({
       {showComments && (
         <PostCommentsModal
           onClose={() => setShowComments(false)}
+          creatorId={authorId}
           header={
             <div className="flex items-center gap-3 pb-2">
               <Avatar name={name} size={36} src={avatarUrl} />

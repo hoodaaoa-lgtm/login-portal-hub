@@ -64,6 +64,7 @@ export async function fetchPostComments(postId: string, myUserId?: string): Prom
   function toComment(c: RawComment): PostComment {
     return {
       id: c.id,
+      authorId: c.user_id || undefined,
       authorName: c.author_username ? `@${c.author_username}` : "Anónimo",
       authorColor: c.author_color || "#5B3FCF",
       authorPhoto: (c.user_id && avatarMap[c.user_id]) || undefined,

@@ -2441,6 +2441,7 @@ function PostCard({ p }: { p: any }) {
       {showComments && (
         <PostCommentsModal
           onClose={() => setShowComments(false)}
+          creatorId={p.author_id}
           header={
             <div className="flex items-center gap-3 pb-2">
               <ProfileAvatarLink userId={p.author_id} username={p.author_username} disableStoryCheck={isAd || !p.author_username}>

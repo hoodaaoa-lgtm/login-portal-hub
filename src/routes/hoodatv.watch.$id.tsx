@@ -77,7 +77,7 @@ function useVideo(id: string) {
         .from("videos")
         .select(`id,title,description,thumbnail_url,duration_seconds,
                  views_count,likes_count,created_at,published_at,
-                 cf_stream_url,cf_embed_url,cf_stream_uid,video_path,channel_id,
+                 cf_stream_url,cf_embed_url,cf_stream_uid,video_path,channel_id,owner_id,
                  channels(id,name,handle,avatar_url)`)
         .eq("id", id).maybeSingle();
       return data ?? null;
@@ -550,8 +550,8 @@ function CommentReactions({ comment, me, qc, videoId }: { comment: any; me: any;
 }
 
 /* ── Comentário individual ── */
-function CommentItem({ comment, me, videoId, qc, depth = 0 }: {
-  comment: any; me: any; videoId: string; qc: any; depth?: number;
+function CommentItem({ comment, me, videoId, qc, depth = 0, creatorId }: {
+  comment: any; me: any; videoId: string; qc: any; depth?: number; creatorId?: string;
 }) {
   const { t } = useTranslation();
   const [replying, setReplying]       = useState(false);
@@ -592,6 +592,12 @@ function CommentItem({ comment, me, videoId, qc, depth = 0 }: {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-[13px] font-bold" style={{ color: "var(--text-primary)" }}>{name}</span>
+            {creatorId && comment.user_id && comment.user_id === creatorId && (
+              <span className="inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full"
+                style={{ background: `${P}20`, color: P, border: `1px solid ${P}40` }}>
+                ✦ Criador
+              </span>
+            )}
             <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>{timeAgo(comment.created_at)}</span>
             {me?.id === comment.user_id && (
               <button onClick={deleteComment}
@@ -645,7 +651,7 @@ function CommentItem({ comment, me, videoId, qc, depth = 0 }: {
       {showReplies && depth === 0 && (
         <div className="mt-3 space-y-4">
           {replies.map((r: any) => (
-            <CommentItem key={r.id} comment={r} me={me} videoId={videoId} qc={qc} depth={1} />
+            <CommentItem key={r.id} comment={r} me={me} videoId={videoId} qc={qc} depth={1} creatorId={creatorId} />
           ))}
         </div>
       )}
@@ -654,7 +660,7 @@ function CommentItem({ comment, me, videoId, qc, depth = 0 }: {
 }
 
 /* ── Secção de comentários ── */
-function CommentsSection({ videoId, me }: { videoId: string; me: any }) {
+function CommentsSection({ videoId, me, creatorId }: { videoId: string; me: any; creatorId?: string }) {
   const { t } = useTranslation();
   const qc = useQueryClient();
   const { data: comments = [], isLoading, isError, error } = useComments(videoId);
@@ -733,7 +739,7 @@ function CommentsSection({ videoId, me }: { videoId: string; me: any }) {
           ? <p className="text-sm text-center py-6" style={{ color: "var(--text-muted)" }}>Ainda não há comentários. Sê o primeiro!</p>
           : <div className="space-y-5">
               {comments.map((c: any) => (
-                <CommentItem key={c.id} comment={c} me={me} videoId={videoId} qc={qc} />
+                <CommentItem key={c.id} comment={c} me={me} videoId={videoId} qc={qc} creatorId={creatorId} />
               ))}
             </div>}
     </div>
@@ -1505,7 +1511,7 @@ function WatchPage() {
             )}
 
             {/* Comentários */}
-            <CommentsSection videoId={id} me={me} />
+            <CommentsSection videoId={id} me={me} creatorId={video?.owner_id} />
           </div>
 
           {/* ══ COLUNA DIREITA — A Seguir ══ */}
