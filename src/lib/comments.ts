@@ -169,3 +169,41 @@ export async function toggleCommentLike(commentId: string, userId: string, curre
   if (error) console.error("[hooda:comments] falha ao curtir comentário:", error);
   return true;
 }
+
+/** Extrai @menções de um texto e cria notificações na DB. */
+export async function notifyMentions(opts: {
+  text: string;
+  authorId: string;
+  authorUsername: string;
+  postId?: string;
+  commentId?: string;
+}) {
+  const matches = opts.text.match(/@([a-zA-Z0-9_À-ÿ]+)/g);
+  if (!matches) return;
+  const usernames = [...new Set(matches.map(m => m.slice(1).toLowerCase()))];
+
+  // Buscar os IDs dos utilizadores mencionados
+  const { data: profiles } = await (supabase as any)
+    .from("profiles")
+    .select("id,username,notification_prefs")
+    .in("username", usernames);
+
+  if (!profiles?.length) return;
+
+  const inserts = profiles
+    .filter((p: any) => p.id !== opts.authorId) // não notificar a si próprio
+    .filter((p: any) => p.notification_prefs?.mentions !== false) // respeitar prefs
+    .map((p: any) => ({
+      user_id: p.id,
+      type: "mention",
+      actor_id: opts.authorId,
+      actor_username: opts.authorUsername,
+      post_id: opts.postId ?? null,
+      comment_id: opts.commentId ?? null,
+      read: false,
+    }));
+
+  if (inserts.length > 0) {
+    await (supabase as any).from("notifications").insert(inserts);
+  }
+}
