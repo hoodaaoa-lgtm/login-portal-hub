@@ -22,10 +22,10 @@ const GRAD = "linear-gradient(135deg,#5B3FCF,#E94B8A)";
 
 const NAV = [
   { to: "/studio",             label: "Painel",        icon: LayoutDashboard, exact: true },
-  { to: "/studio/content",     label: t("studio.content"),      icon: Video },
+  { to: "/studio/content",     label: "Conteúdo",               icon: Video },
   { to: "/studio/upload",      label: "Enviar vídeo",  icon: Upload },
   { to: "/studio/playlists",   label: "Playlists",     icon: ListVideo },
-  { to: "/studio/analytics",   label: t("studio.analytics"),      icon: BarChart2 },
+  { to: "/studio/analytics",   label: "Analytics",               icon: BarChart2 },
 ];
 
 const CATEGORIES = [
