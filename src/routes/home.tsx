@@ -1906,6 +1906,67 @@ function PhotoGrid({ photos }: { photos: string[] }) {
 }
 
 
+/* ── SmartVideoPlayer — detecta short (9:16) ou normal (16:9) automaticamente ── */
+function SmartVideoPlayer({ src, poster }: { src: string; poster?: string }) {
+  const [isShort, setIsShort] = useState<boolean | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  function onMeta() {
+    const v = videoRef.current;
+    if (!v) return;
+    // Se altura > largura é short/vertical
+    setIsShort(v.videoHeight > v.videoWidth);
+  }
+
+  // Para URLs do Cloudflare Stream (iframe), tenta inferir pelo URL ou usa 16:9
+  const isCfStream = src.includes("cloudflarestream.com") || src.includes("iframe");
+
+  if (isCfStream) {
+    return (
+      <div style={{ aspectRatio: "16/9", background: "#000", width: "100%" }}>
+        <iframe src={src.includes("iframe") ? src : undefined}
+          className="w-full h-full" allow="autoplay; fullscreen" allowFullScreen />
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="w-full bg-black relative overflow-hidden"
+      style={{
+        aspectRatio: isShort === true ? "9/16" : "16/9",
+        maxHeight: isShort === true ? "80vh" : undefined,
+        margin: "0 auto",
+        maxWidth: isShort === true ? "calc(80vh * 9 / 16)" : "100%",
+      }}
+    >
+      <video
+        ref={videoRef}
+        src={src}
+        poster={poster}
+        onLoadedMetadata={onMeta}
+        controls
+        playsInline
+        preload="metadata"
+        className="w-full h-full object-contain"
+        style={{ display: "block" }}
+      />
+      {isShort === null && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="w-8 h-8 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+        </div>
+      )}
+      {/* Badge short */}
+      {isShort === true && (
+        <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-bold text-white"
+          style={{ background: "rgba(0,0,0,0.6)" }}>
+          Short
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ── Card de Clipe no Feed ── */
 function ClipCard({ p, liked, likeCount, onLike, onComment }: {
   p: any; liked: boolean; likeCount: number;
@@ -2381,7 +2442,7 @@ function PostCard({ p }: { p: any }) {
           body={
             <>
               {p.video && (
-                <HoodaPlayer src={p.video} poster={p.video_thumb || p.photo || undefined} rounded="rounded-none" aspectRatio="16/9" />
+                <SmartVideoPlayer src={p.video} poster={p.video_thumb || p.photo || undefined} />
               )}
               {p.text && !p.video && (p.bg_color
                 ? <div className="px-4 pb-3">
