@@ -1963,7 +1963,7 @@ function ClipCard({ p, liked, likeCount, onLike, onComment }: {
   const dur = fmt((p.clip_end ?? 0) - (p.clip_start ?? 0));
 
   return (
-    <article className="hooda-card overflow-hidden animate-fade-in-up" style={{ borderRadius: 16 }}>
+    <article className="overflow-hidden animate-fade-in-up border-b" style={{ borderRadius: 0, borderColor: "var(--border-subtle)", background: "var(--s1)" }}>
 
       {/* ── Cabeçalho do canal ── */}
       <button
@@ -2278,7 +2278,7 @@ function PostCard({ p }: { p: any }) {
   }
 
   return (
-    <article className="hooda-card overflow-hidden animate-fade-in-up" style={{ borderRadius: 16 }}>
+    <article className="overflow-hidden animate-fade-in-up border-b" style={{ borderRadius: 0, borderColor: "var(--border-subtle)", background: "var(--s1)" }}>
       <div className="flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-3">
           <ProfileAvatarLink userId={p.author_id} username={p.author_username} disableStoryCheck={isAd || !p.author_username}>
@@ -3318,7 +3318,7 @@ function HomePage() {
         )}
 
         {/* Feed */}
-        <section className="px-3 pt-6 pb-6 space-y-4 max-w-2xl mx-auto w-full">
+        <section className="pt-2 pb-6 space-y-0 max-w-[470px] mx-auto w-full">
           {loadingFeed && <FeedSkeleton count={4} />}
 
           {/* Banner boas-vindas para utilizadores novos */}
