@@ -1991,7 +1991,7 @@ function ClipCard({ p, liked, likeCount, onLike, onComment }: {
 
         {/* Quem partilhou */}
         <button
-          onClick={() => p.author_username && navigate({ to: `/u/${p.author_username}` })}
+          onClick={() => p.author_username && navigate({ to: "/u/$username", params: { username: p.author_username } })}
           className="flex items-center gap-1.5 mb-2.5 transition-opacity hover:opacity-70">
           <div className="w-5 h-5 rounded-full overflow-hidden shrink-0"
             style={{ background: p.author_color || "#5B3FCF" }}>
@@ -2176,9 +2176,9 @@ function PostCard({ p }: { p: any }) {
       if (!session) return;
       // Não mostrar botão no próprio post
       const { data: myProf } = await supabase.from("profiles").select("username").eq("id", session.user.id).maybeSingle();
-      if ((myProf as any)?.username === p.author_username) { setFollowing(null); return; }
+      if (!p.author_id || p.author_id === session.user.id) { setFollowing(null); return; }
       const { data: row } = await supabase.from("follows").select("follower_id")
-        .eq("follower_id", session.user.id).eq("target_username", p.author_username).maybeSingle();
+        .eq("follower_id", session.user.id).eq("following_id", p.author_id).maybeSingle();
       setFollowing(!!row);
     })();
   }, [p.author_username]);
@@ -2186,11 +2186,12 @@ function PostCard({ p }: { p: any }) {
   async function toggleFollow() {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session || !p.author_username) return;
+    if (!p.author_id) return;
     if (following) {
-      await supabase.from("follows").delete().eq("follower_id", session.user.id).eq("target_username", p.author_username);
+      await supabase.from("follows").delete().eq("follower_id", session.user.id).eq("following_id", p.author_id);
       setFollowing(false);
     } else {
-      await supabase.from("follows").insert({ follower_id: session.user.id, target_username: p.author_username });
+      await supabase.from("follows").insert({ follower_id: session.user.id, following_id: p.author_id });
       setFollowing(true);
     }
   }
