@@ -1926,7 +1926,6 @@ function SimpleVideoPlayer({ src, poster }: { src: string; poster?: string }) {
         aspectRatio: isShort === true ? "9/16" : "4/3",
         maxHeight: isShort === true ? "75vh" : "600px",
         maxWidth: isShort === true ? "calc(75vh * 9 / 16)" : "100%",
-        margin: "0 auto",
       }}
       onClick={togglePlay}
     >
@@ -3375,7 +3374,7 @@ function HomePage() {
         )}
 
         {/* Feed */}
-        <section className="pt-2 pb-6 space-y-0 max-w-xl mx-auto w-full">
+        <section className="pt-2 pb-6 space-y-4 max-w-xl mx-auto w-full px-3">
           {loadingFeed && <FeedSkeleton count={4} />}
 
           {/* Banner boas-vindas para utilizadores novos */}
