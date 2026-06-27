@@ -37,6 +37,41 @@ export const Route = createFileRoute("/mensagens")({
 const ACCENT = ["#5B3FCF", "#F26B3A", "#1FAFA6", "#6BA547", "#E94B8A"];
 const colorFor = (s: string) => ACCENT[(s?.charCodeAt(0) ?? 0) % ACCENT.length];
 
+/* ── Som de notificação (gerado via Web Audio API — sem ficheiro externo) ── */
+function playMsgSound() {
+  try {
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const now = ctx.currentTime;
+
+    // Nota 1 — curta e suave
+    const o1 = ctx.createOscillator();
+    const g1 = ctx.createGain();
+    o1.connect(g1); g1.connect(ctx.destination);
+    o1.type = "sine";
+    o1.frequency.setValueAtTime(880, now);
+    o1.frequency.exponentialRampToValueAtTime(1100, now + 0.08);
+    g1.gain.setValueAtTime(0, now);
+    g1.gain.linearRampToValueAtTime(0.18, now + 0.01);
+    g1.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+    o1.start(now); o1.stop(now + 0.18);
+
+    // Nota 2 — ligeiramente mais alta
+    const o2 = ctx.createOscillator();
+    const g2 = ctx.createGain();
+    o2.connect(g2); g2.connect(ctx.destination);
+    o2.type = "sine";
+    o2.frequency.setValueAtTime(1320, now + 0.12);
+    o2.frequency.exponentialRampToValueAtTime(1500, now + 0.22);
+    g2.gain.setValueAtTime(0, now + 0.12);
+    g2.gain.linearRampToValueAtTime(0.14, now + 0.14);
+    g2.gain.exponentialRampToValueAtTime(0.001, now + 0.32);
+    o2.start(now + 0.12); o2.stop(now + 0.32);
+
+    setTimeout(() => ctx.close(), 600);
+  } catch {}
+}
+
+
 function timeAgo(d: string) {
   const s = Math.floor((Date.now() - new Date(d).getTime()) / 1000);
   if (s < 60) return "agora";
@@ -2471,6 +2506,8 @@ function ChatPanel({ myId, contact, onBack }: {
               db.from("messages").update({ status: "read" }).eq("id", payload.new.id).then(() => {});
               markMessagesRead(contact.conversationId!);
               queryClient.invalidateQueries({ queryKey: QUERY_KEYS.conversations(myId) });
+              // Som de notificação
+              playMsgSound();
             }
             if (atBottom.current) setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
           }
