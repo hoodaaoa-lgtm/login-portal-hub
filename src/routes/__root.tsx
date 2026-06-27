@@ -11,7 +11,7 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ThemeProvider } from "../contexts/ThemeContext";
 import { AvatarProvider } from "../contexts/AvatarContext";
 import { BadgeProvider } from "../contexts/BadgeContext";
@@ -209,6 +209,7 @@ function AppProviders({ queryClient, children }: { queryClient: QueryClient; chi
 
 // Depois do splash ter saído uma vez, nunca mais aparece mesmo que o componente remonte.
 let _splashDone = false;
+const SPLASH_MIN_MS = 3200; // duração mínima para animação completa
 
 function AuthGate({ children }: { children: ReactNode }) {
   const { status, initializing } = useAuth();
@@ -218,17 +219,24 @@ function AuthGate({ children }: { children: ReactNode }) {
 
   const [showSplash, setShowSplash] = useState(() => !_splashDone && initializing);
   const [leaving, setLeaving] = useState(false);
+  const splashStartRef = useRef(Date.now());
 
   useEffect(() => {
     if (_splashDone) { setShowSplash(false); return; }
     if (!initializing && showSplash) {
-      setLeaving(true);
-      const t = setTimeout(() => {
-        _splashDone = true;
-        setShowSplash(false);
-        setLeaving(false);
-      }, SPLASH_EXIT_MS);
-      return () => clearTimeout(t);
+      // Garantir duração mínima para a animação completar
+      const elapsed = Date.now() - splashStartRef.current;
+      const remaining = Math.max(0, SPLASH_MIN_MS - elapsed);
+      const t1 = setTimeout(() => {
+        setLeaving(true);
+        const t2 = setTimeout(() => {
+          _splashDone = true;
+          setShowSplash(false);
+          setLeaving(false);
+        }, SPLASH_EXIT_MS);
+        return () => clearTimeout(t2);
+      }, remaining);
+      return () => clearTimeout(t1);
     }
   }, [initializing, showSplash]);
 
