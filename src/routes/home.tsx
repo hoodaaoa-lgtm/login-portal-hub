@@ -2308,20 +2308,17 @@ function HomePage() {
       followingIds = (followedProfiles || []).map((p: any) => p.id).filter(Boolean);
     }
 
-    // Load posts: all public (author_id null = seed) + own + followed
+    // Load posts: own + followed + public seed posts, more items to avoid empty feed
     const { data: postsData, error: postsErr } = await supabase
       .from("posts")
-      .select("id,author_id,author_username,author_name,author_color,content,kind,is_ad,created_at,photo_url,photos,video_url,clip_video_id,clip_start,clip_end,clip_title,channel_id,channel_handle,channel_name,channel_avatar")
+      .select("id,author_id,author_username,author_name,author_color,content,kind,is_ad,created_at,photo_url,photos,video_url,clip_video_id,clip_start,clip_end,clip_title,channel_id,channel_handle,channel_name,channel_avatar,clip_thumb_url")
       .order("created_at", { ascending: false })
-      .limit(15);
+      .limit(60);
 
     if (postsErr) console.error("Erro ao carregar publicações:", postsErr);
     if (!postsData || postsData.length === 0) return [];
 
-    // Deduplicate by id up front. Each post must be identified by a
-    // unique id and rendered at most once — if the same id is returned
-    // more than once (network retry, overlapping queries, upstream data
-    // issue), keep only the first occurrence.
+    // Deduplicate by id
     const seenIds = new Set<string>();
     const deduped = postsData.filter((p: any) => {
       if (!p.id || seenIds.has(p.id)) return false;
@@ -2330,18 +2327,37 @@ function HomePage() {
     });
 
     // Filter: show seed posts (no author_id) + own + followed
+    // If user has no follows, show all public posts so feed is never empty
     const myIds = new Set([uid, ...followingIds]);
-    const filtered = deduped.filter((p: any) => !p.author_id || myIds.has(p.author_id));
+    const filtered = deduped.filter((p: any) => {
+      // Always show seed/platform posts
+      if (!p.author_id) return true;
+      // Always show own posts
+      if (p.author_id === uid) return true;
+      // Show followed users posts
+      if (myIds.has(p.author_id)) return true;
+      // If user follows nobody, show everyone's posts as discovery
+      if (followingIds.length === 0) return true;
+      return false;
+    });
+
+    // Rule: never show clips longer than 5 minutes (300 seconds) in the home feed
+    const MAX_CLIP_SECONDS = 300;
+    const withDurationFilter = filtered.filter((p: any) => {
+      if (p.kind !== "clip") return true;
+      const duration = (p.clip_end ?? 0) - (p.clip_start ?? 0);
+      return duration <= MAX_CLIP_SECONDS;
+    });
 
     // Fetch avatar_url for all authors
-    const authorIds = [...new Set(filtered.map((p: any) => p.author_id).filter(Boolean))];
+    const authorIds = [...new Set(withDurationFilter.map((p: any) => p.author_id).filter(Boolean))];
     const { data: authorProfiles } = authorIds.length > 0
       ? await supabase.from("profiles").select("id,avatar_url").in("id", authorIds)
       : { data: [] as any[] };
     const avatarMap: Record<string, string | null> = {};
     (authorProfiles || []).forEach((p: any) => { avatarMap[p.id] = p.avatar_url || null; });
 
-    const postIds = filtered.map((p: any) => p.id);
+    const postIds = withDurationFilter.map((p: any) => p.id);
     const { data: likesData } = await supabase.from("post_likes").select("post_id,user_id").in("post_id", postIds);
     const { data: commentsData } = await supabase.from("post_comments").select("post_id").in("post_id", postIds);
     const likesByPost: Record<string, string[]> = {};
@@ -2353,7 +2369,7 @@ function HomePage() {
     (commentsData || []).forEach((c: any) => { commentsByPost[c.post_id] = (commentsByPost[c.post_id] || 0) + 1; });
 
     const ACCENT_LOCAL = ["#5B3FCF","#F26B3A","#1FAFA6","#6BA547","#E94B8A","#FFC93C"];
-    return filtered.map((p: any) => {
+    return withDurationFilter.map((p: any) => {
       const name = p.author_name || p.author_username || "hooda";
       const diff = Math.floor((Date.now() - new Date(p.created_at).getTime()) / 1000);
       const time = diff < 60 ? "agora" : diff < 3600 ? `${Math.floor(diff/60)}m` : diff < 86400 ? `${Math.floor(diff/3600)}h` : `${Math.floor(diff/86400)}d`;
