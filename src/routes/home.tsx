@@ -33,6 +33,7 @@ import { FeedSkeleton, BackgroundRefreshDot, StoriesRowSkeleton } from "@/compon
 import { HoodaPlayer } from "@/components/HoodaPlayer";
 import { useTranslation } from "react-i18next";
 import i18n from "@/lib/i18n";
+import { useScrollLock } from "@/hooks/useScrollLock";
 function t(key: string, opts?: Record<string, unknown>) { return i18n.t(key, opts) as string; }
 
 /* ── RichText — renderiza @menções e #hashtags clicáveis ── */
@@ -75,6 +76,7 @@ function ForwardModal({ post, me, onClose }: { post: any; me: any; onClose: () =
   const [search, setSearch] = useState("");
   const [sending, setSending] = useState<string | null>(null);
   const [sent, setSent] = useState<Set<string>>(new Set());
+  useScrollLock();
 
   useEffect(() => {
     if (!me?.id) return;
@@ -331,6 +333,7 @@ function MusicLibrary({ onSelect, onClose }: { onSelect: (s: Song) => void; onCl
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [preview, setPreview] = useState<{ id: string; audio: HTMLAudioElement } | null>(null);
+  useScrollLock();
 
   const load = React.useCallback(() => {
     setLoading(true);
@@ -553,11 +556,7 @@ function StoryCreator({ onClose, onPublish }: {
   onPublish: (s: Partial<Story>) => void;
 }) {
   // Bloquear scroll do body enquanto o creator está aberto
-  useEffect(() => {
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = prev; };
-  }, []);
+  useScrollLock(); // bloqueia scroll enquanto modal aberto
   const { avatarUrl: userAvatarUrl } = useAvatar();
   const networkInfo = useNetworkInfo();
   const [mode, setMode] = useState<CreatorMode>("picker");
@@ -1264,11 +1263,7 @@ function StoryViewer({ stories, startIndex, onClose, onDelete, userAvatarUrl }: 
 
   // Bloquear scroll do body enquanto o viewer está aberto, para a tela
   // ficar fixa e centralizada (sem permitir scroll da página de fundo)
-  useEffect(() => {
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = prev; };
-  }, []);
+  useScrollLock(); // bloqueia scroll enquanto modal aberto
 
   /* Reset reaction state whenever the viewed story changes */
   useEffect(() => {

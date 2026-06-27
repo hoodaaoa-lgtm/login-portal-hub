@@ -1,5 +1,6 @@
 import { t } from "@/lib/useT";
 import React, { useEffect, useRef, useState } from "react";
+import { useScrollLock } from "@/hooks/useScrollLock";
 import { CommentsListSkeleton } from "@/components/Skeletons";
 import { createPortal } from "react-dom";
 import { X, Send, Loader, Smile, Heart } from "lucide-react";
@@ -286,6 +287,7 @@ function PostCommentsModalInner({
   const [localReplies, setLocalReplies] = useState<Record<string, PostComment[]>>({});
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyInput, setReplyInput] = useState("");
+  useScrollLock(); // bloqueia scroll do body enquanto modal está aberto
 
   // Foca o input após o modal estar totalmente montado (sem interferir com vídeo)
   useEffect(() => {

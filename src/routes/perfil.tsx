@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useScrollLock } from "@/hooks/useScrollLock";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
@@ -118,6 +119,7 @@ function FollowListModal({ mode, targetUsername, targetUserId, onClose }: {
   targetUserId: string;
   onClose: () => void;
 }) {
+  useScrollLock();
   const { data: users = [], isLoading: loading, error: queryError } = useQuery({
     queryKey: ["followList", mode, mode === "followers" ? targetUsername : targetUserId],
     queryFn: async (): Promise<FollowListUser[]> => {
@@ -154,10 +156,7 @@ function FollowListModal({ mode, targetUsername, targetUserId, onClose }: {
   });
   const err = queryError ? (queryError instanceof Error ? queryError.message : "Erro ao carregar lista") : "";
 
-  useEffect(() => {
-    document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = ""; };
-  }, []);
+  useScrollLock();
 
   return (
     <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center overflow-hidden" style={{ background: "rgba(0,0,0,0.5)" }}
@@ -664,10 +663,7 @@ function CreatePostModal({
 
   const canPublish = (text.trim().length > 0 || photo !== null || videoFile !== null) && !publishing && !done;
 
-  useEffect(() => {
-    document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = ""; };
-  }, []);
+  useScrollLock();
 
   return createPortal(
     <div className="fixed inset-0 z-[200] flex items-center justify-center"
@@ -1010,6 +1006,7 @@ function SettingsDrawer({
   onOpenMsgPrivacy: () => void;
   profile?: Profile | null;
 }) {
+  useScrollLock();
   const { theme, toggle } = useTheme();
   const { avatarUrl } = useAvatar();
   const { t } = useTranslation();
@@ -1020,10 +1017,7 @@ function SettingsDrawer({
     return () => cancelAnimationFrame(id);
   }, []);
 
-  useEffect(() => {
-    document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = ""; };
-  }, []);
+  useScrollLock();
 
   const handleClose = () => {
     setVisible(false);
@@ -1232,10 +1226,7 @@ function SettingsSubPanel({ title, onBack, children }: { title: string; onBack: 
     return () => cancelAnimationFrame(id);
   }, []);
 
-  useEffect(() => {
-    document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = ""; };
-  }, []);
+  useScrollLock();
 
   const handleBack = () => {
     setVisible(false);
