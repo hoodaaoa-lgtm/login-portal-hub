@@ -1001,6 +1001,15 @@ export type Database = {
           author_name: string | null
           author_username: string
           category: string | null
+          channel_avatar: string | null
+          channel_handle: string | null
+          channel_id: string | null
+          channel_name: string | null
+          clip_end: number | null
+          clip_start: number | null
+          clip_thumb_url: string | null
+          clip_title: string | null
+          clip_video_id: string | null
           content: string
           created_at: string
           emoji: string | null
@@ -1016,6 +1025,8 @@ export type Database = {
           photo_url: string | null
           photos: string[] | null
           shared_from_post_id: string | null
+          video_embed_url: string | null
+          video_stream_url: string | null
           video_url: string | null
         }
         Insert: {
@@ -1025,6 +1036,15 @@ export type Database = {
           author_name?: string | null
           author_username: string
           category?: string | null
+          channel_avatar?: string | null
+          channel_handle?: string | null
+          channel_id?: string | null
+          channel_name?: string | null
+          clip_end?: number | null
+          clip_start?: number | null
+          clip_thumb_url?: string | null
+          clip_title?: string | null
+          clip_video_id?: string | null
           content: string
           created_at?: string
           emoji?: string | null
@@ -1040,6 +1060,8 @@ export type Database = {
           photo_url?: string | null
           photos?: string[] | null
           shared_from_post_id?: string | null
+          video_embed_url?: string | null
+          video_stream_url?: string | null
           video_url?: string | null
         }
         Update: {
@@ -1049,6 +1071,15 @@ export type Database = {
           author_name?: string | null
           author_username?: string
           category?: string | null
+          channel_avatar?: string | null
+          channel_handle?: string | null
+          channel_id?: string | null
+          channel_name?: string | null
+          clip_end?: number | null
+          clip_start?: number | null
+          clip_thumb_url?: string | null
+          clip_title?: string | null
+          clip_video_id?: string | null
           content?: string
           created_at?: string
           emoji?: string | null
@@ -1064,9 +1095,32 @@ export type Database = {
           photo_url?: string | null
           photos?: string[] | null
           shared_from_post_id?: string | null
+          video_embed_url?: string | null
+          video_stream_url?: string | null
           video_url?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "posts_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "channel_stats_view"
+            referencedColumns: ["channel_id"]
+          },
+          {
+            foreignKeyName: "posts_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "channels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "posts_clip_video_id_fkey"
+            columns: ["clip_video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "posts_shared_from_post_id_fkey"
             columns: ["shared_from_post_id"]
@@ -1673,6 +1727,37 @@ export type Database = {
       create_conversation_with_participants: {
         Args: { p_my_id: string; p_other_id: string }
         Returns: string
+      }
+      get_feed_clips: {
+        Args: { p_limit?: number; p_offset?: number }
+        Returns: {
+          author_color: string
+          author_id: string
+          author_name: string
+          author_username: string
+          channel_avatar: string
+          channel_handle: string
+          channel_id: string
+          channel_name: string
+          clip_end: number
+          clip_start: number
+          clip_thumb_url: string
+          clip_title: string
+          clip_video_id: string
+          created_at: string
+          id: string
+          kind: string
+          likes_count: number
+          video_embed_url: string
+          video_stream_url: string
+        }[]
+      }
+      get_library_book_file: {
+        Args: { p_book_id: string }
+        Returns: {
+          file_data: string
+          file_name: string
+        }[]
       }
       get_my_profile_private: {
         Args: never
