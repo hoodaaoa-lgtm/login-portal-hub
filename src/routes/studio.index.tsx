@@ -150,6 +150,7 @@ export default function DashboardPage() {
   const [editVideo, setEditVideo] = useState<any | null>(null);
   const [liveCount, setLiveCount] = useState<number>(0);
   const [showClipModal, setShowClipModal] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState<any | null>(null);
 
   /* Realtime — novos vídeos e views */
   useEffect(() => {
@@ -229,6 +230,38 @@ export default function DashboardPage() {
 
   return (
     <div className="max-w-6xl mx-auto px-5 py-7">
+      {/* Modal confirmação de eliminar vídeo */}
+      {confirmDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setConfirmDelete(null)} />
+          <div className="relative w-full max-w-sm rounded-3xl shadow-2xl p-6 flex flex-col gap-4"
+            style={{ background: "var(--s1)" }}>
+            <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-1"
+              style={{ background: "#fee2e2" }}>
+              <X className="h-6 w-6" style={{ color: "#dc2626" }} />
+            </div>
+            <div className="text-center">
+              <p className="font-bold text-base mb-1" style={{ color: "var(--text-primary)" }}>Eliminar vídeo?</p>
+              <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+                "{confirmDelete.title}" será eliminado permanentemente.
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => setConfirmDelete(null)}
+                className="flex-1 h-11 rounded-2xl font-semibold text-sm transition active:scale-95 border"
+                style={{ borderColor: "var(--border-default)", color: "var(--text-primary)" }}>
+                Cancelar
+              </button>
+              <button onClick={() => { deleteVideo(confirmDelete); setConfirmDelete(null); }}
+                className="flex-1 h-11 rounded-2xl font-bold text-sm text-white transition active:scale-95"
+                style={{ background: "#dc2626" }}>
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showClipModal && (
         <ClipModal
           channel={channel}
@@ -372,7 +405,7 @@ export default function DashboardPage() {
           ) : (
             <ul className="divide-y" style={{ borderColor: "var(--border-subtle)" }}>
               {filtered.map(v => <VideoRow key={v.id} v={v} onEdit={setEditVideo}
-                onDelete={vid => { if (confirm(`Eliminar "${vid.title}"?`)) deleteVideo(vid); }} />)}
+                onDelete={vid => setConfirmDelete(vid)} />)}
             </ul>
           )}
         </div>
