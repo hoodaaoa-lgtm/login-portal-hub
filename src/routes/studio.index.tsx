@@ -157,11 +157,16 @@ export default function DashboardPage() {
     queryKey: ["studio-clips", channel?.id],
     queryFn: async () => {
       if (!channel?.id) return [];
+      // Buscar o user_id associado ao canal
+      const { data: chanData } = await (supabase as any)
+        .from("channels").select("user_id").eq("id", channel.id).maybeSingle();
+      const userId = chanData?.user_id;
+      if (!userId) return [];
       const { data } = await (supabase as any)
         .from("posts")
         .select("id,clip_title,clip_thumb_url,clip_start,clip_end,created_at")
         .eq("kind", "clip")
-        .eq("channel_id", channel.id)
+        .eq("author_id", userId)
         .order("created_at", { ascending: false });
       return data ?? [];
     },
