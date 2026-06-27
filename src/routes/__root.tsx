@@ -151,6 +151,7 @@ function RootComponent() {
     return (
       <AppProviders queryClient={queryClient}>
         <AuthGate>
+          <TopProgressBar />
           <Outlet />
           <GlobalStoryViewer />
           <ConditionalBottomNav />
