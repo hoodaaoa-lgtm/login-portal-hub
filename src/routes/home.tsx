@@ -2207,7 +2207,7 @@ function PostCard({ p }: { p: any }) {
       await supabase.from("follows").delete().eq("follower_id", session.user.id).eq("following_id", p.author_id);
       setFollowing(false);
     } else {
-      await supabase.from("follows").insert({ follower_id: session.user.id, following_id: p.author_id });
+      await supabase.from("follows").insert({ follower_id: session.user.id, following_id: p.author_id, target_username: p.author_username });
       setFollowing(true);
     }
   }

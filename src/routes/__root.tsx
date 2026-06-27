@@ -19,6 +19,7 @@ import { CountryProvider } from "../contexts/CountryContext";
 import { AuthProvider, useAuth } from "../contexts/AuthContext";
 import { GlobalStoryViewer } from "../components/GlobalStoryViewer";
 import { BottomNav } from "../components/AppShell";
+import { TopProgressBar } from "../components/TopProgressBar";
 import { SplashScreen, SPLASH_EXIT_MS } from "../components/SplashScreen";
 import { useGlobalMediaFadeIn } from "../hooks/useGlobalMediaFadeIn";
 
@@ -150,6 +151,7 @@ function RootComponent() {
     return (
       <AppProviders queryClient={queryClient}>
         <AuthGate>
+          <TopProgressBar />
           <Outlet />
           <GlobalStoryViewer />
           <ConditionalBottomNav />
@@ -176,6 +178,7 @@ function RootComponent() {
     >
       <AppProviders queryClient={queryClient}>
         <AuthGate>
+          <TopProgressBar />
           <Outlet />
           <GlobalStoryViewer />
           <ConditionalBottomNav />
