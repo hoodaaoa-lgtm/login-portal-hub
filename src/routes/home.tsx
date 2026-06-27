@@ -2325,9 +2325,11 @@ function HomePage() {
   // ────────────────────────────────────────────────────────────────────────────
 
   async function fetchFeedPage(uid: string) {
-    // 1. Quem o utilizador segue
-    const { data: followData } = await supabase
-      .from("follows").select("target_username").eq("follower_id", uid);
+    // 1. Quem o utilizador segue + quando criou a conta
+    const [{ data: followData }, { data: profileData }] = await Promise.all([
+      supabase.from("follows").select("target_username").eq("follower_id", uid),
+      supabase.from("profiles").select("created_at").eq("id", uid).single(),
+    ]);
 
     const followedUsernames = [...new Set((followData || []).map((f: any) => f.target_username).filter(Boolean))];
     let followingIds: string[] = [];
@@ -2337,12 +2339,20 @@ function HomePage() {
       followingIds = (followedProfiles || []).map((p: any) => p.id).filter(Boolean);
     }
 
-    // 2. Buscar posts recentes (7 dias)
-    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    // Utilizador novo = conta < 7 dias E sem follows
+    const accountAgeMs = profileData?.created_at
+      ? Date.now() - new Date(profileData.created_at).getTime()
+      : 0;
+    const isNewUser = accountAgeMs < 7 * 24 * 60 * 60 * 1000 && followingIds.length === 0;
+
+    // 2. Janela temporal — novos vêem 30 dias para ter mais conteúdo
+    const windowDays = isNewUser ? 30 : 7;
+    const windowStart = new Date(Date.now() - windowDays * 24 * 60 * 60 * 1000).toISOString();
+
     const { data: postsData, error: postsErr } = await supabase
       .from("posts")
       .select("id,author_id,author_username,author_name,author_color,content,kind,is_ad,created_at,photo_url,photos,video_url,clip_video_id,clip_start,clip_end,clip_title,channel_id,channel_handle,channel_name,channel_avatar,clip_thumb_url")
-      .gte("created_at", sevenDaysAgo)
+      .gte("created_at", windowStart)
       .order("created_at", { ascending: false })
       .limit(200);
 
@@ -2357,7 +2367,7 @@ function HomePage() {
       return true;
     });
 
-    // 3. Filtro duro: clips > 5 min nunca aparecem
+    // Filtro duro: clips > 5 min nunca aparecem
     const MAX_CLIP_SECONDS = 300;
     const eligible = deduped.filter((p: any) => {
       if (p.kind !== "clip") return true;
@@ -2369,7 +2379,7 @@ function HomePage() {
     const postIds = eligible.map((p: any) => p.id);
     const authorIds = [...new Set(eligible.map((p: any) => p.author_id).filter(Boolean))];
 
-    // 4. Buscar sinais de engagement em paralelo
+    // 3. Sinais em paralelo
     const [
       { data: likesData },
       { data: commentsData },
@@ -2384,13 +2394,10 @@ function HomePage() {
       authorIds.length > 0
         ? supabase.from("profiles").select("id,avatar_url").in("id", authorIds)
         : Promise.resolve({ data: [] as any[] }),
-      // Posts que eu gostei (para detectar autores com quem interagi)
       supabase.from("post_likes").select("post_id").eq("user_id", uid).limit(100),
-      // Posts onde comentei
       supabase.from("post_comments").select("post_id").eq("user_id", uid).limit(100),
     ]);
 
-    // Mapas de engagement
     const likesByPost: Record<string, string[]> = {};
     (likesData || []).forEach((l: any) => {
       if (!likesByPost[l.post_id]) likesByPost[l.post_id] = [];
@@ -2401,63 +2408,68 @@ function HomePage() {
     const savesByPost: Record<string, number> = {};
     (savesData || []).forEach((s: any) => { savesByPost[s.post_id] = (savesByPost[s.post_id] || 0) + 1; });
 
-    // Avatar map
     const avatarMap: Record<string, string | null> = {};
     (authorProfiles || []).forEach((p: any) => { avatarMap[p.id] = p.avatar_url || null; });
 
-    // Autores com quem interagi (boost de afinidade)
     const myInteractedPostIds = new Set([
       ...(myLikesData || []).map((l: any) => l.post_id),
       ...(myCommentsData || []).map((c: any) => c.post_id),
     ]);
-    // Encontrar os author_ids dos posts com que interagi
     const interactedAuthorIds = new Set(
-      eligible
-        .filter((p: any) => myInteractedPostIds.has(p.id))
-        .map((p: any) => p.author_id)
-        .filter(Boolean)
+      eligible.filter((p: any) => myInteractedPostIds.has(p.id)).map((p: any) => p.author_id).filter(Boolean)
     );
 
-    const myIds = new Set([uid, ...followingIds]);
     const ACCENT_LOCAL = ["#5B3FCF","#F26B3A","#1FAFA6","#6BA547","#E94B8A","#FFC93C"];
-    const LAMBDA = 0.08; // decaimento por hora
 
-    // 5. Calcular score de cada post
+    // 4. Scoring
+    const LAMBDA = 0.08;
+
+    // Para utilizadores novos: lambda muito mais lento (conteúdo mais antigo ainda aparece)
+    // e o peso de engagement é muito maior (mostrar o que é popular)
+    const LAMBDA_NEW  = 0.015;
+    const ENGAGEMENT_MULTIPLIER = isNewUser ? 3.0 : 1.0;
+
     const scored = eligible.map((p: any) => {
       const hoursOld = (Date.now() - new Date(p.created_at).getTime()) / 3_600_000;
-      const isOwn = p.author_id === uid;
+      const isOwn      = p.author_id === uid;
       const isFollowed = followingIds.includes(p.author_id);
-      const isSeed = !p.author_id;
+      const isSeed     = !p.author_id;
 
-      // Relevância
-      let score = isSeed ? 20 : isOwn ? 120 : isFollowed ? 100 : 15;
+      // Relevância base
+      let score: number;
+      if (isNewUser) {
+        // Utilizador novo: tudo vale igual em relevância — o engagement decide
+        score = 30;
+        if (isOwn) score = 120; // próprio aparece sempre bem posicionado
+      } else {
+        score = isSeed ? 20 : isOwn ? 120 : isFollowed ? 100 : 15;
+      }
 
-      // Engagement
-      const likes = (likesByPost[p.id] || []).length;
+      // Engagement (triplicado para novos utilizadores = mostra o mais popular)
+      const likes    = (likesByPost[p.id] || []).length;
       const comments = commentsByPost[p.id] || 0;
-      const saves = savesByPost[p.id] || 0;
-      score += likes * 8 + comments * 12 + saves * 15;
+      const saves    = savesByPost[p.id] || 0;
+      score += (likes * 8 + comments * 12 + saves * 15) * ENGAGEMENT_MULTIPLIER;
 
       // Tipo de conteúdo
-      if (p.kind === "clip") score += 25;
+      if      (p.kind === "clip") score += 25;
       else if (p.photo_url || (Array.isArray(p.photos) && p.photos.length > 0)) score += 30;
-      else if (p.kind === "bg") score += 10;
-      else score += 5;
+      else if (p.kind === "bg")   score += 10;
+      else                        score += 5;
 
-      // Boost de afinidade
-      if (p.author_id && interactedAuthorIds.has(p.author_id)) score += 50;
+      // Afinidade (não se aplica a novos pois não têm histórico)
+      if (!isNewUser && p.author_id && interactedAuthorIds.has(p.author_id)) score += 50;
 
-      // Decaimento temporal (posts próprios decaem mais devagar)
-      const lambda = isOwn ? LAMBDA * 0.5 : LAMBDA;
+      // Decaimento temporal
+      const lambda = isNewUser ? LAMBDA_NEW : (isOwn ? LAMBDA * 0.5 : LAMBDA);
       score *= Math.exp(-lambda * hoursOld);
 
-      // Frescura extra: posts < 2h têm boost
+      // Boost de frescura (< 2h)
       if (hoursOld < 2) score *= 1.3;
 
-      // Leve aleatoriedade para não ficar repetitivo (±10%)
+      // Aleatoriedade leve ±10%
       score *= 0.9 + Math.random() * 0.2;
 
-      // Mapeamento dos campos
       const name = p.author_name || p.author_username || "hooda";
       let text = p.content;
       let bg_color = null;
@@ -2479,13 +2491,14 @@ function HomePage() {
         clip_title: p.clip_title, clip_thumb_url: p.clip_thumb_url,
         channel_id: p.channel_id, channel_handle: p.channel_handle,
         channel_name: p.channel_name, channel_avatar: p.channel_avatar,
+        _isNewUserFeed: isNewUser,
       };
     });
 
-    // 6. Ordenar por score
+    // 5. Ordenar por score
     scored.sort((a, b) => b._score - a._score);
 
-    // 7. Anti-repetição: nunca mais de 2 posts seguidos do mesmo autor
+    // 6. Anti-repetição: máx 2 posts seguidos do mesmo autor
     const result: typeof scored = [];
     const recentAuthors: string[] = [];
     for (const post of scored) {
@@ -2499,6 +2512,7 @@ function HomePage() {
 
     return result;
   }
+
   // persistência em localStorage configurada no root, restaura este
   // resultado instantaneamente na próxima visita — sem ecrã vazio nem
   // spinner — enquanto busca dados novos em segundo plano.
@@ -3109,6 +3123,25 @@ function HomePage() {
         {/* Feed */}
         <section className="px-3 pt-6 pb-6 space-y-4 max-w-2xl mx-auto w-full">
           {loadingFeed && <FeedSkeleton count={4} />}
+
+          {/* Banner boas-vindas para utilizadores novos */}
+          {!loadingFeed && realPosts.length > 0 && realPosts[0]?._isNewUserFeed && (
+            <div className="rounded-2xl p-4 mb-2"
+              style={{ background: "linear-gradient(135deg,#5B3FCF18,#E94B8A12)", border: "1px solid #5B3FCF22" }}>
+              <div className="flex items-start gap-3">
+                <span className="text-2xl">👋</span>
+                <div>
+                  <p className="font-bold text-sm mb-1" style={{ color: "var(--text-primary)" }}>
+                    Bem-vindo à hooda!
+                  </p>
+                  <p className="text-xs leading-relaxed" style={{ color: "var(--text-muted)" }}>
+                    Estás a ver os conteúdos mais populares da plataforma. Segue pessoas para personalizar o teu feed.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {!loadingFeed && realPosts.length === 0 && (
             <div className="flex flex-col items-center gap-3 py-16 text-center">
               <p className="text-4xl">📚</p>
