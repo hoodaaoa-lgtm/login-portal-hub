@@ -837,6 +837,12 @@ function EditProfileModal({
   const [usernameStatus, setUsernameStatus] = useState<"idle"|"checking"|"available"|"taken"|"invalid">("idle");
   const usernameTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Bloquear scroll do fundo enquanto modal está aberto
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = ""; };
+  }, []);
+
   function handleUsernameChange(val: string) {
     const clean = val.toLowerCase().replace(/[^a-z0-9_.]/g, "");
     setUsername(clean);
