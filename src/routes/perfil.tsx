@@ -368,7 +368,7 @@ function PostCard({
       {/* Media — ocupa largura total, sem padding lateral */}
       {post.videoUrl && (
         <div className="w-full">
-          <SmartVideoPlayer src={post.videoUrl} />
+          <SimpleVideoPlayer src={post.videoUrl} />
         </div>
       )}
       {post.photo && !post.videoUrl && (
@@ -437,7 +437,7 @@ function PostCard({
             <>
               {post.videoUrl && (
                 <div className="w-full">
-                  <SmartVideoPlayer src={post.videoUrl} />
+                  <SimpleVideoPlayer src={post.videoUrl} />
                 </div>
               )}
               {post.photo && !post.videoUrl && <img src={post.photo} alt="" className="w-full" style={{ display: "block" }} />}
@@ -540,12 +540,12 @@ function PostsFeed({ posts, name, username, avatarUrl, onLike, onBookmark, onDel
 }
 
 /* ─── Modal Criar Publicação ─── */
-/* ── SmartVideoPlayer — detecta short 9:16 vs normal 16:9 ── */
-function SmartVideoPlayer({ src, rounded = "rounded-none" }: { src: string; rounded?: string }) {
+/* ── SimpleVideoPlayer — player simples sem ecrã cheio, deteta short automaticamente ── */
+function SimpleVideoPlayer({ src, rounded = "rounded-none" }: { src: string; rounded?: string }) {
   const [isShort, setIsShort] = useState<boolean | null>(null);
   const ref = useRef<HTMLVideoElement>(null);
   return (
-    <div className={`w-full bg-black relative overflow-hidden ${rounded}`}
+    <div className={`w-full bg-black relative ${rounded}`}
       style={{
         aspectRatio: isShort === true ? "9/16" : "16/9",
         maxHeight: isShort === true ? "70vh" : undefined,
@@ -557,15 +557,14 @@ function SmartVideoPlayer({ src, rounded = "rounded-none" }: { src: string; roun
           const v = ref.current;
           if (v) setIsShort(v.videoHeight > v.videoWidth);
         }}
-        className="w-full h-full object-contain" style={{ display: "block" }} />
+        className="w-full h-full object-contain"
+        style={{ display: "block" }}
+        controlsList="nodownload nofullscreen noremoteplayback"
+        disablePictureInPicture />
       {isShort === null && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="w-7 h-7 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+          <div className="w-7 h-7 rounded-full border-2 border-white/20 border-t-white animate-spin" />
         </div>
-      )}
-      {isShort === true && (
-        <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-bold text-white"
-          style={{ background: "rgba(0,0,0,0.6)" }}>Short</div>
       )}
     </div>
   );
@@ -728,7 +727,7 @@ function CreatePostModal({
           )}
           {videoPreview && (
             <div className="relative mb-3">
-              <SmartVideoPlayer src={videoPreview} rounded="rounded-xl" />
+              <SimpleVideoPlayer src={videoPreview} rounded="rounded-xl" />
               <button onClick={() => { setVideoFile(null); setVideoPreview(null); }}
                 className="absolute top-2 right-2 bg-black/60 text-white rounded-full p-1 z-20">
                 <X className="h-4 w-4" />
