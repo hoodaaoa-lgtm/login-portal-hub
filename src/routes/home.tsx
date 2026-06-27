@@ -2170,18 +2170,16 @@ function PostCard({ p }: { p: any }) {
 
   // Verificar se já segue este utilizador
   useEffect(() => {
-    if (isAd || !p.author_username) return;
+    if (isAd || !p.author_id) return;
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
-      // Não mostrar botão no próprio post
-      const { data: myProf } = await supabase.from("profiles").select("username").eq("id", session.user.id).maybeSingle();
-      if (!p.author_id || p.author_id === session.user.id) { setFollowing(null); return; }
+      if (p.author_id === session.user.id) { setFollowing(null); return; }
       const { data: row } = await supabase.from("follows").select("follower_id")
         .eq("follower_id", session.user.id).eq("following_id", p.author_id).maybeSingle();
       setFollowing(!!row);
     })();
-  }, [p.author_username]);
+  }, [p.author_id]);
 
   async function toggleFollow() {
     const { data: { session } } = await supabase.auth.getSession();
@@ -2255,11 +2253,13 @@ function PostCard({ p }: { p: any }) {
             {(p.name || dynamicTime) && <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>{p.name}{p.name && dynamicTime ? " · " : ""}{dynamicTime}</p>}
           </div>
         </div>
-        {!isAd && following !== null && (
+        {!isAd && p.author_id && following !== null && (
           <button onClick={toggleFollow}
-            className={`text-xs font-bold px-3 py-1.5 rounded-full transition-all ${following ? "btn-follow-active" : ""}`}
-            style={following ? undefined : { background: "#f0edff", color: "#5B3FCF" }}>
-            {following ? t("profile.unfollow") : t("profile.follow")}
+            className="text-xs font-bold px-3 py-1.5 rounded-full transition-all active:scale-95"
+            style={following
+              ? { background: "var(--s2)", color: "var(--text-secondary)", border: "1.5px solid var(--border-default)" }
+              : { background: "#5B3FCF", color: "#fff", boxShadow: "0 2px 8px rgba(91,63,207,0.35)" }}>
+            {following ? "A seguir ✓" : "+ Seguir"}
           </button>
         )}
       </div>
