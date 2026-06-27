@@ -19,6 +19,7 @@ import { CountryProvider } from "../contexts/CountryContext";
 import { AuthProvider, useAuth } from "../contexts/AuthContext";
 import { GlobalStoryViewer } from "../components/GlobalStoryViewer";
 import { BottomNav } from "../components/AppShell";
+import { TopProgressBar } from "../components/TopProgressBar";
 import { SplashScreen, SPLASH_EXIT_MS } from "../components/SplashScreen";
 import { useGlobalMediaFadeIn } from "../hooks/useGlobalMediaFadeIn";
 
