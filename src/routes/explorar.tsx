@@ -3,7 +3,7 @@ import { BottomNav, SideNav, PageWrapper } from "@/components/AppShell";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
-import { Search, X, Play, Heart, TrendingUp, Users, Video, FileText, Tv2, UserPlus, UserCheck } from "lucide-react";
+import { Search, X, Play, Heart, TrendingUp, Users, Video, FileText, Tv2, UserPlus, UserCheck, BookOpen, Download, Bookmark } from "lucide-react";
 import { t } from "@/lib/useT";
 import { toast } from "sonner";
 
@@ -26,12 +26,91 @@ const TABS = [
   { key: "videos",   label: "Vídeos",     icon: Video      },
   { key: "posts",    label: "Posts",      icon: FileText   },
   { key: "channels", label: "Canais",     icon: Tv2        },
+  { key: "books",    label: "Livros",     icon: BookOpen   },
 ] as const;
 type Tab = typeof TABS[number]["key"];
 
 const TRENDING_TAGS = ["#angola","#musica","#futebol","#hoodatv","#viralao","#kizomba","#luanda","#semba"];
 
 /* ── Avatar ── */
+const BOOK_COLORS = ["#5B3FCF","#E94B8A","#F26B3A","#1FAFA6","#6BA547","#FFC93C"];
+const bookColor = (s: string) => BOOK_COLORS[(s?.charCodeAt(0) ?? 0) % BOOK_COLORS.length];
+const fmtB = (n: number) => n >= 1000 ? `${(n/1000).toFixed(1)}K` : String(n ?? 0);
+
+function BooksSection({ search, navigate }: { search: string; navigate: any }) {
+  const { data: books = [], isLoading } = useQuery({
+    queryKey: ["books", "explorar", search],
+    queryFn: async () => {
+      let q = (supabase as any).from("books").select("*").order("downloads", { ascending: false }).limit(50);
+      if (search) q = q.or(`title.ilike.%${search}%,author_name.ilike.%${search}%,category.ilike.%${search}%`);
+      const { data } = await q;
+      return data ?? [];
+    },
+  });
+
+  if (isLoading) return (
+    <div className="px-4 py-4 grid grid-cols-3 sm:grid-cols-4 gap-3">
+      {Array.from({ length: 9 }).map((_, i) => (
+        <div key={i} className="rounded-xl animate-pulse" style={{ background: "var(--s2)", aspectRatio: "2/3" }} />
+      ))}
+    </div>
+  );
+
+  if (books.length === 0) return (
+    <div className="flex flex-col items-center py-20 gap-3">
+      <BookOpen className="w-10 h-10 opacity-20" style={{ color: "#5B3FCF" }} />
+      <p className="font-bold text-sm" style={{ color: "var(--text-muted)" }}>
+        {search ? "Nenhum livro encontrado" : "Ainda não há livros"}
+      </p>
+      <button onClick={() => navigate({ to: "/livros" })}
+        className="px-4 h-9 rounded-full text-sm font-bold text-white"
+        style={{ background: "#5B3FCF" }}>
+        Adicionar um livro
+      </button>
+    </div>
+  );
+
+  return (
+    <div className="px-4 py-4">
+      <p className="text-[11px] font-bold uppercase tracking-wider mb-3" style={{ color: "var(--text-muted)" }}>
+        Livros · {fmtB(books.length)} resultado{books.length !== 1 ? "s" : ""}
+      </p>
+      <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+        {books.map((book: any) => {
+          const color = bookColor(book.title);
+          return (
+            <button key={book.id} onClick={() => navigate({ to: "/livros" })}
+              className="text-left rounded-2xl overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-lg"
+              style={{ background: "var(--s0)", border: "1px solid var(--border-subtle)" }}>
+              <div style={{ aspectRatio: "2/3", background: "var(--s2)", position: "relative" }}>
+                {book.cover_url
+                  ? <img src={book.cover_url} alt={book.title} className="w-full h-full object-cover" />
+                  : <div className="w-full h-full flex flex-col items-center justify-center p-2 gap-1"
+                      style={{ background: `linear-gradient(135deg,${color}22,${color}44)` }}>
+                      <BookOpen className="w-6 h-6 opacity-50" style={{ color }} />
+                      <p className="text-[8px] font-bold text-center line-clamp-3 leading-tight" style={{ color }}>{book.title}</p>
+                    </div>}
+              </div>
+              <div className="p-2">
+                <p className="text-[11px] font-bold line-clamp-2 leading-tight mb-0.5" style={{ color: "var(--text-primary)" }}>{book.title}</p>
+                <p className="text-[10px] line-clamp-1" style={{ color: "var(--text-muted)" }}>{book.author_name || "—"}</p>
+                <div className="flex gap-2 mt-1">
+                  <span className="flex items-center gap-0.5 text-[9px]" style={{ color: "var(--text-muted)" }}>
+                    <Download className="w-2.5 h-2.5" />{fmtB(book.downloads ?? 0)}
+                  </span>
+                  <span className="flex items-center gap-0.5 text-[9px]" style={{ color: "var(--text-muted)" }}>
+                    <Bookmark className="w-2.5 h-2.5" />{fmtB(book.saves ?? 0)}
+                  </span>
+                </div>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function Av({ name, src, size = 40, color }: { name: string; src?: string | null; size?: number; color?: string }) {
   const bg = color || colorFor(name || "?");
   return (
@@ -504,6 +583,8 @@ function ExplorePage() {
               </button>
             ))}
           </div>
+        ) : tab === "books" ? (
+          <BooksSection search={searchQ} navigate={navigate} />
         ) : null}
 
         <BottomNav />

@@ -14,6 +14,7 @@ import { Route as SignupRouteImport } from './routes/signup'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as PerfilRouteImport } from './routes/perfil'
 import { Route as MensagensRouteImport } from './routes/mensagens'
+import { Route as LivrosRouteImport } from './routes/livros'
 import { Route as HoodatvRouteImport } from './routes/hoodatv'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as ExplorarRouteImport } from './routes/explorar'
@@ -54,6 +55,11 @@ const PerfilRoute = PerfilRouteImport.update({
 const MensagensRoute = MensagensRouteImport.update({
   id: '/mensagens',
   path: '/mensagens',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LivrosRoute = LivrosRouteImport.update({
+  id: '/livros',
+  path: '/livros',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HoodatvRoute = HoodatvRouteImport.update({
@@ -143,6 +149,7 @@ export interface FileRoutesByFullPath {
   '/explorar': typeof ExplorarRoute
   '/home': typeof HomeRoute
   '/hoodatv': typeof HoodatvRouteWithChildren
+  '/livros': typeof LivrosRoute
   '/mensagens': typeof MensagensRoute
   '/perfil': typeof PerfilRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -166,6 +173,7 @@ export interface FileRoutesByTo {
   '/explorar': typeof ExplorarRoute
   '/home': typeof HomeRoute
   '/hoodatv': typeof HoodatvRouteWithChildren
+  '/livros': typeof LivrosRoute
   '/mensagens': typeof MensagensRoute
   '/perfil': typeof PerfilRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -189,6 +197,7 @@ export interface FileRoutesById {
   '/explorar': typeof ExplorarRoute
   '/home': typeof HomeRoute
   '/hoodatv': typeof HoodatvRouteWithChildren
+  '/livros': typeof LivrosRoute
   '/mensagens': typeof MensagensRoute
   '/perfil': typeof PerfilRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -214,6 +223,7 @@ export interface FileRouteTypes {
     | '/explorar'
     | '/home'
     | '/hoodatv'
+    | '/livros'
     | '/mensagens'
     | '/perfil'
     | '/reset-password'
@@ -237,6 +247,7 @@ export interface FileRouteTypes {
     | '/explorar'
     | '/home'
     | '/hoodatv'
+    | '/livros'
     | '/mensagens'
     | '/perfil'
     | '/reset-password'
@@ -259,6 +270,7 @@ export interface FileRouteTypes {
     | '/explorar'
     | '/home'
     | '/hoodatv'
+    | '/livros'
     | '/mensagens'
     | '/perfil'
     | '/reset-password'
@@ -283,6 +295,7 @@ export interface RootRouteChildren {
   ExplorarRoute: typeof ExplorarRoute
   HomeRoute: typeof HomeRoute
   HoodatvRoute: typeof HoodatvRouteWithChildren
+  LivrosRoute: typeof LivrosRoute
   MensagensRoute: typeof MensagensRoute
   PerfilRoute: typeof PerfilRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
@@ -327,6 +340,13 @@ declare module '@tanstack/react-router' {
       path: '/mensagens'
       fullPath: '/mensagens'
       preLoaderRoute: typeof MensagensRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/livros': {
+      id: '/livros'
+      path: '/livros'
+      fullPath: '/livros'
+      preLoaderRoute: typeof LivrosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/hoodatv': {
@@ -486,6 +506,7 @@ const rootRouteChildren: RootRouteChildren = {
   ExplorarRoute: ExplorarRoute,
   HomeRoute: HomeRoute,
   HoodatvRoute: HoodatvRouteWithChildren,
+  LivrosRoute: LivrosRoute,
   MensagensRoute: MensagensRoute,
   PerfilRoute: PerfilRoute,
   ResetPasswordRoute: ResetPasswordRoute,
@@ -497,3 +518,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
