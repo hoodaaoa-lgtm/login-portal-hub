@@ -1,371 +1,273 @@
 import React, { useState, useEffect } from "react";
-import { X, Star, Users, Eye, Heart, MessageSquare, Settings, LogOut, MoreVertical, Flag, UserX, Menu } from "lucide-react";
+import { createPortal } from "react-dom";
+import { X, Search, Star, Users, BookOpen, Tv, Settings, LogOut, ChevronRight, MessageCircle, Bell, Shield, HelpCircle, Info, BarChart2, User, Moon, Sun } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "@tanstack/react-router";
-
-type Tab = "profile" | "followers" | "following" | "settings";
+import { useTheme } from "@/contexts/ThemeContext";
+import { useScrollLock } from "@/hooks/useScrollLock";
 
 interface UserDrawerProps {
   userId: string;
   onClose: () => void;
 }
 
-interface UserProfile {
+interface Profile {
   id: string;
   username: string;
   full_name: string;
   avatar_url: string | null;
   bio: string | null;
-  website: string | null;
-  location: string | null;
-  is_private: boolean;
 }
 
-interface UserStats {
+interface Stats {
   followers: number;
   following: number;
   posts: number;
-  views: number;
   rating: number;
   ratingCount: number;
 }
 
 export function UserDrawer({ userId: _userId, onClose }: UserDrawerProps) {
   const navigate = useNavigate();
-  const [tab, setTab] = useState<Tab>("profile");
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [stats, setStats] = useState<UserStats | null>(null);
+  const { theme, toggle } = useTheme();
+  const [search, setSearch] = useState("");
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [currentUserId, setCurrentUserId] = useState("");
-  const [resolvedUserId, setResolvedUserId] = useState(_userId);
+  const [uid, setUid] = useState(_userId);
+  const [myRating, setMyRating] = useState(0);
+  const [savingRating, setSavingRating] = useState(false);
+  useScrollLock();
 
   useEffect(() => {
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        setCurrentUserId(session.user.id);
-        // Se userId não foi passado, usa o do utilizador autenticado
-        const uid = _userId || session.user.id;
-        setResolvedUserId(uid);
+      if (!session) { setLoading(false); return; }
+      const resolvedUid = _userId || session.user.id;
+      setUid(resolvedUid);
 
-        // Carregar perfil
-        const { data: prof } = await supabase
-          .from("profiles").select("*").eq("id", uid).maybeSingle();
-        if (prof) setProfile(prof as UserProfile);
+      const [profRes, followersRes, followingRes, postsRes, ratingsRes, myRatingRes] = await Promise.all([
+        supabase.from("profiles").select("id,username,full_name,avatar_url,bio").eq("id", resolvedUid).maybeSingle(),
+        supabase.from("follows").select("id", { count: "exact", head: true }).eq("following_id", resolvedUid),
+        supabase.from("follows").select("id", { count: "exact", head: true }).eq("follower_id", resolvedUid),
+        supabase.from("posts").select("id", { count: "exact", head: true }).eq("author_id", resolvedUid),
+        supabase.from("user_ratings").select("stars").eq("rated_user_id", resolvedUid),
+        supabase.from("user_ratings").select("stars").eq("rated_user_id", resolvedUid).eq("rater_user_id", session.user.id).maybeSingle(),
+      ]);
 
-        // Carregar estatísticas
-        const { data: followers } = await supabase
-          .from("follows").select("id").eq("following_id", uid);
-        const { data: following } = await supabase
-          .from("follows").select("id").eq("follower_id", uid);
-        const { data: posts } = await supabase
-          .from("posts").select("id").eq("author_id", uid);
-        const { data: ratings } = await supabase
-          .from("user_ratings").select("stars").eq("rated_user_id", uid);
-
-      const avgRating = ratings && ratings.length > 0
-        ? (ratings.reduce((sum: number, r: any) => sum + r.stars, 0) / ratings.length).toFixed(1)
-        : 0;
-
+      if (profRes.data) setProfile(profRes.data as Profile);
+      const allRatings = (ratingsRes.data ?? []) as { stars: number }[];
+      const avg = allRatings.length > 0
+        ? allRatings.reduce((s, r) => s + r.stars, 0) / allRatings.length : 0;
       setStats({
-        followers: followers?.length ?? 0,
-        following: following?.length ?? 0,
-        posts: posts?.length ?? 0,
-        views: 0, // TODO: calcular de post_views
-        rating: parseFloat(avgRating as string),
-        ratingCount: ratings?.length ?? 0,
+        followers: followersRes.count ?? 0,
+        following: followingRes.count ?? 0,
+        posts: postsRes.count ?? 0,
+        rating: avg,
+        ratingCount: allRatings.length,
       });
-
+      if ((myRatingRes.data as any)?.stars) setMyRating((myRatingRes.data as any).stars);
       setLoading(false);
-      }
     })();
   }, [_userId]);
 
-  const isOwnProfile = currentUserId === resolvedUserId;
-
-  return (
-    <div className="fixed inset-0 z-50 flex lg:hidden">
-      {/* Backdrop */}
-      <div className="flex-1 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-
-      {/* Drawer */}
-      <div className="w-80 bg-white dark:bg-[#111118] flex flex-col overflow-hidden"
-        style={{ maxHeight: "100dvh" }}>
-
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-200 dark:border-neutral-800 shrink-0">
-          <h2 className="font-bold text-lg">Perfil</h2>
-          <button onClick={onClose} className="p-1 hover:bg-neutral-100 dark:hover:bg-neutral-900 rounded-lg">
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-
-        {/* Abas */}
-        <div className="flex border-b border-neutral-200 dark:border-neutral-800 shrink-0">
-          <button onClick={() => setTab("profile")}
-            className={`flex-1 py-2 text-sm font-semibold transition ${
-              tab === "profile"
-                ? "border-b-2 border-[#5B3FCF] text-[#5B3FCF]"
-                : "text-neutral-500 hover:text-neutral-700 dark:text-neutral-400"
-            }`}>
-            Perfil
-          </button>
-          <button onClick={() => setTab("followers")}
-            className={`flex-1 py-2 text-sm font-semibold transition ${
-              tab === "followers"
-                ? "border-b-2 border-[#5B3FCF] text-[#5B3FCF]"
-                : "text-neutral-500 hover:text-neutral-700 dark:text-neutral-400"
-            }`}>
-            👥
-          </button>
-          <button onClick={() => setTab("following")}
-            className={`flex-1 py-2 text-sm font-semibold transition ${
-              tab === "following"
-                ? "border-b-2 border-[#5B3FCF] text-[#5B3FCF]"
-                : "text-neutral-500 hover:text-neutral-700 dark:text-neutral-400"
-            }`}>
-            ➜
-          </button>
-          {isOwnProfile && (
-            <button onClick={() => setTab("settings")}
-              className={`flex-1 py-2 text-sm font-semibold transition ${
-                tab === "settings"
-                  ? "border-b-2 border-[#5B3FCF] text-[#5B3FCF]"
-                  : "text-neutral-500 hover:text-neutral-700 dark:text-neutral-400"
-              }`}>
-              ⚙️
-            </button>
-          )}
-        </div>
-
-        {/* Conteúdo */}
-        <div className="flex-1 overflow-y-auto">
-          {tab === "profile" && (
-            <ProfileTab profile={profile} stats={stats} loading={loading} isOwn={isOwnProfile} />
-          )}
-          {tab === "followers" && (
-            <FollowersTab userId={resolvedUserId} />
-          )}
-          {tab === "following" && (
-            <FollowingTab userId={resolvedUserId} />
-          )}
-          {tab === "settings" && isOwnProfile && (
-            <SettingsTab onLogout={onClose} />
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ─── Tab: Perfil ─── */
-function ProfileTab({ profile, stats, loading, isOwn }: any) {
-  const [rating, setRating] = useState(0);
-  const [saving, setSaving] = useState(false);
-
-  if (loading || !profile || !stats) {
-    return <div className="p-4 text-center text-sm text-neutral-500">A carregar...</div>;
-  }
-
   async function rateUser(stars: number) {
-    setSaving(true);
+    setSavingRating(true);
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session) { setSaving(false); return; }
-
-    await supabase.from("user_ratings").upsert({
-      rated_user_id: profile.id,
-      rater_user_id: session.user.id,
-      stars,
+    if (!session) { setSavingRating(false); return; }
+    await (supabase as any).from("user_ratings").upsert({
+      rated_user_id: uid, rater_user_id: session.user.id, stars,
     }, { onConflict: "rated_user_id,rater_user_id" });
-
-    setRating(stars);
-    setSaving(false);
+    setMyRating(stars);
+    setSavingRating(false);
   }
-
-  return (
-    <div className="p-4 space-y-4">
-      {/* Avatar + Info */}
-      <div className="text-center">
-        <div className="w-20 h-20 rounded-full mx-auto mb-3 overflow-hidden flex items-center justify-center text-white font-bold text-2xl"
-          style={{ background: profile.avatar_url ? "transparent" : "#5B3FCF" }}>
-          {profile.avatar_url
-            ? <img src={profile.avatar_url} alt={profile.full_name} className="w-full h-full object-cover" />
-            : (profile.full_name?.[0] ?? "?").toUpperCase()}
-        </div>
-        <p className="font-bold text-lg">{profile.full_name}</p>
-        <p className="text-sm text-neutral-500">@{profile.username}</p>
-      </div>
-
-      {/* Rating */}
-      <div className="bg-neutral-50 dark:bg-neutral-900 rounded-lg p-3 text-center">
-        <div className="flex items-center justify-center gap-1 mb-2">
-          {[1, 2, 3, 4, 5].map(i => (
-            <button key={i} onClick={() => !isOwn && rateUser(i)} disabled={isOwn || saving}
-              className="text-xl transition hover:scale-125 disabled:opacity-50"
-              style={{ opacity: i <= stats.rating ? 1 : 0.3 }}>
-              ⭐
-            </button>
-          ))}
-        </div>
-        <p className="text-xs font-semibold">{stats.rating.toFixed(1)} ({stats.ratingCount} avaliações)</p>
-      </div>
-
-      {/* Bio */}
-      {profile.bio && <p className="text-sm">{profile.bio}</p>}
-      {profile.location && <p className="text-xs text-neutral-500">📍 {profile.location}</p>}
-      {profile.website && <a href={profile.website} target="_blank" rel="noopener noreferrer"
-        className="text-xs font-semibold text-[#5B3FCF] hover:underline">🔗 {profile.website}</a>}
-
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-2 text-center">
-        <div className="bg-neutral-50 dark:bg-neutral-900 rounded-lg p-2">
-          <p className="text-lg font-bold">{stats.followers}</p>
-          <p className="text-[10px] text-neutral-500">Seguidores</p>
-        </div>
-        <div className="bg-neutral-50 dark:bg-neutral-900 rounded-lg p-2">
-          <p className="text-lg font-bold">{stats.following}</p>
-          <p className="text-[10px] text-neutral-500">Seguindo</p>
-        </div>
-        <div className="bg-neutral-50 dark:bg-neutral-900 rounded-lg p-2">
-          <p className="text-lg font-bold">{stats.posts}</p>
-          <p className="text-[10px] text-neutral-500">Posts</p>
-        </div>
-      </div>
-
-      {/* Ações */}
-      {!isOwn && (
-        <div className="flex gap-2">
-          <button className="flex-1 h-9 rounded-lg font-semibold text-sm bg-[#5B3FCF] text-white hover:opacity-90 transition">
-            Seguir
-          </button>
-          <button className="flex-1 h-9 rounded-lg font-semibold text-sm border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-900 transition">
-            Mensagem
-          </button>
-          <button className="h-9 px-3 rounded-lg border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-900 transition">
-            <MoreVertical className="h-4 w-4" />
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* ─── Tab: Seguidores ─── */
-function FollowersTab({ userId }: any) {
-  const [followers, setFollowers] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    (async () => {
-      const { data } = await supabase
-        .from("follows").select("follower_id, profiles!inner(*)")
-        .eq("following_id", resolvedUserId)
-        .limit(20);
-      setFollowers(data as any);
-      setLoading(false);
-    })();
-  }, [resolvedUserId]);
-
-  if (loading) return <div className="p-4 text-center text-sm text-neutral-500">A carregar...</div>;
-  if (followers.length === 0) return <div className="p-4 text-center text-sm text-neutral-500">Sem seguidores</div>;
-
-  return (
-    <div className="divide-y divide-neutral-200 dark:divide-neutral-800">
-      {followers.map((f: any) => (
-        <div key={f.follower_id} className="p-3 flex items-center justify-between hover:bg-neutral-50 dark:hover:bg-neutral-900">
-          <div className="flex items-center gap-2 flex-1 min-w-0 cursor-pointer">
-            <div className="w-10 h-10 rounded-full flex-shrink-0 overflow-hidden flex items-center justify-center text-white font-bold"
-              style={{ background: f.profiles?.avatar_url ? "transparent" : "#5B3FCF" }}>
-              {f.profiles?.avatar_url
-                ? <img src={f.profiles.avatar_url} alt="" className="w-full h-full object-cover" />
-                : (f.profiles?.full_name?.[0] ?? "?").toUpperCase()}
-            </div>
-            <div className="min-w-0">
-              <p className="text-sm font-semibold truncate">{f.profiles?.full_name}</p>
-              <p className="text-xs text-neutral-500 truncate">@{f.profiles?.username}</p>
-            </div>
-          </div>
-          <button className="text-xs font-semibold px-3 py-1 rounded-full bg-[#5B3FCF] text-white hover:opacity-90 transition shrink-0">
-            Seguir
-          </button>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-/* ─── Tab: Seguindo ─── */
-function FollowingTab({ userId }: any) {
-  const [following, setFollowing] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    (async () => {
-      const { data } = await supabase
-        .from("follows").select("following_id, profiles!inner(*)")
-        .eq("follower_id", resolvedUserId)
-        .limit(20);
-      setFollowing(data as any);
-      setLoading(false);
-    })();
-  }, [resolvedUserId]);
-
-  if (loading) return <div className="p-4 text-center text-sm text-neutral-500">A carregar...</div>;
-  if (following.length === 0) return <div className="p-4 text-center text-sm text-neutral-500">Não segue ninguém</div>;
-
-  return (
-    <div className="divide-y divide-neutral-200 dark:divide-neutral-800">
-      {following.map((f: any) => (
-        <div key={f.following_id} className="p-3 flex items-center justify-between hover:bg-neutral-50 dark:hover:bg-neutral-900">
-          <div className="flex items-center gap-2 flex-1 min-w-0 cursor-pointer">
-            <div className="w-10 h-10 rounded-full flex-shrink-0 overflow-hidden flex items-center justify-center text-white font-bold"
-              style={{ background: f.profiles?.avatar_url ? "transparent" : "#5B3FCF" }}>
-              {f.profiles?.avatar_url
-                ? <img src={f.profiles.avatar_url} alt="" className="w-full h-full object-cover" />
-                : (f.profiles?.full_name?.[0] ?? "?").toUpperCase()}
-            </div>
-            <div className="min-w-0">
-              <p className="text-sm font-semibold truncate">{f.profiles?.full_name}</p>
-              <p className="text-xs text-neutral-500 truncate">@{f.profiles?.username}</p>
-            </div>
-          </div>
-          <button className="text-xs font-semibold px-3 py-1 rounded-full border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition shrink-0">
-            Deixar
-          </button>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-/* ─── Tab: Definições ─── */
-function SettingsTab({ onLogout }: any) {
-  const navigate = useNavigate();
 
   async function logout() {
     await supabase.auth.signOut();
+    onClose();
     navigate({ to: "/" });
-    onLogout();
   }
 
-  return (
-    <div className="divide-y divide-neutral-200 dark:divide-neutral-800">
-      <button className="w-full px-4 py-3 flex items-center gap-3 hover:bg-neutral-50 dark:hover:bg-neutral-900 transition text-left">
-        <Settings className="h-5 w-5 text-neutral-600 dark:text-neutral-400" />
-        <span className="font-semibold text-sm">Definições de Conta</span>
-      </button>
-      <button className="w-full px-4 py-3 flex items-center gap-3 hover:bg-neutral-50 dark:hover:bg-neutral-900 transition text-left">
-        <MessageSquare className="h-5 w-5 text-neutral-600 dark:text-neutral-400" />
-        <span className="font-semibold text-sm">Privacidade & Mensagens</span>
-      </button>
-      <button className="w-full px-4 py-3 flex items-center gap-3 hover:bg-neutral-50 dark:hover:bg-neutral-900 transition text-left">
-        <Eye className="h-5 w-5 text-neutral-600 dark:text-neutral-400" />
-        <span className="font-semibold text-sm">Notificações</span>
-      </button>
-      <button onClick={logout} className="w-full px-4 py-3 flex items-center gap-3 hover:bg-red-50 dark:hover:bg-red-900/20 transition text-left text-red-600">
-        <LogOut className="h-5 w-5" />
-        <span className="font-semibold text-sm">Logout</span>
-      </button>
-    </div>
+  const initial = (profile?.full_name?.[0] ?? profile?.username?.[0] ?? "?").toUpperCase();
+
+  const MENU_SECTIONS = [
+    {
+      title: "O teu espaço",
+      items: [
+        { icon: User, label: "O meu perfil", color: "#5B3FCF", action: () => { onClose(); navigate({ to: "/perfil" }); } },
+        { icon: BookOpen, label: "Livros", color: "#E94B8A", action: () => { onClose(); navigate({ to: "/livros" }); } },
+        { icon: Tv, label: "HoodaTV", color: "#1FAFA6", action: () => { onClose(); navigate({ to: "/hoodatv" }); } },
+        { icon: BarChart2, label: "Hooda Studio", color: "#F26B3A", action: () => { onClose(); navigate({ to: "/studio" }); } },
+      ],
+    },
+    {
+      title: "Definições",
+      items: [
+        { icon: Settings, label: "Definições da conta", color: "#6b7280", action: () => { onClose(); navigate({ to: "/perfil" }); } },
+        { icon: Shield, label: "Privacidade", color: "#6b7280", action: () => { onClose(); navigate({ to: "/perfil" }); } },
+        { icon: Bell, label: "Notificações", color: "#6b7280", action: () => { onClose(); navigate({ to: "/perfil" }); } },
+        { icon: MessageCircle, label: "Mensagens", color: "#6b7280", action: () => { onClose(); navigate({ to: "/mensagens" }); } },
+      ],
+    },
+    {
+      title: "Ajuda & Info",
+      items: [
+        { icon: HelpCircle, label: "Ajuda & Suporte", color: "#6b7280", action: () => {} },
+        { icon: Info, label: "Sobre a hooda", color: "#6b7280", action: () => {} },
+      ],
+    },
+  ];
+
+  const filteredSections = MENU_SECTIONS.map(s => ({
+    ...s,
+    items: s.items.filter(i => !search || i.label.toLowerCase().includes(search.toLowerCase())),
+  })).filter(s => !search || s.items.length > 0);
+
+  return createPortal(
+    <div className="fixed inset-0 z-[200] flex items-start justify-end"
+      style={{ background: "rgba(0,0,0,0.45)" }}
+      onClick={(e) => e.target === e.currentTarget && onClose()}>
+
+      {/* Modal panel — estilo Facebook, lado direito no desktop, full no mobile */}
+      <div className="relative flex flex-col h-full w-full sm:w-[380px] overflow-hidden"
+        style={{
+          background: "var(--surface-0)",
+          borderLeft: "1px solid var(--border-subtle)",
+          animation: "slideInRight 0.22s cubic-bezier(0.16,1,0.3,1)",
+        }}>
+
+        {/* Header com perfil */}
+        <div className="shrink-0 px-4 pt-5 pb-4"
+          style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+          <div className="flex items-start justify-between mb-4">
+            <span className="text-xl font-bold" style={{ color: "var(--text-primary)" }}>Menu</span>
+            <button onClick={onClose}
+              className="w-8 h-8 rounded-full flex items-center justify-center transition hover:opacity-80"
+              style={{ background: "var(--surface-2)" }}>
+              <X className="h-4 w-4" style={{ color: "var(--text-secondary)" }} />
+            </button>
+          </div>
+
+          {/* Card de perfil */}
+          {!loading && profile ? (
+            <button onClick={() => { onClose(); navigate({ to: "/perfil" }); }}
+              className="w-full flex items-center gap-3 rounded-2xl p-3 transition text-left"
+              style={{ background: "var(--surface-1)" }}>
+              <div className="w-14 h-14 rounded-full overflow-hidden shrink-0 flex items-center justify-center text-white font-bold text-xl"
+                style={{ background: profile.avatar_url ? "transparent" : "#5B3FCF" }}>
+                {profile.avatar_url
+                  ? <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
+                  : initial}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-base truncate" style={{ color: "var(--text-primary)" }}>{profile.full_name}</p>
+                <p className="text-sm truncate" style={{ color: "var(--text-secondary)" }}>@{profile.username}</p>
+                {stats && (
+                  <div className="flex items-center gap-3 mt-1">
+                    <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+                      <b style={{ color: "var(--text-primary)" }}>{stats.followers}</b> seguidores
+                    </span>
+                    <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+                      <b style={{ color: "var(--text-primary)" }}>{stats.posts}</b> posts
+                    </span>
+                  </div>
+                )}
+              </div>
+              <ChevronRight className="h-4 w-4 shrink-0" style={{ color: "var(--text-muted)" }} />
+            </button>
+          ) : loading ? (
+            <div className="w-full h-[76px] rounded-2xl animate-pulse" style={{ background: "var(--surface-2)" }} />
+          ) : null}
+
+          {/* Rating */}
+          {stats && !loading && (
+            <div className="mt-3 flex items-center justify-between px-1">
+              <div className="flex items-center gap-1">
+                {[1,2,3,4,5].map(i => (
+                  <button key={i} onClick={() => rateUser(i)} disabled={savingRating}
+                    className="transition-transform hover:scale-125 active:scale-95"
+                    style={{ fontSize: 20, opacity: i <= (myRating || stats.rating) ? 1 : 0.25 }}>
+                    ⭐
+                  </button>
+                ))}
+              </div>
+              <span className="text-xs font-semibold" style={{ color: "var(--text-muted)" }}>
+                {stats.rating.toFixed(1)} ({stats.ratingCount})
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Pesquisa */}
+        <div className="shrink-0 px-4 py-3" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+          <div className="flex items-center gap-2 rounded-xl px-3 h-10"
+            style={{ background: "var(--surface-2)" }}>
+            <Search className="h-4 w-4 shrink-0" style={{ color: "var(--text-muted)" }} />
+            <input value={search} onChange={e => setSearch(e.target.value)}
+              placeholder="Pesquisar no menu"
+              className="flex-1 bg-transparent text-sm outline-none"
+              style={{ color: "var(--text-primary)" }} />
+          </div>
+        </div>
+
+        {/* Secções */}
+        <div className="flex-1 overflow-y-auto px-3 py-2">
+          {filteredSections.map((section) => (
+            <div key={section.title} className="mb-4">
+              <p className="text-xs font-bold px-2 mb-1.5 uppercase tracking-wider"
+                style={{ color: "var(--text-muted)" }}>{section.title}</p>
+              <div className="space-y-0.5">
+                {section.items.map(({ icon: Icon, label, color, action }) => (
+                  <button key={label} onClick={action}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition text-left"
+                    style={{ color: "var(--text-primary)" }}
+                    onMouseEnter={e => (e.currentTarget.style.background = "var(--surface-2)")}
+                    onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                      style={{ background: color + "18" }}>
+                      <Icon className="h-5 w-5" style={{ color }} strokeWidth={1.8} />
+                    </div>
+                    <span className="text-sm font-medium">{label}</span>
+                    <ChevronRight className="h-4 w-4 ml-auto shrink-0" style={{ color: "var(--text-muted)" }} />
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Footer */}
+        <div className="shrink-0 px-3 py-3 space-y-0.5"
+          style={{ borderTop: "1px solid var(--border-subtle)" }}>
+          {/* Toggle dark mode */}
+          <button onClick={toggle}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition text-left"
+            style={{ color: "var(--text-primary)" }}
+            onMouseEnter={e => (e.currentTarget.style.background = "var(--surface-2)")}
+            onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+              style={{ background: "rgba(91,63,207,0.12)" }}>
+              {theme === "dark"
+                ? <Sun className="h-5 w-5" style={{ color: "#FFC93C" }} strokeWidth={1.8} />
+                : <Moon className="h-5 w-5" style={{ color: "#5B3FCF" }} strokeWidth={1.8} />}
+            </div>
+            <span className="text-sm font-medium">{theme === "dark" ? "Modo claro" : "Modo escuro"}</span>
+          </button>
+          {/* Logout */}
+          <button onClick={logout}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition text-left"
+            style={{ color: "#EF4444" }}
+            onMouseEnter={e => (e.currentTarget.style.background = "rgba(239,68,68,0.08)")}
+            onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+              style={{ background: "rgba(239,68,68,0.10)" }}>
+              <LogOut className="h-5 w-5" style={{ color: "#EF4444" }} strokeWidth={1.8} />
+            </div>
+            <span className="text-sm font-medium font-semibold">Sair da conta</span>
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
   );
 }
