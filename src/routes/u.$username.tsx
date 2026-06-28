@@ -680,8 +680,9 @@ function UserProfilePage() {
                 <div className="rounded-full p-[2px]" style={{background:"var(--s0)"}}>
                   {avatarUrl
                     ? <img src={avatarUrl} alt={name}
-                        className="rounded-full object-cover"
-                        style={{width:86,height:86,border:"3px solid var(--s0)"}}/>
+                        className="rounded-full object-cover cursor-pointer"
+                        style={{width:86,height:86,border:"3px solid var(--s0)"}}
+                        onClick={()=>setPhotoViewing(avatarUrl)}/>
                     : <div className="rounded-full flex items-center justify-center font-bold text-white text-3xl"
                         style={{width:86,height:86,background:color}}>
                         {name[0]?.toUpperCase()}
@@ -822,11 +823,9 @@ function UserProfilePage() {
                       </div>
                     )}
                     {post.photo&&(
-                      <button className="w-full block" onClick={()=>setPhotoViewing(post.photo)}>
-                        <img src={post.photo} alt="" className="w-full object-cover"
-                          style={{maxHeight:480}} loading="lazy"
-                          onContextMenu={e=>e.preventDefault()}/>
-                      </button>
+                      <img src={post.photo} alt="" className="w-full object-cover"
+                        style={{maxHeight:480}} loading="lazy"
+                        onContextMenu={e=>e.preventDefault()}/>
                     )}
                     {post.videoUrl&&!post.photo&&(
                       <>
@@ -919,16 +918,28 @@ function UserProfilePage() {
 
       {/* ── Visualizador de foto ── */}
       {photoViewing && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center"
-          style={{background:"rgba(0,0,0,0.92)"}}
+        <div className="fixed inset-0 flex items-center justify-center"
+          style={{background:"rgba(0,0,0,0.96)", zIndex:9999}}
           onClick={()=>setPhotoViewing(null)}>
-          <button className="absolute top-4 right-4 w-10 h-10 rounded-full flex items-center justify-center"
+          {/* Header */}
+          <div className="absolute top-0 left-0 right-0 flex items-center gap-3 px-4 py-3"
+            style={{background:"linear-gradient(to bottom,rgba(0,0,0,0.6),transparent)"}}>
+            {avatarUrl && photoViewing===avatarUrl && (
+              <img src={avatarUrl} alt="" className="w-8 h-8 rounded-full object-cover"/>
+            )}
+            <div>
+              <p className="text-white text-sm font-bold leading-tight">{name}</p>
+              <p className="text-white/60 text-xs">@{profileUsername}</p>
+            </div>
+          </div>
+          <button className="absolute top-3 right-4 w-10 h-10 rounded-full flex items-center justify-center"
             style={{background:"rgba(255,255,255,0.15)"}}>
             <X className="h-5 w-5 text-white"/>
           </button>
-          <img src={photoViewing} alt="" className="max-w-full max-h-full object-contain"
-            style={{maxWidth:"95vw",maxHeight:"90vh"}}
-            onContextMenu={e=>e.preventDefault()}/>
+          <img src={photoViewing} alt="" className="object-contain"
+            style={{maxWidth:"95vw",maxHeight:"92vh",borderRadius:8}}
+            onContextMenu={e=>e.preventDefault()}
+            onClick={e=>e.stopPropagation()}/>
         </div>
       )}
 

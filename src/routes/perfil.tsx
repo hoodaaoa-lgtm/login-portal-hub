@@ -209,12 +209,12 @@ function FollowListModal({ mode, targetUsername, targetUserId, onClose }: {
 
 function PostCard({
   post, name, username, isOwner,
-  onLike, onBookmark, onDelete, avatarUrl, myUserId, authorId,
+  onLike, onBookmark, onDelete, avatarUrl, myUserId, authorId, onPhotoClick,
 }: {
   post: Post; name: string; username: string; isOwner: boolean;
   onLike: (id: string) => void; onBookmark: (id: string) => void;
   onDelete: (id: string) => void; avatarUrl?: string | null;
-  myUserId?: string; authorId?: string;
+  myUserId?: string; authorId?: string; onPhotoClick?: (url: string) => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
@@ -408,9 +408,11 @@ function PostCard({
         </div>
       )}
       {post.photo && !post.videoUrl && !((post as any).kind === "clip") && (
-        <img src={post.photo} alt="" className="w-full block"
-          style={{ maxHeight: "500px", objectFit: "cover" }}
-          onError={(e) => { e.currentTarget.style.display = "none"; }} />
+        <button className="w-full block" onClick={() => onPhotoClick?.(post.photo!)}>
+          <img src={post.photo} alt="" className="w-full block"
+            style={{ maxHeight: "500px", objectFit: "cover" }}
+            onError={(e) => { e.currentTarget.style.display = "none"; }} />
+        </button>
       )}
       {post.bgColor && !post.photo && !post.videoUrl && (
         <div className="mx-3 rounded-2xl flex items-center justify-center"
@@ -1842,6 +1844,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
   const [showCreate, setShowCreate] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
+  const [photoViewing, setPhotoViewing] = useState<string|null>(null);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showActivity, setShowActivity] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
@@ -2174,8 +2177,17 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
           </div>
         </div>
 
-        {/* Editar perfil */}
+        {/* Editar perfil + Partilhar */}
         <div className="flex justify-end gap-2 px-4 pt-3 pb-0">
+          <button onClick={() => {
+            const url = `${window.location.origin}/u/${profile?.username || "utilizador"}`;
+            if (navigator.share) navigator.share({ title: name, url }).catch(()=>{});
+            else navigator.clipboard.writeText(url).then(()=>toast.success("Link copiado!"));
+          }}
+            className="w-9 h-9 rounded-full flex items-center justify-center border transition hover:bg-[var(--s2)] active:scale-95"
+            style={{borderColor:"var(--border-default)",color:"var(--text-muted)"}}>
+            <Share2 className="h-4 w-4"/>
+          </button>
           <button onClick={() => setShowEditProfile(true)}
             className="text-sm font-bold border border-neutral-300 rounded-full px-5 py-1.5 bg-[var(--s2)] hover:bg-[var(--s1)] transition active:scale-95">
             {t("settings.edit_profile")}
@@ -2344,6 +2356,20 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
       {showPrivacy && <PrivacyPanel onBack={() => setShowPrivacy(false)} />}
       {showSecurity && <SecurityPanel onBack={() => setShowSecurity(false)} email={email} />}
       {showHelp && <HelpPanel onBack={() => setShowHelp(false)} />}
+      {photoViewing && (
+        <div className="fixed inset-0 flex items-center justify-center"
+          style={{background:"rgba(0,0,0,0.96)", zIndex:9999}}
+          onClick={()=>setPhotoViewing(null)}>
+          <button className="absolute top-4 right-4 w-10 h-10 rounded-full flex items-center justify-center"
+            style={{background:"rgba(255,255,255,0.15)"}}>
+            <X className="h-5 w-5 text-white"/>
+          </button>
+          <img src={photoViewing} alt="" className="object-contain"
+            style={{maxWidth:"95vw",maxHeight:"92vh",borderRadius:8}}
+            onClick={e=>e.stopPropagation()}
+            onContextMenu={e=>e.preventDefault()}/>
+        </div>
+      )}
       {showAbout && <AboutPanel onBack={() => setShowAbout(false)} />}
       {showLanguage && <LanguagePanel onBack={() => setShowLanguage(false)} />}
       {showMsgPrivacy && <MsgPrivacyPanel onBack={() => setShowMsgPrivacy(false)} msgPermission={msgPermission} onMsgPermissionChange={async (v) => {
