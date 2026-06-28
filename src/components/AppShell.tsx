@@ -74,7 +74,7 @@ export function SideNav() {
 
   return (
     <>
-      {showDrawer && currentUserId && (
+      {showDrawer && (
         <UserDrawer userId={currentUserId} onClose={() => setShowDrawer(false)} />
       )}
       <aside className="hooda-sidenav hidden lg:flex flex-col fixed left-0 top-0 bottom-0 w-[260px] border-r z-40"

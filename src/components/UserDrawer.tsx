@@ -30,33 +30,38 @@ interface UserStats {
   ratingCount: number;
 }
 
-export function UserDrawer({ userId, onClose }: UserDrawerProps) {
+export function UserDrawer({ userId: _userId, onClose }: UserDrawerProps) {
   const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>("profile");
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [stats, setStats] = useState<UserStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState("");
+  const [resolvedUserId, setResolvedUserId] = useState(_userId);
 
   useEffect(() => {
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (session) setCurrentUserId(session.user.id);
-      
-      // Carregar perfil
-      const { data: prof } = await supabase
-        .from("profiles").select("*").eq("id", userId).maybeSingle();
-      if (prof) setProfile(prof as UserProfile);
+      if (session) {
+        setCurrentUserId(session.user.id);
+        // Se userId não foi passado, usa o do utilizador autenticado
+        const uid = _userId || session.user.id;
+        setResolvedUserId(uid);
 
-      // Carregar estatísticas
-      const { data: followers } = await supabase
-        .from("follows").select("id").eq("following_id", userId);
-      const { data: following } = await supabase
-        .from("follows").select("id").eq("follower_id", userId);
-      const { data: posts } = await supabase
-        .from("posts").select("id").eq("author_id", userId);
-      const { data: ratings } = await supabase
-        .from("user_ratings").select("stars").eq("rated_user_id", userId);
+        // Carregar perfil
+        const { data: prof } = await supabase
+          .from("profiles").select("*").eq("id", uid).maybeSingle();
+        if (prof) setProfile(prof as UserProfile);
+
+        // Carregar estatísticas
+        const { data: followers } = await supabase
+          .from("follows").select("id").eq("following_id", uid);
+        const { data: following } = await supabase
+          .from("follows").select("id").eq("follower_id", uid);
+        const { data: posts } = await supabase
+          .from("posts").select("id").eq("author_id", uid);
+        const { data: ratings } = await supabase
+          .from("user_ratings").select("stars").eq("rated_user_id", uid);
 
       const avgRating = ratings && ratings.length > 0
         ? (ratings.reduce((sum: number, r: any) => sum + r.stars, 0) / ratings.length).toFixed(1)
@@ -72,10 +77,11 @@ export function UserDrawer({ userId, onClose }: UserDrawerProps) {
       });
 
       setLoading(false);
+      }
     })();
-  }, [userId]);
+  }, [_userId]);
 
-  const isOwnProfile = currentUserId === userId;
+  const isOwnProfile = currentUserId === resolvedUserId;
 
   return (
     <div className="fixed inset-0 z-50 flex lg:hidden">
@@ -138,10 +144,10 @@ export function UserDrawer({ userId, onClose }: UserDrawerProps) {
             <ProfileTab profile={profile} stats={stats} loading={loading} isOwn={isOwnProfile} />
           )}
           {tab === "followers" && (
-            <FollowersTab userId={userId} />
+            <FollowersTab userId={resolvedUserId} />
           )}
           {tab === "following" && (
-            <FollowingTab userId={userId} />
+            <FollowingTab userId={resolvedUserId} />
           )}
           {tab === "settings" && isOwnProfile && (
             <SettingsTab onLogout={onClose} />
@@ -253,12 +259,12 @@ function FollowersTab({ userId }: any) {
     (async () => {
       const { data } = await supabase
         .from("follows").select("follower_id, profiles!inner(*)")
-        .eq("following_id", userId)
+        .eq("following_id", resolvedUserId)
         .limit(20);
       setFollowers(data as any);
       setLoading(false);
     })();
-  }, [userId]);
+  }, [resolvedUserId]);
 
   if (loading) return <div className="p-4 text-center text-sm text-neutral-500">A carregar...</div>;
   if (followers.length === 0) return <div className="p-4 text-center text-sm text-neutral-500">Sem seguidores</div>;
@@ -297,12 +303,12 @@ function FollowingTab({ userId }: any) {
     (async () => {
       const { data } = await supabase
         .from("follows").select("following_id, profiles!inner(*)")
-        .eq("follower_id", userId)
+        .eq("follower_id", resolvedUserId)
         .limit(20);
       setFollowing(data as any);
       setLoading(false);
     })();
-  }, [userId]);
+  }, [resolvedUserId]);
 
   if (loading) return <div className="p-4 text-center text-sm text-neutral-500">A carregar...</div>;
   if (following.length === 0) return <div className="p-4 text-center text-sm text-neutral-500">Não segue ninguém</div>;
