@@ -245,16 +245,16 @@ export function UserDrawer({ userId: _userId, onClose }: UserDrawerProps) {
       title: "Definições",
       items: [
         { icon: Settings, label: "Definições da conta", color: "#6b7280", action: () => { onClose(); navigate({ to: "/definicoes" }); } },
-        { icon: Shield, label: "Privacidade", color: "#6b7280", action: () => { onClose(); navigate({ to: "/definicoes" }); } },
-        { icon: Bell, label: "Notificações", color: "#6b7280", action: () => { onClose(); navigate({ to: "/definicoes" }); } },
+        { icon: Shield, label: "Privacidade", color: "#6b7280", action: () => { onClose(); navigate({ to: "/definicoes", search: { panel: "privacy" } as any }); } },
+        { icon: Bell, label: "Notificações", color: "#6b7280", action: () => { onClose(); navigate({ to: "/definicoes", search: { panel: "notifications" } as any }); } },
         { icon: MessageCircle, label: "Mensagens", color: "#6b7280", action: () => { onClose(); navigate({ to: "/mensagens" }); } },
       ],
     },
     {
       title: "Ajuda & Info",
       items: [
-        { icon: HelpCircle, label: "Ajuda & Suporte", color: "#6b7280", action: () => { onClose(); navigate({ to: "/definicoes" }); } },
-        { icon: Info, label: "Sobre a hooda", color: "#6b7280", action: () => { onClose(); navigate({ to: "/definicoes" }); } },
+        { icon: HelpCircle, label: "Ajuda & Suporte", color: "#6b7280", action: () => { onClose(); navigate({ to: "/definicoes", search: { panel: "help" } as any }); } },
+        { icon: Info, label: "Sobre a Hooda", color: "#6b7280", action: () => { onClose(); navigate({ to: "/definicoes", search: { panel: "about" } as any }); } },
       ],
     },
   ];

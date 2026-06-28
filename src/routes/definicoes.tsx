@@ -1,12 +1,10 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { BottomNav, SideNav, PageWrapper } from "@/components/AppShell";
-import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
 import {
-  Bell, Lock, Shield, HelpCircle,
-  Info, Globe, MessageSquare, User, LogOut, Activity, ArrowLeft,
+  ChevronRight, Bell, Lock, Shield, HelpCircle,
+  Info, Globe, MessageSquare, User, Activity, ArrowLeft,
 } from "lucide-react";
 import {
   NotificationsPanel, ActivityPanel, PrivacyPanel,
@@ -24,12 +22,16 @@ const ACCENT = "#5B3FCF";
 const GRAD   = "linear-gradient(135deg,#5B3FCF,#E94B8A)";
 
 function DefinicoesPage() {
-  const navigate = useNavigate();
-  const { t } = useTranslation();
-  const [profile, setProfile]           = useState<any>(null);
-  const [email, setEmail]               = useState("");
+  const navigate  = useNavigate();
+  const search    = useSearch({ strict: false }) as any;
+  const [profile, setProfile]             = useState<any>(null);
+  const [email, setEmail]                 = useState("");
   const [msgPermission, setMsgPermission] = useState("todos");
-  const [panel, setPanel]               = useState<string | null>(null);
+  const [panel, setPanel]                 = useState<string | null>(search?.panel ?? null);
+
+  useEffect(() => {
+    if (search?.panel) setPanel(search.panel);
+  }, [search?.panel]);
 
   useEffect(() => {
     (async () => {
@@ -46,7 +48,7 @@ function DefinicoesPage() {
     })();
   }, [navigate]);
 
-  const name = profile?.full_name || profile?.username || email.split("@")[0] || "Utilizador";
+  const name      = profile?.full_name || profile?.username || email.split("@")[0] || "Utilizador";
   const avatarUrl = profile?.avatar_url;
   const currentLang = LANGUAGES.find(l => l.code === getCurrentLang());
 
@@ -65,13 +67,6 @@ function DefinicoesPage() {
         { icon: <Lock className="w-5 h-5"/>, color: "#6BA547", label: "Privacidade", desc: "Quem pode ver o teu perfil", action: () => setPanel("privacy") },
         { icon: <Shield className="w-5 h-5"/>, color: ACCENT, label: "Segurança", desc: "Palavra-passe e autenticação", action: () => setPanel("security") },
         { icon: <MessageSquare className="w-5 h-5"/>, color: "#1FAFA6", label: "Privacidade de Mensagens", desc: "Quem pode enviar-te mensagens?", action: () => setPanel("msgprivacy") },
-      ],
-    },
-    {
-      title: "Suporte",
-      items: [
-        { icon: <HelpCircle className="w-5 h-5"/>, color: "#1FAFA6", label: "Ajuda", desc: "Perguntas frequentes", action: () => setPanel("help") },
-        { icon: <Info className="w-5 h-5"/>, color: "#E94B8A", label: "Sobre a Hooda", desc: "Versão e informações legais", action: () => setPanel("about") },
       ],
     },
     {
@@ -135,7 +130,7 @@ function DefinicoesPage() {
                       {i > 0 && <div style={{ height: 1, background: "var(--border-subtle)" }} />}
                       <button
                         className="w-full flex items-center gap-3 px-4 py-3.5 text-left transition hover:bg-[var(--s2)] active:scale-[0.99]"
-                        onClick={item.action ?? item.onToggle}>
+                        onClick={item.action}>
                         <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
                           style={{ background: `${item.color}18`, color: item.color }}>
                           {item.icon}
@@ -144,13 +139,7 @@ function DefinicoesPage() {
                           <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{item.label}</p>
                           <p className="text-xs" style={{ color: "var(--text-muted)" }}>{item.desc}</p>
                         </div>
-                        {item.toggle
-                          ? <div className="w-11 h-6 rounded-full transition-all shrink-0 flex items-center px-0.5"
-                              style={{ background: item.value ? ACCENT : "var(--s3)" }}>
-                              <div className="w-5 h-5 rounded-full bg-white shadow transition-all"
-                                style={{ transform: item.value ? "translateX(20px)" : "translateX(0)" }} />
-                            </div>
-                          : <ChevronRight className="w-4 h-4 shrink-0" style={{ color: "var(--text-muted)" }} />}
+                        <ChevronRight className="w-4 h-4 shrink-0" style={{ color: "var(--text-muted)" }} />
                       </button>
                     </div>
                   ))}
@@ -163,11 +152,10 @@ function DefinicoesPage() {
             </p>
           </div>
         </div>
-
         <BottomNav />
       </PageWrapper>
 
-      {/* Sub-painéis */}
+      {/* Sub-painéis abertos directamente pelo menu ou clique */}
       {panel === "notifications" && <NotificationsPanel onBack={() => setPanel(null)} />}
       {panel === "activity"      && <ActivityPanel      onBack={() => setPanel(null)} />}
       {panel === "privacy"       && <PrivacyPanel       onBack={() => setPanel(null)} />}
