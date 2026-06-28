@@ -408,11 +408,9 @@ function PostCard({
         </div>
       )}
       {post.photo && !post.videoUrl && !((post as any).kind === "clip") && (
-        <button className="w-full block" onClick={() => onPhotoClick?.(post.photo!)}>
-          <img src={post.photo} alt="" className="w-full block"
-            style={{ maxHeight: "500px", objectFit: "cover" }}
-            onError={(e) => { e.currentTarget.style.display = "none"; }} />
-        </button>
+        <img src={post.photo} alt="" className="w-full block"
+          style={{ maxHeight: "500px", objectFit: "cover" }}
+          onError={(e) => { e.currentTarget.style.display = "none"; }} />
       )}
       {post.bgColor && !post.photo && !post.videoUrl && (
         <div className="mx-3 rounded-2xl flex items-center justify-center"
