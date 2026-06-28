@@ -3036,7 +3036,7 @@ function HomePage() {
     if (eligible.length === 0) return [];
 
     const postIds = eligible.map((p: any) => p.id);
-    const authorIds = [...new Set(eligible.map((p: any) => p.author_id).filter(Boolean))];
+    const authorIds = [...new Set(eligible.map((p: any) => p.author_id || p.user_id).filter(Boolean))];
 
     // 3. Sinais em paralelo
     const [
@@ -3051,7 +3051,7 @@ function HomePage() {
       supabase.from("post_comments").select("post_id").in("post_id", postIds),
       supabase.from("post_saves").select("post_id").in("post_id", postIds),
       authorIds.length > 0
-        ? supabase.from("profiles").select("id,avatar_url").in("id", authorIds)
+        ? supabase.from("profiles").select("id,avatar_url,username,full_name").in("id", authorIds)
         : Promise.resolve({ data: [] as any[] }),
       supabase.from("post_likes").select("post_id").eq("user_id", uid).limit(100),
       supabase.from("post_comments").select("post_id").eq("user_id", uid).limit(100),
@@ -3068,7 +3068,13 @@ function HomePage() {
     (savesData || []).forEach((s: any) => { savesByPost[s.post_id] = (savesByPost[s.post_id] || 0) + 1; });
 
     const avatarMap: Record<string, string | null> = {};
-    (authorProfiles || []).forEach((p: any) => { avatarMap[p.id] = p.avatar_url || null; });
+    const nameMap: Record<string, string> = {};
+    const usernameMap: Record<string, string> = {};
+    (authorProfiles || []).forEach((p: any) => {
+      avatarMap[p.id] = p.avatar_url || null;
+      nameMap[p.id] = p.full_name || p.username || "";
+      usernameMap[p.id] = p.username || "";
+    });
 
     const myInteractedPostIds = new Set([
       ...(myLikesData || []).map((l: any) => l.post_id),
@@ -3129,7 +3135,9 @@ function HomePage() {
       // Aleatoriedade leve ±10%
       score *= 0.9 + Math.random() * 0.2;
 
-      const name = p.author_name || p.author_username || "hooda";
+      const authorKey = p.author_id || p.user_id;
+      const name = p.author_name || nameMap[authorKey] || p.author_username || "hooda";
+      const username = p.author_username || usernameMap[authorKey] || "";
       let text = p.content;
       let bg_color = null;
       if (p.kind === "bg") { try { const j = JSON.parse(p.content); text = j.text; bg_color = j.bgColor; } catch {} }
@@ -3138,10 +3146,10 @@ function HomePage() {
         _score: score,
         id: p.id, user_id: p.author_id,
         author_id: p.author_id,
-        author_username: p.author_username || null,
-        user: name, name: `@${p.author_username || "?"}`,
+        author_username: username || null,
+        user: name, name: `@${username || "?"}`,
         color: p.author_color || ACCENT_LOCAL[(name.charCodeAt(0) || 0) % ACCENT_LOCAL.length],
-        avatar_url: p.author_id ? (avatarMap[p.author_id] ?? null) : null,
+        avatar_url: (p.author_id || p.user_id) ? (avatarMap[p.author_id] ?? avatarMap[p.user_id] ?? null) : null,
         text, photo: p.photo_url ?? null,
         photos: Array.isArray(p.photos) && p.photos.length > 0 ? p.photos : (p.photo_url ? [p.photo_url] : null),
         video: p.video_url ?? null,
