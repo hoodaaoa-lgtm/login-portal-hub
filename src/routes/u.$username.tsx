@@ -612,9 +612,17 @@ function UserProfilePage() {
   }
 
   async function shareProfile() {
-    const url=`${window.location.origin}/u/${username}`;
-    try { await navigator.share({title:name,url}); }
-    catch(_){ await navigator.clipboard.writeText(url); toast.success("Link copiado!"); }
+    const url = `${window.location.origin}/u/${username}`;
+    try {
+      await navigator.share({
+        title: name,
+        text: profile?.bio ?? `Vê o perfil de ${name} na Hooda AOA`,
+        url,
+      });
+    } catch(_) {
+      await navigator.clipboard.writeText(url);
+      toast.success("🔗 Link copiado: " + url);
+    }
     setShowMenu(false);
   }
 

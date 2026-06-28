@@ -2219,10 +2219,16 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
         {/* Editar perfil + Partilhar */}
         <div className="flex justify-end gap-2 px-4 pt-3 pb-0">
           <button onClick={() => {
-            const url = `${window.location.origin}/u/${profile?.username || "utilizador"}`;
-            if (navigator.share) navigator.share({ title: name, url }).catch(()=>{});
-            else navigator.clipboard.writeText(url).then(()=>toast.success("Link copiado!"));
+            const username = profile?.username;
+            if (!username || username === "utilizador") { toast.error("Define um username primeiro!"); return; }
+            const url = `${window.location.origin}/u/${username}`;
+            if (navigator.share) {
+              navigator.share({ title: name, text: profile?.bio ?? `Vê o perfil de ${name} na Hooda`, url }).catch(()=>{});
+            } else {
+              navigator.clipboard.writeText(url).then(() => toast.success("🔗 Link copiado: " + url));
+            }
           }}
+            title="Partilhar perfil"
             className="w-9 h-9 rounded-full flex items-center justify-center border transition hover:bg-[var(--s2)] active:scale-95"
             style={{borderColor:"var(--border-default)",color:"var(--text-muted)"}}>
             <Share2 className="h-4 w-4"/>
@@ -2235,7 +2241,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
 
         {/* Info pessoal */}
         <div className="px-5 pt-10 pb-4">
-          <p className="text-xl font-extrabold text-black leading-tight">{name}</p>
+          <p className="text-xl font-extrabold leading-tight" style={{ color: "var(--text-primary)" }}>{name}</p>
           <p className="text-sm text-[var(--text-muted)] font-medium mt-0.5">@{profile?.username || "utilizador"}</p>
           {profile?.bio && (
             <p className="text-sm text-[var(--text-secondary)] mt-2 leading-relaxed">{profile.bio}</p>
