@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 
 interface PhotoViewerProps {
@@ -12,16 +13,17 @@ export function PhotoViewer({ src, alt = "Foto", subtitle, onClose }: PhotoViewe
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
+    // Bloquear scroll do fundo
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", handler);
+      document.body.style.overflow = "";
+      document.documentElement.style.overflow = "";
+    };
   }, [onClose]);
 
-  useEffect(() => {
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = prev; };
-  }, []);
-
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-[9999] flex flex-col"
       style={{ background: "rgba(0,0,0,0.92)", backdropFilter: "blur(16px)" }}
@@ -30,10 +32,7 @@ export function PhotoViewer({ src, alt = "Foto", subtitle, onClose }: PhotoViewe
       {/* Top bar */}
       <div
         className="flex items-center justify-between px-4 shrink-0"
-        style={{
-          height: "56px",
-          background: "linear-gradient(to bottom, rgba(0,0,0,0.5), transparent)",
-        }}
+        style={{ height: "56px", background: "linear-gradient(to bottom, rgba(0,0,0,0.5), transparent)" }}
         onClick={e => e.stopPropagation()}
       >
         <div className="min-w-0">
@@ -49,22 +48,22 @@ export function PhotoViewer({ src, alt = "Foto", subtitle, onClose }: PhotoViewe
         </button>
       </div>
 
-      {/* Foto — flex-1 garante que ocupa o espaço restante e centra perfeitamente */}
+      {/* Foto centrada — ocupa tudo sem scroll */}
       <div
-        className="flex-1 flex items-center justify-center"
+        className="flex-1 flex items-center justify-center overflow-hidden"
+        style={{ minHeight: 0 }}
         onClick={e => e.stopPropagation()}
       >
-        <div
-          style={{
-            width: "min(75vw, 300px)",
-            height: "min(75vw, 300px)",
-            borderRadius: "50%",
-            overflow: "hidden",
-            border: "3px solid rgba(255,255,255,0.22)",
-            boxShadow: "0 8px 40px rgba(0,0,0,0.6)",
-            animation: "pvZoom 0.2s cubic-bezier(0.34,1.5,0.64,1)",
-          }}
-        >
+        <div style={{
+          width: "min(75vw, 300px)",
+          height: "min(75vw, 300px)",
+          borderRadius: "50%",
+          overflow: "hidden",
+          border: "3px solid rgba(255,255,255,0.22)",
+          boxShadow: "0 8px 40px rgba(0,0,0,0.6)",
+          animation: "pvZoom 0.2s cubic-bezier(0.34,1.5,0.64,1)",
+          flexShrink: 0,
+        }}>
           <img
             src={src}
             alt={alt}
@@ -74,7 +73,6 @@ export function PhotoViewer({ src, alt = "Foto", subtitle, onClose }: PhotoViewe
         </div>
       </div>
 
-      {/* Espaço inferior igual ao top bar para equilíbrio visual */}
       <div className="shrink-0" style={{ height: "56px" }} />
 
       <style>{`
@@ -83,6 +81,7 @@ export function PhotoViewer({ src, alt = "Foto", subtitle, onClose }: PhotoViewe
           to   { opacity: 1; transform: scale(1); }
         }
       `}</style>
-    </div>
+    </div>,
+    document.body
   );
 }
