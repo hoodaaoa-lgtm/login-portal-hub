@@ -71,12 +71,25 @@ function SignupPage() {
     setUsernameStatus("checking");
     if (usernameTimeout.current) clearTimeout(usernameTimeout.current);
     usernameTimeout.current = setTimeout(async () => {
-      const { data } = await supabase
+      const lower = username.toLowerCase();
+      // Verifica na tabela profiles (utilizadores activos)
+      const { data: profile } = await supabase
         .from("profiles")
         .select("id")
-        .eq("username", username.toLowerCase())
+        .eq("username", lower)
         .maybeSingle();
-      setUsernameStatus(data ? "taken" : "ok");
+
+      if (profile) { setUsernameStatus("taken"); return; }
+
+      // Verifica também na tabela auth.users via RPC para apanhar utilizadores pendentes
+      // Usa um segundo select com ilike para ser case-insensitive
+      const { data: profile2 } = await supabase
+        .from("profiles")
+        .select("id")
+        .ilike("username", lower)
+        .maybeSingle();
+
+      setUsernameStatus(profile2 ? "taken" : "ok");
     }, 500);
   }, [username]);
 
@@ -87,7 +100,12 @@ function SignupPage() {
     if (!name || !email || !username || !password) return setError("Preenche todos os campos obrigatórios.");
     if (usernameStatus === "taken") return setError("Este username já está ocupado.");
     if (usernameStatus === "invalid") return setError("Username inválido.");
-    if (usernameStatus === "checking") return setError("Aguarda a verificação do username.");
+    if (usernameStatus === "checking" || usernameStatus === "idle") return setError("Aguarda a verificação do username.");
+
+    // Verificação final antes de submeter
+    const lower = username.toLowerCase();
+    const { data: finalCheck } = await supabase.from("profiles").select("id").ilike("username", lower).maybeSingle();
+    if (finalCheck) { setUsernameStatus("taken"); return setError("Este username já está ocupado. Escolhe outro."); }
     if (password.length < 6) return setError("A senha deve ter pelo menos 6 caracteres.");
     if (password !== confirm) return setError("As senhas não coincidem.");
     if (!agreed) return setError("É preciso aceitar os Termos e a Política de Privacidade.");
