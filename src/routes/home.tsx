@@ -2098,11 +2098,9 @@ function ClipCard({ p, liked, likeCount, viewCount, onLike, onComment }: {
         {/* Botões de ação */}
         <div className="flex items-center gap-0.5 pt-2 border-t" style={{ borderColor: "var(--border-subtle)" }}>
           {/* 👁 Views */}
-          {viewCount > 0 && (
-            <span className="flex items-center gap-1 text-xs font-semibold px-2" style={{ color: "var(--text-muted)" }}>
-              <Eye className="h-3.5 w-3.5" />{viewCount.toLocaleString("pt-PT")}
-            </span>
-          )}
+          <span className="flex items-center gap-1 text-xs font-semibold px-2" style={{ color: "var(--text-muted)" }}>
+            <Eye className="h-3.5 w-3.5" />{(viewCount ?? 0).toLocaleString("pt-PT")}
+          </span>
           {/* ❤️ Gosto */}
           <button onClick={onLike}
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl transition active:scale-90 group">
@@ -2159,7 +2157,7 @@ function PostCard({ p }: { p: any }) {
   const meRef = useRef<{ id: string; username: string } | null>(null);
   const [liked, setLiked] = useState(p.liked_by_me ?? false);
   const [likeCount, setLikeCount] = useState(p.likes ?? 0);
-  const [viewCount, setViewCount] = useState(p.views_count ?? 0);
+  const [viewCount, setViewCount] = useState(Number(p.views_count ?? 0));
   const isAd = !!p.ad;
   const navigate = useNavigate();
   const cardVideoRef = useRef<HTMLVideoElement>(null);

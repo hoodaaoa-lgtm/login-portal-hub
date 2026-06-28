@@ -97,7 +97,11 @@ function SignupPage() {
     e.preventDefault();
     setError(null);
 
-    if (!name || !email || !username || !password) return setError("Preenche todos os campos obrigatórios.");
+    if (!name.trim()) return setError("O nome completo é obrigatório.");
+    if (!email.trim()) return setError("O email é obrigatório.");
+    if (!username.trim()) return setError("O nome de utilizador é obrigatório.");
+    if (usernameStatus === "idle") return setError("Escolhe um nome de utilizador.");
+    if (!password) return setError("A senha é obrigatória.");
     if (usernameStatus === "taken") return setError("Este username já está ocupado.");
     if (usernameStatus === "invalid") return setError("Username inválido.");
     if (usernameStatus === "checking" || usernameStatus === "idle") return setError("Aguarda a verificação do username.");

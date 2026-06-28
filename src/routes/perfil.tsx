@@ -940,11 +940,18 @@ function EditProfileModal({
     setUsernameStatus("idle");
     if (usernameTimer.current) clearTimeout(usernameTimer.current);
     if (!clean || clean === (profile?.username || "")) { setUsernameStatus("idle"); return; }
-    if (clean.length < 3) { setUsernameStatus("invalid"); return; }
+    if (clean.length < 3 || clean.includes(".com") || clean.includes(".net") || clean.includes("@")) {
+      setUsernameStatus("invalid"); return;
+    }
     setUsernameStatus("checking");
     usernameTimer.current = setTimeout(async () => {
-      const { data } = await supabase.from("profiles").select("id").eq("username", clean).maybeSingle();
-      setUsernameStatus(data ? "taken" : "available");
+      // Case-insensitive check — ignora o próprio username actual
+      const { data } = await supabase.from("profiles").select("id").ilike("username", clean).maybeSingle();
+      if (data && data.id !== profile?.id) {
+        setUsernameStatus("taken");
+      } else {
+        setUsernameStatus("available");
+      }
     }, 600);
   }
 
