@@ -1037,6 +1037,35 @@ export type Database = {
           },
         ]
       }
+      post_views: {
+        Row: {
+          created_at: string
+          id: string
+          post_id: string
+          viewer_fingerprint: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          post_id: string
+          viewer_fingerprint: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          post_id?: string
+          viewer_fingerprint?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_views_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       posts: {
         Row: {
           audio_url: string | null
@@ -1068,10 +1097,12 @@ export type Database = {
           music_url: string | null
           photo_url: string | null
           photos: string[] | null
+          reposts_count: number
           shared_from_post_id: string | null
           video_embed_url: string | null
           video_stream_url: string | null
           video_url: string | null
+          views_count: number
         }
         Insert: {
           audio_url?: string | null
@@ -1103,10 +1134,12 @@ export type Database = {
           music_url?: string | null
           photo_url?: string | null
           photos?: string[] | null
+          reposts_count?: number
           shared_from_post_id?: string | null
           video_embed_url?: string | null
           video_stream_url?: string | null
           video_url?: string | null
+          views_count?: number
         }
         Update: {
           audio_url?: string | null
@@ -1138,10 +1171,12 @@ export type Database = {
           music_url?: string | null
           photo_url?: string | null
           photos?: string[] | null
+          reposts_count?: number
           shared_from_post_id?: string | null
           video_embed_url?: string | null
           video_stream_url?: string | null
           video_url?: string | null
+          views_count?: number
         }
         Relationships: [
           {
@@ -1245,6 +1280,38 @@ export type Database = {
           website?: string | null
         }
         Relationships: []
+      }
+      reposts: {
+        Row: {
+          created_at: string
+          id: string
+          post_id: string
+          quote_text: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          post_id: string
+          quote_text?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          post_id?: string
+          quote_text?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reposts_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       saved_videos: {
         Row: {
@@ -1465,6 +1532,69 @@ export type Database = {
           message_type?: string
           story_id?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      user_ratings: {
+        Row: {
+          comment: string | null
+          created_at: string
+          id: string
+          rated_user_id: string
+          rater_user_id: string
+          stars: number
+          updated_at: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rated_user_id: string
+          rater_user_id: string
+          stars: number
+          updated_at?: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rated_user_id?: string
+          rater_user_id?: string
+          stars?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_reports: {
+        Row: {
+          admin_notes: string | null
+          created_at: string
+          id: string
+          reason: string
+          reported_user_id: string
+          reporter_id: string
+          reviewed_at: string | null
+          status: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          created_at?: string
+          id?: string
+          reason: string
+          reported_user_id: string
+          reporter_id: string
+          reviewed_at?: string | null
+          status?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          created_at?: string
+          id?: string
+          reason?: string
+          reported_user_id?: string
+          reporter_id?: string
+          reviewed_at?: string | null
+          status?: string
         }
         Relationships: []
       }
@@ -1823,6 +1953,10 @@ export type Database = {
       mark_view_once_opened: {
         Args: { p_msg_id: string; p_user_id: string }
         Returns: undefined
+      }
+      record_post_view: {
+        Args: { p_post_id: string; p_viewer_fingerprint: string }
+        Returns: Json
       }
       record_video_view: {
         Args: {
