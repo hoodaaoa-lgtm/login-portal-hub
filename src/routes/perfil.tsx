@@ -378,11 +378,36 @@ function PostCard({
 
       {/* Media — ocupa largura total, sem padding lateral */}
       {post.videoUrl && (
-        <div className="w-full">
+        <div className="w-full" style={{ maxHeight: 360, overflow: "hidden" }}>
           <SimpleVideoPlayer src={post.videoUrl} />
         </div>
       )}
-      {post.photo && !post.videoUrl && (
+      {(post as any).kind === "clip" && (post as any).clipVideoId && (
+        <div className="w-full">
+          {(post as any).videoStreamUrl
+            ? <div style={{ maxHeight: 360, overflow: "hidden" }}>
+                <SimpleVideoPlayer src={(post as any).videoStreamUrl} />
+              </div>
+            : (post as any).clipThumb
+              ? <a href={`/hoodatv/watch/${(post as any).clipVideoId}`} className="w-full block">
+                  <img src={(post as any).clipThumb} alt="" className="w-full object-cover" style={{ maxHeight: 280 }}/>
+                </a>
+              : null}
+          {(post as any).clipTitle && (
+            <p className="px-4 pt-2 text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
+              {(post as any).clipTitle}
+            </p>
+          )}
+          <div className="px-4 pb-2 pt-1">
+            <a href={`/hoodatv/watch/${(post as any).clipVideoId}`}
+              className="text-xs font-bold px-3 py-1.5 rounded-xl inline-block"
+              style={{ color: "#5B3FCF", background: "#5B3FCF12" }}>
+              Ver vídeo completo →
+            </a>
+          </div>
+        </div>
+      )}
+      {post.photo && !post.videoUrl && !((post as any).kind === "clip") && (
         <img src={post.photo} alt="" className="w-full block"
           style={{ maxHeight: "500px", objectFit: "cover" }}
           onError={(e) => { e.currentTarget.style.display = "none"; }} />
@@ -1955,9 +1980,28 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
               id: p.id, text, photo, bgColor, createdAt: new Date(p.created_at ?? Date.now()),
               likes: likeIds.length, likedByMe: likeIds.includes(session.user.id), views_count: (p as any).views_count ?? 0,
               comments: commentsByPost[p.id] ?? 0, bookmarked: savedSet.has(p.id),
+              kind: (p as any).kind ?? "post",
+              videoUrl: (p as any).video_url || null,
+              clipVideoId: clipVideoId,
+              clipThumb: clipThumb,
+              clipTitle: clipTitle,
+              clipStart: (p as any).clip_start ?? 0,
+              clipEnd: (p as any).clip_end ?? 0,
             };
           });
-        setPosts(loaded);
+        // Buscar stream URLs para clips
+        const clipIds = loaded.filter((p: any) => p.clipVideoId).map((p: any) => p.clipVideoId);
+        if (clipIds.length > 0) {
+          const { data: vids } = await (supabase as any).from("videos")
+            .select("id,cf_stream_url,cf_embed_url").in("id", [...new Set(clipIds)]);
+          const streamMap: Record<string, string> = {};
+          (vids ?? []).forEach((v: any) => { streamMap[v.id] = v.cf_stream_url || v.cf_embed_url || ""; });
+          setPosts(loaded.map((p: any) => p.clipVideoId
+            ? { ...p, videoStreamUrl: streamMap[p.clipVideoId] || null }
+            : p));
+        } else {
+          setPosts(loaded);
+        }
       }
     })();
   }, []);
