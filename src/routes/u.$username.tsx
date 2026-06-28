@@ -60,28 +60,50 @@ function Av({ name, src, size=40, color, ring=false }:
 
 import { usePostVideoView } from "@/hooks/usePostVideoView";
 
-/* ─── VideoPlayer inline com registo de views ─── */
+/* ─── VideoPlayer — adapta tamanho ao vídeo (short vs landscape) ─── */
 function VideoPlayer({ src, poster, postId, kind }: { src:string; poster?:string; postId?:string; kind?:string }) {
   const [playing, setPlaying] = useState(false);
+  const [isShort, setIsShort] = useState<boolean | null>(null);
   const ref = useRef<HTMLVideoElement>(null);
 
   usePostVideoView(postId, kind, ref);
 
   function toggle() {
     const v = ref.current; if (!v) return;
-    v.paused ? v.play() : v.pause();
+    if (v.paused) { v.play(); setPlaying(true); }
+    else { v.pause(); setPlaying(false); }
   }
+
   return (
-    <div className="w-full bg-black relative cursor-pointer overflow-hidden" onClick={toggle}
-      style={{maxHeight:"360px"}}>
-      <video ref={ref} src={src} poster={poster} playsInline preload="metadata"
-        onPlay={()=>setPlaying(true)} onPause={()=>setPlaying(false)}
-        className="w-full block" style={{pointerEvents:"none",objectFit:"cover",maxHeight:"360px"}}
-        onContextMenu={e=>e.preventDefault()} />
+    <div
+      className="w-full bg-black relative cursor-pointer overflow-hidden"
+      style={{ maxHeight: isShort ? "600px" : "420px" }}
+      onClick={toggle}>
+      <video
+        ref={ref}
+        src={src}
+        poster={poster}
+        playsInline
+        preload="metadata"
+        onLoadedMetadata={() => {
+          const v = ref.current;
+          if (v) setIsShort(v.videoHeight > v.videoWidth);
+        }}
+        onPlay={() => setPlaying(true)}
+        onPause={() => setPlaying(false)}
+        onContextMenu={e => e.preventDefault()}
+        className="w-full block"
+        style={{
+          pointerEvents: "none",
+          objectFit: isShort ? "contain" : "cover",
+          width: "100%",
+          maxHeight: isShort ? "600px" : "420px",
+        }}
+      />
       {!playing && (
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-14 h-14 rounded-full flex items-center justify-center"
-            style={{background:"rgba(0,0,0,0.55)",backdropFilter:"blur(4px)"}}>
+          <div className="w-14 h-14 rounded-full flex items-center justify-center transition active:scale-90"
+            style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(4px)" }}>
             <Play className="h-7 w-7 text-white ml-1" fill="white" />
           </div>
         </div>
@@ -89,9 +111,14 @@ function VideoPlayer({ src, poster, postId, kind }: { src:string; poster?:string
       {playing && (
         <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
           <div className="w-12 h-12 rounded-full flex items-center justify-center"
-            style={{background:"rgba(0,0,0,0.4)"}}>
+            style={{ background: "rgba(0,0,0,0.4)" }}>
             <Pause className="h-6 w-6 text-white" fill="white" />
           </div>
+        </div>
+      )}
+      {isShort === null && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="w-7 h-7 rounded-full border-2 border-white/20 border-t-white animate-spin" />
         </div>
       )}
     </div>
