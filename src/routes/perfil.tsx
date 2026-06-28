@@ -926,7 +926,24 @@ function EditProfileModal({
   const [saving, setSaving] = useState(false);
   const [done, setDone] = useState(false);
   const [usernameStatus, setUsernameStatus] = useState<"idle"|"checking"|"available"|"taken"|"invalid">("idle");
+  const [usernameSuggestions, setUsernameSuggestions] = useState<string[]>([]);
   const usernameTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Gera sugestões baseadas no nome
+  function generateSuggestions(name: string): string[] {
+    const parts = name.toLowerCase()
+      .normalize("NFD").replace(/[̀-ͯ]/g, "")
+      .replace(/[^a-z0-9 ]/g, "").trim().split(/\s+/).filter(Boolean);
+    if (!parts.length) return [];
+    const first = parts[0], last = parts[parts.length - 1];
+    return [...new Set([
+      parts.join(""),
+      parts.join("."),
+      parts.join("_"),
+      first.length > 1 ? `${first[0]}.${last}` : null,
+      `${first}${last}${Math.floor(Math.random() * 90) + 10}`,
+    ].filter((s): s is string => !!s && s.length >= 3).map(s => s.slice(0, 20)))];
+  }
 
   // Bloquear scroll do fundo enquanto modal está aberto
   useEffect(() => {
@@ -1063,8 +1080,35 @@ function EditProfileModal({
                 </div>
               </div>
               {usernameStatus === "available" && <p className="text-[11px] text-[#6BA547] mt-1">Disponível!</p>}
-              {usernameStatus === "taken" && <p className="text-[11px] text-red-500 mt-1">Este nome de utilizador já está em uso.</p>}
+              {usernameStatus === "taken" && (
+                <div>
+                  <p className="text-[11px] text-red-500 mt-1">Este nome de utilizador já está em uso. Experimenta:</p>
+                  <div className="flex flex-wrap gap-1.5 mt-1.5">
+                    {generateSuggestions(name).map(s => (
+                      <button key={s} type="button"
+                        onClick={() => handleUsernameChange(s)}
+                        className="text-[11px] px-2.5 py-1 rounded-full border font-semibold transition active:scale-95"
+                        style={{ borderColor: ACCENT, background: `${ACCENT}12`, color: ACCENT }}>
+                        @{s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
               {usernameStatus === "invalid" && <p className="text-[11px] text-red-500 mt-1">Mínimo 3 caracteres. Apenas letras, números, . e _</p>}
+              {/* Sugestões sempre visíveis quando campo está vazio ou idle */}
+              {(usernameStatus === "idle" || !username) && name && (
+                <div className="flex flex-wrap gap-1.5 mt-1.5">
+                  {generateSuggestions(name).map(s => (
+                    <button key={s} type="button"
+                      onClick={() => handleUsernameChange(s)}
+                      className="text-[11px] px-2.5 py-1 rounded-full border font-semibold transition active:scale-95"
+                      style={{ borderColor: "var(--border-default)", background: "var(--s2)", color: "var(--text-secondary)" }}>
+                      @{s}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Bio */}

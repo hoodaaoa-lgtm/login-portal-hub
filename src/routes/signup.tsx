@@ -18,15 +18,34 @@ export const Route = createFileRoute("/signup")({
   component: SignupPage,
 });
 
-// Gera sugestões de username a partir do nome
+// Normaliza nome para base
+function normalizeName(name: string): string {
+  return name.toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9 ]/g, "").trim();
+}
+
+// Gera múltiplas sugestões de username a partir do nome
+function generateUsernameSuggestions(name: string): string[] {
+  const parts = normalizeName(name).split(/\s+/).filter(Boolean);
+  if (!parts.length) return [];
+  const first = parts[0];
+  const last  = parts[parts.length - 1];
+  const full  = parts.join("");
+  const suggestions = [
+    full,
+    parts.join("."),
+    parts.join("_"),
+    first.length > 1 ? `${first[0]}.${last}` : null,
+    `${first}${last}${Math.floor(Math.random() * 90) + 10}`,
+  ].filter((s): s is string => !!s && s.length >= 3)
+   .map(s => s.slice(0, 20));
+  return [...new Set(suggestions)];
+}
+
+// Mantém compatibilidade
 function suggestUsername(name: string): string {
-  return name
-    .toLowerCase()
-    .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // remove acentos
-    .replace(/[^a-z0-9]/g, ".") // espaços e especiais → ponto
-    .replace(/\.+/g, ".") // pontos duplos → um
-    .replace(/^\.|\.$/, "") // remove ponto no início/fim
-    .slice(0, 20);
+  return generateUsernameSuggestions(name)[0] ?? "";
 }
 
 function SignupPage() {
@@ -38,6 +57,7 @@ function SignupPage() {
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | "ok" | "taken" | "invalid">("idle");
+  const [usernameSuggestions, setUsernameSuggestions] = useState<string[]>([]);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [birthDate, setBirthDate] = useState("");
@@ -52,11 +72,12 @@ function SignupPage() {
     return () => clearTimeout(t);
   }, []);
 
-  // Quando nome muda, sugerir username
+  // Quando nome muda, gerar sugestões
   useEffect(() => {
-    if (name && !username) {
-      setUsername(suggestUsername(name));
-    }
+    if (!name) { setUsernameSuggestions([]); return; }
+    const suggestions = generateUsernameSuggestions(name);
+    setUsernameSuggestions(suggestions);
+    if (!username) setUsername(suggestions[0] ?? "");
   }, [name]);
 
   // Verificar disponibilidade do username em tempo real
@@ -284,6 +305,23 @@ function SignupPage() {
                   rightIcon={usernameRightIcon()}
                 />
                 <p className="text-[11px]">{usernameHint}</p>
+                {/* Sugestões clicáveis */}
+                {usernameSuggestions.length > 0 && usernameStatus !== "ok" && (
+                  <div className="flex flex-wrap gap-1.5 mt-1.5">
+                    {usernameSuggestions.map(s => (
+                      <button key={s} type="button"
+                        onClick={() => setUsername(s)}
+                        className="text-[11px] px-2.5 py-1 rounded-full border font-semibold transition active:scale-95"
+                        style={{
+                          borderColor: username === s ? "#5B3FCF" : "#d1d5db",
+                          background: username === s ? "#5B3FCF12" : "var(--s2)",
+                          color: username === s ? "#5B3FCF" : "var(--text-secondary)",
+                        }}>
+                        @{s}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <Field
