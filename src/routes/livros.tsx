@@ -1,13 +1,14 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { SideNav, BottomNav, PageWrapper } from "@/components/AppShell";
 import {
   BookOpen, Plus, X, Upload, Download, Bookmark, BookmarkCheck,
-  Search, Star, ChevronRight, Loader2, FileText, Image as ImageIcon,
+  Search, Loader2, FileText, Image as ImageIcon,
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
+import { uploadImageToCloudinary } from "@/lib/cloudinary";
 
 export const Route = createFileRoute("/livros")({
   head: () => ({ meta: [{ title: "Livros — hooda" }] }),
@@ -15,7 +16,41 @@ export const Route = createFileRoute("/livros")({
 });
 
 const P = "#5B3FCF";
+const CLOUD_NAME = "dy7o7tgmk";
+const UPLOAD_PRESET = "hooda_videos";
 const CATS = ["Romance","Ficção","Negócios","Autoajuda","História","Tecnologia","Religião","Educação","Outro"];
+
+/* Upload de ficheiro raw (PDF/EPUB/DOCX) para Cloudinary */
+function uploadRawToCloudinary(
+  file: File,
+  userId: string,
+  onProgress: (pct: number) => void,
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("upload_preset", UPLOAD_PRESET);
+    fd.append("folder", `hooda/books/${userId}`);
+    fd.append("resource_type", "raw");
+    const xhr = new XMLHttpRequest();
+    xhr.upload.addEventListener("progress", e => {
+      if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
+    });
+    xhr.addEventListener("load", () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try { resolve(JSON.parse(xhr.responseText).secure_url); }
+        catch { reject(new Error("Resposta inválida do Cloudinary.")); }
+      } else {
+        let msg = `Erro ${xhr.status}`;
+        try { msg = JSON.parse(xhr.responseText)?.error?.message ?? msg; } catch {}
+        reject(new Error(msg));
+      }
+    });
+    xhr.addEventListener("error", () => reject(new Error("Falha de rede.")));
+    xhr.open("POST", `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/raw/upload`);
+    xhr.send(fd);
+  });
+}
 
 /* ── Formatar números ── */
 const fmtN = (n: number) => n >= 1000 ? `${(n/1000).toFixed(1)}K` : String(n ?? 0);
@@ -130,28 +165,21 @@ function CreateBookModal({ onClose, onCreated }: { onClose: () => void; onCreate
       if (!session) throw new Error("Não autenticado");
       const uid = session.user.id;
 
-      // Upload capa
+      // Upload capa via Cloudinary (imagem)
       let coverUrl: string | null = null;
       if (coverFile) {
-        setProgress(25);
-        const ext = coverFile.name.split(".").pop() ?? "jpg";
-        const path = `covers/${uid}/${Date.now()}.${ext}`;
-        const { error: ce } = await supabase.storage.from("book-covers").upload(path, coverFile, { upsert: true });
-        if (ce) throw ce;
-        coverUrl = supabase.storage.from("book-covers").getPublicUrl(path).data.publicUrl;
+        setProgress(20);
+        const res = await uploadImageToCloudinary(coverFile, `hooda/book-covers/${uid}`, p => setProgress(20 + p * 0.3));
+        coverUrl = res.url;
       }
 
-      // Upload ficheiro
+      // Upload ficheiro via Cloudinary (raw)
       setProgress(50);
-      const fext = bookFile.name.split(".").pop() ?? "pdf";
-      const fpath = `files/${uid}/${Date.now()}.${fext}`;
-      const { error: fe } = await supabase.storage.from("book-files").upload(fpath, bookFile, { upsert: true });
-      if (fe) throw fe;
-      const fileUrl = supabase.storage.from("book-files").getPublicUrl(fpath).data.publicUrl;
+      const fileUrl = await uploadRawToCloudinary(bookFile, uid, p => setProgress(50 + p * 0.4));
 
-      setProgress(80);
-      // Inserir na tabela
-      const { error: ie } = await (supabase as any).from("books").insert({
+      setProgress(92);
+      const fext = bookFile.name.split(".").pop()?.toUpperCase() ?? "PDF";
+      const { error } = await (supabase as any).from("books").insert({
         uploader_id: uid,
         title: title.trim(),
         author_name: author.trim() || null,
@@ -159,13 +187,13 @@ function CreateBookModal({ onClose, onCreated }: { onClose: () => void; onCreate
         category,
         cover_url: coverUrl,
         file_url: fileUrl,
-        file_format: fext.toUpperCase(),
+        file_format: fext,
         downloads: 0,
         saves: 0,
       });
-      if (ie) throw ie;
+      if (error) throw error;
       setProgress(100);
-      toast.success("Livro publicado com sucesso!");
+      toast.success("Livro publicado!");
       onCreated();
       onClose();
     } catch (err: any) {
