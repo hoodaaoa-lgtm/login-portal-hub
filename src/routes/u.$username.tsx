@@ -72,10 +72,11 @@ function VideoPlayer({ src, poster, postId, kind }: { src:string; poster?:string
     v.paused ? v.play() : v.pause();
   }
   return (
-    <div className="w-full bg-black relative cursor-pointer overflow-hidden" onClick={toggle}>
+    <div className="w-full bg-black relative cursor-pointer overflow-hidden" onClick={toggle}
+      style={{maxHeight:"360px"}}>
       <video ref={ref} src={src} poster={poster} playsInline preload="metadata"
         onPlay={()=>setPlaying(true)} onPause={()=>setPlaying(false)}
-        className="w-full block" style={{pointerEvents:"none",objectFit:"cover"}}
+        className="w-full block" style={{pointerEvents:"none",objectFit:"cover",maxHeight:"360px"}}
         onContextMenu={e=>e.preventDefault()} />
       {!playing && (
         <div className="absolute inset-0 flex items-center justify-center">
@@ -446,7 +447,7 @@ function UserProfilePage() {
     queryKey:["profilePosts2", profileId],
     queryFn: async ()=>{
       const {data}=await (supabase as any).from("posts")
-        .select("id,author_id,content,kind,created_at,photo_url,image_url,video_url,clip_title,clip_thumb_url,channel_name,channel_handle,channel_avatar,clip_video_id,clip_start,clip_end,likes_count")
+        .select("id,author_id,content,kind,created_at,photo_url,image_url,video_url,clip_title,clip_thumb_url,channel_name,channel_handle,channel_avatar,clip_video_id,clip_start,clip_end,likes_count,views_count")
         .eq("author_id",profileId)
         .order("created_at",{ascending:false})
         .limit(30);
@@ -481,6 +482,7 @@ function UserProfilePage() {
           channelAvatar:p.channel_avatar||null,
           videoStreamUrl: p.clip_video_id ? (streamMap[p.clip_video_id]||null) : null,
           likesCount:p.likes_count??0,
+          viewsCount:(p as any).views_count??0,
         };
       });
     },
@@ -827,7 +829,16 @@ function UserProfilePage() {
                       </button>
                     )}
                     {post.videoUrl&&!post.photo&&(
-                      <VideoPlayer src={post.videoUrl} postId={post.id} kind="video"/>
+                      <>
+                        <VideoPlayer src={post.videoUrl} postId={post.id} kind="video"/>
+                        <div className="px-4 py-1.5 flex items-center gap-1"
+                          style={{background:"var(--s1)"}}>
+                          <Eye className="w-3.5 h-3.5" style={{color:"var(--text-muted)"}}/>
+                          <span className="text-[11px]" style={{color:"var(--text-muted)"}}>
+                            {fmtNum(post.viewsCount??0)} visualizações
+                          </span>
+                        </div>
+                      </>
                     )}
                     {post.kind==="clip"&&post.clipVideoId&&(
                       <div>
