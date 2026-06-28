@@ -128,34 +128,41 @@ export function UserDrawer({ userId: _userId, onClose }: UserDrawerProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view, uid]);
 
+  async function fetchProfilesByIds(ids: string[]): Promise<MiniUser[]> {
+    if (ids.length === 0) return [];
+    const { data } = await supabase
+      .from("profiles")
+      .select("id,username,full_name,avatar_url")
+      .in("id", ids);
+    const byId = new Map<string, MiniUser>();
+    (data ?? []).forEach((p: any) => byId.set(p.id, p as MiniUser));
+    return ids.map(id => byId.get(id)).filter(Boolean) as MiniUser[];
+  }
+
   async function loadFollowers() {
     const { data } = await supabase
       .from("follows")
-      .select("follower_id, profiles!follows_follower_id_fkey(id,username,full_name,avatar_url)")
+      .select("follower_id")
       .eq("following_id", uid)
       .limit(200);
-    const list = (data ?? [])
-      .map((r: any) => r.profiles as MiniUser)
-      .filter(Boolean);
-    setFollowers(list);
+    const ids = (data ?? []).map((r: any) => r.follower_id).filter(Boolean);
+    setFollowers(await fetchProfilesByIds(ids));
   }
 
   async function loadFollowing() {
     const { data } = await supabase
       .from("follows")
-      .select("following_id, profiles!follows_following_id_fkey(id,username,full_name,avatar_url)")
+      .select("following_id")
       .eq("follower_id", uid)
       .limit(200);
-    const list = (data ?? [])
-      .map((r: any) => r.profiles as MiniUser)
-      .filter(Boolean);
-    setFollowing(list);
+    const ids = (data ?? []).map((r: any) => r.following_id).filter(Boolean);
+    setFollowing(await fetchProfilesByIds(ids));
   }
 
   async function loadVideoStats() {
     const { data } = await supabase
       .from("posts")
-      .select("id, text, kind, clip_thumb_url, video_thumb_url, views_count, likes_count, created_at")
+      .select("id, text, kind, clip_thumb_url, views_count, likes_count, created_at")
       .eq("author_id", uid)
       .in("kind", ["video", "clip"])
       .order("created_at", { ascending: false })
@@ -164,7 +171,7 @@ export function UserDrawer({ userId: _userId, onClose }: UserDrawerProps) {
       id: p.id,
       text: p.text ?? "(sem título)",
       kind: p.kind,
-      thumb: p.clip_thumb_url ?? p.video_thumb_url ?? null,
+      thumb: p.clip_thumb_url ?? null,
       views: p.views_count ?? 0,
       likes: p.likes_count ?? 0,
       createdAt: p.created_at,
@@ -175,13 +182,17 @@ export function UserDrawer({ userId: _userId, onClose }: UserDrawerProps) {
   async function loadRatings() {
     const { data } = await supabase
       .from("user_ratings")
-      .select("stars, rater_user_id, profiles!user_ratings_rater_user_id_fkey(id,username,full_name,avatar_url)")
+      .select("stars, rater_user_id, created_at")
       .eq("rated_user_id", uid)
       .order("created_at", { ascending: false })
       .limit(200);
-    const list: RatingRow[] = (data ?? []).map((r: any) => ({
+    const rows = (data ?? []) as { stars: number; rater_user_id: string }[];
+    const ids = rows.map(r => r.rater_user_id).filter(Boolean);
+    const profiles = await fetchProfilesByIds(ids);
+    const byId = new Map(profiles.map(p => [p.id, p]));
+    const list: RatingRow[] = rows.map(r => ({
       stars: r.stars,
-      rater: (r.profiles as MiniUser) ?? null,
+      rater: byId.get(r.rater_user_id) ?? null,
     }));
     setRatings(list);
   }
