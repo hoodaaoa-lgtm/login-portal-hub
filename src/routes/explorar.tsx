@@ -584,7 +584,7 @@ function ExplorePage() {
             ))}
           </div>
         ) : tab === "books" ? (
-          <BooksSection search={searchQ} navigate={navigate} />
+          <BooksSection search={search} navigate={navigate} />
         ) : null}
 
         <BottomNav />
