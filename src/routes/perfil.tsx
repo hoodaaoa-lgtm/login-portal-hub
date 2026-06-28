@@ -387,8 +387,10 @@ function PostCard({
       {(post as any).kind === "clip" && (post as any).clipVideoId && (
         <div className="mx-3 mb-3 rounded-2xl overflow-hidden border" style={{ borderColor: "var(--border-subtle)" }}>
           {(post as any).videoStreamUrl
-            ? <div style={{ aspectRatio: "16/9", background: "#000", maxHeight: 260, overflow: "hidden" }}>
-                <SimpleVideoPlayer src={(post as any).videoStreamUrl} postId={post.id} kind="clip" />
+            ? <div style={{ aspectRatio: "16/9", background: "#000", maxHeight: 260, overflow: "hidden", width: "100%" }}>
+                <div style={{ width: "100%", height: "100%" }}>
+                  <SimpleVideoPlayer src={(post as any).videoStreamUrl} postId={post.id} kind="clip" rounded="rounded-none" />
+                </div>
               </div>
             : (post as any).clipThumb
               ? <a href={`/hoodatv/watch/${(post as any).clipVideoId}`} className="w-full block">
@@ -605,7 +607,10 @@ function SimpleVideoPlayer({ src, rounded = "rounded-none", postId, kind }: {
   return (
     <div
       className={`w-full bg-black relative cursor-pointer overflow-hidden ${rounded}`}
-      style={{ maxHeight: isShort ? "600px" : "420px" }}
+      style={{
+        aspectRatio: kind === "clip" ? "16/9" : undefined,
+        maxHeight: kind === "clip" ? 260 : isShort ? "600px" : "420px",
+      }}
       onClick={toggle}>
       <video
         ref={ref}
@@ -619,11 +624,12 @@ function SimpleVideoPlayer({ src, rounded = "rounded-none", postId, kind }: {
         onPlay={() => setPlaying(true)}
         onPause={() => setPlaying(false)}
         onContextMenu={e => e.preventDefault()}
-        className="w-full block"
+        className="w-full h-full block"
         style={{
           pointerEvents: "none",
-          objectFit: isShort ? "contain" : "cover",
-          maxHeight: isShort ? "600px" : "420px",
+          objectFit: "cover",
+          position: kind === "clip" ? "absolute" : undefined,
+          inset: kind === "clip" ? 0 : undefined,
         }}
       />
       {!playing && (
