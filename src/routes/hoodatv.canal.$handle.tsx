@@ -177,6 +177,7 @@ function ChannelPage() {
 
   const [tab, setTab]         = useState<Tab>("videos");
   const [search, setSearch]   = useState("");
+  const [avatarOpen, setAvatarOpen] = useState(false);
 
   const { data: channel, isLoading: chLoading } = useChannel(handle);
   const { data: videos = [], isLoading: vLoading } = useChannelVideos(channel?.id);
@@ -221,14 +222,6 @@ function ChannelPage() {
             <div className="h-3 rounded-full w-32" style={{ background: "var(--s3)" }} />
           </div>
         </div>
-        {avatarOpen && channel.avatar_url && (
-          <PhotoViewer
-            src={channel.avatar_url}
-            alt={channel.name}
-            subtitle={`@${channel.handle}`}
-            onClose={() => setAvatarOpen(false)}
-          />
-        )}
         <BottomNav />
       </PageWrapper>
     </>
@@ -487,6 +480,14 @@ function ChannelPage() {
           )}
         </div>
 
+        {avatarOpen && channel?.avatar_url && (
+          <PhotoViewer
+            src={channel.avatar_url}
+            alt={channel.name}
+            subtitle={`@${channel.handle}`}
+            onClose={() => setAvatarOpen(false)}
+          />
+        )}
         <BottomNav />
       </PageWrapper>
     </>
