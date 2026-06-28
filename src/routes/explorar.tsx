@@ -205,31 +205,45 @@ function ExplorePage() {
 
   function VideoThumb({ v }: { v: any }) {
     const ch = v.channels;
+    const bg = colorFor(ch?.name || "?");
     return (
       <button className="group text-left w-full" onClick={() => navigate({ to: `/hoodatv/watch/${v.id}` })}>
-        <div className="relative rounded-xl overflow-hidden mb-1.5" style={{ aspectRatio: "9/16", background: "var(--s2)" }}>
+        {/* Thumbnail 16/9 igual ao HoodaTV */}
+        <div className="relative rounded-xl overflow-hidden mb-2" style={{ aspectRatio: "16/9", background: "var(--s2)" }}>
           {v.thumbnail_url
-            ? <img src={v.thumbnail_url} alt={v.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+            ? <img src={v.thumbnail_url} alt={v.title} className="w-full h-full object-cover group-hover:scale-[1.04] transition-transform duration-500" />
             : <div className="w-full h-full flex items-center justify-center" style={{ background: GRAD }}>
-                <Play className="h-6 w-6 text-white" fill="white" />
+                <Play className="h-8 w-8 text-white" fill="white" />
               </div>}
           {v.duration_seconds && (
-            <span className="absolute bottom-1.5 right-1.5 text-[10px] font-bold text-white px-1.5 py-0.5 rounded"
-              style={{ background: "rgba(0,0,0,0.75)" }}>
+            <span className="absolute bottom-2 right-2 text-[11px] font-bold text-white px-1.5 py-0.5 rounded-md"
+              style={{ background: "rgba(0,0,0,0.82)" }}>
               {fmtDur(v.duration_seconds)}
             </span>
           )}
-          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
-            <div className="w-10 h-10 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-              style={{ background: "rgba(255,255,255,0.9)" }}>
-              <Play className="h-4 w-4 ml-0.5" style={{ color: P }} fill={P} />
+          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200"
+            style={{ background: "rgba(0,0,0,0.18)" }}>
+            <div className="w-12 h-12 rounded-full flex items-center justify-center shadow-2xl"
+              style={{ background: "rgba(255,255,255,0.92)" }}>
+              <Play className="h-5 w-5 ml-0.5" style={{ color: P }} fill={P} />
             </div>
           </div>
         </div>
-        <p className="text-[11px] font-semibold truncate leading-tight" style={{ color: "var(--text-primary)" }}>{v.title}</p>
-        <p className="text-[10px] mt-0.5" style={{ color: "var(--text-muted)" }}>
-          {fmtNum(v.views_count ?? 0)} views · {ch?.name ?? ""}
-        </p>
+        {/* Meta — avatar do canal + título + views */}
+        <div className="flex gap-2">
+          <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 flex items-center justify-center text-white text-xs font-bold"
+            style={{ background: bg }}>
+            {ch?.avatar_url
+              ? <img src={ch.avatar_url} alt={ch.name} className="w-full h-full object-cover" />
+              : (ch?.name?.[0] ?? "?").toUpperCase()}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[12.5px] font-semibold line-clamp-2 leading-snug" style={{ color: "var(--text-primary)" }}>{v.title}</p>
+            <p className="text-[11px] mt-0.5" style={{ color: "var(--text-muted)" }}>
+              {ch?.name} · {fmtNum(v.views_count ?? 0)} views
+            </p>
+          </div>
+        </div>
       </button>
     );
   }
@@ -320,7 +334,7 @@ function ExplorePage() {
             {searchVideos.length > 0 && (
               <section>
                 <p className="text-[11px] font-bold uppercase tracking-wider mb-2.5" style={{ color: "var(--text-muted)" }}>Vídeos</p>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {searchVideos.map((v: any) => <VideoThumb key={v.id} v={v} />)}
                 </div>
               </section>
@@ -372,26 +386,12 @@ function ExplorePage() {
                 <button onClick={() => setTab("videos")} className="text-xs font-semibold" style={{ color: P }}>Ver tudo →</button>
               </div>
               {featuredVideos.length === 0 ? (
-                <div className="grid grid-cols-3 gap-2">
-                  {[
-                    { grad: GRAD, label: "Clip do momento", views: "..." },
-                    { grad: "linear-gradient(135deg,#F26B3A,#FFC93C)", label: "Trending agora", views: "..." },
-                    { grad: "linear-gradient(135deg,#1FAFA6,#6BA547)", label: "Mais assistido", views: "..." },
-                  ].map((item, i) => (
-                    <div key={i} className="rounded-xl overflow-hidden border" style={{ borderColor: "var(--border-subtle)" }}>
-                      <div className="flex items-center justify-center" style={{ aspectRatio: "9/16", background: item.grad }}>
-                        <Play className="h-6 w-6 text-white" fill="white" />
-                      </div>
-                      <div className="px-2 py-1.5">
-                        <p className="text-[11px] font-semibold truncate" style={{ color: "var(--text-primary)" }}>{item.label}</p>
-                        <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>{item.views} views</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <p className="text-sm text-center py-8" style={{ color: "var(--text-muted)" }}>
+                  Ainda não há vídeos em destaque.
+                </p>
               ) : (
-                <div className="grid grid-cols-3 gap-2">
-                  {featuredVideos.slice(0,3).map((v: any) => <VideoThumb key={v.id} v={v} />)}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {featuredVideos.slice(0,4).map((v: any) => <VideoThumb key={v.id} v={v} />)}
                 </div>
               )}
             </section>
@@ -461,10 +461,10 @@ function ExplorePage() {
         /* ══════════ VÍDEOS ══════════ */
         ) : tab === "videos" ? (
           <div className="px-4 py-4">
-            <p className="text-[11px] font-bold uppercase tracking-wider mb-3" style={{ color: "var(--text-muted)" }}>
+            <p className="text-[11px] font-bold uppercase tracking-wider mb-4" style={{ color: "var(--text-muted)" }}>
               Vídeos em destaque
             </p>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {featuredVideos.map((v: any) => <VideoThumb key={v.id} v={v} />)}
             </div>
           </div>
