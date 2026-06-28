@@ -1635,8 +1635,8 @@ function PrivacyPanel({ onBack }: { onBack: () => void }) {
           )}
           <p className="px-5 pb-1.5 text-[11px] font-bold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Visibilidade do perfil</p>
           <div className="mx-3 rounded-2xl overflow-hidden border shadow-sm" style={{ background: "var(--s2)", borderColor: "var(--border-default)" }}>
-            <ToggleRow icon={Lock} color="#6BA547" label={t("settings.private_account", "Conta privada")}
-              desc={t("settings.private_account_desc", "Apenas seguidores aprovados veem as tuas publicações")}
+            <ToggleRow icon={Lock} color="#6BA547" label={t("settings.private_account", { defaultValue: "Conta privada" })}
+              desc={t("settings.private_account_desc", { defaultValue: "Apenas seguidores aprovados veem as tuas publicações" })}
               checked={isPrivate} onChange={toggle} />
           </div>
           {err && <p className="px-5 pt-2 text-xs text-red-500">{err}</p>}
