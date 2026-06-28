@@ -1942,7 +1942,7 @@ function SimpleVideoPlayer({ src, poster, postId, kind }: { src: string; poster?
         onPlay={() => setPlaying(true)}
         onPause={() => setPlaying(false)}
         className="w-full block"
-        style={{ display: "block", pointerEvents: "none", objectFit: "cover", width: "100%" }}
+        style={{ display: "block", pointerEvents: "none", objectFit: "contain", width: "100%", background: "#000" }}
       />
       {!playing && (
         <div className="absolute inset-0 flex items-center justify-center">
