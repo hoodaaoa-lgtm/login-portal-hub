@@ -2730,15 +2730,24 @@ function PostCard({ p }: { p: any }) {
       )}
 
       <div className="flex items-center justify-between px-4 py-3">
-        <div className="flex items-center gap-3">
-          <ProfileAvatarLink userId={p.author_id} username={p.author_username} disableStoryCheck={isAd || !p.author_username} className="inline-flex">
-            <span
-              className="text-sm font-bold flex items-center gap-1.5 hover:underline text-left" style={{ color: "var(--text-primary)" }}>
-              {p.user}
-              {isAd && <span className="text-[9px] uppercase bg-[var(--s2)] text-[var(--text-muted)] px-1.5 py-0.5 rounded font-semibold">Patrocinado</span>}
-            </span>
+        <div className="flex items-center gap-2.5">
+          <ProfileAvatarLink userId={p.author_id || p.user_id} username={p.author_username} disableStoryCheck={isAd || !p.author_username}>
+            <div className="w-10 h-10 rounded-full overflow-hidden shrink-0 flex items-center justify-center font-bold text-white text-sm"
+              style={{ background: p.color || "#5B3FCF" }}>
+              {p.avatar_url
+                ? <img src={p.avatar_url} alt="" className="w-full h-full object-cover"/>
+                : (p.user?.[0] ?? "?").toUpperCase()}
+            </div>
           </ProfileAvatarLink>
-          {(p.name || dynamicTime) && <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>{p.name}{p.name && dynamicTime ? " · " : ""}{dynamicTime}</p>}
+          <div className="min-w-0">
+            <ProfileAvatarLink userId={p.author_id || p.user_id} username={p.author_username} disableStoryCheck={isAd || !p.author_username} className="inline-flex">
+              <span className="text-sm font-bold hover:underline" style={{ color: "var(--text-primary)" }}>
+                {p.user}
+                {isAd && <span className="text-[9px] uppercase bg-[var(--s2)] text-[var(--text-muted)] px-1.5 py-0.5 rounded font-semibold ml-1">Patrocinado</span>}
+              </span>
+            </ProfileAvatarLink>
+            {(p.name || dynamicTime) && <p className="text-[11px] leading-tight" style={{ color: "var(--text-muted)" }}>{p.name}{p.name && dynamicTime ? " · " : ""}{dynamicTime}</p>}
+          </div>
         </div>
         {!isAd && p.author_id && (
           <button onClick={toggleFollow} disabled={following === null}
@@ -3010,7 +3019,7 @@ function HomePage() {
 
     const { data: postsData, error: postsErr } = await supabase
       .from("posts")
-      .select("id,author_id,author_username,author_name,author_color,content,kind,is_ad,created_at,photo_url,photos,video_url,clip_video_id,clip_start,clip_end,clip_title,channel_id,channel_handle,channel_name,channel_avatar,clip_thumb_url")
+      .select("id,author_id,user_id,author_username,author_name,author_color,content,kind,is_ad,created_at,photo_url,photos,video_url,clip_video_id,clip_start,clip_end,clip_title,channel_id,channel_handle,channel_name,channel_avatar,clip_thumb_url")
       .gte("created_at", windowStart)
       .order("created_at", { ascending: false })
       .limit(200);
