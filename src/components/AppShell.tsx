@@ -8,7 +8,7 @@ import { useBadges } from "@/contexts/BadgeContext";
 import { UserDrawer } from "@/components/UserDrawer";
 import {
   Home, Compass, MessageSquare, Users, User, Tv, Menu,
-  Moon, Sun, Bell, Settings,
+  Moon, Sun, Bell,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -154,12 +154,6 @@ export function SideNav() {
             : <Moon className="h-5 w-5" strokeWidth={1.8} />}
           <span>{theme === "dark" ? t("settings.light_mode") : t("settings.dark_mode")}</span>
         </button>
-        <Link to="/perfil"
-          className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors"
-          style={{ color: "var(--text-secondary)" }}>
-          <Settings className="h-5 w-5" strokeWidth={1.8} />
-          <span>Definições</span>
-        </Link>
       </div>
     </aside>
     </>

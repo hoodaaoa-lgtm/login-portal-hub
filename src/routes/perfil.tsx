@@ -1181,7 +1181,7 @@ function MonetizationPanel() {
 }
 
 /* ─── Gaveta de Configurações ─── */
-function SettingsDrawer({
+export function SettingsDrawer({
   onClose, onEditProfile, onSignOut, msgPermission, onMsgPermissionChange,
   onOpenNotifications, onOpenActivity, onOpenPrivacy, onOpenSecurity,
   onOpenHelp, onOpenAbout, onOpenLanguage, onOpenMsgPrivacy, profile,
@@ -1445,7 +1445,7 @@ function ToggleRow({ icon: Icon, color, label, desc, checked, onChange }: {
 }
 
 /* ─── Notificações ─── */
-function NotificationsPanel({ onBack }: { onBack: () => void }) {
+export function NotificationsPanel({ onBack }: { onBack: () => void }) {
   const [prefs, setPrefs] = useState({ likes: true, comments: true, follows: true, messages: true, mentions: true });
   const [loading, setLoading] = useState(true);
   const [savingErr, setSavingErr] = useState("");
@@ -1514,7 +1514,7 @@ function NotificationsPanel({ onBack }: { onBack: () => void }) {
 }
 
 /* ─── Atividade ─── */
-function ActivityPanel({ onBack }: { onBack: () => void }) {
+export function ActivityPanel({ onBack }: { onBack: () => void }) {
   const [items, setItems] = useState<{ id: string; type: string; text: string; time: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
@@ -1593,7 +1593,7 @@ function ActivityPanel({ onBack }: { onBack: () => void }) {
 }
 
 /* ─── Privacidade ─── */
-function PrivacyPanel({ onBack }: { onBack: () => void }) {
+export function PrivacyPanel({ onBack }: { onBack: () => void }) {
   const [isPrivate, setIsPrivate] = useState(false);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
@@ -1650,7 +1650,7 @@ function PrivacyPanel({ onBack }: { onBack: () => void }) {
 }
 
 /* ─── Segurança ─── */
-function SecurityPanel({ onBack, email }: { onBack: () => void; email: string }) {
+export function SecurityPanel({ onBack, email }: { onBack: () => void; email: string }) {
   const [pwd, setPwd] = useState("");
   const [pwd2, setPwd2] = useState("");
   const [saving, setSaving] = useState(false);
@@ -1701,7 +1701,7 @@ function SecurityPanel({ onBack, email }: { onBack: () => void; email: string })
 
 
 /* ─── Privacidade de Mensagens ─── */
-function MsgPrivacyPanel({ onBack, msgPermission, onMsgPermissionChange }: {
+export function MsgPrivacyPanel({ onBack, msgPermission, onMsgPermissionChange }: {
   onBack: () => void; msgPermission: string; onMsgPermissionChange: (v: string) => void;
 }) {
   const [saving, setSaving] = useState(false);
@@ -1771,7 +1771,7 @@ function MsgPrivacyPanel({ onBack, msgPermission, onMsgPermissionChange }: {
 }
 
 /* ─── Sobre ─── */
-function AboutPanel({ onBack }: { onBack: () => void }) {
+export function AboutPanel({ onBack }: { onBack: () => void }) {
   return (
     <SettingsSubPanel title={t("settings.about")} onBack={onBack}>
       <div className="px-5 py-4 space-y-4">
@@ -1797,7 +1797,7 @@ function AboutPanel({ onBack }: { onBack: () => void }) {
 }
 
 /* ─── Ajuda ─── */
-function HelpPanel({ onBack }: { onBack: () => void }) {
+export function HelpPanel({ onBack }: { onBack: () => void }) {
   const faqs = [
     { q: "Como altero a minha foto de perfil?", a: "Vai ao teu perfil e clica na foto de perfil para fazer upload de uma nova imagem." },
     { q: "Como publico um vídeo?", a: "Vai ao HoodaStudio e clica em 'Novo vídeo'. Podes fazer upload e definir título, descrição e visibilidade." },
@@ -2219,10 +2219,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
         <div className="mx-auto max-w-2xl lg:max-w-3xl px-4 h-14 flex items-center justify-between">
           <HoodaLogo size="sm" className="lg:hidden" />
           <span className="hidden lg:block text-sm font-bold" style={{ color: "var(--text-primary)" }}>Perfil</span>
-          <button onClick={() => setShowSettings(true)}
-            className="p-2 hover:bg-[var(--s2)] rounded-full transition active:scale-90" aria-label={t("settings.title")}>
-            <Settings className="h-5 w-5 text-[var(--text-secondary)]" />
-          </button>
+          <span aria-hidden className="w-9" />
         </div>
       </header>
 

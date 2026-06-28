@@ -17,6 +17,7 @@ import { Route as MensagensRouteImport } from './routes/mensagens'
 import { Route as HoodatvRouteImport } from './routes/hoodatv'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as ExplorarRouteImport } from './routes/explorar'
+import { Route as DefinicoesRouteImport } from './routes/definicoes'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as StudioIndexRouteImport } from './routes/studio.index'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
@@ -68,6 +69,11 @@ const HomeRoute = HomeRouteImport.update({
 const ExplorarRoute = ExplorarRouteImport.update({
   id: '/explorar',
   path: '/explorar',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DefinicoesRoute = DefinicoesRouteImport.update({
+  id: '/definicoes',
+  path: '/definicoes',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -133,6 +139,7 @@ const HoodatvCanalHandleRoute = HoodatvCanalHandleRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/definicoes': typeof DefinicoesRoute
   '/explorar': typeof ExplorarRoute
   '/home': typeof HomeRoute
   '/hoodatv': typeof HoodatvRouteWithChildren
@@ -155,6 +162,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/definicoes': typeof DefinicoesRoute
   '/explorar': typeof ExplorarRoute
   '/home': typeof HomeRoute
   '/hoodatv': typeof HoodatvRouteWithChildren
@@ -177,6 +185,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/definicoes': typeof DefinicoesRoute
   '/explorar': typeof ExplorarRoute
   '/home': typeof HomeRoute
   '/hoodatv': typeof HoodatvRouteWithChildren
@@ -201,6 +210,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/definicoes'
     | '/explorar'
     | '/home'
     | '/hoodatv'
@@ -223,6 +233,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/definicoes'
     | '/explorar'
     | '/home'
     | '/hoodatv'
@@ -244,6 +255,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/definicoes'
     | '/explorar'
     | '/home'
     | '/hoodatv'
@@ -267,6 +279,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DefinicoesRoute: typeof DefinicoesRoute
   ExplorarRoute: typeof ExplorarRoute
   HomeRoute: typeof HomeRoute
   HoodatvRoute: typeof HoodatvRouteWithChildren
@@ -335,6 +348,13 @@ declare module '@tanstack/react-router' {
       path: '/explorar'
       fullPath: '/explorar'
       preLoaderRoute: typeof ExplorarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/definicoes': {
+      id: '/definicoes'
+      path: '/definicoes'
+      fullPath: '/definicoes'
+      preLoaderRoute: typeof DefinicoesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -462,6 +482,7 @@ const StudioRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DefinicoesRoute: DefinicoesRoute,
   ExplorarRoute: ExplorarRoute,
   HomeRoute: HomeRoute,
   HoodatvRoute: HoodatvRouteWithChildren,
