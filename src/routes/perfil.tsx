@@ -5,6 +5,7 @@ import { useScrollLock } from "@/hooks/useScrollLock";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
+import { usePostVideoView } from "@/hooks/usePostVideoView";
 import { STATIC_QUERY_OPTIONS } from "@/lib/queryClient";
 import { BottomNav, SideNav, PageWrapper } from "@/components/AppShell";
 import { HoodaLogo } from "@/components/HoodaLogo";
@@ -379,14 +380,14 @@ function PostCard({
       {/* Media — ocupa largura total, sem padding lateral */}
       {post.videoUrl && (
         <div className="w-full" style={{ maxHeight: 360, overflow: "hidden" }}>
-          <SimpleVideoPlayer src={post.videoUrl} />
+          <SimpleVideoPlayer src={post.videoUrl} postId={post.id} kind="video" />
         </div>
       )}
       {(post as any).kind === "clip" && (post as any).clipVideoId && (
         <div className="w-full">
           {(post as any).videoStreamUrl
             ? <div style={{ maxHeight: 360, overflow: "hidden" }}>
-                <SimpleVideoPlayer src={(post as any).videoStreamUrl} />
+                <SimpleVideoPlayer src={(post as any).videoStreamUrl} postId={post.id} kind="clip" />
               </div>
             : (post as any).clipThumb
               ? <a href={`/hoodatv/watch/${(post as any).clipVideoId}`} className="w-full block">
@@ -481,7 +482,7 @@ function PostCard({
             <>
               {post.videoUrl && (
                 <div className="w-full">
-                  <SimpleVideoPlayer src={post.videoUrl} />
+                  <SimpleVideoPlayer src={post.videoUrl} postId={post.id} kind="video" />
                 </div>
               )}
               {post.photo && !post.videoUrl && <img src={post.photo} alt="" className="w-full" style={{ display: "block" }} />}
@@ -584,27 +585,66 @@ function PostsFeed({ posts, name, username, avatarUrl, onLike, onBookmark, onDel
 }
 
 /* ─── Modal Criar Publicação ─── */
-/* ── SimpleVideoPlayer — player simples sem ecrã cheio, deteta short automaticamente ── */
-function SimpleVideoPlayer({ src, rounded = "rounded-none" }: { src: string; rounded?: string }) {
+/* ── SimpleVideoPlayer — play overlay, deteta short, regista views ── */
+function SimpleVideoPlayer({ src, rounded = "rounded-none", postId, kind }: {
+  src: string; rounded?: string; postId?: string; kind?: string;
+}) {
   const [isShort, setIsShort] = useState<boolean | null>(null);
+  const [playing, setPlaying] = useState(false);
   const ref = useRef<HTMLVideoElement>(null);
+
+  usePostVideoView(postId, kind, ref);
+
+  function toggle() {
+    const v = ref.current; if (!v) return;
+    if (v.paused) { v.play(); setPlaying(true); }
+    else { v.pause(); setPlaying(false); }
+  }
+
   return (
-    <div className={`w-full bg-black relative ${rounded}`}
-      style={{
-        aspectRatio: isShort === true ? "9/16" : "16/9",
-        maxHeight: isShort === true ? "70vh" : undefined,
-        margin: "0 auto",
-        maxWidth: isShort === true ? "calc(70vh * 9 / 16)" : "100%",
-      }}>
-      <video ref={ref} src={src} controls playsInline preload="metadata"
+    <div
+      className={`w-full bg-black relative cursor-pointer overflow-hidden ${rounded}`}
+      style={{ maxHeight: isShort ? "600px" : "420px" }}
+      onClick={toggle}>
+      <video
+        ref={ref}
+        src={src}
+        playsInline
+        preload="metadata"
         onLoadedMetadata={() => {
           const v = ref.current;
           if (v) setIsShort(v.videoHeight > v.videoWidth);
         }}
-        className="w-full h-full object-contain"
-        style={{ display: "block" }}
-        controlsList="nodownload nofullscreen noremoteplayback"
-        disablePictureInPicture />
+        onPlay={() => setPlaying(true)}
+        onPause={() => setPlaying(false)}
+        onContextMenu={e => e.preventDefault()}
+        className="w-full block"
+        style={{
+          pointerEvents: "none",
+          objectFit: isShort ? "contain" : "cover",
+          maxHeight: isShort ? "600px" : "420px",
+        }}
+      />
+      {!playing && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="w-14 h-14 rounded-full flex items-center justify-center transition active:scale-90"
+            style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(4px)" }}>
+            <svg className="h-7 w-7 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M8 5v14l11-7z" />
+            </svg>
+          </div>
+        </div>
+      )}
+      {playing && (
+        <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+          <div className="w-12 h-12 rounded-full flex items-center justify-center"
+            style={{ background: "rgba(0,0,0,0.4)" }}>
+            <svg className="h-6 w-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+            </svg>
+          </div>
+        </div>
+      )}
       {isShort === null && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="w-7 h-7 rounded-full border-2 border-white/20 border-t-white animate-spin" />
