@@ -23,7 +23,7 @@ import {
   ImageIcon, Type as TypeIcon, Check, ArrowLeft,
   AlignLeft, AlignCenter, AlignRight, Bold, Italic, Send, Eye,
   Trash2, Layers, Smile, Sliders, SlidersHorizontal,
-  Bookmark, BookmarkCheck, Forward,
+  Bookmark, BookmarkCheck, Forward, Repeat2,
 } from "lucide-react";
 import { fetchMusic } from "@/lib/api/music.functions";
 import { useTimeAgo } from "@/hooks/useTimeAgo";
@@ -70,7 +70,227 @@ function RichText({ text, className, style }: { text: string; className?: string
   );
 }
 
-/* ── ForwardModal — reencaminhar post para conversa ── */
+/* ── RepostModal — repost simples ou quote repost ── */
+const ACCENT_COLOR = "#5B3FCF";
+
+function RepostModal({ post, me, onClose, onReposted }: {
+  post: any; me: any; onClose: () => void;
+  onReposted: (count: number, didRepost: boolean) => void;
+}) {
+  const { t } = useTranslation();
+  const [mode, setMode] = useState<"menu" | "quote" | "done">("menu");
+  const [quoteText, setQuoteText] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [alreadyReposted, setAlreadyReposted] = useState(false);
+
+  // Verificar se já repostou
+  useEffect(() => {
+    if (!me?.id) return;
+    (async () => {
+      const { data } = await (supabase as any)
+        .from("reposts").select("id").eq("user_id", me.id).eq("post_id", post.id).maybeSingle();
+      setAlreadyReposted(!!data);
+    })();
+  }, [me?.id, post.id]);
+
+  async function doRepost(quote?: string) {
+    if (!me?.id || loading) return;
+    setLoading(true);
+    if (alreadyReposted) {
+      // Desfazer repost
+      await (supabase as any).from("reposts").delete().eq("user_id", me.id).eq("post_id", post.id);
+      onReposted((post.reposts_count ?? 1) - 1, false);
+    } else {
+      await (supabase as any).from("reposts").insert({
+        user_id: me.id, post_id: post.id, quote_text: quote || null,
+      });
+      onReposted((post.reposts_count ?? 0) + 1, true);
+    }
+    setLoading(false);
+    setMode("done");
+    setTimeout(onClose, 900);
+  }
+
+  const avatarColor = (name: string) => {
+    const COLORS = [ACCENT_COLOR, "#F26B3A", "#1FAFA6", "#6BA547", "#E94B8A"];
+    return COLORS[(name?.charCodeAt(0) ?? 0) % COLORS.length];
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+      style={{ background: "rgba(0,0,0,0.45)" }} onClick={onClose}>
+      <div className="w-full max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col"
+        style={{ background: "var(--s0)", maxHeight: "90vh" }}
+        onClick={e => e.stopPropagation()}>
+
+        {/* ── MENU INICIAL ── */}
+        {mode === "menu" && (
+          <>
+            <div className="flex items-center justify-between px-5 pt-5 pb-2">
+              <h3 className="font-extrabold text-base" style={{ color: "var(--text-primary)" }}>
+                {alreadyReposted ? "Desfazer repost?" : "Repostar"}
+              </h3>
+              <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "var(--s2)" }}>
+                <X className="w-4 h-4" style={{ color: "var(--text-muted)" }} />
+              </button>
+            </div>
+
+            {/* Preview do post original */}
+            <div className="mx-4 mb-4 p-3 rounded-2xl border" style={{ background: "var(--s2)", borderColor: "var(--border-default)" }}>
+              <div className="flex items-center gap-2 mb-1.5">
+                <div className="w-7 h-7 rounded-full overflow-hidden flex items-center justify-center text-white text-xs font-bold shrink-0"
+                  style={{ background: avatarColor(post.user) }}>
+                  {post.avatar_url
+                    ? <img src={post.avatar_url} alt="" className="w-full h-full object-cover" />
+                    : (post.user?.[0] ?? "?").toUpperCase()}
+                </div>
+                <div>
+                  <p className="text-xs font-bold leading-none" style={{ color: "var(--text-primary)" }}>{post.user}</p>
+                  <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>@{post.author_username}</p>
+                </div>
+              </div>
+              {post.text && (
+                <p className="text-sm leading-relaxed line-clamp-3" style={{ color: "var(--text-secondary)" }}>{post.text}</p>
+              )}
+              {post.photo && (
+                <img src={post.photo} alt="" className="w-full rounded-xl mt-2 object-cover max-h-32" />
+              )}
+            </div>
+
+            {/* Opções */}
+            <div className="px-4 pb-5 space-y-2">
+              {alreadyReposted ? (
+                <button onClick={() => doRepost()} disabled={loading}
+                  className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl font-semibold text-sm transition active:scale-[0.98]"
+                  style={{ background: "#ef444415", color: "#ef4444" }}>
+                  <Repeat2 className="w-5 h-5" />
+                  <div className="text-left">
+                    <p className="font-bold">Desfazer repost</p>
+                    <p className="text-xs opacity-70">Remove do teu feed e dos teus seguidores</p>
+                  </div>
+                </button>
+              ) : (
+                <>
+                  <button onClick={() => doRepost()} disabled={loading}
+                    className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl font-semibold text-sm transition active:scale-[0.98]"
+                    style={{ background: "var(--s2)", color: "var(--text-primary)" }}
+                    onMouseOver={e => (e.currentTarget.style.background = "var(--s3)")}
+                    onMouseOut={e => (e.currentTarget.style.background = "var(--s2)")}>
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${ACCENT_COLOR}15` }}>
+                      <Repeat2 className="w-5 h-5" style={{ color: ACCENT_COLOR }} />
+                    </div>
+                    <div className="text-left">
+                      <p className="font-bold" style={{ color: "var(--text-primary)" }}>Repostar</p>
+                      <p className="text-xs" style={{ color: "var(--text-muted)" }}>Partilha imediatamente com os teus seguidores</p>
+                    </div>
+                  </button>
+
+                  <button onClick={() => setMode("quote")}
+                    className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl font-semibold text-sm transition active:scale-[0.98]"
+                    style={{ background: "var(--s2)", color: "var(--text-primary)" }}
+                    onMouseOver={e => (e.currentTarget.style.background = "var(--s3)")}
+                    onMouseOut={e => (e.currentTarget.style.background = "var(--s2)")}>
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: "#E94B8A15" }}>
+                      <TypeIcon className="w-5 h-5" style={{ color: "#E94B8A" }} />
+                    </div>
+                    <div className="text-left">
+                      <p className="font-bold" style={{ color: "var(--text-primary)" }}>Citar publicação</p>
+                      <p className="text-xs" style={{ color: "var(--text-muted)" }}>Adiciona o teu comentário a esta publicação</p>
+                    </div>
+                  </button>
+                </>
+              )}
+            </div>
+          </>
+        )}
+
+        {/* ── QUOTE REPOST ── */}
+        {mode === "quote" && (
+          <>
+            <div className="flex items-center gap-3 px-4 pt-4 pb-3 border-b" style={{ borderColor: "var(--border-subtle)" }}>
+              <button onClick={() => setMode("menu")} className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "var(--s2)" }}>
+                <ChevronLeft className="w-4 h-4" style={{ color: "var(--text-primary)" }} />
+              </button>
+              <h3 className="font-extrabold text-base flex-1" style={{ color: "var(--text-primary)" }}>Citar publicação</h3>
+              <button onClick={() => doRepost(quoteText)} disabled={!quoteText.trim() || loading}
+                className="px-4 h-8 rounded-full text-sm font-bold text-white transition active:scale-95 disabled:opacity-40"
+                style={{ background: `linear-gradient(135deg, ${ACCENT_COLOR}, #E94B8A)` }}>
+                {loading
+                  ? <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                  : "Publicar"}
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-4 pt-3 pb-4">
+              {/* Caixa de texto */}
+              <div className="flex gap-3 mb-4">
+                <div className="w-9 h-9 rounded-full shrink-0 flex items-center justify-center text-white font-bold text-sm"
+                  style={{ background: ACCENT_COLOR }}>
+                  {me?.username?.[0]?.toUpperCase() ?? "?"}
+                </div>
+                <textarea
+                  autoFocus
+                  value={quoteText}
+                  onChange={e => setQuoteText(e.target.value)}
+                  maxLength={280}
+                  placeholder="Adiciona o teu comentário…"
+                  rows={3}
+                  className="flex-1 resize-none outline-none text-sm leading-relaxed bg-transparent"
+                  style={{ color: "var(--text-primary)" }}
+                />
+              </div>
+
+              {/* Post original encaixado */}
+              <div className="rounded-2xl border overflow-hidden" style={{ borderColor: "var(--border-default)" }}>
+                <div className="flex items-center gap-2 px-3 pt-3 pb-1.5">
+                  <div className="w-6 h-6 rounded-full overflow-hidden flex items-center justify-center text-white text-[10px] font-bold shrink-0"
+                    style={{ background: avatarColor(post.user) }}>
+                    {post.avatar_url
+                      ? <img src={post.avatar_url} alt="" className="w-full h-full object-cover" />
+                      : (post.user?.[0] ?? "?").toUpperCase()}
+                  </div>
+                  <p className="text-xs font-bold" style={{ color: "var(--text-primary)" }}>{post.user}</p>
+                  <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>@{post.author_username}</p>
+                </div>
+                {post.text && (
+                  <p className="px-3 pb-2 text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+                    {post.text.length > 120 ? post.text.slice(0, 120) + "…" : post.text}
+                  </p>
+                )}
+                {post.photo && (
+                  <img src={post.photo} alt="" className="w-full object-cover max-h-40" />
+                )}
+              </div>
+
+              {/* Contador de caracteres */}
+              <div className="flex justify-end mt-2">
+                <span className="text-xs" style={{ color: quoteText.length > 260 ? "#ef4444" : "var(--text-muted)" }}>
+                  {quoteText.length}/280
+                </span>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* ── CONFIRMAÇÃO ── */}
+        {mode === "done" && (
+          <div className="flex flex-col items-center gap-3 py-10 px-6">
+            <div className="w-14 h-14 rounded-full flex items-center justify-center"
+              style={{ background: alreadyReposted ? "#ef444415" : `${ACCENT_COLOR}15` }}>
+              <Repeat2 className="w-7 h-7" style={{ color: alreadyReposted ? "#ef4444" : ACCENT_COLOR }} />
+            </div>
+            <p className="font-extrabold text-base text-center" style={{ color: "var(--text-primary)" }}>
+              {alreadyReposted ? "Repost removido" : "Repostado!"}
+            </p>
+            <p className="text-sm text-center" style={{ color: "var(--text-muted)" }}>
+              {alreadyReposted ? "A publicação foi removida do teu feed." : "Os teus seguidores já podem ver esta publicação."}
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 function ForwardModal({ post, me, onClose }: { post: any; me: any; onClose: () => void }) {
   const { t } = useTranslation();
   const [conversations, setConversations] = useState<any[]>([]);
@@ -2313,6 +2533,9 @@ function PostCard({ p }: { p: any }) {
   const [following, setFollowing] = useState<boolean | null>(null);
   const [showComments, setShowComments] = useState(false);
   const [showForward, setShowForward] = useState(false);
+  const [showRepost, setShowRepost] = useState(false);
+  const [repostCount, setRepostCount] = useState(p.reposts_count ?? 0);
+  const [didRepost, setDidRepost] = useState(false);
   const [sendingComment, setSendingComment] = useState(false);
   const qc = useQueryClient();
   type PC = import("@/components/PostCommentsModal").PostComment;
@@ -2495,30 +2718,27 @@ function PostCard({ p }: { p: any }) {
 
   return (
     <article className="hooda-card overflow-hidden animate-fade-in-up" style={{ borderRadius: 16 }}>
+
+      {/* Banner "X repostou" */}
+      {p.reposted_by_name && (
+        <div className="flex items-center gap-1.5 px-4 pt-2.5 pb-0">
+          <Repeat2 className="h-3.5 w-3.5" style={{ color: "#1FAFA6" }} />
+          <span className="text-[11px] font-semibold" style={{ color: "#1FAFA6" }}>
+            {p.reposted_by_name} repostou
+          </span>
+        </div>
+      )}
+
       <div className="flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-3">
-          <ProfileAvatarLink userId={p.author_id} username={p.author_username} disableStoryCheck={isAd || !p.author_username}>
-            <button
-              className="h-10 w-10 rounded-full flex-shrink-0 hover:opacity-80 transition overflow-hidden"
-              style={{ background: p.color, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              {p.avatar_url
-                ? <img loading="lazy" decoding="async" src={p.avatar_url} alt={p.user}
-                    width={40} height={40}
-                    className="w-full h-full object-cover" onError={e => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
-                : <span className="text-white font-bold text-sm">{(p.user?.[0] ?? "?").toUpperCase()}</span>
-              }
-            </button>
+          <ProfileAvatarLink userId={p.author_id} username={p.author_username} disableStoryCheck={isAd || !p.author_username} className="inline-flex">
+            <span
+              className="text-sm font-bold flex items-center gap-1.5 hover:underline text-left" style={{ color: "var(--text-primary)" }}>
+              {p.user}
+              {isAd && <span className="text-[9px] uppercase bg-[var(--s2)] text-[var(--text-muted)] px-1.5 py-0.5 rounded font-semibold">Patrocinado</span>}
+            </span>
           </ProfileAvatarLink>
-          <div>
-            <ProfileAvatarLink userId={p.author_id} username={p.author_username} disableStoryCheck={isAd || !p.author_username} className="inline-flex">
-              <span
-                className="text-sm font-bold flex items-center gap-1.5 hover:underline text-left" style={{ color: "var(--text-primary)" }}>
-                {p.user}
-                {isAd && <span className="text-[9px] uppercase bg-[var(--s2)] text-[var(--text-muted)] px-1.5 py-0.5 rounded font-semibold">Patrocinado</span>}
-              </span>
-            </ProfileAvatarLink>
-            {(p.name || dynamicTime) && <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>{p.name}{p.name && dynamicTime ? " · " : ""}{dynamicTime}</p>}
-          </div>
+          {(p.name || dynamicTime) && <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>{p.name}{p.name && dynamicTime ? " · " : ""}{dynamicTime}</p>}
         </div>
         {!isAd && p.author_id && (
           <button onClick={toggleFollow} disabled={following === null}
@@ -2598,12 +2818,28 @@ function PostCard({ p }: { p: any }) {
               <MessageCircle className="h-5 w-5 text-[var(--text-muted)]" />
               <span className="text-xs font-semibold text-[var(--text-muted)]">{p.comments ?? 0}</span>
             </button>
+            {/* Repost */}
+            <button onClick={() => setShowRepost(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all active:scale-95 hover:bg-[var(--s1)]">
+              <Repeat2 className="h-5 w-5" style={{ color: didRepost ? "#1FAFA6" : "var(--text-muted)" }} />
+              {repostCount > 0 && (
+                <span className="text-xs font-semibold" style={{ color: didRepost ? "#1FAFA6" : "var(--text-muted)" }}>{repostCount}</span>
+              )}
+            </button>
             <button onClick={() => setShowForward(true)} className="p-2 rounded-full hover:bg-[var(--s1)] transition">
               <Forward className="h-5 w-5 text-[var(--text-muted)]" />
             </button>
           </div>
           <BookmarkButton />
         </div>
+      )}
+      {showRepost && (
+        <RepostModal
+          post={p}
+          me={meRef.current}
+          onClose={() => setShowRepost(false)}
+          onReposted={(count, did) => { setRepostCount(count); setDidRepost(did); }}
+        />
       )}
       {showForward && <ForwardModal post={p} me={meRef.current} onClose={() => setShowForward(false)} />}
       {showComments && (
