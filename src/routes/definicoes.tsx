@@ -5,7 +5,7 @@ import { BottomNav, SideNav, PageWrapper } from "@/components/AppShell";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
-  ChevronRight, Sun, Moon, Bell, Lock, Shield, HelpCircle,
+  Bell, Lock, Shield, HelpCircle,
   Info, Globe, MessageSquare, User, LogOut, Activity, ArrowLeft,
 } from "lucide-react";
 import {
@@ -29,7 +29,6 @@ function DefinicoesPage() {
   const [profile, setProfile]           = useState<any>(null);
   const [email, setEmail]               = useState("");
   const [msgPermission, setMsgPermission] = useState("todos");
-  const [darkMode, setDarkMode]         = useState(() => document.documentElement.classList.contains("dark"));
   const [panel, setPanel]               = useState<string | null>(null);
 
   useEffect(() => {
@@ -47,37 +46,11 @@ function DefinicoesPage() {
     })();
   }, [navigate]);
 
-  function toggleDark() {
-    const next = !darkMode;
-    setDarkMode(next);
-    document.documentElement.classList.toggle("dark", next);
-    localStorage.setItem("theme", next ? "dark" : "light");
-  }
-
-  async function signOut() {
-    await supabase.auth.signOut();
-    navigate({ to: "/" });
-  }
-
   const name = profile?.full_name || profile?.username || email.split("@")[0] || "Utilizador";
   const avatarUrl = profile?.avatar_url;
   const currentLang = LANGUAGES.find(l => l.code === getCurrentLang());
 
   const SECTIONS = [
-    {
-      title: "Aparência",
-      items: [
-        {
-          icon: darkMode ? <Moon className="w-5 h-5"/> : <Sun className="w-5 h-5"/>,
-          color: "#F26B3A",
-          label: darkMode ? "Modo escuro" : "Modo claro",
-          desc: "Altera o tema da app",
-          toggle: true,
-          value: darkMode,
-          onToggle: toggleDark,
-        },
-      ],
-    },
     {
       title: "Conta",
       items: [
@@ -184,13 +157,6 @@ function DefinicoesPage() {
                 </div>
               </div>
             ))}
-
-            {/* Terminar sessão */}
-            <button onClick={signOut}
-              className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl font-bold text-sm transition active:scale-[0.98]"
-              style={{ background: "#fee2e2", color: "#dc2626" }}>
-              <LogOut className="w-4 h-4" /> Terminar sessão
-            </button>
 
             <p className="text-center text-[11px] pb-2" style={{ color: "var(--text-muted)" }}>
               © 2025 Hooda · v1.0.0
