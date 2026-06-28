@@ -8,7 +8,7 @@ import { useBadges } from "@/contexts/BadgeContext";
 import { UserDrawer } from "@/components/UserDrawer";
 import {
   Home, Compass, MessageSquare, Users, User, Tv, Menu,
-  Moon, Sun, Bell, Settings,
+  Moon, Sun, Bell,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
