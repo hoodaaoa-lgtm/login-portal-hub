@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate, useParams } from "@tanstack/react-router"
 import { useEffect, useRef, useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { PhotoViewer } from "@/components/PhotoViewer";
 import { BottomNav, SideNav, PageWrapper } from "@/components/AppShell";
 import {
   ChevronLeft, MessageCircle, Flag, Heart, Share2,
@@ -945,29 +946,12 @@ function UserProfilePage() {
 
       {/* ── Visualizador de foto ── */}
       {photoViewing && (
-        <div className="fixed inset-0 flex items-center justify-center"
-          style={{background:"rgba(0,0,0,0.96)", zIndex:9999}}
-          onClick={()=>setPhotoViewing(null)}>
-          {/* Header */}
-          <div className="absolute top-0 left-0 right-0 flex items-center gap-3 px-4 py-3"
-            style={{background:"linear-gradient(to bottom,rgba(0,0,0,0.6),transparent)"}}>
-            {avatarUrl && photoViewing===avatarUrl && (
-              <img src={avatarUrl} alt="" className="w-8 h-8 rounded-full object-cover"/>
-            )}
-            <div>
-              <p className="text-white text-sm font-bold leading-tight">{name}</p>
-              <p className="text-white/60 text-xs">@{profile?.username ?? username}</p>
-            </div>
-          </div>
-          <button className="absolute top-3 right-4 w-10 h-10 rounded-full flex items-center justify-center"
-            style={{background:"rgba(255,255,255,0.15)"}}>
-            <X className="h-5 w-5 text-white"/>
-          </button>
-          <img src={photoViewing} alt="" className="object-contain"
-            style={{maxWidth:"95vw",maxHeight:"92vh",borderRadius:8}}
-            onContextMenu={e=>e.preventDefault()}
-            onClick={e=>e.stopPropagation()}/>
-        </div>
+        <PhotoViewer
+          src={photoViewing}
+          alt={name}
+          subtitle={profile?.username ? `@${profile.username}` : undefined}
+          onClose={() => setPhotoViewing(null)}
+        />
       )}
 
       {/* Fechar menu ao clicar fora */}
