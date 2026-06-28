@@ -91,7 +91,7 @@ function DefinicoesPage() {
               <ArrowLeft className="w-4 h-4" style={{ color: "var(--text-secondary)" }} />
             </button>
             <h1 className="text-xl font-extrabold" style={{ color: "var(--text-primary)" }}>
-              Definições
+              Definições de Conta
             </h1>
           </div>
 
@@ -108,7 +108,12 @@ function DefinicoesPage() {
                     : name[0]?.toUpperCase()}
                 </div>
                 <div className="pb-1">
-                  <p className="font-bold text-base" style={{ color: "var(--text-primary)" }}>{name}</p>
+                  <p className="font-extrabold text-lg leading-tight" style={{ color: "var(--text-primary)" }}>
+                    {profile?.full_name || profile?.username || name}
+                  </p>
+                  {profile?.username && (
+                    <p className="text-xs font-medium" style={{ color: ACCENT }}>@{profile.username}</p>
+                  )}
                   <p className="text-xs" style={{ color: "var(--text-muted)" }}>{email}</p>
                 </div>
               </div>
