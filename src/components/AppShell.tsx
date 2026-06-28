@@ -154,12 +154,6 @@ export function SideNav() {
             : <Moon className="h-5 w-5" strokeWidth={1.8} />}
           <span>{theme === "dark" ? t("settings.light_mode") : t("settings.dark_mode")}</span>
         </button>
-        <Link to="/perfil"
-          className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors"
-          style={{ color: "var(--text-secondary)" }}>
-          <Settings className="h-5 w-5" strokeWidth={1.8} />
-          <span>Definições</span>
-        </Link>
       </div>
     </aside>
     </>
