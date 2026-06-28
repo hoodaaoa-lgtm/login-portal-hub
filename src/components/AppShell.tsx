@@ -63,11 +63,23 @@ export function SideNav() {
   const { unreadMessages, unreadCommunities } = useBadges();
   const initial = (name?.[0] ?? "?").toUpperCase();
   const isPerfilActive = pathname === "/perfil";
+  const [showDrawer, setShowDrawer] = React.useState(false);
+  const [currentUserId, setCurrentUserId] = React.useState("");
+
+  React.useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) setCurrentUserId(session.user.id);
+    });
+  }, []);
 
   return (
-    <aside className="hooda-sidenav hidden lg:flex flex-col fixed left-0 top-0 bottom-0 w-[260px] border-r z-40"
-      style={{
-        background: "var(--surface-0)",
+    <>
+      {showDrawer && currentUserId && (
+        <UserDrawer userId={currentUserId} onClose={() => setShowDrawer(false)} />
+      )}
+      <aside className="hooda-sidenav hidden lg:flex flex-col fixed left-0 top-0 bottom-0 w-[260px] border-r z-40"
+        style={{
+          background: "var(--surface-0)",
         borderColor: "var(--border-subtle)",
       }}>
       {/* Logo */}
@@ -125,6 +137,14 @@ export function SideNav() {
 
       {/* Bottom controls */}
       <div className="px-3 py-4 border-t space-y-1" style={{ borderColor: "var(--border-subtle)" }}>
+        {/* Botão Menu — abre o UserDrawer */}
+        <button
+          onClick={() => setShowDrawer(true)}
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors hover:bg-[rgba(91,63,207,0.08)]"
+          style={{ color: "var(--text-secondary)" }}>
+          <Menu className="h-5 w-5" strokeWidth={1.8} />
+          <span>Menu</span>
+        </button>
         <button
           onClick={toggle}
           className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors"
@@ -142,6 +162,7 @@ export function SideNav() {
         </Link>
       </div>
     </aside>
+    </>
   );
 }
 
