@@ -369,7 +369,8 @@ function PostCard({
                   style={{ color: "#dc2626", borderColor: "var(--border-subtle)" }}
                   onMouseOver={e => e.currentTarget.style.background = "#fee2e2"}
                   onMouseOut={e => e.currentTarget.style.background = "transparent"}>
-                  {deleting ? <Loader className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />} Apagar
+                  {deleting ? <Loader className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                  {(post as any).kind === "clip" ? "Remover clipe do feed" : "Apagar publicação"}
                 </button>
               )}
             </div>
