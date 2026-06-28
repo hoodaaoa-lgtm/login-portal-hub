@@ -1750,7 +1750,6 @@ export type Database = {
           video_id: string
           viewed_at: string
           viewer_fingerprint: string | null
-          viewer_ip: string | null
           watch_pct: number | null
         }
         Insert: {
@@ -1762,7 +1761,6 @@ export type Database = {
           video_id: string
           viewed_at?: string
           viewer_fingerprint?: string | null
-          viewer_ip?: string | null
           watch_pct?: number | null
         }
         Update: {
@@ -1774,7 +1772,6 @@ export type Database = {
           video_id?: string
           viewed_at?: string
           viewer_fingerprint?: string | null
-          viewer_ip?: string | null
           watch_pct?: number | null
         }
         Relationships: [
