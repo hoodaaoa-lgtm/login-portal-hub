@@ -3,7 +3,7 @@ export const SPLASH_EXIT_MS = 800;
 type Props = { leaving?: boolean };
 
 const COLORS  = ['#5B3FCF','#F26B3A','#1FAFA6','#6BA547','#E94B8A'];
-const LETTERS = ['h','o','o','d','a'];
+const LETTERS = ['H','o','o','d','a'];
 
 export function SplashScreen({ leaving = false }: Props) {
   return (
