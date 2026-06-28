@@ -1911,7 +1911,7 @@ function PhotoGrid({ photos }: { photos: string[] }) {
 /* ══════════════════════════════════════════════
    QUEM SEGUIR — card no feed
 ══════════════════════════════════════════════ */
-function WhoToFollowCard({ myUserId, onDismiss }: { myUserId: string; onDismiss: () => void }) {
+function WhoToFollowCard({ myUserId, onDismiss, offset = 0 }: { myUserId: string; onDismiss: () => void; offset?: number }) {
   const navigate = useNavigate();
   const [suggestions, setSuggestions] = React.useState<any[]>([]);
   const [following, setFollowing] = React.useState<Set<string>>(new Set());
@@ -1936,28 +1936,34 @@ function WhoToFollowCard({ myUserId, onDismiss }: { myUserId: string; onDismiss:
             .filter(id => !excludeIds.has(id));
           if (fofIds.length > 0) {
             const { data: profiles } = await (supabase as any)
-              .from("profiles").select("id,username,full_name,avatar_url,bio")
-              .in("id", fofIds.slice(0, 15));
+              .from("profiles")
+              .select("id,username,full_name,avatar_url,bio,followers_count")
+              .in("id", fofIds.slice(0, 20))
+              .order("followers_count", { ascending: false });
             candidates = profiles ?? [];
           }
         }
 
-        // 3 — se poucos, completa com populares
-        if (candidates.length < 4) {
+        // 3 — se poucos, completa com populares ordenados por seguidores
+        if (candidates.length < 5) {
+          const excludeList = [...excludeIds].slice(0, 50);
           const { data: popular } = await (supabase as any)
-            .from("profiles").select("id,username,full_name,avatar_url,bio")
-            .not("id", "in", `(${[...excludeIds].join(",") || myUserId})`)
-            .limit(8);
+            .from("profiles")
+            .select("id,username,full_name,avatar_url,bio,followers_count")
+            .not("id", "in", `(${excludeList.join(",")})`)
+            .order("followers_count", { ascending: false })
+            .limit(10);
           const existIds = new Set(candidates.map((c: any) => c.id));
           (popular ?? []).forEach((p: any) => { if (!existIds.has(p.id)) candidates.push(p); });
         }
 
-        setSuggestions(candidates.slice(0, 6));
+        candidates.sort((a, b) => (b.followers_count ?? 0) - (a.followers_count ?? 0));
+        setSuggestions(candidates.slice(offset, offset + 4 > candidates.length ? candidates.length : offset + 4));
       } catch {}
       setLoading(false);
     }
     load();
-  }, [myUserId]);
+  }, [myUserId, offset]);
 
   async function handleFollow(userId: string) {
     if (following.has(userId)) {
@@ -2695,8 +2701,7 @@ function HomePage() {
 
   const feedSentinelRef = useRef<HTMLDivElement>(null);
   const [showWhoToFollow, setShowWhoToFollow] = React.useState(true);
-  // Posição aleatória entre o 4º e 8º post (só calculada uma vez)
-  const whoToFollowPos = React.useMemo(() => Math.floor(Math.random() * 4) + 4, []);
+  const [showWhoToFollow2, setShowWhoToFollow2] = React.useState(true);
   const [feedVisible, setFeedVisible] = useState(15);
   const [feedOffset, setFeedOffset] = useState(0);
   const [hasMorePosts, setHasMorePosts] = useState(false);
@@ -3606,8 +3611,13 @@ function HomePage() {
           {visibleFeedPosts.map((p, idx) => (
             <React.Fragment key={p.id}>
               <PostCard p={p} />
-              {showWhoToFollow && myUserId && idx === whoToFollowPos && (
-                <WhoToFollowCard myUserId={myUserId} onDismiss={() => setShowWhoToFollow(false)} />
+              {/* Após o 5º post */}
+              {showWhoToFollow && myUserId && idx === 4 && (
+                <WhoToFollowCard myUserId={myUserId} onDismiss={() => setShowWhoToFollow(false)} offset={0} />
+              )}
+              {/* Após o 12º post */}
+              {showWhoToFollow2 && myUserId && idx === 11 && (
+                <WhoToFollowCard myUserId={myUserId} onDismiss={() => setShowWhoToFollow2(false)} offset={4} />
               )}
             </React.Fragment>
           ))}
