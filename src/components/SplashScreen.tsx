@@ -13,31 +13,22 @@ export function SplashScreen({ leaving = false }: Props) {
       style={{
         position: 'fixed', inset: 0, zIndex: 9999,
         background: '#ffffff',
-        display: 'flex', flexDirection: 'column',
-        alignItems: 'center', justifyContent: 'center', gap: 20,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
         opacity: leaving ? 0 : 1,
         transition: `opacity ${SPLASH_EXIT_MS}ms ease`,
       }}
     >
       <style>{`
-        @keyframes _hoodaIn {
-          from { opacity: 0; transform: scale(0.82); }
+        @keyframes _logoIn {
+          from { opacity: 0; transform: scale(0.85); }
           to   { opacity: 1; transform: scale(1); }
         }
-        @keyframes _hoodaPulse {
-          0%, 100% { opacity: 1; }
-          50%       { opacity: 0.75; }
-        }
         ._hooda-logo {
-          animation: _hoodaIn 0.55s cubic-bezier(0.34,1.3,0.64,1) both;
-        }
-        ._hooda-dots {
-          animation: _hoodaIn 0.5s 0.4s ease both, _hoodaPulse 1.4s 1s ease-in-out infinite;
+          animation: _logoIn 0.6s cubic-bezier(0.34,1.2,0.64,1) both;
         }
       `}</style>
 
-      {/* Logo "hooda" com letras coloridas */}
-      <div className="_hooda-logo" style={{ display:'flex', alignItems:'center', gap: 1 }}>
+      <div className="_hooda-logo" style={{ display:'flex', alignItems:'center', gap: 0 }}>
         {LETTERS.map((ch, i) => (
           <span key={i} style={{
             fontSize: 52,
@@ -49,18 +40,6 @@ export function SplashScreen({ leaving = false }: Props) {
           }}>
             {ch}
           </span>
-        ))}
-      </div>
-
-      {/* Três pontinhos a pulsar (igual Instagram/TikTok) */}
-      <div className="_hooda-dots" style={{ display:'flex', gap: 6 }}>
-        {[0,1,2].map(i => (
-          <div key={i} style={{
-            width: 6, height: 6,
-            borderRadius: '50%',
-            background: COLORS[i],
-            animation: `_hoodaPulse 1s ${i * 0.2}s ease-in-out infinite`,
-          }} />
         ))}
       </div>
     </main>

@@ -212,7 +212,7 @@ function AppProviders({ queryClient, children }: { queryClient: QueryClient; chi
 
 // Depois do splash ter saído uma vez, nunca mais aparece mesmo que o componente remonte.
 let _splashDone = false;
-const SPLASH_MIN_MS = 4000;
+const SPLASH_MIN_MS = 5000;
 
 function AuthGate({ children }: { children: ReactNode }) {
   const { status, initializing } = useAuth();
