@@ -562,11 +562,20 @@ function PostCard({
 }
 
 /* ─── Feed ─── */
-function PostsFeed({ posts, name, username, avatarUrl, onLike, onBookmark, onDelete, myUserId }: {
-  posts: Post[]; name: string; username: string; avatarUrl?: string | null;
+function PostsFeed({ posts, loading, name, username, avatarUrl, onLike, onBookmark, onDelete, myUserId }: {
+  posts: Post[]; loading?: boolean; name: string; username: string; avatarUrl?: string | null;
   onLike: (id: string) => void; onBookmark: (id: string) => void; onDelete: (id: string) => void;
   myUserId?: string;
 }) {
+  if (loading) return (
+    <div className="px-4 py-3 space-y-3">
+      {Array.from({ length: 3 }).map((_, i) => (
+        <div key={i} className="rounded-2xl overflow-hidden animate-pulse" style={{ background: "var(--s2)" }}>
+          <div className="h-40" style={{ background: "var(--s3)" }} />
+        </div>
+      ))}
+    </div>
+  );
   if (posts.length === 0) return (
     <div className="px-5 py-14 flex flex-col items-center gap-3 text-center">
       <div className="w-16 h-16 rounded-full bg-[#5B3FCF]/10 flex items-center justify-center">
@@ -1950,6 +1959,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
   const [showLanguage, setShowLanguage] = useState(false);
   const [showMsgPrivacy, setShowMsgPrivacy] = useState(false);
   const [posts, setPosts] = useState<Post[]>([]);
+  const [postsLoading, setPostsLoading] = useState(true);
   const [website, setWebsite] = useState("");
   const [location, setLocation] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -2002,8 +2012,9 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
   /* Load user's posts + follower counts from Supabase on mount */
   useEffect(() => {
     (async () => {
+      try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
+      if (!session) { return; }
       setMyUserId(session.user.id);
 
       // Carregar avatar_url e username do perfil
@@ -2101,6 +2112,9 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
         } else {
           setPosts(loaded);
         }
+      }
+      } finally {
+        setPostsLoading(false);
       }
     })();
   }, []);
@@ -2370,7 +2384,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
 
         {/* Conteúdo das tabs */}
         {tab === "posts" && (
-          <PostsFeed posts={posts} name={name} username={profile?.username || "utilizador"}
+          <PostsFeed posts={posts} loading={postsLoading} name={name} username={profile?.username || "utilizador"}
             avatarUrl={avatarUrl} onLike={toggleLike} onBookmark={toggleBookmark} onDelete={deletePost}
             myUserId={myUserId} />
         )}
