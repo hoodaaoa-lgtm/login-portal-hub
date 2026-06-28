@@ -31,6 +31,7 @@ import { useQuery, useQueryClient, keepPreviousData } from "@tanstack/react-quer
 import { QUERY_KEYS, FEED_QUERY_OPTIONS, STATIC_QUERY_OPTIONS, REALTIME_QUERY_OPTIONS } from "@/lib/queryClient";
 import { FeedSkeleton, BackgroundRefreshDot, StoriesRowSkeleton } from "@/components/Skeletons";
 import { HoodaPlayer } from "@/components/HoodaPlayer";
+import { usePostVideoView } from "@/hooks/usePostVideoView";
 import { useTranslation } from "react-i18next";
 import i18n from "@/lib/i18n";
 import { useScrollLock } from "@/hooks/useScrollLock";
@@ -1907,10 +1908,13 @@ function PhotoGrid({ photos }: { photos: string[] }) {
 
 
 /* ── SimpleVideoPlayer — player simples para o feed ── */
-function SimpleVideoPlayer({ src, poster }: { src: string; poster?: string }) {
+function SimpleVideoPlayer({ src, poster, postId, kind }: { src: string; poster?: string; postId?: string; kind?: string }) {
   const [isShort, setIsShort] = useState<boolean | null>(null);
   const [playing, setPlaying] = useState(false);
   const ref = useRef<HTMLVideoElement>(null);
+
+  // Regista view após 3s (só video/clip)
+  usePostVideoView(postId, kind, ref);
 
   function togglePlay() {
     const v = ref.current;
@@ -1940,7 +1944,6 @@ function SimpleVideoPlayer({ src, poster }: { src: string; poster?: string }) {
         className="w-full block"
         style={{ display: "block", pointerEvents: "none", objectFit: "cover", width: "100%" }}
       />
-      {/* Overlay play/pause */}
       {!playing && (
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="w-14 h-14 rounded-full flex items-center justify-center transition active:scale-90"
@@ -2028,7 +2031,7 @@ function ClipCard({ p, liked, likeCount, viewCount, onLike, onComment }: {
 
       {/* ── Player do clipe ── */}
       {streamSrc ? (
-        <SimpleVideoPlayer src={streamSrc} poster={p.clip_thumb_url || p.thumbnail_url || undefined} />
+        <SimpleVideoPlayer src={streamSrc} poster={p.clip_thumb_url || p.thumbnail_url || undefined} postId={p.id} kind="clip" />
       ) : (
         /* Sem stream URL — mostra thumbnail clicável que vai para o vídeo */
         <button
@@ -2367,7 +2370,7 @@ function PostCard({ p }: { p: any }) {
 
       {/* Vídeo */}
       {p.video && (
-        <SimpleVideoPlayer src={p.video} poster={p.video_thumb || p.photo || undefined} />
+        <SimpleVideoPlayer src={p.video} poster={p.video_thumb || p.photo || undefined} postId={p.id} kind="video" />
       )}
 
       {/* Texto */}
@@ -2460,7 +2463,7 @@ function PostCard({ p }: { p: any }) {
           body={
             <>
               {p.video && (
-                <SimpleVideoPlayer src={p.video} poster={p.video_thumb || p.photo || undefined} />
+                <SimpleVideoPlayer src={p.video} poster={p.video_thumb || p.photo || undefined} postId={p.id} kind="video" />
               )}
               {p.text && !p.video && (p.bg_color
                 ? <div className="px-4 pb-3">

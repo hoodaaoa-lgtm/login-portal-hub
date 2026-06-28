@@ -58,10 +58,15 @@ function Av({ name, src, size=40, color, ring=false }:
   );
 }
 
-/* ─── SimpleVideoPlayer (inline, igual ao feed) ─── */
-function VideoPlayer({ src, poster }: { src:string; poster?:string }) {
+import { usePostVideoView } from "@/hooks/usePostVideoView";
+
+/* ─── VideoPlayer inline com registo de views ─── */
+function VideoPlayer({ src, poster, postId, kind }: { src:string; poster?:string; postId?:string; kind?:string }) {
   const [playing, setPlaying] = useState(false);
   const ref = useRef<HTMLVideoElement>(null);
+
+  usePostVideoView(postId, kind, ref);
+
   function toggle() {
     const v = ref.current; if (!v) return;
     v.paused ? v.play() : v.pause();
@@ -441,11 +446,14 @@ function UserProfilePage() {
     queryKey:["profilePosts2", profileId],
     queryFn: async ()=>{
       const {data}=await (supabase as any).from("posts")
-        .select("id,content,kind,created_at,photo_url,image_url,video_url,clip_title,clip_thumb_url,channel_name,channel_handle,channel_avatar,clip_video_id,clip_start,clip_end,video_stream_url,likes_count")
+        .select("id,author_id,content,kind,created_at,photo_url,image_url,video_url,clip_title,clip_thumb_url,channel_name,channel_handle,channel_avatar,clip_video_id,clip_start,clip_end,video_stream_url,likes_count")
         .eq("author_id",profileId)
         .order("created_at",{ascending:false})
         .limit(30);
-      return (data??[]).map((p:any)=>{
+      return (data??[])
+        // clips só aparecem se quem partilhou = dono do perfil
+        .filter((p:any) => p.kind !== "clip" || p.author_id === profileId)
+        .map((p:any)=>{
         let text=p.content, bgColor:string|null=null;
         if (p.kind==="bg"){ try{const j=JSON.parse(p.content);text=j.text;bgColor=j.bgColor;}catch(_){} }
         return {
@@ -808,7 +816,7 @@ function UserProfilePage() {
                       </button>
                     )}
                     {post.videoUrl&&!post.photo&&(
-                      <VideoPlayer src={post.videoUrl}/>
+                      <VideoPlayer src={post.videoUrl} postId={post.id} kind="video"/>
                     )}
                     {post.kind==="clip"&&post.clipVideoId&&(
                       <div>
@@ -823,7 +831,7 @@ function UserProfilePage() {
                             style={{background:P+"15",color:P}}>✂ Clipe</span>
                         </div>
                         {post.videoStreamUrl
-                          ?<VideoPlayer src={post.videoStreamUrl} poster={post.clipThumb??undefined}/>
+                          ?<VideoPlayer src={post.videoStreamUrl} poster={post.clipThumb??undefined} postId={post.id} kind="clip"/>
                           :post.clipThumb
                             ?<button onClick={()=>navigate({to:`/hoodatv/watch/${post.clipVideoId}`})} className="w-full block">
                                 <img src={post.clipThumb} alt="" className="w-full object-cover" style={{maxHeight:280}}/>
