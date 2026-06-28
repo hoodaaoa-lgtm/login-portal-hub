@@ -385,26 +385,26 @@ function PostCard({
         </div>
       )}
       {(post as any).kind === "clip" && (post as any).clipVideoId && (
-        <div className="w-full">
+        <div className="mx-3 mb-3 rounded-2xl overflow-hidden border" style={{ borderColor: "var(--border-subtle)" }}>
           {(post as any).videoStreamUrl
-            ? <div className="aspect-video w-full overflow-hidden bg-black" style={{ maxHeight: 280 }}>
+            ? <div style={{ aspectRatio: "16/9", background: "#000", maxHeight: 260, overflow: "hidden" }}>
                 <SimpleVideoPlayer src={(post as any).videoStreamUrl} postId={post.id} kind="clip" />
               </div>
             : (post as any).clipThumb
               ? <a href={`/hoodatv/watch/${(post as any).clipVideoId}`} className="w-full block">
-                  <img src={(post as any).clipThumb} alt="" className="w-full object-contain bg-black" style={{ maxHeight: 280 }}/>
+                  <img src={(post as any).clipThumb} alt="" className="w-full object-cover" style={{ aspectRatio: "16/9", maxHeight: 260 }}/>
                 </a>
               : null}
-          {(post as any).clipTitle && (
-            <p className="px-4 pt-2 text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
-              {(post as any).clipTitle}
-            </p>
-          )}
-          <div className="px-4 pb-2 pt-1">
+          <div className="px-3 py-2 flex items-center justify-between" style={{ background: "var(--s2)" }}>
+            {(post as any).clipTitle && (
+              <p className="text-xs font-semibold truncate flex-1" style={{ color: "var(--text-primary)" }}>
+                {(post as any).clipTitle}
+              </p>
+            )}
             <a href={`/hoodatv/watch/${(post as any).clipVideoId}`}
-              className="text-xs font-bold px-3 py-1.5 rounded-xl inline-block"
+              className="text-[11px] font-bold px-2.5 py-1 rounded-lg shrink-0 ml-2"
               style={{ color: "#5B3FCF", background: "#5B3FCF12" }}>
-              Ver vídeo completo →
+              Ver completo →
             </a>
           </div>
         </div>
