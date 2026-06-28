@@ -1,14 +1,16 @@
-import React from "react";
+import React, { useState } from "react";
 import { t } from "@/lib/useT";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { HoodaLogo } from "@/components/HoodaLogo";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useAvatar } from "@/contexts/AvatarContext";
 import { useBadges } from "@/contexts/BadgeContext";
+import { UserDrawer } from "@/components/UserDrawer";
 import {
-  Home, Compass, MessageSquare, Users, User, Tv,
+  Home, Compass, MessageSquare, Users, User, Tv, Menu,
   Moon, Sun, Bell, Settings,
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const NAV_ITEMS = [
   { to: "/home",       label: "Home",        Icon: Home        },
@@ -23,7 +25,7 @@ const MOBILE_ITEMS = [
   { to: "/explorar",   label: t("nav.explore"),  Icon: Compass       },
   { to: "/hoodatv",    label: "HoodaTV",   Icon: Tv            },
   { to: "/mensagens",  label: t("nav.messages"), Icon: MessageSquare },
-  { to: "/perfil",     label: t("nav.profile"),    Icon: User          },
+  { to: null,          label: "Menu",      Icon: Menu          }, // Menu Hamburger
 ] as const;
 
 /** Resolve o valor do badge para uma rota de navegação a partir dos contadores já carregados */
@@ -149,71 +151,86 @@ export function BottomNav() {
   const { avatarUrl, name } = useAvatar();
   const { unreadMessages, unreadCommunities } = useBadges();
   const initial = (name?.[0] ?? "?").toUpperCase();
+  const [showDrawer, setShowDrawer] = useState(false);
+  const [currentUserId, setCurrentUserId] = React.useState("");
+
+  React.useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) setCurrentUserId(session.user.id);
+    });
+  }, []);
 
   return (
-    <nav className="hooda-bottom-nav lg:hidden fixed bottom-0 inset-x-0 z-40"
-      style={{
-        background: "var(--surface-0)",
-        borderTop: "1px solid var(--border-subtle)",
-        backdropFilter: "blur(24px)",
-        WebkitBackdropFilter: "blur(24px)",
-        paddingBottom: "max(env(safe-area-inset-bottom), 4px)",
-      }}>
-      <ul className="grid grid-cols-5 h-[58px]">
-        {MOBILE_ITEMS.map(({ to, label, Icon }) => {
-          const active = to === "/hoodatv" || (to as string) === "/studio"
-            ? pathname.startsWith(to)
-            : pathname === to;
-          const isPerfil = to === "/perfil";
-          const badgeCount = badgeCountFor(to, unreadMessages, unreadCommunities);
-          return (
-            <li key={to}>
-              <Link to={to}
-                className="flex flex-col items-center justify-center gap-1 h-full transition-all duration-150 active:scale-90"
-                style={{ color: active ? "#5B3FCF" : "var(--text-muted)" }}>
-                <div className="relative flex items-center justify-center"
-                  style={{
-                    width: 38, height: 28, borderRadius: 12,
-                    background: active ? "rgba(91,63,207,0.12)" : "transparent",
-                    transition: "background 0.2s",
-                  }}>
-                  {isPerfil ? (
-                    <div className="rounded-full p-[2px]"
+    <>
+      {showDrawer && <UserDrawer userId={currentUserId} onClose={() => setShowDrawer(false)} />}
+
+      <nav className="hooda-bottom-nav lg:hidden fixed bottom-0 inset-x-0 z-40"
+        style={{
+          background: "var(--surface-0)",
+          borderTop: "1px solid var(--border-subtle)",
+          backdropFilter: "blur(24px)",
+          WebkitBackdropFilter: "blur(24px)",
+          paddingBottom: "max(env(safe-area-inset-bottom), 4px)",
+        }}>
+        <ul className="grid grid-cols-5 h-[58px]">
+          {MOBILE_ITEMS.map(({ to, label, Icon }) => {
+            const isMenu = to === null;
+            const active = !isMenu && (
+              to === "/hoodatv" || (to as string) === "/studio"
+                ? pathname.startsWith(to)
+                : pathname === to
+            );
+            const badgeCount = !isMenu ? badgeCountFor(to as string, unreadMessages, unreadCommunities) : 0;
+
+            return (
+              <li key={label}>
+                {isMenu ? (
+                  <button onClick={() => setShowDrawer(true)}
+                    className="flex flex-col items-center justify-center gap-1 h-full transition-all duration-150 active:scale-90"
+                    style={{ color: "var(--text-muted)" }}>
+                    <div className="relative flex items-center justify-center"
                       style={{
-                        background: active
-                          ? "linear-gradient(135deg, #5B3FCF 0%, #E94B8A 50%, #FFC93C 100%)"
-                          : "rgba(91,63,207,0.25)",
+                        width: 38, height: 28, borderRadius: 12,
+                        background: "transparent",
+                        transition: "background 0.2s",
                       }}>
-                      <div className="w-[20px] h-[20px] rounded-full overflow-hidden flex items-center justify-center text-[9px] font-extrabold text-white"
-                        style={{ background: avatarUrl ? "transparent" : "#5B3FCF" }}>
-                        {avatarUrl
-                          ? <img src={avatarUrl} alt={name} className="w-full h-full object-cover" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
-                          : initial}
-                      </div>
+                      <Icon className="h-[20px] w-[20px]" strokeWidth={1.8} />
                     </div>
-                  ) : (
-                    <Icon className="h-[20px] w-[20px]" strokeWidth={active ? 2.5 : 1.8} />
-                  )}
-                  {badgeCount > 0 && (
-                    <span className="absolute flex items-center justify-center rounded-full font-bold text-white"
+                    <span className="text-[9.5px] tracking-tight font-400">{label}</span>
+                  </button>
+                ) : (
+                  <Link to={to as string}
+                    className="flex flex-col items-center justify-center gap-1 h-full transition-all duration-150 active:scale-90"
+                    style={{ color: active ? "#5B3FCF" : "var(--text-muted)" }}>
+                    <div className="relative flex items-center justify-center"
                       style={{
-                        top: 2, right: 2,
-                        minWidth: 15, height: 15, padding: "0 3px",
-                        fontSize: 8.5, lineHeight: 1,
-                        background: "#E94B8A",
-                        boxShadow: "0 0 0 2px var(--surface-0)",
+                        width: 38, height: 28, borderRadius: 12,
+                        background: active ? "rgba(91,63,207,0.12)" : "transparent",
+                        transition: "background 0.2s",
                       }}>
-                      {badgeCount > 99 ? "99+" : badgeCount}
-                    </span>
-                  )}
-                </div>
-                <span className="text-[9.5px] tracking-tight" style={{ fontWeight: active ? 700 : 400 }}>{label}</span>
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
-    </nav>
+                      <Icon className="h-[20px] w-[20px]" strokeWidth={active ? 2.5 : 1.8} />
+                      {badgeCount > 0 && (
+                        <span className="absolute flex items-center justify-center rounded-full font-bold text-white"
+                          style={{
+                            top: 2, right: 2,
+                            minWidth: 15, height: 15, padding: "0 3px",
+                            fontSize: 8.5, lineHeight: 1,
+                            background: "#E94B8A",
+                            boxShadow: "0 0 0 2px var(--surface-0)",
+                          }}>
+                          {badgeCount > 99 ? "99+" : badgeCount}
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-[9.5px] tracking-tight" style={{ fontWeight: active ? 700 : 400 }}>{label}</span>
+                  </Link>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
+    </>
   );
 }
 
