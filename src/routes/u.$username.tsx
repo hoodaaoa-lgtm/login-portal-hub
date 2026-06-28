@@ -446,14 +446,25 @@ function UserProfilePage() {
     queryKey:["profilePosts2", profileId],
     queryFn: async ()=>{
       const {data}=await (supabase as any).from("posts")
-        .select("id,author_id,content,kind,created_at,photo_url,image_url,video_url,clip_title,clip_thumb_url,channel_name,channel_handle,channel_avatar,clip_video_id,clip_start,clip_end,video_stream_url,likes_count")
+        .select("id,author_id,content,kind,created_at,photo_url,image_url,video_url,clip_title,clip_thumb_url,channel_name,channel_handle,channel_avatar,clip_video_id,clip_start,clip_end,likes_count")
         .eq("author_id",profileId)
         .order("created_at",{ascending:false})
         .limit(30);
-      return (data??[])
-        // clips só aparecem se quem partilhou = dono do perfil
-        .filter((p:any) => p.kind !== "clip" || p.author_id === profileId)
-        .map((p:any)=>{
+
+      const posts = (data??[]).filter((p:any) => p.kind !== "clip" || p.author_id === profileId);
+
+      // Buscar cf_stream_url dos vídeos referenciados pelos clips
+      const clipVideoIds = [...new Set(posts.filter((p:any)=>p.clip_video_id).map((p:any)=>p.clip_video_id))];
+      const streamMap: Record<string, string> = {};
+      if (clipVideoIds.length > 0) {
+        const {data: vids} = await (supabase as any).from("videos")
+          .select("id,cf_stream_url,cf_embed_url").in("id", clipVideoIds);
+        (vids??[]).forEach((v:any) => {
+          streamMap[v.id] = v.cf_stream_url || v.cf_embed_url || "";
+        });
+      }
+
+      return posts.map((p:any)=>{
         let text=p.content, bgColor:string|null=null;
         if (p.kind==="bg"){ try{const j=JSON.parse(p.content);text=j.text;bgColor=j.bgColor;}catch(_){} }
         return {
@@ -468,7 +479,7 @@ function UserProfilePage() {
           channelName:p.channel_name||null,
           channelHandle:p.channel_handle||null,
           channelAvatar:p.channel_avatar||null,
-          videoStreamUrl:p.video_stream_url||null,
+          videoStreamUrl: p.clip_video_id ? (streamMap[p.clip_video_id]||null) : null,
           likesCount:p.likes_count??0,
         };
       });

@@ -1905,7 +1905,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
 
       const { data } = await (supabase as any)
         .from("posts")
-        .select("id, content, kind, created_at, photo_url, image_url, video_url, photos")
+        .select("id, content, kind, created_at, photo_url, image_url, video_url, photos, clip_title, clip_thumb_url, clip_video_id, clip_start, clip_end")
         .eq("author_id", session.user.id)
         .order("created_at", { ascending: false });
       if (data && data.length > 0) {
@@ -1947,6 +1947,9 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
             }
             const photo = (p as any).photo_url || (p as any).image_url || ((p as any).photos && (p as any).photos[0]) || null;
             const videoUrl = (p as any).video_url || undefined;
+            const clipVideoId = (p as any).clip_video_id || null;
+            const clipThumb = (p as any).clip_thumb_url || null;
+            const clipTitle = (p as any).clip_title || null;
             const likeIds = likesByPost[p.id] ?? [];
             return {
               id: p.id, text, photo, bgColor, createdAt: new Date(p.created_at ?? Date.now()),
