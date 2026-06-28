@@ -7,7 +7,7 @@ import {
   ChevronLeft, MessageCircle, Flag, Heart, Share2,
   MoreHorizontal, UserCheck, UserPlus, X, MapPin,
   Link as LinkIcon, Calendar, Play, Pause, Camera,
-  MessageSquare,
+  MessageSquare, Eye,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -929,7 +929,7 @@ function UserProfilePage() {
             )}
             <div>
               <p className="text-white text-sm font-bold leading-tight">{name}</p>
-              <p className="text-white/60 text-xs">@{profileUsername}</p>
+              <p className="text-white/60 text-xs">@{profile?.username ?? username}</p>
             </div>
           </div>
           <button className="absolute top-3 right-4 w-10 h-10 rounded-full flex items-center justify-center"
