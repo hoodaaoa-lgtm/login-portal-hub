@@ -387,12 +387,12 @@ function PostCard({
       {(post as any).kind === "clip" && (post as any).clipVideoId && (
         <div className="w-full">
           {(post as any).videoStreamUrl
-            ? <div style={{ maxHeight: 360, overflow: "hidden" }}>
+            ? <div className="aspect-video w-full overflow-hidden bg-black" style={{ maxHeight: 280 }}>
                 <SimpleVideoPlayer src={(post as any).videoStreamUrl} postId={post.id} kind="clip" />
               </div>
             : (post as any).clipThumb
               ? <a href={`/hoodatv/watch/${(post as any).clipVideoId}`} className="w-full block">
-                  <img src={(post as any).clipThumb} alt="" className="w-full object-cover" style={{ maxHeight: 280 }}/>
+                  <img src={(post as any).clipThumb} alt="" className="w-full object-contain bg-black" style={{ maxHeight: 280 }}/>
                 </a>
               : null}
           {(post as any).clipTitle && (
