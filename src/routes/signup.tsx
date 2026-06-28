@@ -125,7 +125,7 @@ function SignupPage() {
     if (!password) return setError("A senha é obrigatória.");
     if (usernameStatus === "taken") return setError("Este username já está ocupado.");
     if (usernameStatus === "invalid") return setError("Username inválido.");
-    if (usernameStatus === "checking" || usernameStatus === "idle") return setError("Aguarda a verificação do username.");
+    if (usernameStatus === "checking") return setError("Aguarda a verificação do username.");
 
     // Verificação final antes de submeter
     const lower = username.toLowerCase();
