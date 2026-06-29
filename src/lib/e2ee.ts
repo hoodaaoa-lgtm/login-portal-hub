@@ -610,7 +610,8 @@ export async function getDMKey(
   otherUserId: string,
 ): Promise<CryptoKey | null> {
   if (dmKeyCache[conversationId]) return dmKeyCache[conversationId];
-  if (dmKeyPending[conversationId]) return dmKeyPending[conversationId];
+  const inflight = dmKeyPending[conversationId];
+  if (inflight) return inflight;
 
   dmKeyPending[conversationId] = (async () => {
     const { privateKey, publicKeyB64 } = await getOrCreateKeyPair();
