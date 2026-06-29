@@ -583,54 +583,172 @@ export async function decryptFile(
 
 // ─── E2EE para mensagens directas (DMs) ──────────────────────────────────────
 //
-// Para DMs não há GroupKey na BD — usamos uma chave AES gerada localmente
-// e guardada no localStorage, identificada pelo conversationId.
-// É simples e segura para o caso de uso: a chave existe apenas no dispositivo.
+// Mesma arquitectura das comunidades, adaptada para 2 participantes:
+//   • Cada conversa tem a sua própria ChaveAES (AES-GCM-256) partilhada.
+//   • Quem inicia a 1ª cifra gera a ChaveAES, cifra-a com a chave pública
+//     ECDH de cada participante (incluindo a própria) e guarda os 2 shares
+//     em `conversation_key_shares`.
+//   • Cada utilizador decifra a sua cópia com a chave privada ECDH local.
+//   • As mensagens vão em `messages.content` no formato
+//     "e2ee:<iv_b64>:<ciphertext_b64>", igual ao das comunidades.
 //
-// Num futuro próximo pode evoluir para ECDH entre os dois utilizadores.
+// Se o outro participante ainda não publicou chave pública ECDH, encryptDM
+// devolve `null` — o chamador deve cair em fallback (enviar em claro) para
+// não bloquear o utilizador.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const DM_KEY_PREFIX = "hooda_dm_key_";
+const dmKeyCache: Record<string, CryptoKey> = {};
+const dmKeyPending: Record<string, Promise<CryptoKey | null>> = {};
 
-async function getDMKey(conversationId: string): Promise<CryptoKey> {
-  const lsKey = DM_KEY_PREFIX + conversationId;
-  const existing = localStorage.getItem(lsKey);
-  if (existing) {
-    const raw = b642buf(existing);
-    return crypto.subtle.importKey("raw", raw, { name: "AES-GCM" }, false, ["encrypt", "decrypt"]);
-  }
-  const key = await crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, true, ["encrypt", "decrypt"]);
-  const exported = await crypto.subtle.exportKey("raw", key);
-  localStorage.setItem(lsKey, buf2b64(exported));
-  return key;
-}
+/**
+ * Devolve a ChaveAES partilhada de uma DM, criando-a se ainda não existir.
+ * null  = não foi possível (outro participante sem chave pública ECDH).
+ */
+export async function getDMKey(
+  conversationId: string,
+  myUserId: string,
+  otherUserId: string,
+): Promise<CryptoKey | null> {
+  if (dmKeyCache[conversationId]) return dmKeyCache[conversationId];
+  if (dmKeyPending[conversationId]) return dmKeyPending[conversationId];
 
-/** Encripta texto de uma mensagem DM. */
-export async function encryptDM(plaintext: string, conversationId: string): Promise<string> {
-  if (!plaintext) return plaintext;
+  dmKeyPending[conversationId] = (async () => {
+    const { privateKey, publicKeyB64 } = await getOrCreateKeyPair();
+    await publishPublicKey(myUserId);
+
+    // 1) Share guardado para mim?
+    const { data: myShare } = await db
+      .from("conversation_key_shares")
+      .select("encrypted_key, sender_public_key")
+      .eq("conversation_id", conversationId)
+      .eq("user_id", myUserId)
+      .maybeSingle();
+
+    if (myShare?.encrypted_key && myShare?.sender_public_key) {
+      try {
+        const senderPub = await importPublicKey(myShare.sender_public_key);
+        const wrap      = await deriveAES(privateKey, senderPub);
+        const ivAndData = b642buf(myShare.encrypted_key);
+        const iv        = ivAndData.slice(0, 12);
+        const data      = ivAndData.slice(12);
+        const rawKey    = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, wrap, data);
+        const key       = await crypto.subtle.importKey("raw", rawKey, { name: "AES-GCM", length: 256 }, true, ["encrypt", "decrypt"]);
+        dmKeyCache[conversationId] = key;
+        return key;
+      } catch (err) {
+        console.warn("[e2ee][dm] Share guardado ilegível, vou gerar nova chave:", err);
+      }
+    }
+
+    // 2) Chave pública do outro
+    const { data: otherProf } = await db
+      .from("profiles")
+      .select("e2ee_public_key")
+      .eq("id", otherUserId)
+      .maybeSingle();
+    const otherPubB64 = (otherProf as any)?.e2ee_public_key;
+    if (!otherPubB64) {
+      console.warn("[e2ee][dm] Outro participante sem chave pública ECDH — sem cifra.");
+      return null;
+    }
+
+    // 3) Gerar nova ChaveAES e cifrar para os 2 participantes
+    const rawNew = crypto.getRandomValues(new Uint8Array(32));
+    const newKey = await crypto.subtle.importKey("raw", rawNew, { name: "AES-GCM", length: 256 }, true, ["encrypt", "decrypt"]);
+
+    async function wrapFor(recipientPubB64: string): Promise<string> {
+      const recipientPub = await importPublicKey(recipientPubB64);
+      const wrap         = await deriveAES(privateKey, recipientPub);
+      const iv           = crypto.getRandomValues(new Uint8Array(12));
+      const enc          = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, wrap, rawNew as BufferSource);
+      const combined     = new Uint8Array(12 + enc.byteLength);
+      combined.set(iv, 0);
+      combined.set(new Uint8Array(enc), 12);
+      return buf2b64(combined.buffer);
+    }
+
+    try {
+      const [forMe, forOther] = await Promise.all([
+        wrapFor(publicKeyB64),
+        wrapFor(otherPubB64),
+      ]);
+      await db.from("conversation_key_shares").upsert(
+        [
+          { conversation_id: conversationId, user_id: myUserId,    sender_public_key: publicKeyB64, encrypted_key: forMe },
+          { conversation_id: conversationId, user_id: otherUserId, sender_public_key: publicKeyB64, encrypted_key: forOther },
+        ],
+        { onConflict: "conversation_id,user_id" },
+      );
+    } catch (err) {
+      console.error("[e2ee][dm] Falha a distribuir nova chave:", err);
+      return null;
+    }
+
+    dmKeyCache[conversationId] = newKey;
+    return newKey;
+  })();
+
   try {
-    const key = await getDMKey(conversationId);
-    const iv  = crypto.getRandomValues(new Uint8Array(12));
-    const enc = new TextEncoder();
-    const data = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, enc.encode(plaintext));
-    return `${E2EE_PREFIX}${buf2b64(iv.buffer)}:${buf2b64(data)}`;
-  } catch {
-    return plaintext;
+    return await dmKeyPending[conversationId];
+  } finally {
+    delete dmKeyPending[conversationId];
   }
 }
 
-/** Desencripta texto de uma mensagem DM. */
-export async function decryptDM(content: string, conversationId: string): Promise<string> {
-  if (!content.startsWith(E2EE_PREFIX)) return content;
+/** Cifra texto de DM. Devolve null se não foi possível (sem chave pública do outro). */
+export async function encryptDM(
+  plaintext: string,
+  conversationId: string,
+  myUserId: string,
+  otherUserId: string,
+): Promise<string | null> {
+  if (!plaintext) return plaintext;
+  const key = await getDMKey(conversationId, myUserId, otherUserId);
+  if (!key) return null;
+  try {
+    const iv   = crypto.getRandomValues(new Uint8Array(12));
+    const data = await crypto.subtle.encrypt(
+      { name: "AES-GCM", iv },
+      key,
+      new TextEncoder().encode(plaintext),
+    );
+    return `${E2EE_PREFIX}${buf2b64(iv.buffer)}:${buf2b64(data)}`;
+  } catch (err) {
+    console.error("[e2ee][dm] Falha a cifrar:", err);
+    return null;
+  }
+}
+
+/** Decifra texto de DM. Devolve E2EE_PENDING se a chave ainda não chegou. */
+export async function decryptDM(
+  content: string,
+  conversationId: string,
+  myUserId: string,
+  otherUserId: string,
+): Promise<string> {
+  if (!content || !content.startsWith(E2EE_PREFIX)) return content;
   try {
     const parts = content.slice(E2EE_PREFIX.length).split(":");
-    if (parts.length < 2) return content;
+    if (parts.length < 2) return E2EE_PENDING;
     const iv         = new Uint8Array(b642buf(parts[0]));
     const ciphertext = b642buf(parts[1]);
-    const key = await getDMKey(conversationId);
+    const key = await getDMKey(conversationId, myUserId, otherUserId);
+    if (!key) return E2EE_PENDING;
     const raw = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, ciphertext);
     return new TextDecoder().decode(raw);
-  } catch {
-    return content;
+  } catch (err) {
+    console.warn("[e2ee][dm] Falha a decifrar:", err);
+    return E2EE_PENDING;
   }
 }
+
+/** Verifica se a DM pode ser cifrada (outro tem chave pública ECDH publicada). */
+export async function canEncryptDM(otherUserId: string): Promise<boolean> {
+  const { data } = await db
+    .from("profiles")
+    .select("e2ee_public_key")
+    .eq("id", otherUserId)
+    .maybeSingle();
+  return !!(data as any)?.e2ee_public_key;
+}
+
