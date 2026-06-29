@@ -36,7 +36,7 @@ export const Route = createFileRoute("/perfil")({
   component: ProfilePage,
 });
 
-type Profile = { id?: string; username: string; full_name: string; age: number | null; bio: string | null };
+type Profile = { id?: string; username: string; full_name: string; age: number | null; bio: string | null; username_changed_at?: string | null };
 type Post = {
   id: string; text: string; photo: string | null; bgColor: string | null; createdAt: Date;
   likes: number; likedByMe: boolean; comments: number; bookmarked: boolean;
@@ -938,6 +938,17 @@ function EditProfileModal({
   const [usernameSuggestions, setUsernameSuggestions] = useState<string[]>([]);
   const usernameTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Calcular dias restantes para poder trocar username
+  const usernameCooldownDays = React.useMemo(() => {
+    if (!profile?.username_changed_at) return 0;
+    const lastChange = new Date(profile.username_changed_at).getTime();
+    const daysSince  = (Date.now() - lastChange) / (1000 * 60 * 60 * 24);
+    const remaining  = Math.ceil(31 - daysSince);
+    return remaining > 0 ? remaining : 0;
+  }, [profile?.username_changed_at]);
+
+  const canChangeUsername = usernameCooldownDays === 0;
+
   // Gera sugestões baseadas no nome
   function generateSuggestions(name: string): string[] {
     const parts = name.toLowerCase()
@@ -1075,12 +1086,16 @@ function EditProfileModal({
               </div>
               <div className="relative mt-1">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] text-sm">@</span>
-                <input value={username} onChange={(e) => handleUsernameChange(e.target.value)}
+                <input value={username}
+                  onChange={(e) => canChangeUsername && handleUsernameChange(e.target.value)}
+                  readOnly={!canChangeUsername}
                   placeholder="nomedeutilizador"
                   className="w-full rounded-xl pl-8 pr-10 py-2.5 text-sm font-medium outline-none transition"
                   style={{
-                    background: "var(--s2)", color: "var(--text-primary)",
-                    border: `1.5px solid ${usernameStatus === "available" ? "#6BA547" : usernameStatus === "taken" || usernameStatus === "invalid" ? "#ef4444" : "var(--border-default)"}`,
+                    background: canChangeUsername ? "var(--s2)" : "var(--s3)",
+                    color: "var(--text-primary)",
+                    cursor: canChangeUsername ? "text" : "not-allowed",
+                    border: `1.5px solid ${!canChangeUsername ? "var(--border-default)" : usernameStatus === "available" ? "#6BA547" : usernameStatus === "taken" || usernameStatus === "invalid" ? "#ef4444" : "var(--border-default)"}`,
                     boxShadow: usernameStatus === "available" ? "0 0 0 3px #6BA54720" : usernameStatus === "taken" ? "0 0 0 3px #ef444420" : "none",
                   }}
                 />
@@ -1094,7 +1109,15 @@ function EditProfileModal({
                   {usernameStatus === "invalid" && <span className="text-red-500 text-lg">✗</span>}
                 </div>
               </div>
-              {usernameStatus === "available" && <p className="text-[11px] text-[#6BA547] mt-1">Disponível!</p>}
+              {!canChangeUsername && (
+                <div className="flex items-center gap-1.5 mt-1.5 px-3 py-2 rounded-xl" style={{ background: "#F26B3A12" }}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#F26B3A" strokeWidth="2.5" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+                  <p className="text-[11px] font-semibold" style={{ color: "#F26B3A" }}>
+                    Podes trocar o username daqui a <strong>{usernameCooldownDays} dia{usernameCooldownDays !== 1 ? "s" : ""}</strong>
+                  </p>
+                </div>
+              )}
+              {canChangeUsername && usernameStatus === "available" && <p className="text-[11px] text-[#6BA547] mt-1">Disponível!</p>}
               {usernameStatus === "taken" && (
                 <div>
                   <p className="text-[11px] text-red-500 mt-1">Este nome de utilizador já está em uso. Experimenta:</p>
@@ -2230,6 +2253,14 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
         if (data.full_name) updates.author_name     = data.full_name;
         if (data.username)  updates.author_username = data.username;
         await (supabase as any).from("posts").update(updates).eq("author_id", session.user.id);
+
+        // Registar data de troca de username
+        if (data.username && data.username !== profile?.username) {
+          await (supabase as any).from("profiles")
+            .update({ username_changed_at: new Date().toISOString() })
+            .eq("id", session.user.id);
+          setProfile(p => p ? { ...p, username_changed_at: new Date().toISOString() } : p);
+        }
       }
     } catch (err) {
       console.error("Erro ao atualizar nome nos posts:", err);
