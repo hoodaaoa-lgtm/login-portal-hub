@@ -31,6 +31,7 @@ import {
   Crop, Grid3x3, Download, ZoomIn, Forward, Star,
   Eye, EyeOff, Trash2, Reply, Copy,
   AlertCircle, RefreshCw, ArrowDown,
+  Lock, Unlock,
 } from "lucide-react";
 import MediaEditor, { MediaEditState, DEFAULT_EDIT, EditedMediaDisplay } from "@/components/MediaEditor";
 import { HoodaPlayer } from "@/components/HoodaPlayer";
