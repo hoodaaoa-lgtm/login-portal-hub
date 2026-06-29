@@ -1001,17 +1001,33 @@ function EditProfileModal({
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        await supabase.from("profiles").update({
+        const usernameChanged = username !== (profile?.username || "");
+        const updateData: Record<string, any> = {
           full_name: name,
           username,
           bio,
           website,
           location,
           updated_at: new Date().toISOString(),
-        } as any).eq("id", session.user.id);
+        };
+        // Gravar data de troca de username para cooldown de 30 dias
+        if (usernameChanged) {
+          updateData.username_changed_at = new Date().toISOString();
+        }
+        const { error } = await (supabase as any).from("profiles").update(updateData).eq("id", session.user.id);
+        if (error) {
+          // Se a coluna não existe ainda, tenta sem ela
+          const { full_name, username: u, bio: b, website: w, location: l, updated_at } = updateData;
+          await (supabase as any).from("profiles").update({ full_name, username: u, bio: b, website: w, location: l, updated_at }).eq("id", session.user.id);
+        }
+        // Atualizar username nos posts existentes
+        if (usernameChanged) {
+          await (supabase as any).from("posts").update({ author_username: username }).eq("author_id", session.user.id);
+        }
       }
     } catch (_) {}
-    onSave({ full_name: name, username, bio, website, location });
+    onSave({ full_name: name, username, bio, website, location,
+      ...(username !== (profile?.username || "") ? { username_changed_at: new Date().toISOString() } : {}) });
     setDone(true);
     setSaving(false);
     setTimeout(onClose, 600);
