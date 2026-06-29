@@ -262,10 +262,10 @@ function ExplorePage() {
     return (
       <div className="flex items-center gap-3 p-3 rounded-2xl border transition hover:bg-[var(--s1)]"
         style={{ borderColor: "var(--border-subtle)", background: "var(--s0)" }}>
-        <button onClick={() => navigate({ to: `/u/${p.username}` })}>
+        <button onClick={() => navigate({ to: "/u/$username", params: { username: p.username } })}>
           <Av name={p.full_name || p.username} src={p.avatar_url} size={40} />
         </button>
-        <div className="flex-1 min-w-0" onClick={() => navigate({ to: `/u/${p.username}` })} style={{ cursor: "pointer" }}>
+        <div className="flex-1 min-w-0" onClick={() => navigate({ to: "/u/$username", params: { username: p.username } })} style={{ cursor: "pointer" }}>
           <p className="font-bold text-sm truncate" style={{ color: "var(--text-primary)" }}>{p.full_name || p.username}</p>
           <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>@{p.username}</p>
         </div>
