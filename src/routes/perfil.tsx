@@ -1066,7 +1066,13 @@ function EditProfileModal({
 
             {/* Username */}
             <div>
-              <label className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Nome de utilizador</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Nome de utilizador</label>
+                <span className="text-[11px] flex items-center gap-1" style={{ color: ACCENT }}>
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  Editar
+                </span>
+              </div>
               <div className="relative mt-1">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] text-sm">@</span>
                 <input value={username} onChange={(e) => handleUsernameChange(e.target.value)}
@@ -2211,10 +2217,23 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
     setPosts(prev => prev.filter(p => p.id !== id));
   }
 
-  function saveProfile(data: Partial<Profile> & { website?: string; location?: string }) {
+  async function saveProfile(data: Partial<Profile> & { website?: string; location?: string }) {
     setProfile((p) => p ? { ...p, ...data } : p);
     if (data.website) setWebsite(data.website);
     if (data.location) setLocation(data.location);
+
+    // Atualizar nome e username em todos os posts do utilizador
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session && (data.full_name || data.username)) {
+        const updates: Record<string, string> = {};
+        if (data.full_name) updates.author_name     = data.full_name;
+        if (data.username)  updates.author_username = data.username;
+        await (supabase as any).from("posts").update(updates).eq("author_id", session.user.id);
+      }
+    } catch (err) {
+      console.error("Erro ao atualizar nome nos posts:", err);
+    }
   }
 
   const tabs = [
