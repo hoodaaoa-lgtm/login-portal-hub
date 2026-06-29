@@ -30,7 +30,7 @@ const TABS = [
 ] as const;
 type Tab = typeof TABS[number]["key"];
 
-const TRENDING_TAGS = ["#angola","#musica","#futebol","#hoodatv","#viralao","#kizomba","#luanda","#semba"];
+const TRENDING_TAGS: string[] = []; // hashtags reais vêm da DB
 
 /* ── Avatar ── */
 const BOOK_COLORS = ["#5B3FCF","#E94B8A","#F26B3A","#1FAFA6","#6BA547","#FFC93C"];
