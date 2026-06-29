@@ -28,6 +28,41 @@ import {
 } from "lucide-react";
 import MediaEditor, { MediaEditState, DEFAULT_EDIT, EditedMediaDisplay } from "@/components/MediaEditor";
 import { HoodaPlayer } from "@/components/HoodaPlayer";
+import { uploadImageToCloudinary } from "@/lib/cloudinary";
+
+// Upload directo para Cloudinary com progresso (suporta audio/video via resource_type=video)
+function cloudinaryUploadMedia(
+  file: File,
+  resourceType: "image" | "video",
+  folder: string,
+  onProgress?: (pct: number) => void,
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("upload_preset", "hooda_videos");
+    fd.append("folder", folder);
+    fd.append("resource_type", resourceType);
+    const xhr = new XMLHttpRequest();
+    xhr.upload.addEventListener("progress", e => {
+      if (e.lengthComputable && onProgress) onProgress(Math.round((e.loaded / e.total) * 100));
+    });
+    xhr.addEventListener("load", () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try { resolve(JSON.parse(xhr.responseText).secure_url); }
+        catch { reject(new Error("Cloudinary: resposta inválida")); }
+      } else {
+        let msg = `Cloudinary erro ${xhr.status}`;
+        try { msg = JSON.parse(xhr.responseText)?.error?.message ?? msg; } catch {}
+        reject(new Error(msg));
+      }
+    });
+    xhr.addEventListener("error", () => reject(new Error("Falha de rede no upload.")));
+    xhr.addEventListener("abort", () => reject(new Error("Upload cancelado.")));
+    xhr.open("POST", `https://api.cloudinary.com/v1_1/dy7o7tgmk/${resourceType}/upload`);
+    xhr.send(fd);
+  });
+}
 
 export const Route = createFileRoute("/mensagens")({
   head: () => ({ meta: [{ title: "hooda — Mensagens" }] }),
