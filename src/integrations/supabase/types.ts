@@ -32,6 +32,144 @@ export type Database = {
         }
         Relationships: []
       }
+      book_downloads: {
+        Row: {
+          book_id: string
+          created_at: string
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          book_id: string
+          created_at?: string
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          book_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "book_downloads_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      book_ratings: {
+        Row: {
+          book_id: string
+          created_at: string
+          id: string
+          stars: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          book_id: string
+          created_at?: string
+          id?: string
+          stars: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          book_id?: string
+          created_at?: string
+          id?: string
+          stars?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "book_ratings_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "stories_books"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      book_saves: {
+        Row: {
+          book_id: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          book_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          book_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "book_saves_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      books: {
+        Row: {
+          author_name: string | null
+          category: string | null
+          cover_url: string | null
+          created_at: string
+          description: string | null
+          downloads: number
+          file_format: string | null
+          file_url: string
+          id: string
+          saves: number
+          title: string
+          uploader_id: string | null
+        }
+        Insert: {
+          author_name?: string | null
+          category?: string | null
+          cover_url?: string | null
+          created_at?: string
+          description?: string | null
+          downloads?: number
+          file_format?: string | null
+          file_url: string
+          id?: string
+          saves?: number
+          title: string
+          uploader_id?: string | null
+        }
+        Update: {
+          author_name?: string | null
+          category?: string | null
+          cover_url?: string | null
+          created_at?: string
+          description?: string | null
+          downloads?: number
+          file_format?: string | null
+          file_url?: string
+          id?: string
+          saves?: number
+          title?: string
+          uploader_id?: string | null
+        }
+        Relationships: []
+      }
       channel_follows: {
         Row: {
           channel_id: string
@@ -1313,6 +1451,35 @@ export type Database = {
           },
         ]
       }
+      saved_books: {
+        Row: {
+          book_id: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          book_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          book_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saved_books_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "stories_books"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       saved_videos: {
         Row: {
           created_at: string
@@ -1388,12 +1555,15 @@ export type Database = {
         Row: {
           author_id: string
           author_username: string
+          average_rating: number | null
           chapter_count: number
           cover_color: string | null
           cover_url: string | null
           created_at: string
           description: string | null
+          downloads_count: number
           id: string
+          rating_count: number
           status: string
           title: string
           updated_at: string
@@ -1401,12 +1571,15 @@ export type Database = {
         Insert: {
           author_id: string
           author_username?: string
+          average_rating?: number | null
           chapter_count?: number
           cover_color?: string | null
           cover_url?: string | null
           created_at?: string
           description?: string | null
+          downloads_count?: number
           id?: string
+          rating_count?: number
           status?: string
           title: string
           updated_at?: string
@@ -1414,12 +1587,15 @@ export type Database = {
         Update: {
           author_id?: string
           author_username?: string
+          average_rating?: number | null
           chapter_count?: number
           cover_color?: string | null
           cover_url?: string | null
           created_at?: string
           description?: string | null
+          downloads_count?: number
           id?: string
+          rating_count?: number
           status?: string
           title?: string
           updated_at?: string
@@ -1939,6 +2115,10 @@ export type Database = {
           read_receipts_off: boolean
         }[]
       }
+      increment_book_download: {
+        Args: { p_book_id: string }
+        Returns: undefined
+      }
       increment_library_book_counter: {
         Args: { p_book_id: string; p_counter: string }
         Returns: undefined
@@ -1964,6 +2144,13 @@ export type Database = {
           p_viewer_fingerprint?: string
         }
         Returns: Json
+      }
+      update_book_rating_average: {
+        Args: { p_book_id: string }
+        Returns: {
+          avg_rating: number
+          count: number
+        }[]
       }
     }
     Enums: {
