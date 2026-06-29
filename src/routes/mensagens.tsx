@@ -6,6 +6,12 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { QUERY_KEYS, REALTIME_QUERY_OPTIONS, CONVERSATIONS_QUERY_OPTIONS } from "@/lib/queryClient";
 import {
   isEncrypted,
+  encryptDM,
+  decryptDM,
+  canEncryptDM,
+  E2EE_PENDING,
+  getOrCreateKeyPair,
+  publishPublicKey,
 } from "@/lib/e2ee";
 import { supabase } from "@/integrations/supabase/client";
 import { BottomNav, SideNav, PageWrapper } from "@/components/AppShell";
@@ -25,6 +31,7 @@ import {
   Crop, Grid3x3, Download, ZoomIn, Forward, Star,
   Eye, EyeOff, Trash2, Reply, Copy,
   AlertCircle, RefreshCw, ArrowDown,
+  Lock, Unlock,
 } from "lucide-react";
 import MediaEditor, { MediaEditState, DEFAULT_EDIT, EditedMediaDisplay } from "@/components/MediaEditor";
 import { HoodaPlayer } from "@/components/HoodaPlayer";
@@ -2382,17 +2389,45 @@ function ChatPanel({ myId, contact, onBack }: {
     } catch {}
   }
 
-  // ── E2EE desactivado para DMs ──
-  // A chave AES era gerada localmente e nunca partilhada com o outro
-  // utilizador — o destinatário nunca conseguia decifrar. Protecção
-  // feita pela RLS do Supabase (só participantes lêem a conversa).
-  const encrypt = useCallback(async (text: string): Promise<string> => text, []);
+  // ── E2EE para DMs (ECDH + AES-GCM partilhada via conversation_key_shares) ──
+  //
+  // canEncrypt = o outro participante tem chave pública ECDH publicada.
+  // Se for false caímos em fallback (envio em claro) — não bloqueia o utilizador.
+  const [canEncrypt, setCanEncrypt] = useState<boolean | null>(null);
+
+  // Publicar a minha chave pública (idempotente) + verificar a do outro
+  useEffect(() => {
+    if (!myId || !contact.id) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        await getOrCreateKeyPair();
+        await publishPublicKey(myId);
+        const ok = await canEncryptDM(contact.id);
+        if (!cancelled) setCanEncrypt(ok);
+      } catch {
+        if (!cancelled) setCanEncrypt(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [myId, contact.id]);
+
+  const encrypt = useCallback(async (text: string): Promise<string> => {
+    if (!text) return text;
+    if (!contact.conversationId) return text;
+    const ct = await encryptDM(text, contact.conversationId, myId, contact.id);
+    // Fallback: se não foi possível cifrar (outro sem chave pública), enviar em claro
+    return ct ?? text;
+  }, [contact.conversationId, contact.id, myId]);
 
   const decrypt = useCallback(async (content: string): Promise<string> => {
-    // Mensagens antigas encriptadas localmente: mostrar indicador visual
-    if (isEncrypted(content)) return "🔒 Mensagem (dispositivo anterior)";
-    return content;
-  }, []);
+    if (!content || !isEncrypted(content)) return content;
+    if (!contact.conversationId) return "🔒 Mensagem";
+    const out = await decryptDM(content, contact.conversationId, myId, contact.id);
+    if (out === E2EE_PENDING) return "🔒 A sincronizar…";
+    return out;
+  }, [contact.conversationId, contact.id, myId]);
+
 
   // ── Parse raw row → Message ──
   const parseRow = useCallback(async (r: any): Promise<Message> => {
@@ -3111,11 +3146,23 @@ function ChatPanel({ myId, contact, onBack }: {
           </p>
           <p className="text-[11px] text-white/70">@{contact.username}</p>
         </div>
+        {/* Indicador de cifra ponta-a-ponta */}
+        <div
+          title={canEncrypt ? "Conversa cifrada de ponta a ponta" : "Conversa não cifrada"}
+          className="p-2 rounded-full flex items-center justify-center"
+          style={{
+            background: "rgba(255,255,255,0.12)",
+            color: canEncrypt ? "#34D399" : "rgba(255,255,255,0.55)",
+          }}
+        >
+          {canEncrypt ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
+        </div>
         <button onClick={() => setShowBgModal(true)} title="Mudar fundo"
           className="p-2 rounded-full transition active:scale-90"
           style={{ background: "rgba(255,255,255,0.12)", color: "white" }}>
           <Wand2 className="h-4 w-4" />
         </button>
+
         <div className="relative" ref={chatMenuRef}>
           <button onClick={() => setShowChatMenu(p => !p)}
             className="p-2 rounded-full transition active:scale-90"
