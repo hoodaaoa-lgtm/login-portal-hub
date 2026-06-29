@@ -679,7 +679,7 @@ function CreatePostModal({
 }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const name = profile?.full_name || email || "?";
+  const name = profile?.full_name || profile?.username || email?.split("@")[0] || "?";
   const [text, setText] = useState("");
   const [bgColor, setBgColor] = useState<string | null>(null);
   const [photo, setPhoto] = useState<string | null>(null);
@@ -1973,7 +1973,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
 }) {
   const navigate = useNavigate();
   const [profile, setProfile] = useState(initialProfile);
-  const name = profile?.full_name || email || "?";
+  const name = profile?.full_name || profile?.username || email?.split("@")[0] || "?";
   const [tab, setTab] = useState<"posts" | "saved" | "info" | "monetization">("posts");
   const [showCreate, setShowCreate] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -2579,7 +2579,7 @@ function PublicProfile({ profile, email }: { profile: Profile | null; email: str
   const [myUserId, setMyUserId] = useState("");
   const [followListMode, setFollowListMode] = useState<"followers" | "following" | null>(null);
   const navigate = useNavigate();
-  const name = profile?.full_name || email || "?";
+  const name = profile?.full_name || profile?.username || email?.split("@")[0] || "?";
 
   useEffect(() => {
     if (!profile) return;
