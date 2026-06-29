@@ -2689,37 +2689,23 @@ function ChatPanel({ myId, contact, onBack }: {
     }
   }
 
-  // ── Upload com progresso real ──
+  // ── Upload com progresso real (Cloudinary) ──
   async function uploadFile(file: File, folder: string): Promise<string|null> {
-    setUploading(true); setUploadPct(15);
-    const ext  = file.name.split(".").pop() ?? "bin";
-    const path = `${folder}/${myId}/${Date.now()}.${ext}`;
+    setUploading(true); setUploadPct(5);
     try {
-      const { error } = await supabase.storage
-        .from("messages-media")
-        .upload(path, file, { upsert: false, cacheControl: "3600" });
-      if (error) {
-        console.error("[uploadFile] erro upload:", error.message);
-        toast.error("Erro no upload: " + error.message);
-        setUploading(false); setUploadPct(0);
-        return null;
+      // folder define o tipo: "audio" e "video" → resource_type=video; "images" → image
+      const isImage = folder === "images" || file.type.startsWith("image/");
+      const resourceType: "image" | "video" = isImage ? "image" : "video";
+      const cloudFolder = `hooda/messages/${folder}/${myId}`;
+
+      let url: string;
+      if (isImage) {
+        const r = await uploadImageToCloudinary(file, cloudFolder, pct => setUploadPct(Math.max(5, pct)));
+        url = r.url;
+      } else {
+        url = await cloudinaryUploadMedia(file, resourceType, cloudFolder, pct => setUploadPct(Math.max(5, pct)));
       }
-      const { data } = supabase.storage.from("messages-media").getPublicUrl(path);
-      const url = data.publicUrl;
-      console.log("[uploadFile] ✅ URL pública:", url);
-      
-      // Testar se a URL é acessível (verificar CORS)
-      try {
-        const res = await fetch(url, { method: "HEAD" });
-        if (!res.ok) {
-          console.warn(`[uploadFile] ⚠️  URL devolveu status ${res.status} — bucket pode estar privado ou CORS não configurado`);
-        } else {
-          console.log("[uploadFile] ✅ URL acessível (status:", res.status + ")");
-        }
-      } catch (corsErr: any) {
-        console.warn("[uploadFile] ⚠️  Erro ao testar acesso (CORS?):", corsErr.message);
-      }
-      
+      console.log("[uploadFile] ✅ Cloudinary URL:", url);
       setUploadPct(100);
       setTimeout(() => { setUploading(false); setUploadPct(0); }, 400);
       return url;
