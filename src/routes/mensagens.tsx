@@ -2388,17 +2388,45 @@ function ChatPanel({ myId, contact, onBack }: {
     } catch {}
   }
 
-  // ── E2EE desactivado para DMs ──
-  // A chave AES era gerada localmente e nunca partilhada com o outro
-  // utilizador — o destinatário nunca conseguia decifrar. Protecção
-  // feita pela RLS do Supabase (só participantes lêem a conversa).
-  const encrypt = useCallback(async (text: string): Promise<string> => text, []);
+  // ── E2EE para DMs (ECDH + AES-GCM partilhada via conversation_key_shares) ──
+  //
+  // canEncrypt = o outro participante tem chave pública ECDH publicada.
+  // Se for false caímos em fallback (envio em claro) — não bloqueia o utilizador.
+  const [canEncrypt, setCanEncrypt] = useState<boolean | null>(null);
+
+  // Publicar a minha chave pública (idempotente) + verificar a do outro
+  useEffect(() => {
+    if (!myId || !contact.id) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        await getOrCreateKeyPair();
+        await publishPublicKey(myId);
+        const ok = await canEncryptDM(contact.id);
+        if (!cancelled) setCanEncrypt(ok);
+      } catch {
+        if (!cancelled) setCanEncrypt(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [myId, contact.id]);
+
+  const encrypt = useCallback(async (text: string): Promise<string> => {
+    if (!text) return text;
+    if (!contact.conversationId) return text;
+    const ct = await encryptDM(text, contact.conversationId, myId, contact.id);
+    // Fallback: se não foi possível cifrar (outro sem chave pública), enviar em claro
+    return ct ?? text;
+  }, [contact.conversationId, contact.id, myId]);
 
   const decrypt = useCallback(async (content: string): Promise<string> => {
-    // Mensagens antigas encriptadas localmente: mostrar indicador visual
-    if (isEncrypted(content)) return "🔒 Mensagem (dispositivo anterior)";
-    return content;
-  }, []);
+    if (!content || !isEncrypted(content)) return content;
+    if (!contact.conversationId) return "🔒 Mensagem";
+    const out = await decryptDM(content, contact.conversationId, myId, contact.id);
+    if (out === E2EE_PENDING) return "🔒 A sincronizar…";
+    return out;
+  }, [contact.conversationId, contact.id, myId]);
+
 
   // ── Parse raw row → Message ──
   const parseRow = useCallback(async (r: any): Promise<Message> => {
