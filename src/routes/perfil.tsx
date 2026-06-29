@@ -2689,7 +2689,7 @@ function ProfilePage() {
       setEmail(session.session.user.email ?? "");
       const { data } = await supabase
         .from("profiles")
-        .select("id, username, full_name, age, bio")
+        .select("id, username, full_name, age, bio, username_changed_at")
         .eq("id", session.session.user.id)
         .maybeSingle();
       if (data) setProfile(data as Profile);
