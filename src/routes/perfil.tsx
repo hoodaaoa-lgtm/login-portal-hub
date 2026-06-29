@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { useQuery } from "@tanstack/react-query";
