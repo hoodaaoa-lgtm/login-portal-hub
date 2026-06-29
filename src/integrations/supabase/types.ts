@@ -578,6 +578,41 @@ export type Database = {
           },
         ]
       }
+      conversation_key_shares: {
+        Row: {
+          conversation_id: string
+          created_at: string
+          encrypted_key: string
+          id: string
+          sender_public_key: string
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string
+          encrypted_key: string
+          id?: string
+          sender_public_key: string
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string
+          encrypted_key?: string
+          id?: string
+          sender_public_key?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_key_shares_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversation_participants: {
         Row: {
           conversation_id: string
