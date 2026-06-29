@@ -3146,11 +3146,23 @@ function ChatPanel({ myId, contact, onBack }: {
           </p>
           <p className="text-[11px] text-white/70">@{contact.username}</p>
         </div>
+        {/* Indicador de cifra ponta-a-ponta */}
+        <div
+          title={canEncrypt ? "Conversa cifrada de ponta a ponta" : "Conversa não cifrada"}
+          className="p-2 rounded-full flex items-center justify-center"
+          style={{
+            background: "rgba(255,255,255,0.12)",
+            color: canEncrypt ? "#34D399" : "rgba(255,255,255,0.55)",
+          }}
+        >
+          {canEncrypt ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
+        </div>
         <button onClick={() => setShowBgModal(true)} title="Mudar fundo"
           className="p-2 rounded-full transition active:scale-90"
           style={{ background: "rgba(255,255,255,0.12)", color: "white" }}>
           <Wand2 className="h-4 w-4" />
         </button>
+
         <div className="relative" ref={chatMenuRef}>
           <button onClick={() => setShowChatMenu(p => !p)}
             className="p-2 rounded-full transition active:scale-90"
