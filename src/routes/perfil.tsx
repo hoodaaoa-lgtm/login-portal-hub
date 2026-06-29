@@ -2687,11 +2687,24 @@ function ProfilePage() {
       const { data: session } = await supabase.auth.getSession();
       if (!session.session) { navigate({ to: "/", replace: true }); return; }
       setEmail(session.session.user.email ?? "");
-      const { data } = await supabase
+      // Tenta buscar com username_changed_at; se a coluna não existir faz fallback
+      let data: any = null;
+      const { data: d1, error: e1 } = await supabase
         .from("profiles")
         .select("id, username, full_name, age, bio, username_changed_at")
         .eq("id", session.session.user.id)
         .maybeSingle();
+      if (e1) {
+        // Coluna pode não existir ainda — fallback sem ela
+        const { data: d2 } = await supabase
+          .from("profiles")
+          .select("id, username, full_name, age, bio")
+          .eq("id", session.session.user.id)
+          .maybeSingle();
+        data = d2;
+      } else {
+        data = d1;
+      }
       if (data) setProfile(data as Profile);
     })();
   }, [navigate]);
