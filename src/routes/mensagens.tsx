@@ -6,6 +6,12 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { QUERY_KEYS, REALTIME_QUERY_OPTIONS, CONVERSATIONS_QUERY_OPTIONS } from "@/lib/queryClient";
 import {
   isEncrypted,
+  encryptDM,
+  decryptDM,
+  canEncryptDM,
+  E2EE_PENDING,
+  getOrCreateKeyPair,
+  publishPublicKey,
 } from "@/lib/e2ee";
 import { supabase } from "@/integrations/supabase/client";
 import { BottomNav, SideNav, PageWrapper } from "@/components/AppShell";
