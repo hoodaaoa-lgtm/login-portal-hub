@@ -3,12 +3,14 @@ import { useEffect, useRef, useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PhotoViewer } from "@/components/PhotoViewer";
+import { RichText } from "@/components/RichText";
 import { BottomNav, SideNav, PageWrapper } from "@/components/AppShell";
 import {
   ChevronLeft, MessageCircle, Flag, Heart, Share2,
   MoreHorizontal, UserCheck, UserPlus, X, MapPin,
   Link as LinkIcon, Calendar, Play, Pause, Camera,
-  MessageSquare, Eye,
+  MessageSquare, Eye, Repeat2, Forward, Bookmark, BookmarkCheck,
+  Copy, Check, TypeIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -60,6 +62,258 @@ function Av({ name, src, size=40, color, ring=false }:
 }
 
 import { usePostVideoView } from "@/hooks/usePostVideoView";
+
+/* ── Modal Partilhar Perfil ── */
+function ShareProfileModal({ username, name, onClose }: { username: string; name: string; onClose: () => void }) {
+  const [copied, setCopied] = useState(false);
+  const url = `${window.location.origin}/u/${username}`;
+  async function copy() {
+    await navigator.clipboard.writeText(url);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+      style={{ background: "rgba(0,0,0,0.5)" }} onClick={onClose}>
+      <div className="w-full max-w-sm rounded-t-3xl sm:rounded-3xl shadow-2xl p-5"
+        style={{ background: "var(--s0)" }} onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-extrabold text-base" style={{ color: "var(--text-primary)" }}>Partilhar perfil</h3>
+          <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "var(--s2)" }}>
+            <X className="h-4 w-4" style={{ color: "var(--text-muted)" }} />
+          </button>
+        </div>
+        <p className="text-sm mb-3" style={{ color: "var(--text-muted)" }}>Link do perfil de <span className="font-semibold" style={{ color: "var(--text-primary)" }}>{name}</span></p>
+        <div className="flex items-center gap-2 p-3 rounded-2xl border mb-1"
+          style={{ background: "var(--s2)", borderColor: "var(--border-default)" }}>
+          <p className="flex-1 text-sm truncate" style={{ color: "var(--text-secondary)" }}>{url}</p>
+          <button onClick={copy}
+            className="flex items-center gap-1.5 px-3 h-8 rounded-xl text-xs font-bold transition-all active:scale-95 shrink-0"
+            style={copied ? { background: "#6BA547", color: "#fff" } : { background: P, color: "#fff" }}>
+            {copied ? <><Check className="h-3.5 w-3.5" /> Copiado!</> : <><Copy className="h-3.5 w-3.5" /> Copiar</>}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── RepostModal ── */
+function RepostModal({ post, myId, myUsername, onClose, onReposted }: {
+  post: any; myId: string; myUsername: string;
+  onClose: () => void; onReposted: (count: number, did: boolean) => void;
+}) {
+  const navigate = useNavigate();
+  const [mode, setMode] = useState<"menu" | "quote" | "done">("menu");
+  const [quoteText, setQuoteText] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [alreadyReposted, setAlreadyReposted] = useState(false);
+
+  useEffect(() => {
+    if (!myId) return;
+    (supabase as any).from("reposts").select("id").eq("user_id", myId).eq("post_id", post.id).maybeSingle()
+      .then(({ data }: any) => setAlreadyReposted(!!data));
+  }, [myId, post.id]);
+
+  async function doRepost(quote?: string) {
+    if (!myId || loading) return;
+    setLoading(true);
+    if (alreadyReposted) {
+      await (supabase as any).from("reposts").delete().eq("user_id", myId).eq("post_id", post.id);
+      onReposted((post.repostCount ?? 1) - 1, false);
+    } else {
+      await (supabase as any).from("reposts").insert({ user_id: myId, post_id: post.id, quote_text: quote || null });
+      onReposted((post.repostCount ?? 0) + 1, true);
+    }
+    setLoading(false);
+    setMode("done");
+    setTimeout(onClose, 900);
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+      style={{ background: "rgba(0,0,0,0.45)" }} onClick={onClose}>
+      <div className="w-full max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col"
+        style={{ background: "var(--s0)", maxHeight: "90vh" }} onClick={e => e.stopPropagation()}>
+
+        {mode === "menu" && (
+          <>
+            <div className="flex items-center justify-between px-5 pt-5 pb-2">
+              <h3 className="font-extrabold text-base" style={{ color: "var(--text-primary)" }}>
+                {alreadyReposted ? "Desfazer repost?" : "Repostar"}
+              </h3>
+              <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "var(--s2)" }}>
+                <X className="h-4 w-4" style={{ color: "var(--text-muted)" }} />
+              </button>
+            </div>
+            {/* Preview */}
+            <div className="mx-4 mb-4 p-3 rounded-2xl border" style={{ background: "var(--s2)", borderColor: "var(--border-default)" }}>
+              {post.text && <p className="text-sm line-clamp-2" style={{ color: "var(--text-secondary)" }}>{post.text}</p>}
+              {post.photo && <img src={post.photo} alt="" className="w-full rounded-xl mt-2 object-cover max-h-28" />}
+            </div>
+            <div className="px-4 pb-5 space-y-2">
+              {alreadyReposted ? (
+                <button onClick={() => doRepost()} disabled={loading}
+                  className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl text-sm transition active:scale-[0.98]"
+                  style={{ background: "#ef444415", color: "#ef4444" }}>
+                  <Repeat2 className="w-5 h-5" />
+                  <div className="text-left"><p className="font-bold">Desfazer repost</p></div>
+                </button>
+              ) : (
+                <>
+                  <button onClick={() => doRepost()} disabled={loading}
+                    className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl text-sm transition active:scale-[0.98]"
+                    style={{ background: "var(--s2)", color: "var(--text-primary)" }}>
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: P + "15" }}>
+                      <Repeat2 className="w-5 h-5" style={{ color: P }} />
+                    </div>
+                    <div className="text-left">
+                      <p className="font-bold">Repostar</p>
+                      <p className="text-xs" style={{ color: "var(--text-muted)" }}>Partilha com os teus seguidores</p>
+                    </div>
+                  </button>
+                  <button onClick={() => setMode("quote")}
+                    className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl text-sm transition active:scale-[0.98]"
+                    style={{ background: "var(--s2)", color: "var(--text-primary)" }}>
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: PINK + "15" }}>
+                      <MessageSquare className="w-5 h-5" style={{ color: PINK }} />
+                    </div>
+                    <div className="text-left">
+                      <p className="font-bold">Citar publicação</p>
+                      <p className="text-xs" style={{ color: "var(--text-muted)" }}>Adiciona o teu comentário</p>
+                    </div>
+                  </button>
+                </>
+              )}
+            </div>
+          </>
+        )}
+
+        {mode === "quote" && (
+          <>
+            <div className="flex items-center gap-3 px-4 pt-4 pb-3 border-b" style={{ borderColor: "var(--border-subtle)" }}>
+              <button onClick={() => setMode("menu")} className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "var(--s2)" }}>
+                <ChevronLeft className="h-4 w-4" style={{ color: "var(--text-primary)" }} />
+              </button>
+              <h3 className="font-extrabold text-base flex-1" style={{ color: "var(--text-primary)" }}>Citar publicação</h3>
+              <button onClick={() => doRepost(quoteText)} disabled={!quoteText.trim() || loading}
+                className="px-4 h-8 rounded-full text-sm font-bold text-white transition active:scale-95 disabled:opacity-40"
+                style={{ background: GRAD }}>
+                {loading ? <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" /> : "Publicar"}
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto px-4 pt-3 pb-4">
+              <div className="flex gap-3 mb-4">
+                <div className="w-9 h-9 rounded-full shrink-0 flex items-center justify-center text-white font-bold text-sm" style={{ background: P }}>
+                  {myUsername?.[0]?.toUpperCase() ?? "?"}
+                </div>
+                <textarea autoFocus value={quoteText} onChange={e => setQuoteText(e.target.value)}
+                  maxLength={280} placeholder="Adiciona o teu comentário…" rows={3}
+                  className="flex-1 resize-none outline-none text-sm leading-relaxed bg-transparent"
+                  style={{ color: "var(--text-primary)" }} />
+              </div>
+              <div className="rounded-2xl border overflow-hidden" style={{ borderColor: "var(--border-default)" }}>
+                {post.text && <p className="px-3 py-2 text-sm" style={{ color: "var(--text-secondary)" }}>{post.text.slice(0, 120)}{post.text.length > 120 ? "…" : ""}</p>}
+                {post.photo && <img src={post.photo} alt="" className="w-full object-cover max-h-40" />}
+              </div>
+              <div className="flex justify-end mt-1">
+                <span className="text-xs" style={{ color: quoteText.length > 260 ? "#ef4444" : "var(--text-muted)" }}>{quoteText.length}/280</span>
+              </div>
+            </div>
+          </>
+        )}
+
+        {mode === "done" && (
+          <div className="flex flex-col items-center gap-3 py-10 px-6">
+            <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{ background: P + "15" }}>
+              <Repeat2 className="w-7 h-7" style={{ color: P }} />
+            </div>
+            <p className="font-extrabold text-base" style={{ color: "var(--text-primary)" }}>
+              {alreadyReposted ? "Repost removido" : "Repostado!"}
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ── ForwardModal ── */
+function ForwardModal({ post, myId, onClose }: { post: any; myId: string; onClose: () => void }) {
+  const [conversations, setConversations] = useState<any[]>([]);
+  const [search, setSearch] = useState("");
+  const [sending, setSending] = useState<string | null>(null);
+  const [sent, setSent] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (!myId) return;
+    (async () => {
+      const { data } = await (supabase as any).from("conversations")
+        .select("id,participants,updated_at").contains("participants", [myId])
+        .order("updated_at", { ascending: false }).limit(30);
+      if (!data) return;
+      const otherIds = [...new Set(data.flatMap((c: any) => c.participants.filter((p: string) => p !== myId)))];
+      const { data: profs } = await (supabase as any).from("profiles").select("id,username,full_name,avatar_url").in("id", otherIds);
+      const profMap: Record<string, any> = {};
+      (profs || []).forEach((p: any) => { profMap[p.id] = p; });
+      setConversations(data.map((c: any) => {
+        const otherId = c.participants.find((p: string) => p !== myId);
+        const prof = profMap[otherId] || {};
+        return { ...c, otherName: prof.full_name || prof.username || "Utilizador", otherUsername: prof.username, avatar: prof.avatar_url };
+      }));
+    })();
+  }, [myId]);
+
+  async function forward(convId: string) {
+    if (!myId || sending) return;
+    setSending(convId);
+    const postUrl = `${window.location.origin}/u/${post.authorUsername || "?"}`;
+    const text = `${post.text ? post.text.slice(0, 100) + "\n" : ""}🔗 ${postUrl}`;
+    await (supabase as any).from("messages").insert({ conversation_id: convId, sender_id: myId, content: text, type: "text" });
+    setSent(s => new Set([...s, convId]));
+    setSending(null);
+  }
+
+  const filtered = conversations.filter(c => !search || c.otherName?.toLowerCase().includes(search.toLowerCase()));
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+      style={{ background: "rgba(0,0,0,0.5)" }} onClick={onClose}>
+      <div className="w-full max-w-sm rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col"
+        style={{ background: "var(--s0)", maxHeight: "80vh" }} onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: "var(--border-subtle)" }}>
+          <h3 className="font-extrabold text-base" style={{ color: "var(--text-primary)" }}>Reencaminhar</h3>
+          <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "var(--s2)" }}>
+            <X className="h-4 w-4" style={{ color: "var(--text-muted)" }} />
+          </button>
+        </div>
+        <div className="px-4 py-2">
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Pesquisar…"
+            className="w-full px-4 h-9 rounded-full text-sm outline-none border"
+            style={{ background: "var(--s2)", borderColor: "var(--border-default)", color: "var(--text-primary)" }} />
+        </div>
+        <div className="flex-1 overflow-y-auto px-2 pb-4">
+          {filtered.map(c => (
+            <button key={c.id} onClick={() => forward(c.id)} disabled={!!sending || sent.has(c.id)}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl transition hover:bg-[var(--s2)] active:scale-[0.98]">
+              <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center text-white font-bold text-sm shrink-0" style={{ background: P }}>
+                {c.avatar ? <img src={c.avatar} alt="" className="w-full h-full object-cover" /> : (c.otherName?.[0] ?? "?").toUpperCase()}
+              </div>
+              <div className="flex-1 text-left">
+                <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{c.otherName}</p>
+              </div>
+              <div className="w-8 h-8 rounded-full flex items-center justify-center" style={sent.has(c.id) ? { background: "#6BA54720", color: "#6BA547" } : { background: "var(--s3)", color: "var(--text-muted)" }}>
+                {sending === c.id
+                  ? <div className="w-4 h-4 rounded-full border-2 animate-spin" style={{ borderColor: P, borderTopColor: "transparent" }} />
+                  : sent.has(c.id) ? <Check className="w-4 h-4" /> : <Forward className="w-4 h-4" />}
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 /* ─── VideoPlayer — adapta tamanho ao vídeo (short vs landscape) ─── */
 function VideoPlayer({ src, poster, postId, kind }: { src:string; poster?:string; postId?:string; kind?:string }) {
@@ -404,16 +658,15 @@ function UserProfilePage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
 
-  /* ─ Sessão ─ */
+  /* ─ Sessão (perfil é público — não bloqueia visitantes sem sessão) ─ */
   const [myId, setMyId] = useState("");
   const [sessionChecked, setSessionChecked] = useState(false);
   useEffect(()=>{
     supabase.auth.getSession().then(({data:{session}})=>{
-      if (!session){ navigate({to:"/",replace:true}); return; }
-      setMyId(session.user.id);
+      if (session) setMyId(session.user.id);
       setSessionChecked(true);
     });
-  },[navigate]);
+  },[]);
 
   /* ─ UI state ─ */
   const [openingChat, setOpeningChat] = useState(false);
@@ -425,6 +678,10 @@ function UserProfilePage() {
   const [showFollowing, setShowFollowing] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [repostingPost, setRepostingPost] = useState<any>(null);
+  const [forwardingPost, setForwardingPost] = useState<any>(null);
+  const [repostedIds, setRepostedIds] = useState<Set<string>>(new Set());
   const [commentPostId, setCommentPostId] = useState<string|null>(null);
   const [photoViewing, setPhotoViewing] = useState<string|null>(null);
 
@@ -454,19 +711,21 @@ function UserProfilePage() {
     queryFn: async ()=>{
       const db=supabase as any;
       const [
-        {data:followRow},
+        followRowRes,
         {count:fc},
         {count:foc},
         {count:pc},
       ] = await Promise.all([
-        db.from("follows").select("follower_id").eq("follower_id",myId).eq("target_username",username).maybeSingle(),
+        myId
+          ? db.from("follows").select("follower_id").eq("follower_id",myId).eq("target_username",username).maybeSingle()
+          : Promise.resolve({data:null}),
         db.from("follows").select("*",{count:"exact",head:true}).eq("target_username",username),
         db.from("follows").select("*",{count:"exact",head:true}).eq("follower_id",profileId),
         db.from("posts").select("*",{count:"exact",head:true}).eq("author_id",profileId),
       ]);
-      return { following:!!followRow, followerCount:fc??0, followingCount:foc??0, postCount:pc??0 };
+      return { following:!!followRowRes?.data, followerCount:fc??0, followingCount:foc??0, postCount:pc??0 };
     },
-    enabled:!!profileId&&!!myId,
+    enabled:!!profileId,
     staleTime:30_000,
   });
 
@@ -597,7 +856,7 @@ function UserProfilePage() {
   }
 
   async function toggleLike(postId:string, currentCount:number) {
-    if (!myId) return;
+    if (!myId) { toast.error("Inicia sessão para gostar."); return; }
     const isLiked=likeOverrides[postId]??likedPosts.has(postId);
     setLikeOverrides(prev=>({...prev,[postId]:!isLiked}));
     setLikeCountOverrides(prev=>({...prev,[postId]:(prev[postId]??currentCount)+(isLiked?-1:1)}));
@@ -611,18 +870,8 @@ function UserProfilePage() {
     }
   }
 
-  async function shareProfile() {
-    const url = `${window.location.origin}/u/${username}`;
-    try {
-      await navigator.share({
-        title: name,
-        text: profile?.bio ?? `Vê o perfil de ${name} na Hooda AOA`,
-        url,
-      });
-    } catch(_) {
-      await navigator.clipboard.writeText(url);
-      toast.success("🔗 Link copiado: " + url);
-    }
+  function shareProfile() {
+    setShowShareModal(true);
     setShowMenu(false);
   }
 
@@ -847,14 +1096,14 @@ function UserProfilePage() {
                     {/* Conteúdo */}
                     {post.text&&!post.bgColor&&(
                       <p className="px-4 pb-3 text-sm leading-relaxed" style={{color:"var(--text-secondary)"}}>
-                        {post.text}
+                        <RichText text={post.text} />
                       </p>
                     )}
                     {post.bgColor&&(
                       <div className="px-4 pb-3">
                         <div className="rounded-2xl px-5 py-8 flex items-center justify-center min-h-32"
                           style={{background:post.bgColor}}>
-                          <p className="font-bold text-center leading-snug text-white text-xl">{post.text}</p>
+                          <RichText text={post.text} className="font-bold text-center leading-snug text-white text-xl" />
                         </div>
                       </div>
                     )}
@@ -920,9 +1169,13 @@ function UserProfilePage() {
                         className="flex items-center gap-1.5 px-3 py-2 rounded-xl transition active:scale-90 hover:bg-[var(--s2)]">
                         <MessageSquare className="h-5 w-5" style={{color:"var(--text-muted)"}}/>
                       </button>
-                      <button onClick={()=>navigator.share?.({url:`${window.location.origin}/u/${username}`}).catch(()=>{})}
+                      <button onClick={()=>{ if(!myId){toast.error("Inicia sessão para repostar.");return;} setRepostingPost(post); }}
                         className="flex items-center gap-1.5 px-3 py-2 rounded-xl transition active:scale-90 hover:bg-[var(--s2)]">
-                        <Share2 className="h-5 w-5" style={{color:"var(--text-muted)"}}/>
+                        <Repeat2 className="h-5 w-5" style={{color: repostedIds.has(post.id) ? "#1FAFA6" : "var(--text-muted)"}}/>
+                      </button>
+                      <button onClick={()=>{ if(!myId){toast.error("Inicia sessão para reencaminhar.");return;} setForwardingPost(post); }}
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl transition active:scale-90 hover:bg-[var(--s2)]">
+                        <Forward className="h-5 w-5" style={{color:"var(--text-muted)"}}/>
                       </button>
                     </div>
                   </article>
@@ -965,6 +1218,34 @@ function UserProfilePage() {
       {/* Fechar menu ao clicar fora */}
       {showMenu && (
         <div className="fixed inset-0 z-40" onClick={()=>setShowMenu(false)}/>
+      )}
+
+      {showShareModal && (
+        <ShareProfileModal username={profile.username} name={name} onClose={() => setShowShareModal(false)} />
+      )}
+
+      {repostingPost && myId && (
+        <RepostModal
+          post={{ ...repostingPost, authorUsername: profile.username }}
+          myId={myId}
+          myUsername={profile.username}
+          onClose={() => setRepostingPost(null)}
+          onReposted={(_, did) => {
+            setRepostedIds(prev => {
+              const next = new Set(prev);
+              if (did) next.add(repostingPost.id); else next.delete(repostingPost.id);
+              return next;
+            });
+          }}
+        />
+      )}
+
+      {forwardingPost && myId && (
+        <ForwardModal
+          post={{ ...forwardingPost, authorUsername: profile.username }}
+          myId={myId}
+          onClose={() => setForwardingPost(null)}
+        />
       )}
     </>
   );
