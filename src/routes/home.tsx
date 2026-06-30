@@ -3320,12 +3320,46 @@ function HomePage() {
 
   const firstPagePosts = feedQuery.data ?? [];
 
-  // Timeout de segurança: se passar 6s sem dados, força uma busca pública
-  // (sem userId) para garantir que o feed nunca fica preso em loading.
+  // Busca de recurso: corre SEMPRE ao montar a página, em paralelo com o
+  // feed personalizado, e independente de sessão/autenticação resolvida.
+  // Isto garante que publicações já existentes na base de dados aparecem
+  // mesmo que o feed "inteligente" (por userId) demore, falhe, ou nunca
+  // chegue a ser "enabled" por qualquer race condition de auth.
   const [forcedPublicFeed, setForcedPublicFeed] = useState<any[] | null>(null);
+  const [forcedFeedTried, setForcedFeedTried] = useState(false);
 
-  // Posts da primeira página (React Query) + páginas extra carregadas via
-  // scroll infinito, sempre deduplicados por id antes de renderizar.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        // A política RLS da tabela "posts" exige um pedido autenticado
+        // (TO authenticated). Se o cliente Supabase ainda não tiver o
+        // token de sessão anexado neste preciso instante — mesmo que o
+        // React já mostre `session` como definida — a query devolve 0
+        // linhas silenciosamente (sem erro), porque tecnicamente "correu
+        // bem". Por isso esperamos aqui explicitamente por getSession()
+        // antes de disparar a busca, garantindo que o token já está pronto.
+        await supabase.auth.getSession();
+
+        const { data, error } = await supabase
+          .from("posts")
+          .select("id,author_id,user_id,author_username,author_name,author_color,content,kind,is_ad,created_at,photo_url,photos,video_url,clip_video_id,clip_start,clip_end,clip_title,channel_id,channel_handle,channel_name,channel_avatar,clip_thumb_url")
+          .order("created_at", { ascending: false })
+          .limit(50);
+        if (error) console.error("Busca de recurso do feed falhou:", error);
+        if (!cancelled && data && data.length > 0) setForcedPublicFeed(data as any[]);
+      } catch (e) {
+        console.error("Busca de recurso do feed rebentou:", e);
+      } finally {
+        if (!cancelled) setForcedFeedTried(true);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Posts da primeira página (React Query, feed personalizado) tomam
+  // prioridade quando existem; senão usa-se a busca de recurso acima.
+  // Páginas extra do scroll infinito juntam-se sempre, deduplicadas por id.
   const realPosts = useMemo(() => {
     const seen = new Set<string>();
     const base = firstPagePosts.length > 0 ? firstPagePosts : (forcedPublicFeed ?? []);
@@ -3336,24 +3370,9 @@ function HomePage() {
     });
   }, [firstPagePosts, extraPosts, forcedPublicFeed]);
 
-  // Só mostra o skeleton de loading quando NÃO há nenhum dado em cache —
-  // nem da rede nem do localStorage. Se houver cache (mesmo desatualizado),
-  // mostra-o já e atualiza silenciosamente em segundo plano.
-  useEffect(() => {
-    if (firstPagePosts.length > 0 || forcedPublicFeed) return;
-    const t = setTimeout(async () => {
-      if (firstPagePosts.length > 0) return;
-      const { data } = await supabase
-        .from("posts")
-        .select("id,author_id,user_id,author_username,author_name,author_color,content,kind,is_ad,created_at,photo_url,photos,video_url,clip_video_id,clip_start,clip_end,clip_title,channel_id,channel_handle,channel_name,channel_avatar,clip_thumb_url")
-        .order("created_at", { ascending: false })
-        .limit(50);
-      if (data && data.length > 0) setForcedPublicFeed(data as any[]);
-    }, 6000);
-    return () => clearTimeout(t);
-  }, [firstPagePosts.length, forcedPublicFeed]);
-
-  const loadingFeed = feedQuery.isLoading && firstPagePosts.length === 0 && !forcedPublicFeed;
+  // Só mostra o skeleton enquanto NENHuma das duas fontes (feed personalizado
+  // ou busca de recurso) resolveu ainda.
+  const loadingFeed = firstPagePosts.length === 0 && !forcedPublicFeed && !forcedFeedTried;
   const refreshingFeedInBackground = feedQuery.isFetching && !loadingFeed;
 
   useEffect(() => {
