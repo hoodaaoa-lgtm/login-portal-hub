@@ -3051,10 +3051,51 @@ function HomePage() {
   // ────────────────────────────────────────────────────────────────────────────
 
   async function fetchFeedPage(uid: string) {
-    // 1. Quem o utilizador segue + quando criou a conta
+    try {
+      return await fetchFeedPageInner(uid);
+    } catch (e) {
+      console.error("fetchFeedPage falhou, a usar busca simples de recurso:", e);
+      // Nunca deixar o feed preso — se algo inesperado rebentar a lógica de
+      // scoring/relevância acima, cai aqui numa busca simples e directa.
+      const { data } = await supabase
+        .from("posts")
+        .select("id,author_id,user_id,author_username,author_name,author_color,content,kind,is_ad,created_at,photo_url,photos,video_url,clip_video_id,clip_start,clip_end,clip_title,channel_id,channel_handle,channel_name,channel_avatar,clip_thumb_url")
+        .order("created_at", { ascending: false })
+        .limit(50);
+      return (data ?? []).map((p: any) => {
+        let text = p.content;
+        let bg_color = null;
+        if (p.kind === "bg") { try { const j = JSON.parse(p.content); text = j.text; bg_color = j.bgColor; } catch {} }
+        return {
+          id: p.id, user_id: p.author_id, author_id: p.author_id,
+          author_username: p.author_username || null,
+          user: p.author_name || p.author_username || "hooda",
+          name: `@${p.author_username || "?"}`,
+          color: p.author_color || "#5B3FCF",
+          avatar_url: null,
+          text, photo: p.photo_url ?? null,
+          photos: Array.isArray(p.photos) && p.photos.length > 0 ? p.photos : (p.photo_url ? [p.photo_url] : null),
+          video: p.video_url ?? null,
+          bg_color, created_at: p.created_at, kind: p.kind, is_ad: p.is_ad,
+          likes: 0, liked_by_me: false, comments: 0,
+          clip_video_id: p.clip_video_id, clip_start: p.clip_start, clip_end: p.clip_end,
+          clip_title: p.clip_title, clip_thumb_url: p.clip_thumb_url,
+          channel_id: p.channel_id, channel_handle: p.channel_handle,
+          channel_name: p.channel_name, channel_avatar: p.channel_avatar,
+        };
+      });
+    }
+  }
+
+  async function fetchFeedPageInner(uid: string) {
+    // 1. Quem o utilizador segue + quando criou a conta.
+    // maybeSingle() em vez de single(): se o perfil ainda não existir (conta
+    // recém-criada, race condition no signup) isto NUNCA deve rebentar o
+    // Promise.all e deixar o feed preso em loading — apenas segue com
+    // profileData = null, tratado como "conta nova" mais abaixo.
     const [{ data: followData }, { data: profileData }] = await Promise.all([
       supabase.from("follows").select("target_username").eq("follower_id", uid),
-      supabase.from("profiles").select("created_at").eq("id", uid).single(),
+      supabase.from("profiles").select("created_at").eq("id", uid).maybeSingle(),
     ]);
 
     const followedUsernames = [...new Set((followData || []).map((f: any) => f.target_username).filter(Boolean))];

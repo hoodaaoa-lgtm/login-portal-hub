@@ -747,7 +747,7 @@ function CreatePostModal({
       }
 
       setUploadStage("saving");
-      const { data: prof } = await supabase.from("profiles").select("username, full_name").eq("id", session.user.id).single();
+      const { data: prof } = await supabase.from("profiles").select("username, full_name").eq("id", session.user.id).maybeSingle();
       const contentJson = bgColor ? JSON.stringify({ text, bgColor }) : text;
 
       const { data: inserted, error } = await (supabase as any)
