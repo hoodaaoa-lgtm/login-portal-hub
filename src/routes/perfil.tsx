@@ -2010,6 +2010,49 @@ function MyVideosFeed({ userId }: { userId: string }) {
 }
 
 
+
+/* ── ShareProfileModal — link real do perfil, copiar com feedback ── */
+function ShareProfileModal({ username, name, onClose }: { username: string; name: string; onClose: () => void }) {
+  const [copied, setCopied] = useState(false);
+  const url = `${window.location.origin}/u/${username}`;
+  async function copy() {
+    await navigator.clipboard.writeText(url);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+  return (
+    <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center"
+      style={{ background: "rgba(0,0,0,0.5)" }} onClick={onClose}>
+      <div className="w-full max-w-sm rounded-t-3xl sm:rounded-3xl shadow-2xl p-5"
+        style={{ background: "var(--s0)" }} onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-extrabold text-base" style={{ color: "var(--text-primary)" }}>Partilhar perfil</h3>
+          <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "var(--s2)" }}>
+            <X className="h-4 w-4" style={{ color: "var(--text-muted)" }} />
+          </button>
+        </div>
+        <p className="text-sm mb-3" style={{ color: "var(--text-muted)" }}>Link do perfil de <span className="font-semibold" style={{ color: "var(--text-primary)" }}>{name}</span></p>
+        <div className="flex items-center gap-2 p-3 rounded-2xl border mb-1"
+          style={{ background: "var(--s2)", borderColor: "var(--border-default)" }}>
+          <p className="flex-1 text-sm truncate" style={{ color: "var(--text-secondary)" }}>{url}</p>
+          <button onClick={copy}
+            className="flex items-center gap-1.5 px-3 h-8 rounded-xl text-xs font-bold transition-all active:scale-95 shrink-0"
+            style={copied ? { background: "#6BA547", color: "#fff" } : { background: "#5B3FCF", color: "#fff" }}>
+            {copied ? <><Check className="h-3.5 w-3.5" /> Copiado!</> : <><Copy className="h-3.5 w-3.5" /> Copiar</>}
+          </button>
+        </div>
+        {typeof navigator.share === "function" && (
+          <button onClick={() => navigator.share({ title: name, url }).catch(() => {})}
+            className="w-full h-11 rounded-2xl text-sm font-bold mt-3 transition active:scale-[0.98]"
+            style={{ background: "var(--s2)", color: "var(--text-primary)" }}>
+            Partilhar via...
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function MyProfile({ profile: initialProfile, email, onSignOut }: {
   profile: Profile | null; email: string; onSignOut: () => void;
 }) {
@@ -2028,6 +2071,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
   const [showHelp, setShowHelp] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
   const [showLanguage, setShowLanguage] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const [showMsgPrivacy, setShowMsgPrivacy] = useState(false);
   const [posts, setPosts] = useState<Post[]>([]);
   const [postsLoading, setPostsLoading] = useState(true);
@@ -2381,12 +2425,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
           <button onClick={() => {
             const username = profile?.username;
             if (!username || username === "utilizador") { toast.error("Define um username primeiro!"); return; }
-            const url = `${window.location.origin}/u/${username}`;
-            if (navigator.share) {
-              navigator.share({ title: name, text: profile?.bio ?? `Vê o perfil de ${name} na Hooda`, url }).catch(()=>{});
-            } else {
-              navigator.clipboard.writeText(url).then(() => toast.success("🔗 Link copiado: " + url));
-            }
+            setShowShareModal(true);
           }}
             title="Partilhar perfil"
             className="w-9 h-9 rounded-full flex items-center justify-center border transition hover:bg-[var(--s2)] active:scale-95"
@@ -2604,6 +2643,9 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
           onClose={() => setShowCreate(false)}
           onPublish={(data) => { addPost(data); setShowCreate(false); }}
         />
+      )}
+      {showShareModal && profile?.username && (
+        <ShareProfileModal username={profile.username} name={name} onClose={() => setShowShareModal(false)} />
       )}
       {photoViewerSrc && (
         <PhotoViewer src={photoViewerSrc} alt={name} subtitle={profile?.username ? `@${profile.username}` : undefined} onClose={() => setPhotoViewerSrc(null)} />
