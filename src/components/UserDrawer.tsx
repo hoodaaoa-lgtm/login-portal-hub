@@ -95,7 +95,8 @@ export function UserDrawer({ userId: _userId, onClose }: UserDrawerProps) {
 
       const [profRes, followersRes, followingRes, postsRes, ratingsRes, myRatingRes] = await Promise.all([
         supabase.from("profiles").select("id,username,full_name,avatar_url,bio").eq("id", resolvedUid).maybeSingle(),
-        supabase.from("follows").select("id", { count: "exact", head: true }).eq("following_id", resolvedUid),
+        // followersRes preenchido abaixo depois de termos o username
+        Promise.resolve({ count: 0 }),
         supabase.from("follows").select("id", { count: "exact", head: true }).eq("follower_id", resolvedUid),
         supabase.from("posts").select("id", { count: "exact", head: true }).eq("author_id", resolvedUid),
         supabase.from("user_ratings").select("stars").eq("rated_user_id", resolvedUid),
@@ -103,11 +104,19 @@ export function UserDrawer({ userId: _userId, onClose }: UserDrawerProps) {
       ]);
 
       if (profRes.data) setProfile(profRes.data as Profile);
+
+      // follows.target_username é TEXT (não há following_id) — contar seguidores
+      // exige saber o username do dono do perfil primeiro.
+      const myUsername = (profRes.data as any)?.username ?? "";
+      const { count: realFollowersCount } = myUsername
+        ? await supabase.from("follows").select("id", { count: "exact", head: true }).eq("target_username", myUsername)
+        : { count: 0 };
+
       const allRatings = (ratingsRes.data ?? []) as { stars: number }[];
       const avg = allRatings.length > 0
         ? allRatings.reduce((s, r) => s + r.stars, 0) / allRatings.length : 0;
       setStats({
-        followers: followersRes.count ?? 0,
+        followers: realFollowersCount ?? 0,
         following: followingRes.count ?? 0,
         posts: postsRes.count ?? 0,
         rating: avg,
@@ -140,23 +149,32 @@ export function UserDrawer({ userId: _userId, onClose }: UserDrawerProps) {
   }
 
   async function loadFollowers() {
+    // follows.target_username é TEXT — precisamos do username do dono do perfil
+    const { data: prof } = await supabase.from("profiles").select("username").eq("id", uid).maybeSingle();
+    const username = (prof as any)?.username;
+    if (!username) { setFollowers([]); return; }
     const { data } = await supabase
       .from("follows")
       .select("follower_id")
-      .eq("following_id", uid)
+      .eq("target_username", username)
       .limit(200);
-    const ids = (data ?? []).map((r: any) => r.follower_id).filter(Boolean);
+    const ids = [...new Set((data ?? []).map((r: any) => r.follower_id).filter(Boolean))];
     setFollowers(await fetchProfilesByIds(ids));
   }
 
   async function loadFollowing() {
     const { data } = await supabase
       .from("follows")
-      .select("following_id")
+      .select("target_username")
       .eq("follower_id", uid)
       .limit(200);
-    const ids = (data ?? []).map((r: any) => r.following_id).filter(Boolean);
-    setFollowing(await fetchProfilesByIds(ids));
+    const usernames = [...new Set((data ?? []).map((r: any) => r.target_username).filter(Boolean))];
+    if (usernames.length === 0) { setFollowing([]); return; }
+    const { data: profs } = await supabase
+      .from("profiles")
+      .select("id,username,full_name,avatar_url")
+      .in("username", usernames);
+    setFollowing((profs ?? []) as MiniUser[]);
   }
 
   async function loadVideoStats() {
