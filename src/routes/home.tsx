@@ -297,6 +297,7 @@ function ForwardModal({ post, me, onClose }: { post: any; me: any; onClose: () =
   const [search, setSearch] = useState("");
   const [sending, setSending] = useState<string | null>(null);
   const [sent, setSent] = useState<Set<string>>(new Set());
+  const [linkCopied, setLinkCopied] = useState(false);
   useScrollLock();
 
   useEffect(() => {
@@ -339,91 +340,112 @@ function ForwardModal({ post, me, onClose }: { post: any; me: any; onClose: () =
     !search || c.otherName?.toLowerCase().includes(search.toLowerCase()) || c.otherUsername?.toLowerCase().includes(search.toLowerCase())
   );
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center" style={{ background: "rgba(0,0,0,0.5)" }} onClick={onClose}>
-      <div className="w-full max-w-sm rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col"
-        style={{ background: "var(--s0)", maxHeight: "80vh" }} onClick={e => e.stopPropagation()}>
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[100] flex items-end lg:items-center justify-center"
+      style={{ background: "rgba(0,0,0,0.6)" }}
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div
+        className="w-full lg:max-w-sm lg:rounded-3xl rounded-t-3xl flex flex-col overflow-hidden shadow-2xl hooda-modal-sheet"
+        style={{ maxHeight: "92vh", height: "92vh" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Drag indicator mobile */}
+        <div className="flex justify-center pt-2.5 pb-0 shrink-0 lg:hidden">
+          <div className="w-10 h-1 rounded-full" style={{ background: "var(--border-default)" }} />
+        </div>
+
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: "var(--border-subtle)" }}>
-          <h3 className="font-extrabold text-base" style={{ color: "var(--text-primary)" }}>{t("post.forward", "Reencaminhar")}</h3>
-          <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "var(--s2)" }}>
-            <X className="w-4 h-4" style={{ color: "var(--text-muted)" }} />
+        <div className="flex items-center justify-between px-4 py-3 border-b shrink-0" style={{ borderColor: "var(--border-subtle)" }}>
+          <span className="text-sm font-extrabold" style={{ color: "var(--text-primary)" }}>{t("post.forward", "Partilhar publicação")}</span>
+          <button onClick={onClose} className="p-1.5 rounded-full transition" style={{ background: "var(--s2)" }}>
+            <X className="h-5 w-5" style={{ color: "var(--text-muted)" }} />
           </button>
         </div>
-        {/* Preview do post */}
-        <div className="mx-4 mt-3 p-3 rounded-2xl border text-sm" style={{ background: "var(--s2)", borderColor: "var(--border-default)", color: "var(--text-secondary)" }}>
-          <p className="font-semibold text-xs mb-1" style={{ color: "var(--text-muted)" }}>@{post.author_username}</p>
-          <p className="line-clamp-2">{post.text || (post.photo ? "📷 Foto" : post.video ? "🎥 Vídeo" : "Publicação")}</p>
-        </div>
 
-        {/* Link directo + partilha nativa */}
-        <div className="mx-4 mt-3 space-y-2">
-          <div className="flex items-center gap-2 rounded-2xl px-3 py-2.5" style={{ background: "var(--s2)" }}>
-            <span className="flex-1 text-xs truncate" style={{ color: "var(--text-muted)" }}>
-              {`${window.location.origin}/post/${post.id}`}
-            </span>
-            <button
-              onClick={() => {
-                navigator.clipboard.writeText(`${window.location.origin}/post/${post.id}`);
-                toast.success("🔗 Link copiado!");
-              }}
-              className="px-3 py-1.5 rounded-xl text-xs font-bold text-white transition active:scale-95 shrink-0"
-              style={{ background: "#5B3FCF" }}>
-              Copiar
-            </button>
+        {/* Conteúdo scrollável: preview + link + partilha nativa + lista de conversas, tudo num scroll só */}
+        <div className="overflow-y-auto flex-1">
+
+          {/* Preview do post */}
+          <div className="mx-4 mt-3 p-3 rounded-2xl border text-sm" style={{ background: "var(--s2)", borderColor: "var(--border-default)", color: "var(--text-secondary)" }}>
+            <p className="font-semibold text-xs mb-1" style={{ color: "var(--text-muted)" }}>@{post.author_username}</p>
+            <p className="line-clamp-2">{post.text || (post.photo ? "📷 Foto" : post.video ? "🎥 Vídeo" : "Publicação")}</p>
           </div>
-          {typeof navigator.share === "function" && (
-            <button
-              onClick={() => {
-                navigator.share({
-                  title: `Publicação de ${post.author_name ?? post.author_username}`,
-                  text: post.text || "Vê esta publicação na Hooda",
-                  url: `${window.location.origin}/post/${post.id}`,
-                }).catch(() => {});
-              }}
-              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl text-sm font-semibold transition active:scale-[0.98] border"
-              style={{ borderColor: "var(--border-default)", color: "var(--text-primary)" }}>
-              <Share2 className="h-4 w-4" /> Partilhar via...
-            </button>
-          )}
-        </div>
 
-        <p className="px-4 pt-3 pb-1 text-xs font-bold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
-          Enviar para conversa
-        </p>
-        {/* Pesquisa */}
-        <div className="px-4 py-2">
-          <input value={search} onChange={e => setSearch(e.target.value)}
-            placeholder={t("messages.search_user", "@username ou nome")}
-            className="w-full px-4 h-9 rounded-full text-sm outline-none border"
-            style={{ background: "var(--s2)", borderColor: "var(--border-default)", color: "var(--text-primary)" }} />
-        </div>
-        {/* Lista de conversas */}
-        <div className="flex-1 overflow-y-auto px-2 pb-4">
-          {filtered.length === 0 ? (
-            <p className="text-center py-8 text-sm" style={{ color: "var(--text-muted)" }}>{t("messages.no_conversations", "Sem conversas")}</p>
-          ) : filtered.map(c => (
-            <button key={c.id} onClick={() => forward(c.id)} disabled={!!sending || sent.has(c.id)}
-              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl transition hover:bg-[var(--s2)] active:scale-[0.98]">
-              <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center text-white font-bold text-sm shrink-0"
-                style={{ background: "#5B3FCF" }}>
-                {c.avatar ? <img src={c.avatar} alt="" className="w-full h-full object-cover" /> : (c.otherName?.[0] ?? "?").toUpperCase()}
-              </div>
-              <div className="flex-1 text-left">
-                <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{c.otherName}</p>
-                {c.otherUsername && <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>@{c.otherUsername}</p>}
-              </div>
-              <div className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition"
-                style={sent.has(c.id) ? { background: "#6BA54720", color: "#6BA547" } : { background: "var(--s3)", color: "var(--text-muted)" }}>
-                {sending === c.id
-                  ? <div className="w-4 h-4 rounded-full border-2 animate-spin" style={{ borderColor: "#5B3FCF", borderTopColor: "transparent" }} />
-                  : sent.has(c.id) ? <Check className="w-4 h-4" /> : <Forward className="w-4 h-4" />}
-              </div>
-            </button>
-          ))}
+          {/* Link directo */}
+          <div className="px-4 pt-3">
+            <p className="text-xs font-bold uppercase tracking-wide mb-2" style={{ color: "var(--text-muted)" }}>Link da publicação</p>
+            <div className="flex items-center gap-2 rounded-2xl px-3 py-2.5 mb-3" style={{ background: "var(--s2)" }}>
+              <span className="flex-1 text-xs truncate" style={{ color: "var(--text-muted)" }}>
+                {`${window.location.origin}/post/${post.id}`}
+              </span>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(`${window.location.origin}/post/${post.id}`);
+                  setLinkCopied(true);
+                  setTimeout(() => setLinkCopied(false), 2000);
+                }}
+                className="px-3 py-1.5 rounded-xl text-xs font-bold transition active:scale-95 shrink-0 flex items-center gap-1"
+                style={{ background: linkCopied ? "#6BA547" : "#5B3FCF", color: "#fff" }}>
+                {linkCopied ? (<><Check className="h-3.5 w-3.5" /> Copiado</>) : "Copiar"}
+              </button>
+            </div>
+
+            {typeof navigator.share === "function" && (
+              <button
+                onClick={() => {
+                  navigator.share({
+                    title: `Publicação de ${post.author_name ?? post.author_username}`,
+                    text: post.text || "Vê esta publicação na Hooda",
+                    url: `${window.location.origin}/post/${post.id}`,
+                  }).catch(() => {});
+                }}
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl text-sm font-semibold transition active:scale-[0.98] border mb-1"
+                style={{ borderColor: "var(--border-default)", color: "var(--text-primary)" }}>
+                <Share2 className="h-4 w-4" /> Partilhar via...
+              </button>
+            )}
+          </div>
+
+          <p className="px-4 pt-3 pb-1 text-xs font-bold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
+            Enviar para conversa
+          </p>
+          {/* Pesquisa */}
+          <div className="px-4 py-2">
+            <input value={search} onChange={e => setSearch(e.target.value)}
+              placeholder={t("messages.search_user", "@username ou nome")}
+              className="w-full px-4 h-9 rounded-full text-sm outline-none border"
+              style={{ background: "var(--s2)", borderColor: "var(--border-default)", color: "var(--text-primary)" }} />
+          </div>
+          {/* Lista de conversas */}
+          <div className="px-2 pb-4">
+            {filtered.length === 0 ? (
+              <p className="text-center py-8 text-sm" style={{ color: "var(--text-muted)" }}>{t("messages.no_conversations", "Sem conversas")}</p>
+            ) : filtered.map(c => (
+              <button key={c.id} onClick={() => forward(c.id)} disabled={!!sending || sent.has(c.id)}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl transition hover:bg-[var(--s2)] active:scale-[0.98]">
+                <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center text-white font-bold text-sm shrink-0"
+                  style={{ background: "#5B3FCF" }}>
+                  {c.avatar ? <img src={c.avatar} alt="" className="w-full h-full object-cover" /> : (c.otherName?.[0] ?? "?").toUpperCase()}
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{c.otherName}</p>
+                  {c.otherUsername && <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>@{c.otherUsername}</p>}
+                </div>
+                <div className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition"
+                  style={sent.has(c.id) ? { background: "#6BA54720", color: "#6BA547" } : { background: "var(--s3)", color: "var(--text-muted)" }}>
+                  {sending === c.id
+                    ? <div className="w-4 h-4 rounded-full border-2 animate-spin" style={{ borderColor: "#5B3FCF", borderTopColor: "transparent" }} />
+                    : sent.has(c.id) ? <Check className="w-4 h-4" /> : <Forward className="w-4 h-4" />}
+                </div>
+              </button>
+            ))}
+          </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PhotoViewer } from "@/components/PhotoViewer";
+import { useScrollLock } from "@/hooks/useScrollLock";
 import { RichText } from "@/components/RichText";
 import { BottomNav, SideNav, PageWrapper } from "@/components/AppShell";
 import {
@@ -246,6 +247,7 @@ function ForwardModal({ post, myId, onClose }: { post: any; myId: string; onClos
   const [sending, setSending] = useState<string | null>(null);
   const [sent, setSent] = useState<Set<string>>(new Set());
   const [linkCopied, setLinkCopied] = useState(false);
+  useScrollLock();
 
   useEffect(() => {
     if (!myId) return;

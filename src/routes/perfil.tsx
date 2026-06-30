@@ -222,6 +222,7 @@ function PostCard({
   const [linkCopied, setLinkCopied] = useState(false);
   const [viewCount, setViewCount] = useState(post.views_count ?? 0);
   const [deleting, setDeleting] = useState(false);
+  useScrollLock(shareOpen);
 
   const [showComments, setShowComments] = useState(false);
   const [comments, setComments] = useState<import("@/components/PostCommentsModal").PostComment[]>([]);
