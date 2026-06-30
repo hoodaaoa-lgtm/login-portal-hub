@@ -108,12 +108,24 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:description", content: "Hooda Login Portal provides a modern, minimalist interface for accessing the Hooda social platform." },
       { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/0f280a33-cfec-44e1-9c4c-4607a8a066e3" },
       { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/0f280a33-cfec-44e1-9c4c-4607a8a066e3" },
+      // PWA
+      { name: "theme-color", content: "#5B3FCF" },
+      { name: "mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-status-bar-style", content: "default" },
+      { name: "apple-mobile-web-app-title", content: "Hooda" },
+      { name: "application-name", content: "Hooda" },
+      { name: "msapplication-TileColor", content: "#5B3FCF" },
+      { name: "msapplication-TileImage", content: "/icons/icon-144.png" },
     ],
     links: [
-      {
-        rel: "stylesheet",
-        href: appCss,
-      },
+      { rel: "stylesheet", href: appCss },
+      { rel: "manifest", href: "/manifest.webmanifest" },
+      { rel: "apple-touch-icon", href: "/icons/apple-touch-icon.png" },
+      { rel: "apple-touch-icon", sizes: "152x152", href: "/icons/icon-152.png" },
+      { rel: "apple-touch-icon", sizes: "180x180", href: "/icons/icon-180.png" },
+      { rel: "icon", type: "image/png", sizes: "192x192", href: "/icons/icon-192.png" },
+      { rel: "icon", type: "image/png", sizes: "512x512", href: "/icons/icon-512.png" },
     ],
   }),
   shellComponent: RootShell,
@@ -143,6 +155,12 @@ function RootShell({ children }: { children: ReactNode }) {
 const persister = idbPersister;
 
 function RootComponent() {
+  // Registar Service Worker para PWA
+  if (typeof window !== "undefined" && "serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("/sw.js").catch(() => {});
+    });
+  }
   const { queryClient } = Route.useRouteContext();
   useGlobalMediaFadeIn();
 
