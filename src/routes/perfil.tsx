@@ -357,9 +357,7 @@ function PostCard({
 
       {/* Media — ocupa largura total, sem padding lateral */}
       {post.videoUrl && (
-        <div className="w-full" style={{ maxHeight: 360, overflow: "hidden" }}>
-          <SimpleVideoPlayer src={post.videoUrl} postId={post.id} kind="video" />
-        </div>
+        <SimpleVideoPlayer src={post.videoUrl} postId={post.id} kind="video" />
       )}
       {(post as any).kind === "clip" && (post as any).clipVideoId && (
         <div className="mx-3 mb-3 rounded-2xl overflow-hidden border" style={{ borderColor: "var(--border-subtle)" }}>
@@ -620,7 +618,7 @@ function SimpleVideoPlayer({ src, rounded = "rounded-none", postId, kind }: {
       className={`w-full bg-black relative cursor-pointer overflow-hidden ${rounded}`}
       style={{
         aspectRatio: kind === "clip" ? "16/9" : (isShort === true ? "9/16" : "16/9"),
-        maxHeight: kind === "clip" ? 260 : isShort === true ? "75vh" : "560px",
+        maxHeight: kind === "clip" ? 260 : isShort === true ? "480px" : "420px",
       }}
       onClick={toggle}>
       <video

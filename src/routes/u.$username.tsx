@@ -459,7 +459,7 @@ function VideoPlayer({ src, poster, postId, kind }: { src:string; poster?:string
       className="w-full bg-black relative cursor-pointer overflow-hidden"
       style={{
         aspectRatio: isShort === true ? "9/16" : "16/9",
-        maxHeight: isShort === true ? "75vh" : "560px",
+        maxHeight: isShort === true ? "480px" : "420px",
       }}
       onClick={toggle}>
       <video
