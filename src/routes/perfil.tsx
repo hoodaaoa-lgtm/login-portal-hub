@@ -2809,21 +2809,45 @@ function ProfilePage() {
       // Auto-reparação: se o profile não tem username (trigger falhou no signup
       // ou conta antiga sem profile completo), tenta recuperar do user_metadata
       // ou cria um username genérico, para nunca ficar "utilizador" para sempre.
+      console.log("[hooda:debug] profile carregado:", data);
       if (data && !data.username) {
+        console.log("[hooda:debug] username vazio detectado, a iniciar auto-reparação...");
         const meta = session.session.user.user_metadata as any;
-        const recoveredUsername = (meta?.username || "").toLowerCase().trim()
+        console.log("[hooda:debug] user_metadata:", meta);
+        let recoveredUsername = (meta?.username || "").toLowerCase().trim()
           || `user${session.session.user.id.slice(0, 8)}`;
         const recoveredName = meta?.full_name || data.full_name || "";
-        const { data: repaired, error: repairErr } = await supabase
-          .from("profiles")
-          .update({ username: recoveredUsername, full_name: recoveredName || undefined } as any)
-          .eq("id", session.session.user.id)
-          .select("id, username, full_name, age, bio")
-          .maybeSingle();
+
+        let repaired: any = null;
+        let repairErr: any = null;
+        for (let attempt = 0; attempt < 3; attempt++) {
+          const res = await supabase
+            .from("profiles")
+            .update({ username: recoveredUsername, full_name: recoveredName || undefined } as any)
+            .eq("id", session.session.user.id)
+            .select("id, username, full_name, age, bio")
+            .maybeSingle();
+          repaired = res.data;
+          repairErr = res.error;
+          if (!repairErr) break;
+          console.warn(`[hooda:debug] tentativa ${attempt + 1} falhou:`, repairErr);
+          // Se for conflito de username único, tenta outro
+          if (repairErr.message?.includes("duplicate") || repairErr.code === "23505") {
+            recoveredUsername = `user${session.session.user.id.slice(0, 8)}${attempt}`;
+          } else {
+            break; // erro não relacionado com duplicado — não adianta repetir
+          }
+        }
+
         if (!repairErr && repaired) {
+          console.log("[hooda:debug] auto-reparação concluída com sucesso:", repaired);
           data = repaired;
         } else if (repairErr) {
-          console.warn("[hooda] Não foi possível auto-reparar username:", repairErr);
+          console.error(
+            "[hooda] FALHA na auto-reparação do username. Motivo:", repairErr.message || repairErr,
+            "\nPossíveis causas: RLS bloqueando o UPDATE, ou a policy 'Users update own profile' não existe/está errada.",
+            "\nVerifica no Supabase: Authentication → Policies → tabela profiles."
+          );
           data = { ...data, username: recoveredUsername };
         }
       }
