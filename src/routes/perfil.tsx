@@ -2776,6 +2776,12 @@ function ProfilePage() {
         .eq("id", session.session.user.id)
         .maybeSingle();
       if (e1) {
+        console.warn(
+          "[hooda] Coluna 'username_changed_at' não existe na tabela profiles. " +
+          "O cooldown de 30 dias para trocar username NÃO vai funcionar até correres este SQL no Supabase:\n" +
+          "ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS username_changed_at TIMESTAMPTZ;",
+          e1
+        );
         // Coluna pode não existir ainda — fallback sem ela
         const { data: d2 } = await supabase
           .from("profiles")
