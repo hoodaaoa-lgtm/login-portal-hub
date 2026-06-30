@@ -219,10 +219,8 @@ function PostCard({
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
   const [viewCount, setViewCount] = useState(post.views_count ?? 0);
-  const [shareCommunities, setShareCommunities] = useState<MyCommunity[]>([]);
-  const [loadingShareTargets, setLoadingShareTargets] = useState(false);
-  const [sharingToId, setSharingToId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
 
   const [showComments, setShowComments] = useState(false);
@@ -294,30 +292,9 @@ function PostCard({
     await toggleCommentLike(commentId, myUserId, !!target?.likedByMe);
   }
 
-  async function openShareSheet() {
-    if (!myUserId) { toast.error("A iniciar sessão… tenta novamente em 1 segundo."); return; }
+  function openShareSheet() {
     setMenuOpen(false);
     setShareOpen(true);
-    setLoadingShareTargets(true);
-    const list = await fetchMyShareableCommunities(myUserId);
-    setShareCommunities(list);
-    setLoadingShareTargets(false);
-  }
-
-  async function handleShareTo(targetCommunityId: string) {
-    if (!myUserId) return;
-    setSharingToId(targetCommunityId);
-    const newId = await sharePostToCommunity({
-      sourcePostId: post.id,
-      targetCommunityId,
-      userId: myUserId,
-      username,
-      authorName: name,
-      authorColor: getColor(name),
-    });
-    setSharingToId(null);
-    if (newId) { toast.success("Publicação partilhada!"); setShareOpen(false); }
-    else toast.error("Não foi possível partilhar.");
   }
 
   async function handleDelete() {
@@ -329,7 +306,6 @@ function PostCard({
     else toast.error("Não foi possível eliminar a publicação. Tenta novamente.");
   }
 
-  const GROUPS = shareCommunities;
 
   return (
     <article className="border-b border-[var(--border-subtle)]" style={{ background: "var(--s1)" }}>
@@ -521,33 +497,48 @@ function PostCard({
       )}
 
       {/* Share to group picker */}
-      {shareOpen && (
-        <div className="fixed inset-0 z-[100] flex items-end lg:items-center justify-center overflow-hidden" style={{ background: "rgba(0,0,0,0.6)" }}
+      {shareOpen && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-end lg:items-center justify-center" style={{ background: "rgba(0,0,0,0.6)" }}
           onClick={(e) => e.target === e.currentTarget && setShareOpen(false)}>
-          <div className="w-full lg:max-w-md lg:rounded-3xl rounded-t-3xl hooda-modal-sheet flex flex-col overflow-hidden shadow-2xl max-h-[80vh]">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border-subtle)] shrink-0">
-              <span className="text-base font-bold" style={{ color: "var(--text-primary)" }}>Partilhar publicação</span>
-              <button onClick={() => setShareOpen(false)} className="p-2 rounded-full transition" style={{ background: "var(--s2)" }}>
-                <X className="h-4 w-4" style={{ color: "var(--text-primary)" }} />
+          <div className="w-full lg:max-w-sm lg:rounded-3xl rounded-t-3xl flex flex-col overflow-hidden shadow-2xl hooda-modal-sheet"
+            style={{ maxHeight: "92vh", height: "92vh" }}
+            onClick={(e) => e.stopPropagation()}>
+
+            {/* Drag indicator mobile */}
+            <div className="flex justify-center pt-2.5 pb-0 shrink-0 lg:hidden">
+              <div className="w-10 h-1 rounded-full" style={{ background: "var(--border-default)" }} />
+            </div>
+
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 py-3 border-b shrink-0" style={{ borderColor: "var(--border-subtle)" }}>
+              <span className="text-sm font-extrabold" style={{ color: "var(--text-primary)" }}>Partilhar publicação</span>
+              <button onClick={() => setShareOpen(false)} className="p-1.5 rounded-full transition" style={{ background: "var(--s2)" }}>
+                <X className="h-5 w-5" style={{ color: "var(--text-muted)" }} />
               </button>
             </div>
 
-            {/* Link directo da publicação */}
-            <div className="px-4 py-3 border-b" style={{ borderColor: "var(--border-subtle)" }}>
-              <div className="flex items-center gap-2 rounded-2xl px-3 py-2.5" style={{ background: "var(--s2)" }}>
+            {/* Conteúdo scrollável */}
+            <div className="overflow-y-auto flex-1 px-4 py-4">
+              <p className="text-xs font-bold uppercase tracking-wide mb-2" style={{ color: "var(--text-muted)" }}>Link da publicação</p>
+              <div className="flex items-center gap-2 rounded-2xl px-3 py-2.5 mb-3" style={{ background: "var(--s2)" }}>
                 <span className="flex-1 text-xs truncate" style={{ color: "var(--text-muted)" }}>
                   {`${window.location.origin}/post/${post.id}`}
                 </span>
                 <button
                   onClick={() => {
                     navigator.clipboard.writeText(`${window.location.origin}/post/${post.id}`);
-                    toast.success("🔗 Link copiado!");
+                    setLinkCopied(true);
+                    setTimeout(() => setLinkCopied(false), 2000);
                   }}
-                  className="px-3 py-1.5 rounded-xl text-xs font-bold text-white transition active:scale-95 shrink-0"
-                  style={{ background: ACCENT }}>
-                  Copiar
+                  className="px-3 py-1.5 rounded-xl text-xs font-bold transition active:scale-95 shrink-0 flex items-center gap-1"
+                  style={{
+                    background: linkCopied ? "#6BA547" : ACCENT,
+                    color: "#fff",
+                  }}>
+                  {linkCopied ? (<><Check className="h-3.5 w-3.5" /> Copiado</>) : "Copiar"}
                 </button>
               </div>
+
               {typeof navigator.share === "function" && (
                 <button
                   onClick={() => {
@@ -557,45 +548,15 @@ function PostCard({
                       url: `${window.location.origin}/post/${post.id}`,
                     }).catch(() => {});
                   }}
-                  className="w-full flex items-center justify-center gap-2 mt-2 py-2.5 rounded-2xl text-sm font-semibold transition active:scale-[0.98] border"
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-semibold transition active:scale-[0.98] border"
                   style={{ borderColor: "var(--border-default)", color: "var(--text-primary)" }}>
                   <Send className="h-4 w-4" /> Partilhar via...
                 </button>
               )}
             </div>
-
-            <p className="px-4 pt-3 pb-1 text-xs font-bold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
-              Enviar para comunidade
-            </p>
-            <div className="overflow-y-auto px-3 py-2">
-              {loadingShareTargets ? (
-                <div className="flex justify-center py-10">
-                  <Loader className="h-6 w-6 animate-spin" style={{ color: ACCENT }} />
-                </div>
-              ) : GROUPS.length === 0 ? (
-                <p className="text-sm text-[var(--text-muted)] text-center py-10 px-4">
-                  Ainda não fazes parte de nenhuma comunidade onde possas publicar.
-                </p>
-              ) : (
-                GROUPS.map((g) => (
-                  <button key={g.id} onClick={() => handleShareTo(g.id)} disabled={!!sharingToId}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[var(--s1)] transition disabled:opacity-50">
-                    <div className="w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center text-lg shrink-0"
-                      style={{ background: g.color }}>
-                      {g.photo ? <img src={g.photo} alt="" className="w-full h-full object-cover" /> : g.emoji}
-                    </div>
-                    <span className="flex-1 text-left text-sm font-semibold text-neutral-800">{g.name}</span>
-                    {sharingToId === g.id ? (
-                      <Loader className="h-4 w-4 animate-spin" style={{ color: ACCENT }} />
-                    ) : (
-                      <Send className="h-4 w-4 text-[var(--text-muted)]" />
-                    )}
-                  </button>
-                ))
-              )}
-            </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </article>
   );
