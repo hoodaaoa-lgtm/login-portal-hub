@@ -3075,7 +3075,7 @@ function HomePage() {
     const windowDays = isNewUser ? 30 : 7;
     const windowStart = new Date(Date.now() - windowDays * 24 * 60 * 60 * 1000).toISOString();
 
-    const { data: postsData, error: postsErr } = await supabase
+    let { data: postsData, error: postsErr } = await supabase
       .from("posts")
       .select("id,author_id,user_id,author_username,author_name,author_color,content,kind,is_ad,created_at,photo_url,photos,video_url,clip_video_id,clip_start,clip_end,clip_title,channel_id,channel_handle,channel_name,channel_avatar,clip_thumb_url")
       .gte("created_at", windowStart)
@@ -3083,6 +3083,18 @@ function HomePage() {
       .limit(200);
 
     if (postsErr) console.error("Feed error:", postsErr);
+
+    // Fallback: nunca mostrar feed vazio — se a janela temporal não tiver
+    // posts suficientes, busca os mais populares de sempre (sem filtro de data).
+    if (!postsData || postsData.length < 10) {
+      const { data: fallbackData } = await supabase
+        .from("posts")
+        .select("id,author_id,user_id,author_username,author_name,author_color,content,kind,is_ad,created_at,photo_url,photos,video_url,clip_video_id,clip_start,clip_end,clip_title,channel_id,channel_handle,channel_name,channel_avatar,clip_thumb_url")
+        .order("created_at", { ascending: false })
+        .limit(200);
+      if (fallbackData && fallbackData.length > 0) postsData = fallbackData;
+    }
+
     if (!postsData || postsData.length === 0) return [];
 
     // Deduplicate
@@ -3906,29 +3918,10 @@ function HomePage() {
         <section className="pt-2 pb-6 space-y-4 max-w-xl mx-auto w-full px-3">
           {loadingFeed && <FeedSkeleton count={4} />}
 
-          {/* Banner boas-vindas para utilizadores novos */}
-          {!loadingFeed && realPosts.length > 0 && realPosts[0]?._isNewUserFeed && (
-            <div className="rounded-2xl p-4 mb-2"
-              style={{ background: "linear-gradient(135deg,#5B3FCF18,#E94B8A12)", border: "1px solid #5B3FCF22" }}>
-              <div className="flex items-start gap-3">
-                <span className="text-2xl">👋</span>
-                <div>
-                  <p className="font-bold text-sm mb-1" style={{ color: "var(--text-primary)" }}>
-                    Bem-vindo à hooda!
-                  </p>
-                  <p className="text-xs leading-relaxed" style={{ color: "var(--text-muted)" }}>
-                    Estás a ver os conteúdos mais populares da plataforma. Segue pessoas para personalizar o teu feed.
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
           {!loadingFeed && realPosts.length === 0 && (
             <div className="flex flex-col items-center gap-3 py-16 text-center">
-              <p className="text-4xl">📚</p>
-              <p className="font-bold text-base" style={{ color: "var(--text-primary)" }}>O teu feed está vazio</p>
-              <p className="text-sm" style={{ color: "var(--text-muted)" }}>Segue outras pessoas para ver as publicações delas aqui.</p>
+              <div className="h-6 w-6 rounded-full border-2 animate-spin" style={{ borderColor: "var(--s3)", borderTopColor: "#5B3FCF" }} />
+              <p className="text-sm" style={{ color: "var(--text-muted)" }}>A carregar publicações…</p>
             </div>
           )}
           {!loadingFeed && realPosts.length > 0 && refreshingFeedInBackground && (
