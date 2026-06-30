@@ -1,117 +1,81 @@
-import React from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { ChevronLeft, Shield, Lock, Eye, Database, Users, Mail } from "lucide-react";
 
-export default function PrivacidadePage() {
+export const Route = createFileRoute("/privacidade")({
+  head: () => ({ meta: [{ title: "Privacidade — Hooda" }] }),
+  component: PrivacidadePage,
+});
+
+const P = "#5B3FCF";
+
+function Section({ icon: Icon, title, children }: { icon: any; title: string; children: React.ReactNode }) {
   return (
-    <div className="min-h-screen" style={{ background: "var(--surface-0)" }}>
-      {/* Header */}
-      <div className="px-4 py-8 border-b" style={{ borderColor: "var(--border-subtle)" }}>
-        <div className="max-w-4xl mx-auto">
-          <h1 className="text-3xl font-bold mb-2" style={{ color: "var(--text-primary)" }}>
-            🔒 Política de Privacidade
-          </h1>
-          <p className="text-sm" style={{ color: "var(--text-muted)" }}>
-            Última atualização: 28 de Junho de 2026
-          </p>
+    <section className="mb-10">
+      <div className="flex items-center gap-2.5 mb-3">
+        <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${P}15` }}>
+          <Icon className="w-4 h-4" style={{ color: P }} />
         </div>
+        <h2 className="text-base font-bold" style={{ color: "var(--text-primary)" }}>{title}</h2>
+      </div>
+      <div className="text-sm leading-relaxed space-y-2" style={{ color: "var(--text-secondary)" }}>
+        {children}
+      </div>
+    </section>
+  );
+}
+
+function PrivacidadePage() {
+  return (
+    <div className="min-h-screen" style={{ background: "var(--s1)" }}>
+      {/* Header */}
+      <div className="sticky top-0 z-10 px-4 py-3 border-b flex items-center gap-3"
+        style={{ background: "rgba(var(--s1-rgb,250,250,252),.94)", backdropFilter: "blur(20px)", borderColor: "var(--border-subtle)" }}>
+        <Link to="/home" className="w-9 h-9 rounded-full flex items-center justify-center transition hover:bg-[var(--s3)]">
+          <ChevronLeft className="w-5 h-5" style={{ color: "var(--text-primary)" }} />
+        </Link>
+        <span className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>Política de Privacidade</span>
       </div>
 
-      {/* Conteúdo */}
-      <div className="max-w-4xl mx-auto px-4 py-12">
-        <div className="prose dark:prose-invert max-w-none"
-          style={{
-            color: "var(--text-primary)",
-            fontSize: "15px",
-            lineHeight: "1.6",
-          }}>
-
-          <h2>1. Introdução</h2>
-          <p>A Hooda ("nós", "a gente", "a plataforma") respeita a tua privacidade. Esta política explica como recolhemos, usamos, guardamos e protegemos os teus dados pessoais.</p>
-          <p><strong>Se não concordas, não uses a plataforma.</strong></p>
-
-          <h2>2. Que Dados Recolhemos?</h2>
-          <h3>2.1 Dados que TÚ nos dás:</h3>
-          <ul>
-            <li>✅ Nome completo</li>
-            <li>✅ Email</li>
-            <li>✅ Foto de perfil</li>
-            <li>✅ Bio / Descrição</li>
-            <li>✅ Localização (opcional)</li>
-            <li>✅ Redes sociais (opcional)</li>
-            <li>✅ Conteúdo que publicas (posts, vídeos, histórias, livros)</li>
-          </ul>
-
-          <h3>2.2 Dados que recolhemos automaticamente:</h3>
-          <ul>
-            <li>📍 Localização (se permitires)</li>
-            <li>🕐 Hora dos acessos</li>
-            <li>📱 Tipo de dispositivo</li>
-            <li>🌐 IP address</li>
-            <li>🔍 Pesquisas que fazes</li>
-            <li>❤️ Conteúdo que gostas / guardas</li>
-            <li>💬 Mensagens (encriptadas)</li>
-          </ul>
-
-          <h2>3. Como Usamos os Teus Dados?</h2>
-          <p>Os teus dados são usados para:</p>
-          <ul>
-            <li>✅ Criar e manter a tua conta</li>
-            <li>✅ Enviar mensagens</li>
-            <li>✅ Mostrar um feed personalizado</li>
-            <li>⚠️ Melhorar a plataforma (podes recusar)</li>
-            <li>⚠️ Enviar notificações (podes recusar)</li>
-            <li>⚠️ Publicidade direcionada (podes recusar)</li>
-          </ul>
-
-          <h2>4. Quem Pode Ver os Teus Dados?</h2>
-          <h3>🔓 Dados públicos (todos veem):</h3>
-          <ul>
-            <li>Nome, Username, Foto de perfil, Bio</li>
-            <li>Posts, Vídeos, Histórias</li>
-            <li>Seguidores e Seguindo</li>
-          </ul>
-
-          <h3>🔒 Dados privados (só tu vês):</h3>
-          <ul>
-            <li>Email</li>
-            <li>Número de telefone</li>
-            <li>Histórico de downloads</li>
-            <li>Livros guardados</li>
-            <li>Mensagens privadas</li>
-          </ul>
-
-          <h2>5. Segurança</h2>
-          <p>🛡️ <strong>Como protegemos:</strong></p>
-          <ul>
-            <li>✅ Encriptação end-to-end nas mensagens</li>
-            <li>✅ Passwords com hash (nunca armazenadas em texto)</li>
-            <li>✅ HTTPS em tudo</li>
-            <li>✅ 2FA (autenticação de 2 fatores)</li>
-            <li>✅ Backups automáticos</li>
-            <li>✅ Firewalls e DDoS protection</li>
-          </ul>
-
-          <p>❌ <strong>O que NÃO fazemos:</strong></p>
-          <ul>
-            <li>❌ Não vendemos dados</li>
-            <li>❌ Não rastreamos em outras websites</li>
-            <li>❌ Não damos acesso a APIs de terceiros</li>
-          </ul>
-
-          <h2>6. Os Teus Direitos (GDPR)</h2>
-          <p>Tens direito a:</p>
-          <ol>
-            <li><strong>Acesso</strong> — pedir cópia de todos os teus dados</li>
-            <li><strong>Correção</strong> — editar dados incorretos</li>
-            <li><strong>Apagar</strong> — "direito ao esquecimento"</li>
-            <li><strong>Portar</strong> — receber teus dados num formato aberto</li>
-            <li><strong>Recusar</strong> — não concordar com certos usos</li>
-          </ol>
-
-          <h2>7. Contacto</h2>
-          <p>📧 <strong>Email:</strong> hooda.aoa@gmail.com</p>
-          <p>Resposta garantida em 48 horas.</p>
-
+      <div className="max-w-2xl mx-auto px-5 py-10">
+        <div className="mb-10">
+          <h1 className="text-2xl font-extrabold mb-2" style={{ color: "var(--text-primary)" }}>Política de Privacidade</h1>
+          <p className="text-xs" style={{ color: "var(--text-muted)" }}>Última atualização: 28 de junho de 2026</p>
         </div>
+
+        <Section icon={Shield} title="Introdução">
+          <p>A Hooda respeita a tua privacidade. Esta política explica como recolhemos, usamos, guardamos e protegemos os teus dados pessoais. Ao usares a plataforma, concordas com estes termos.</p>
+        </Section>
+
+        <Section icon={Database} title="Que dados recolhemos">
+          <p className="font-semibold" style={{ color: "var(--text-primary)" }}>Dados que nos dás directamente:</p>
+          <p>Nome completo, email, foto de perfil, biografia, localização (opcional), redes sociais (opcional) e o conteúdo que publicas — posts, vídeos e mensagens.</p>
+          <p className="font-semibold mt-3" style={{ color: "var(--text-primary)" }}>Dados recolhidos automaticamente:</p>
+          <p>Localização aproximada (se permitires), hora dos acessos, tipo de dispositivo, endereço IP, pesquisas realizadas e interações com conteúdo (gostos, guardados, mensagens encriptadas).</p>
+        </Section>
+
+        <Section icon={Eye} title="Como usamos os teus dados">
+          <p>Os teus dados servem para criar e manter a tua conta, permitir o envio de mensagens, personalizar o teu feed, melhorar a plataforma, enviar notificações relevantes e — apenas com o teu consentimento — mostrar publicidade direcionada. Podes recusar usos opcionais a qualquer momento nas definições.</p>
+        </Section>
+
+        <Section icon={Users} title="Quem pode ver os teus dados">
+          <p className="font-semibold" style={{ color: "var(--text-primary)" }}>Dados públicos:</p>
+          <p>Nome, username, foto de perfil, biografia, posts, vídeos, seguidores e quem segues.</p>
+          <p className="font-semibold mt-3" style={{ color: "var(--text-primary)" }}>Dados privados — só tu vês:</p>
+          <p>Email, número de telefone, histórico de downloads, conteúdo guardado e mensagens privadas.</p>
+        </Section>
+
+        <Section icon={Lock} title="Segurança">
+          <p>Protegemos os teus dados com encriptação ponta-a-ponta nas mensagens, palavras-passe com hash seguro, HTTPS em toda a plataforma, autenticação de dois factores e backups automáticos regulares.</p>
+          <p className="mt-3">Não vendemos os teus dados, não te rastreamos noutros sites e não partilhamos acesso com APIs de terceiros sem o teu consentimento explícito.</p>
+        </Section>
+
+        <Section icon={Shield} title="Os teus direitos">
+          <p>De acordo com o RGPD, tens direito a aceder a uma cópia de todos os teus dados, corrigir informação incorrecta, solicitar a eliminação da tua conta ("direito ao esquecimento"), exportar os teus dados num formato aberto e recusar usos específicos dos teus dados.</p>
+        </Section>
+
+        <Section icon={Mail} title="Contacto">
+          <p>Para qualquer questão sobre privacidade, escreve para <a href="mailto:hooda.aoa@gmail.com" className="font-semibold" style={{ color: P }}>hooda.aoa@gmail.com</a>. Respondemos em até 48 horas.</p>
+        </Section>
       </div>
     </div>
   );

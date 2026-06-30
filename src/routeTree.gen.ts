@@ -19,6 +19,8 @@ import { Route as HoodatvRouteImport } from './routes/hoodatv'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as ExplorarRouteImport } from './routes/explorar'
 import { Route as DefinicoesRouteImport } from './routes/definicoes'
+import { Route as UsoRouteImport } from './routes/uso'
+import { Route as PrivacidadeRouteImport } from './routes/privacidade'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as StudioIndexRouteImport } from './routes/studio.index'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
@@ -55,6 +57,16 @@ const PerfilRoute = PerfilRouteImport.update({
 const MensagensRoute = MensagensRouteImport.update({
   id: '/mensagens',
   path: '/mensagens',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UsoRoute = UsoRouteImport.update({
+  id: '/uso',
+  path: '/uso',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacidadeRoute = PrivacidadeRouteImport.update({
+  id: '/privacidade',
+  path: '/privacidade',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LivrosRoute = LivrosRouteImport.update({
@@ -150,6 +162,8 @@ export interface FileRoutesByFullPath {
   '/home': typeof HomeRoute
   '/hoodatv': typeof HoodatvRouteWithChildren
   '/livros': typeof LivrosRoute
+  '/uso': typeof UsoRoute
+  '/privacidade': typeof PrivacidadeRoute
   '/mensagens': typeof MensagensRoute
   '/perfil': typeof PerfilRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -174,6 +188,8 @@ export interface FileRoutesByTo {
   '/home': typeof HomeRoute
   '/hoodatv': typeof HoodatvRouteWithChildren
   '/livros': typeof LivrosRoute
+  '/uso': typeof UsoRoute
+  '/privacidade': typeof PrivacidadeRoute
   '/mensagens': typeof MensagensRoute
   '/perfil': typeof PerfilRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -198,6 +214,8 @@ export interface FileRoutesById {
   '/home': typeof HomeRoute
   '/hoodatv': typeof HoodatvRouteWithChildren
   '/livros': typeof LivrosRoute
+  '/uso': typeof UsoRoute
+  '/privacidade': typeof PrivacidadeRoute
   '/mensagens': typeof MensagensRoute
   '/perfil': typeof PerfilRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -224,6 +242,8 @@ export interface FileRouteTypes {
     | '/home'
     | '/hoodatv'
     | '/livros'
+    | '/uso'
+    | '/privacidade'
     | '/mensagens'
     | '/perfil'
     | '/reset-password'
@@ -248,6 +268,8 @@ export interface FileRouteTypes {
     | '/home'
     | '/hoodatv'
     | '/livros'
+    | '/uso'
+    | '/privacidade'
     | '/mensagens'
     | '/perfil'
     | '/reset-password'
@@ -271,6 +293,8 @@ export interface FileRouteTypes {
     | '/home'
     | '/hoodatv'
     | '/livros'
+    | '/uso'
+    | '/privacidade'
     | '/mensagens'
     | '/perfil'
     | '/reset-password'
@@ -340,6 +364,20 @@ declare module '@tanstack/react-router' {
       path: '/mensagens'
       fullPath: '/mensagens'
       preLoaderRoute: typeof MensagensRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/uso': {
+      id: '/uso'
+      path: '/uso'
+      fullPath: '/uso'
+      preLoaderRoute: typeof UsoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacidade': {
+      id: '/privacidade'
+      path: '/privacidade'
+      fullPath: '/privacidade'
+      preLoaderRoute: typeof PrivacidadeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/livros': {
@@ -507,6 +545,8 @@ const rootRouteChildren: RootRouteChildren = {
   HomeRoute: HomeRoute,
   HoodatvRoute: HoodatvRouteWithChildren,
   LivrosRoute: LivrosRoute,
+  UsoRoute: UsoRoute,
+  PrivacidadeRoute: PrivacidadeRoute,
   MensagensRoute: MensagensRoute,
   PerfilRoute: PerfilRoute,
   ResetPasswordRoute: ResetPasswordRoute,
