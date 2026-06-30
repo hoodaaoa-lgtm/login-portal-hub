@@ -2792,6 +2792,29 @@ function ProfilePage() {
       } else {
         data = d1;
       }
+
+      // Auto-reparação: se o profile não tem username (trigger falhou no signup
+      // ou conta antiga sem profile completo), tenta recuperar do user_metadata
+      // ou cria um username genérico, para nunca ficar "utilizador" para sempre.
+      if (data && !data.username) {
+        const meta = session.session.user.user_metadata as any;
+        const recoveredUsername = (meta?.username || "").toLowerCase().trim()
+          || `user${session.session.user.id.slice(0, 8)}`;
+        const recoveredName = meta?.full_name || data.full_name || "";
+        const { data: repaired, error: repairErr } = await supabase
+          .from("profiles")
+          .update({ username: recoveredUsername, full_name: recoveredName || undefined } as any)
+          .eq("id", session.session.user.id)
+          .select("id, username, full_name, age, bio")
+          .maybeSingle();
+        if (!repairErr && repaired) {
+          data = repaired;
+        } else if (repairErr) {
+          console.warn("[hooda] Não foi possível auto-reparar username:", repairErr);
+          data = { ...data, username: recoveredUsername };
+        }
+      }
+
       if (data) setProfile(data as Profile);
     })();
   }, [navigate]);

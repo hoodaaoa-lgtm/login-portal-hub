@@ -159,6 +159,22 @@ function SignupPage() {
       else setError(msg);
       return;
     }
+
+    // Rede de segurança: garante que o profile fica com o username certo
+    // mesmo que o trigger handle_new_user falhe ou demore (ex: confirmação de email pendente).
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user?.id) {
+        await supabase.from("profiles").upsert({
+          id: session.user.id,
+          username: username.toLowerCase(),
+          full_name: name,
+        } as any, { onConflict: "id", ignoreDuplicates: false });
+      }
+    } catch (e) {
+      console.warn("[hooda] Não foi possível garantir o username no profile imediatamente:", e);
+    }
+
     setDone(true);
   }
 
