@@ -3268,30 +3268,51 @@ function HomePage() {
   // persistência em localStorage configurada no root, restaura este
   // resultado instantaneamente na próxima visita — sem ecrã vazio nem
   // spinner — enquanto busca dados novos em segundo plano.
+  const effectiveUserId = myUserId || session?.user?.id || "";
   const feedQuery = useQuery({
-    queryKey: QUERY_KEYS.feed(myUserId),
-    queryFn: () => fetchFeedPage(myUserId),
-    enabled: !!myUserId,
+    queryKey: QUERY_KEYS.feed(effectiveUserId),
+    queryFn: () => fetchFeedPage(effectiveUserId),
+    enabled: !!effectiveUserId,
     ...FEED_QUERY_OPTIONS,
     placeholderData: (prev: any) => prev,
   });
 
   const firstPagePosts = feedQuery.data ?? [];
+
+  // Timeout de segurança: se passar 6s sem dados, força uma busca pública
+  // (sem userId) para garantir que o feed nunca fica preso em loading.
+  const [forcedPublicFeed, setForcedPublicFeed] = useState<any[] | null>(null);
+
   // Posts da primeira página (React Query) + páginas extra carregadas via
   // scroll infinito, sempre deduplicados por id antes de renderizar.
   const realPosts = useMemo(() => {
     const seen = new Set<string>();
-    return [...firstPagePosts, ...extraPosts].filter((p: any) => {
+    const base = firstPagePosts.length > 0 ? firstPagePosts : (forcedPublicFeed ?? []);
+    return [...base, ...extraPosts].filter((p: any) => {
       if (!p?.id || seen.has(p.id)) return false;
       seen.add(p.id);
       return true;
     });
-  }, [firstPagePosts, extraPosts]);
+  }, [firstPagePosts, extraPosts, forcedPublicFeed]);
 
   // Só mostra o skeleton de loading quando NÃO há nenhum dado em cache —
   // nem da rede nem do localStorage. Se houver cache (mesmo desatualizado),
   // mostra-o já e atualiza silenciosamente em segundo plano.
-  const loadingFeed = feedQuery.isLoading && firstPagePosts.length === 0;
+  useEffect(() => {
+    if (firstPagePosts.length > 0 || forcedPublicFeed) return;
+    const t = setTimeout(async () => {
+      if (firstPagePosts.length > 0) return;
+      const { data } = await supabase
+        .from("posts")
+        .select("id,author_id,user_id,author_username,author_name,author_color,content,kind,is_ad,created_at,photo_url,photos,video_url,clip_video_id,clip_start,clip_end,clip_title,channel_id,channel_handle,channel_name,channel_avatar,clip_thumb_url")
+        .order("created_at", { ascending: false })
+        .limit(50);
+      if (data && data.length > 0) setForcedPublicFeed(data as any[]);
+    }, 6000);
+    return () => clearTimeout(t);
+  }, [firstPagePosts.length, forcedPublicFeed]);
+
+  const loadingFeed = feedQuery.isLoading && firstPagePosts.length === 0 && !forcedPublicFeed;
   const refreshingFeedInBackground = feedQuery.isFetching && !loadingFeed;
 
   useEffect(() => {
