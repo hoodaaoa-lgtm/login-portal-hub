@@ -1,8 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { BottomNav, SideNav, PageWrapper } from "@/components/AppShell";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Search, X, Play, Heart, TrendingUp, Users, Video, FileText, Tv2, UserPlus, UserCheck, BookOpen, Download, Bookmark } from "lucide-react";
 import { t } from "@/lib/useT";
 import { toast } from "sonner";
@@ -133,6 +133,7 @@ function Av({ name, src, size = 40, color }: { name: string; src?: string | null
 ══════════════════════════════════════════ */
 function ExplorePage() {
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const [search, setSearch]     = useState("");
   const [tab, setTab]           = useState<Tab>("trending");
   const [myId, setMyId]         = useState("");
@@ -143,6 +144,18 @@ function ExplorePage() {
       if (session) setMyId(session.user.id);
     });
   }, []);
+
+  /* Carregar quem já sigo, para o botão mostrar o estado certo */
+  const { data: myFollowsData } = useQuery({
+    queryKey: ["explore-my-follows", myId],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("follows").select("target_username").eq("follower_id", myId);
+      return (data ?? []).map((r: any) => r.target_username).filter(Boolean) as string[];
+    },
+    enabled: !!myId,
+    staleTime: 10_000,
+  });
 
   /* ── Query: pesquisa ── */
   const searchActive = search.trim().length >= 2;
@@ -240,15 +253,28 @@ function ExplorePage() {
     staleTime: 30_000,
   });
 
+  const myFollowsSet = useMemo(() => new Set(myFollowsData ?? []), [myFollowsData]);
+
   async function toggleFollow(userId: string, username: string) {
     if (!myId) { toast.error("Inicia sessão para seguir."); return; }
-    const isF = followMap[userId] ?? false;
+    const isF = followMap[userId] ?? myFollowsSet.has(username);
     setFollowMap(prev => ({ ...prev, [userId]: !isF }));
     const db = supabase as any;
     try {
-      if (isF) await db.from("follows").delete().eq("follower_id", myId).eq("target_username", username);
-      else      await db.from("follows").insert({ follower_id: myId, target_username: username });
-    } catch (_) { setFollowMap(prev => ({ ...prev, [userId]: isF })); }
+      if (isF) {
+        const { error } = await db.from("follows").delete().eq("follower_id", myId).eq("target_username", username);
+        if (error) throw error;
+        toast.success(`Deixaste de seguir @${username}`);
+      } else {
+        const { error } = await db.from("follows").insert({ follower_id: myId, target_username: username });
+        if (error) throw error;
+        toast.success(`Estás a seguir @${username}!`);
+      }
+      qc.invalidateQueries({ queryKey: ["explore-my-follows", myId] });
+    } catch (err: any) {
+      setFollowMap(prev => ({ ...prev, [userId]: isF }));
+      toast.error(err?.message ?? "Não foi possível atualizar. Tenta novamente.");
+    }
   }
 
   function fmtDur(s: number) {
@@ -258,7 +284,7 @@ function ExplorePage() {
 
   /* ── Render helpers ── */
   function PersonCard({ p }: { p: any }) {
-    const isF = followMap[p.id] ?? false;
+    const isF = followMap[p.id] ?? myFollowsSet.has(p.username);
     return (
       <div className="flex items-center gap-3 p-3 rounded-2xl border transition hover:bg-[var(--s1)]"
         style={{ borderColor: "var(--border-subtle)", background: "var(--s0)" }}>
