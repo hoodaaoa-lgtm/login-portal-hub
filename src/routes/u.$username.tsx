@@ -68,6 +68,64 @@ function Av({ name, src, size=40, color, ring=false }:
 import { usePostVideoView } from "@/hooks/usePostVideoView";
 
 /* ── Modal Partilhar Perfil ── */
+
+/* ── PostShareSheet — partilhar publicação igual ao perfil (92vh, link /post/id, copiar+nativa) ── */
+function PostShareSheet({ postId, postText, authorName, onClose }: { postId: string; postText?: string; authorName: string; onClose: () => void }) {
+  const [linkCopied, setLinkCopied] = useState(false);
+  useScrollLock(true);
+  const url = `${window.location.origin}/post/${postId}`;
+
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-end lg:items-center justify-center" style={{ background: "rgba(0,0,0,0.6)" }}
+      onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="w-full lg:max-w-sm lg:rounded-3xl rounded-t-3xl flex flex-col overflow-hidden shadow-2xl hooda-modal-sheet"
+        style={{ maxHeight: "92vh", height: "92vh" }}
+        onClick={(e) => e.stopPropagation()}>
+
+        <div className="flex justify-center pt-2.5 pb-0 shrink-0 lg:hidden">
+          <div className="w-10 h-1 rounded-full" style={{ background: "var(--border-default)" }} />
+        </div>
+
+        <div className="flex items-center justify-between px-4 py-3 border-b shrink-0" style={{ borderColor: "var(--border-subtle)" }}>
+          <span className="text-sm font-extrabold" style={{ color: "var(--text-primary)" }}>Partilhar publicação</span>
+          <button onClick={onClose} className="p-1.5 rounded-full transition" style={{ background: "var(--s2)" }}>
+            <X className="h-5 w-5" style={{ color: "var(--text-muted)" }} />
+          </button>
+        </div>
+
+        <div className="overflow-y-auto flex-1 px-4 py-4">
+          <p className="text-xs font-bold uppercase tracking-wide mb-2" style={{ color: "var(--text-muted)" }}>Link da publicação</p>
+          <div className="flex items-center gap-2 rounded-2xl px-3 py-2.5 mb-3" style={{ background: "var(--s2)" }}>
+            <span className="flex-1 text-xs truncate" style={{ color: "var(--text-muted)" }}>{url}</span>
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(url);
+                setLinkCopied(true);
+                setTimeout(() => setLinkCopied(false), 2000);
+              }}
+              className="px-3 py-1.5 rounded-xl text-xs font-bold transition active:scale-95 shrink-0 flex items-center gap-1"
+              style={{ background: linkCopied ? "#6BA547" : P, color: "#fff" }}>
+              {linkCopied ? (<><Check className="h-3.5 w-3.5" /> Copiado</>) : "Copiar"}
+            </button>
+          </div>
+
+          {typeof navigator.share === "function" && (
+            <button
+              onClick={() => {
+                navigator.share({ title: `Publicação de ${authorName}`, text: postText || "Vê esta publicação na Hooda", url }).catch(() => {});
+              }}
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-semibold transition active:scale-[0.98] border"
+              style={{ borderColor: "var(--border-default)", color: "var(--text-primary)" }}>
+              <Share2 className="h-4 w-4" /> Partilhar via...
+            </button>
+          )}
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
 function ShareProfileModal({ username, name, onClose }: { username: string; name: string; onClose: () => void }) {
   const [copied, setCopied] = useState(false);
   const url = `${window.location.origin}/u/${username}`;
@@ -698,6 +756,7 @@ function UserProfilePage() {
   const [forwardingPost, setForwardingPost] = useState<any>(null);
   const [repostedIds, setRepostedIds] = useState<Set<string>>(new Set());
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
+  const [sharingPost, setSharingPost] = useState<any>(null);
 
   useEffect(() => {
     if (!myId) return;
@@ -1165,16 +1224,7 @@ function UserProfilePage() {
                         onContextMenu={e=>e.preventDefault()}/>
                     )}
                     {post.videoUrl&&!post.photo&&(
-                      <>
-                        <VideoPlayer src={post.videoUrl} postId={post.id} kind="video"/>
-                        <div className="px-4 py-1.5 flex items-center gap-1"
-                          style={{background:"var(--s1)"}}>
-                          <Eye className="w-3.5 h-3.5" style={{color:"var(--text-muted)"}}/>
-                          <span className="text-[11px]" style={{color:"var(--text-muted)"}}>
-                            {fmtNum(post.viewsCount??0)} visualizações
-                          </span>
-                        </div>
-                      </>
+                      <VideoPlayer src={post.videoUrl} postId={post.id} kind="video"/>
                     )}
                     {post.kind==="clip"&&post.clipVideoId&&(
                       <div>
@@ -1226,6 +1276,10 @@ function UserProfilePage() {
                       <button onClick={()=>{ if(!myId){toast.error("Inicia sessão para reencaminhar.");return;} setForwardingPost(post); }}
                         className="flex items-center gap-1.5 px-3 py-2 rounded-xl transition active:scale-90 hover:bg-[var(--s2)]">
                         <Forward className="h-5 w-5" style={{color:"var(--text-muted)"}}/>
+                      </button>
+                      <button onClick={()=>setSharingPost(post)}
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl transition active:scale-90 hover:bg-[var(--s2)]">
+                        <Share2 className="h-5 w-5" style={{color:"var(--text-muted)"}}/>
                       </button>
                       <div className="flex-1" />
                       <button onClick={()=>toggleBookmark(post.id)}
@@ -1304,6 +1358,9 @@ function UserProfilePage() {
         <div className="fixed inset-0 z-40" onClick={()=>setShowMenu(false)}/>
       )}
 
+      {sharingPost && (
+        <PostShareSheet postId={sharingPost.id} postText={sharingPost.text} authorName={name} onClose={()=>setSharingPost(null)} />
+      )}
       {showShareModal && (
         <ShareProfileModal username={profile.username} name={name} onClose={() => setShowShareModal(false)} />
       )}
