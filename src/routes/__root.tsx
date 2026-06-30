@@ -156,7 +156,7 @@ function RootComponent() {
           <Outlet />
           <GlobalStoryViewer />
           <ConditionalBottomNav />
-          <Footer />
+          <ConditionalFooter />
         </AuthGate>
       </AppProviders>
     );
@@ -184,7 +184,7 @@ function RootComponent() {
           <Outlet />
           <GlobalStoryViewer />
           <ConditionalBottomNav />
-          <Footer />
+          <ConditionalFooter />
         </AuthGate>
       </AppProviders>
     </PersistQueryClientProvider>
@@ -197,6 +197,15 @@ function ConditionalBottomNav() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   if (PUBLIC_NAV_HIDDEN.has(pathname)) return null;
   return <BottomNav />;
+}
+
+// O rodapé (Footer) só faz sentido na página Home — nas restantes páginas
+// da app (Explorar, Mensagens, Perfil, HoodaTV, Studio, etc.) não deve
+// aparecer, pois ocupa espaço e não se aplica a ecrãs de navegação interna.
+function ConditionalFooter() {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  if (pathname !== "/home") return null;
+  return <Footer />;
 }
 
 function AppProviders({ queryClient, children }: { queryClient: QueryClient; children: ReactNode }) {
