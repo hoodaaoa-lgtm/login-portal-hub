@@ -2016,39 +2016,47 @@ function ShareProfileModal({ username, name, onClose }: { username: string; name
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
+  }, []);
   return (
-    <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center"
-      style={{ background: "rgba(0,0,0,0.5)" }} onClick={onClose}>
-      <div className="w-full max-w-sm rounded-t-3xl sm:rounded-3xl shadow-2xl p-5"
-        style={{ background: "var(--s0)" }} onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-4">
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4"
+      style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(4px)" }} onClick={onClose}>
+      <div className="w-full max-w-sm rounded-3xl shadow-2xl flex flex-col"
+        style={{ background: "var(--s0)", maxHeight: "calc(100vh - 32px)" }}
+        onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-5 pb-4 shrink-0">
           <h3 className="font-extrabold text-base" style={{ color: "var(--text-primary)" }}>Partilhar perfil</h3>
-          <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "var(--s2)" }}>
+          <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ background: "var(--s2)" }}>
             <X className="h-4 w-4" style={{ color: "var(--text-muted)" }} />
           </button>
         </div>
-        <p className="text-sm mb-3" style={{ color: "var(--text-muted)" }}>Link do perfil de <span className="font-semibold" style={{ color: "var(--text-primary)" }}>{name}</span></p>
-        {username === "utilizador" && (
-          <div className="rounded-2xl px-3 py-2.5 mb-3 text-xs font-medium" style={{ background: "#fef3c7", color: "#92400e" }}>
-            ⚠️ Ainda não definiste um nome de utilizador. Define um em "Editar perfil" para teres um link permanente.
+        <div className="px-5 pb-5 overflow-y-auto">
+          <p className="text-sm mb-3" style={{ color: "var(--text-muted)" }}>Link do perfil de <span className="font-semibold" style={{ color: "var(--text-primary)" }}>{name}</span></p>
+          {username === "utilizador" && (
+            <div className="rounded-2xl px-3 py-2.5 mb-3 text-xs font-medium" style={{ background: "#fef3c7", color: "#92400e" }}>
+              ⚠️ Ainda não definiste um nome de utilizador. Define um em "Editar perfil" para teres um link permanente.
+            </div>
+          )}
+          <div className="flex items-center gap-2 p-3 rounded-2xl border mb-1"
+            style={{ background: "var(--s2)", borderColor: "var(--border-default)" }}>
+            <p className="flex-1 text-sm truncate" style={{ color: "var(--text-secondary)" }}>{url}</p>
+            <button onClick={copy}
+              className="flex items-center gap-1.5 px-3 h-8 rounded-xl text-xs font-bold transition-all active:scale-95 shrink-0"
+              style={copied ? { background: "#6BA547", color: "#fff" } : { background: "#5B3FCF", color: "#fff" }}>
+              {copied ? <><Check className="h-3.5 w-3.5" /> Copiado!</> : <><Copy className="h-3.5 w-3.5" /> Copiar</>}
+            </button>
           </div>
-        )}
-        <div className="flex items-center gap-2 p-3 rounded-2xl border mb-1"
-          style={{ background: "var(--s2)", borderColor: "var(--border-default)" }}>
-          <p className="flex-1 text-sm truncate" style={{ color: "var(--text-secondary)" }}>{url}</p>
-          <button onClick={copy}
-            className="flex items-center gap-1.5 px-3 h-8 rounded-xl text-xs font-bold transition-all active:scale-95 shrink-0"
-            style={copied ? { background: "#6BA547", color: "#fff" } : { background: "#5B3FCF", color: "#fff" }}>
-            {copied ? <><Check className="h-3.5 w-3.5" /> Copiado!</> : <><Copy className="h-3.5 w-3.5" /> Copiar</>}
-          </button>
+          {typeof navigator.share === "function" && (
+            <button onClick={() => navigator.share({ title: name, url }).catch(() => {})}
+              className="w-full h-11 rounded-2xl text-sm font-bold mt-3 transition active:scale-[0.98]"
+              style={{ background: "var(--s2)", color: "var(--text-primary)" }}>
+              Partilhar via...
+            </button>
+          )}
         </div>
-        {typeof navigator.share === "function" && (
-          <button onClick={() => navigator.share({ title: name, url }).catch(() => {})}
-            className="w-full h-11 rounded-2xl text-sm font-bold mt-3 transition active:scale-[0.98]"
-            style={{ background: "var(--s2)", color: "var(--text-primary)" }}>
-            Partilhar via...
-          </button>
-        )}
       </div>
     </div>
   );
@@ -2059,6 +2067,11 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
 }) {
   const navigate = useNavigate();
   const [profile, setProfile] = useState(initialProfile);
+  // O profile inicial pode chegar como null e ser reparado depois (auto-fix
+  // do username em ProfilePage); sem isto o state interno fica preso a null.
+  useEffect(() => {
+    if (initialProfile) setProfile(initialProfile);
+  }, [initialProfile]);
   const name = profile?.full_name || profile?.username || email?.split("@")[0] || "?";
   const [tab, setTab] = useState<"posts" | "saved" | "info" | "monetization">("posts");
   const [showCreate, setShowCreate] = useState(false);
