@@ -10,7 +10,7 @@ import { STATIC_QUERY_OPTIONS } from "@/lib/queryClient";
 import { BottomNav, SideNav, PageWrapper } from "@/components/AppShell";
 import { HoodaLogo } from "@/components/HoodaLogo";
 import {
-  Settings, LogOut, MessageCircle, Flag, X, Image, Type, Plus,
+  Settings, LogOut, MessageCircle, Flag, X, Image, Type, Plus, Repeat2, Quote,
   BookOpen, ChevronRight, Lock, Shield, TrendingUp, Bookmark,
   Info, Camera, Link, MapPin, Calendar, Bell, HelpCircle, Globe,
   Banknote, BarChart3, Users, Eye, Star, Heart, Share2,
@@ -2096,7 +2096,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
     if (initialProfile) setProfile(initialProfile);
   }, [initialProfile]);
   const name = profile?.full_name || profile?.username || email?.split("@")[0] || "?";
-  const [tab, setTab] = useState<"posts" | "saved" | "info" | "monetization">("posts");
+  const [tab, setTab] = useState<"posts" | "replies" | "saved" | "info" | "monetization">("posts");
   const [showCreate, setShowCreate] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
@@ -2112,6 +2112,9 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
   const [showMsgPrivacy, setShowMsgPrivacy] = useState(false);
   const [posts, setPosts] = useState<Post[]>([]);
   const [postsLoading, setPostsLoading] = useState(true);
+  const [activities, setActivities] = useState<any[]>([]);
+  const [activitiesLoading, setActivitiesLoading] = useState(true);
+  const [activitiesLoaded, setActivitiesLoaded] = useState(false);
   const [website, setWebsite] = useState("");
   const [location, setLocation] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -2275,6 +2278,102 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
     setPosts((prev) => (prev.some((p) => p.id === post.id) ? prev : [post, ...prev]));
   }
 
+  /* Carregar respostas, reposts e quotes (tab "Respostas") sob pedido */
+  useEffect(() => {
+    if (tab !== "replies" || !myUserId || activitiesLoaded) return;
+    (async () => {
+      setActivitiesLoading(true);
+      try {
+        const [repliesRes, repostsRes, quotesRes] = await Promise.all([
+          (supabase as any).from("post_replies")
+            .select("id, post_id, content, media_url, media_type, created_at")
+            .eq("author_id", myUserId)
+            .order("created_at", { ascending: false }),
+          (supabase as any).from("post_reposts")
+            .select("id, post_id, created_at")
+            .eq("user_id", myUserId)
+            .order("created_at", { ascending: false }),
+          (supabase as any).from("post_quotes")
+            .select("id, original_post_id, content, media_url, media_type, created_at")
+            .eq("author_id", myUserId)
+            .order("created_at", { ascending: false }),
+        ]);
+
+        const replies = repliesRes.data ?? [];
+        const reposts = repostsRes.data ?? [];
+        const quotes  = quotesRes.data ?? [];
+
+        // Recolher todos os post_id originais para buscar de uma vez
+        const allOriginalIds = [
+          ...replies.map((r: any) => r.post_id),
+          ...reposts.map((r: any) => r.post_id),
+          ...quotes.map((q: any) => q.original_post_id),
+        ].filter(Boolean);
+
+        let originalsMap: Record<string, any> = {};
+        if (allOriginalIds.length > 0) {
+          const { data: originals } = await (supabase as any)
+            .from("posts")
+            .select("id, content, kind, image_url, video_url, author_username, author_name, author_color, created_at")
+            .in("id", [...new Set(allOriginalIds)]);
+          (originals ?? []).forEach((o: any) => { originalsMap[o.id] = o; });
+        }
+
+        function getOriginalText(o: any) {
+          if (!o) return null;
+          if (o.kind === "bg") { try { return JSON.parse(o.content).text; } catch { return o.content; } }
+          return o.content;
+        }
+
+        const merged = [
+          ...replies.map((r: any) => ({
+            id: `reply-${r.id}`, type: "reply" as const,
+            content: r.content, mediaUrl: r.media_url, createdAt: r.created_at,
+            original: originalsMap[r.post_id] ? {
+              id: r.post_id,
+              text: getOriginalText(originalsMap[r.post_id]),
+              author: originalsMap[r.post_id].author_username,
+              authorName: originalsMap[r.post_id].author_name,
+              authorColor: originalsMap[r.post_id].author_color,
+              image: originalsMap[r.post_id].image_url,
+            } : null,
+          })),
+          ...reposts.map((r: any) => ({
+            id: `repost-${r.id}`, type: "repost" as const,
+            content: null, mediaUrl: null, createdAt: r.created_at,
+            original: originalsMap[r.post_id] ? {
+              id: r.post_id,
+              text: getOriginalText(originalsMap[r.post_id]),
+              author: originalsMap[r.post_id].author_username,
+              authorName: originalsMap[r.post_id].author_name,
+              authorColor: originalsMap[r.post_id].author_color,
+              image: originalsMap[r.post_id].image_url,
+            } : null,
+          })),
+          ...quotes.map((q: any) => ({
+            id: `quote-${q.id}`, type: "quote" as const,
+            content: q.content, mediaUrl: q.media_url, createdAt: q.created_at,
+            original: originalsMap[q.original_post_id] ? {
+              id: q.original_post_id,
+              text: getOriginalText(originalsMap[q.original_post_id]),
+              author: originalsMap[q.original_post_id].author_username,
+              authorName: originalsMap[q.original_post_id].author_name,
+              authorColor: originalsMap[q.original_post_id].author_color,
+              image: originalsMap[q.original_post_id].image_url,
+            } : null,
+          })),
+        ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+        setActivities(merged);
+        setActivitiesLoaded(true);
+      } catch (e) {
+        toast.error("Não foi possível carregar as respostas.");
+      } finally {
+        setActivitiesLoading(false);
+      }
+    })();
+  }, [tab, myUserId, activitiesLoaded]);
+
   /* Carregar publicações guardadas (tab "Guardado") sob pedido */
   useEffect(() => {
     if (tab !== "saved" || !myUserId) return;
@@ -2392,6 +2491,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
 
   const tabs = [
     { key: "posts", label: t("profile.publications"), icon: Type },
+    { key: "replies", label: "Respostas", icon: Repeat2 },
     { key: "saved", label: t("post.save"), icon: Bookmark },
     { key: "info", label: "Info", icon: Info },
     { key: "monetization", label: "Studio", icon: Tv },
@@ -2553,7 +2653,66 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
             myUserId={myUserId} />
         )}
 
+        {tab === "replies" && (
+          activitiesLoading ? (
+            <div className="flex justify-center py-14">
+              <div className="h-6 w-6 rounded-full border-2 animate-spin" style={{ borderColor: ACCENT, borderTopColor: "transparent" }} />
+            </div>
+          ) : activities.length === 0 ? (
+            <div className="px-5 py-12 flex flex-col items-center gap-3 text-center">
+              <div className="w-16 h-16 rounded-full bg-[#1FAFA6]/10 flex items-center justify-center">
+                <Repeat2 className="h-7 w-7 text-[#1FAFA6]" />
+              </div>
+              <p className="text-sm font-semibold text-[var(--text-muted)]">Sem respostas ainda</p>
+              <p className="text-xs text-[var(--text-muted)]">As tuas respostas, reposts e citações aparecem aqui.</p>
+            </div>
+          ) : (
+            <div className="pb-6 divide-y divide-[var(--border-subtle)]">
+              {activities.map((a) => (
+                <div key={a.id} className="px-4 py-4">
+                  {/* Tipo de actividade */}
+                  <div className="flex items-center gap-1.5 mb-2 text-xs font-bold"
+                    style={{ color: a.type === "repost" ? "#1FAFA6" : a.type === "quote" ? "#5B3FCF" : "var(--text-muted)" }}>
+                    {a.type === "repost" && <Repeat2 className="h-3.5 w-3.5" />}
+                    {a.type === "quote"  && <Quote className="h-3.5 w-3.5" />}
+                    {a.type === "reply"  && <MessageCircle className="h-3.5 w-3.5" />}
+                    <span>
+                      {a.type === "repost" ? "Repostaste" : a.type === "quote" ? "Citaste" : "Respondeste a um post"}
+                    </span>
+                    <span className="text-[11px] font-normal text-[var(--text-muted)]">· {timeAgo(new Date(a.createdAt))}</span>
+                  </div>
 
+                  {/* Conteúdo próprio (reply ou quote) */}
+                  {(a.type === "reply" || a.type === "quote") && a.content && (
+                    <p className="text-sm leading-snug mb-3" style={{ color: "var(--text-primary)" }}>{a.content}</p>
+                  )}
+                  {a.mediaUrl && (
+                    <img src={a.mediaUrl} alt="" className="w-full rounded-xl mb-3 max-h-72 object-cover" />
+                  )}
+
+                  {/* Post original referenciado */}
+                  {a.original ? (
+                    <div className="rounded-2xl border p-3" style={{ borderColor: "var(--border-subtle)", background: "var(--s2)" }}>
+                      <p className="text-xs font-bold mb-1" style={{ color: a.original.authorColor || ACCENT }}>
+                        @{a.original.author || "utilizador"}
+                      </p>
+                      {a.original.text && (
+                        <p className="text-sm leading-snug line-clamp-3" style={{ color: "var(--text-secondary)" }}>{a.original.text}</p>
+                      )}
+                      {a.original.image && (
+                        <img src={a.original.image} alt="" className="w-full rounded-xl mt-2 max-h-56 object-cover" />
+                      )}
+                    </div>
+                  ) : (
+                    <div className="rounded-2xl border p-3 text-xs" style={{ borderColor: "var(--border-subtle)", background: "var(--s2)", color: "var(--text-muted)" }}>
+                      Esta publicação original já não está disponível.
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )
+        )}
 
         {tab === "saved" && (
           savedLoading ? (
