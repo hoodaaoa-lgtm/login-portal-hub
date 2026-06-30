@@ -6,6 +6,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { PhotoViewer } from "@/components/PhotoViewer";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { RichText } from "@/components/RichText";
+import { PostCommentsModal } from "@/components/PostCommentsModal";
+import { fetchPostComments, sendPostComment, replyToPostComment, toggleCommentLike } from "@/lib/comments";
 import { BottomNav, SideNav, PageWrapper } from "@/components/AppShell";
 import {
   ChevronLeft, MessageCircle, Flag, Heart, Share2,
@@ -397,7 +399,10 @@ function VideoPlayer({ src, poster, postId, kind }: { src:string; poster?:string
   return (
     <div
       className="w-full bg-black relative cursor-pointer overflow-hidden"
-      style={{ maxHeight: isShort ? "600px" : "420px" }}
+      style={{
+        aspectRatio: isShort === true ? "9/16" : "16/9",
+        maxHeight: isShort === true ? "75vh" : "560px",
+      }}
       onClick={toggle}>
       <video
         ref={ref}
@@ -415,7 +420,7 @@ function VideoPlayer({ src, poster, postId, kind }: { src:string; poster?:string
         className="w-full h-full block"
         style={{
           pointerEvents: "none",
-          objectFit: "cover",
+          objectFit: "contain",
         }}
       />
       {!playing && (
@@ -534,108 +539,55 @@ function FollowListModal({ userId, kind, onClose }:
 }
 
 /* ─── Modal de Comentários ─── */
-function CommentsModal({ postId, onClose }:{ postId:string; onClose:()=>void }) {
+function CommentsModal({ postId, authorId, onClose }:{ postId:string; authorId?:string; onClose:()=>void }) {
   const [myId, setMyId] = useState("");
-  const [myUsername, setMyUsername] = useState("");
-  const [myAvatar, setMyAvatar] = useState<string|null>(null);
-  const [text, setText] = useState("");
-  const [sending, setSending] = useState(false);
-  const [comments, setComments] = useState<any[]>([]);
+  const [comments, setComments] = useState<import("@/components/PostCommentsModal").PostComment[]>([]);
   const [loading, setLoading] = useState(true);
-  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const [sending, setSending] = useState(false);
 
   useEffect(()=>{
-    document.body.style.overflow="hidden";
     (async()=>{
       const {data:{session}}=await supabase.auth.getSession();
-      if (session) {
-        setMyId(session.user.id);
-        const {data:p}=await (supabase as any).from("profiles").select("username,avatar_url").eq("id",session.user.id).single();
-        if (p){ setMyUsername(p.username); setMyAvatar(p.avatar_url); }
-      }
-      const {data}=await (supabase as any).from("post_comments")
-        .select("id,content,created_at,author_id,profiles(username,full_name,avatar_url)")
-        .eq("post_id",postId).order("created_at",{ascending:true}).limit(50);
-      setComments(data??[]);
+      if (session) setMyId(session.user.id);
+      const list = await fetchPostComments(postId, session?.user?.id);
+      setComments(list);
       setLoading(false);
     })();
-    return ()=>{ document.body.style.overflow=""; };
   },[postId]);
 
-  async function send() {
-    if (!text.trim()||!myId||sending) return;
+  async function handleSend(text: string) {
+    if (!myId) { toast.error("Inicia sessão para comentar."); return; }
     setSending(true);
-    const {data:c}=await (supabase as any).from("post_comments")
-      .insert({post_id:postId,author_id:myId,content:text.trim()})
-      .select("id,content,created_at,author_id,profiles(username,full_name,avatar_url)")
-      .single();
-    if (c) setComments(prev=>[...prev,c]);
-    setText(""); setSending(false);
+    const {data:{session}}=await supabase.auth.getSession();
+    const {data:p}=await (supabase as any).from("profiles").select("username").eq("id",myId).maybeSingle();
+    const created = await sendPostComment({ postId, userId: myId, username: p?.username || "utilizador", text });
+    if (created) setComments(prev=>[created, ...prev]);
+    setSending(false);
+  }
+
+  async function handleReply(parentId: string, text: string) {
+    if (!myId) { toast.error("Inicia sessão para responder."); return; }
+    const {data:p}=await (supabase as any).from("profiles").select("username").eq("id",myId).maybeSingle();
+    await replyToPostComment({ postId, parentCommentId: parentId, userId: myId, username: p?.username || "utilizador", text });
+  }
+
+  async function handleLike(commentId: string) {
+    if (!myId) { toast.error("Inicia sessão para curtir."); return; }
+    const target = comments.flatMap(c => [c, ...(c.replies||[])]).find(c => c.id === commentId);
+    await toggleCommentLike(commentId, myId, !!target?.likedByMe);
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
-      style={{background:"rgba(0,0,0,0.6)",backdropFilter:"blur(4px)"}}
-      onClick={e=>e.target===e.currentTarget&&onClose()}>
-      <div className="w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl flex flex-col shadow-2xl"
-        style={{background:"var(--s0)",maxHeight:"85vh"}}>
-        <div className="flex items-center justify-between px-5 py-4 border-b shrink-0"
-          style={{borderColor:"var(--border-subtle)"}}>
-          <span className="font-bold text-base" style={{color:"var(--text-primary)"}}>Comentários</span>
-          <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-[var(--s2)]">
-            <X className="h-4 w-4" style={{color:"var(--text-muted)"}} />
-          </button>
-        </div>
-        <div className="overflow-y-auto flex-1 py-3 px-4 space-y-3">
-          {loading ? (
-            [1,2,3].map(i=>(
-              <div key={i} className="flex gap-2 animate-pulse">
-                <div className="w-8 h-8 rounded-full shrink-0" style={{background:"var(--s3)"}}/>
-                <div className="flex-1 space-y-1.5">
-                  <div className="h-3 rounded-full w-1/3" style={{background:"var(--s3)"}}/>
-                  <div className="h-2.5 rounded-full w-2/3" style={{background:"var(--s3)"}}/>
-                </div>
-              </div>
-            ))
-          ) : comments.length===0 ? (
-            <p className="text-center py-8 text-sm" style={{color:"var(--text-muted)"}}>Sem comentários ainda. Sê o primeiro!</p>
-          ) : comments.map((c:any)=>{
-            const prof = c.profiles;
-            return (
-              <div key={c.id} className="flex gap-2.5">
-                <Av name={prof?.full_name||prof?.username||"?"} src={prof?.avatar_url} size={34} />
-                <div className="flex-1 min-w-0">
-                  <div className="rounded-2xl px-3 py-2" style={{background:"var(--s2)"}}>
-                    <p className="text-xs font-bold" style={{color:"var(--text-primary)"}}>{prof?.full_name||prof?.username}</p>
-                    <p className="text-sm mt-0.5 leading-relaxed" style={{color:"var(--text-secondary)"}}>{c.content}</p>
-                  </div>
-                  <p className="text-[10px] mt-1 ml-2" style={{color:"var(--text-muted)"}}>{timeAgo(c.created_at)}</p>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-        {myId && (
-          <div className="px-4 py-3 border-t flex gap-2 items-end shrink-0" style={{borderColor:"var(--border-subtle)"}}>
-            <Av name={myUsername} src={myAvatar} size={34} />
-            <div className="flex-1 relative">
-              <textarea ref={inputRef} value={text} onChange={e=>setText(e.target.value)}
-                onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();}}}
-                placeholder="Escreve um comentário…" rows={1}
-                className="w-full resize-none rounded-2xl px-4 py-2 text-sm outline-none border pr-10"
-                style={{background:"var(--s2)",borderColor:"var(--border-default)",color:"var(--text-primary)",maxHeight:120}} />
-              <button onClick={send} disabled={!text.trim()||sending}
-                className="absolute right-2 bottom-2 w-7 h-7 rounded-full flex items-center justify-center transition disabled:opacity-40"
-                style={{background:P}}>
-                <svg className="h-3.5 w-3.5 text-white" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/>
-                </svg>
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
+    <PostCommentsModal
+      onClose={onClose}
+      creatorId={authorId}
+      comments={comments}
+      loading={loading}
+      sending={sending}
+      onSend={handleSend}
+      onReply={handleReply}
+      onLikeComment={handleLike}
+    />
   );
 }
 
@@ -1334,7 +1286,7 @@ function UserProfilePage() {
       {/* ── Modais ── */}
       {showFollowers && <FollowListModal userId={profileId!} kind="followers" onClose={()=>setShowFollowers(false)}/>}
       {showFollowing && <FollowListModal userId={profileId!} kind="following" onClose={()=>setShowFollowing(false)}/>}
-      {commentPostId && <CommentsModal postId={commentPostId} onClose={()=>setCommentPostId(null)}/>}
+      {commentPostId && <CommentsModal postId={commentPostId} authorId={profileId ?? undefined} onClose={()=>setCommentPostId(null)}/>}
       {showReport && <ReportModal username={profile.username} userId={profileId!} onClose={()=>setShowReport(false)}/>}
 
       {/* ── Visualizador de foto ── */}

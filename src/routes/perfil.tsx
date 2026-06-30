@@ -619,8 +619,8 @@ function SimpleVideoPlayer({ src, rounded = "rounded-none", postId, kind }: {
     <div
       className={`w-full bg-black relative cursor-pointer overflow-hidden ${rounded}`}
       style={{
-        aspectRatio: kind === "clip" ? "16/9" : undefined,
-        maxHeight: kind === "clip" ? 260 : isShort ? "600px" : "420px",
+        aspectRatio: kind === "clip" ? "16/9" : (isShort === true ? "9/16" : "16/9"),
+        maxHeight: kind === "clip" ? 260 : isShort === true ? "75vh" : "560px",
       }}
       onClick={toggle}>
       <video
@@ -638,9 +638,7 @@ function SimpleVideoPlayer({ src, rounded = "rounded-none", postId, kind }: {
         className="w-full h-full block"
         style={{
           pointerEvents: "none",
-          objectFit: "cover",
-          position: kind === "clip" ? "absolute" : undefined,
-          inset: kind === "clip" ? 0 : undefined,
+          objectFit: "contain",
         }}
       />
       {!playing && (
