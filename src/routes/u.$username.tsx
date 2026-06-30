@@ -412,12 +412,10 @@ function VideoPlayer({ src, poster, postId, kind }: { src:string; poster?:string
         onPlay={() => setPlaying(true)}
         onPause={() => setPlaying(false)}
         onContextMenu={e => e.preventDefault()}
-        className="w-full block"
+        className="w-full h-full block"
         style={{
           pointerEvents: "none",
-          objectFit: isShort ? "contain" : "cover",
-          width: "100%",
-          maxHeight: isShort ? "600px" : "420px",
+          objectFit: "cover",
         }}
       />
       {!playing && (
@@ -747,6 +745,31 @@ function UserProfilePage() {
   const [repostingPost, setRepostingPost] = useState<any>(null);
   const [forwardingPost, setForwardingPost] = useState<any>(null);
   const [repostedIds, setRepostedIds] = useState<Set<string>>(new Set());
+  const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (!myId) return;
+    (supabase as any).from("saved_posts").select("post_id").eq("user_id", myId)
+      .then(({ data }: any) => {
+        if (data) setBookmarkedIds(new Set(data.map((r: any) => r.post_id)));
+      });
+  }, [myId]);
+
+  async function toggleBookmark(postId: string) {
+    if (!myId) { toast.error("Inicia sessão para guardar."); return; }
+    const isSaved = bookmarkedIds.has(postId);
+    setBookmarkedIds(prev => {
+      const next = new Set(prev);
+      if (isSaved) next.delete(postId); else next.add(postId);
+      return next;
+    });
+    if (isSaved) {
+      await (supabase as any).from("saved_posts").delete().eq("user_id", myId).eq("post_id", postId);
+    } else {
+      await (supabase as any).from("saved_posts").insert({ user_id: myId, post_id: postId });
+      toast.success("Guardado!");
+    }
+  }
   const [commentPostId, setCommentPostId] = useState<string|null>(null);
   const [photoViewing, setPhotoViewing] = useState<string|null>(null);
 
@@ -817,6 +840,17 @@ function UserProfilePage() {
         });
       }
 
+      // Contagem de comentários por post
+      const postIds = posts.map((p:any)=>p.id);
+      const commentsCountMap: Record<string, number> = {};
+      if (postIds.length > 0) {
+        const {data: commentsData} = await (supabase as any).from("post_comments")
+          .select("post_id").in("post_id", postIds);
+        (commentsData??[]).forEach((c:any) => {
+          commentsCountMap[c.post_id] = (commentsCountMap[c.post_id] ?? 0) + 1;
+        });
+      }
+
       return posts.map((p:any)=>{
         let text=p.content, bgColor:string|null=null;
         if (p.kind==="bg"){ try{const j=JSON.parse(p.content);text=j.text;bgColor=j.bgColor;}catch(_){} }
@@ -835,6 +869,7 @@ function UserProfilePage() {
           videoStreamUrl: p.clip_video_id ? (streamMap[p.clip_video_id]||null) : null,
           likesCount:p.likes_count??0,
           viewsCount:(p as any).views_count??0,
+          commentsCount: commentsCountMap[p.id] ?? 0,
         };
       });
     },
@@ -1227,8 +1262,6 @@ function UserProfilePage() {
                       <button onClick={()=>toggleLike(post.id,post.likesCount)}
                         className="flex items-center gap-1.5 px-3 py-2 rounded-xl transition active:scale-90 group">
                         <Heart className={`h-5 w-5 transition-all ${isLiked?"fill-red-500 text-red-500 scale-110":"text-[var(--text-muted)] group-hover:text-red-400"}`}/>
-                        {likeCount>0&&<span className="text-xs font-semibold"
-                          style={{color:isLiked?"#ef4444":"var(--text-muted)"}}>{fmtNum(likeCount)}</span>}
                       </button>
                       <button onClick={()=>setCommentPostId(post.id)}
                         className="flex items-center gap-1.5 px-3 py-2 rounded-xl transition active:scale-90 hover:bg-[var(--s2)]">
@@ -1242,6 +1275,40 @@ function UserProfilePage() {
                         className="flex items-center gap-1.5 px-3 py-2 rounded-xl transition active:scale-90 hover:bg-[var(--s2)]">
                         <Forward className="h-5 w-5" style={{color:"var(--text-muted)"}}/>
                       </button>
+                      <div className="flex-1" />
+                      <button onClick={()=>toggleBookmark(post.id)}
+                        className="p-1.5 rounded-full transition active:scale-90">
+                        {bookmarkedIds.has(post.id)
+                          ? <BookmarkCheck className="h-5 w-5" style={{color:P}}/>
+                          : <Bookmark className="h-5 w-5" style={{color:"var(--text-muted)"}}/>}
+                      </button>
+                    </div>
+
+                    {/* Views + Likes count — estilo Facebook/Instagram */}
+                    <div className="px-3 pb-3">
+                      <div className="flex items-center gap-3 mb-1">
+                        {(post.viewsCount??0)>0&&(
+                          <p className="text-[12px] font-semibold" style={{color:"var(--text-muted)"}}>
+                            👁 {fmtNum(post.viewsCount??0)} visualizaç{post.viewsCount===1?"ão":"ões"}
+                          </p>
+                        )}
+                        {likeCount>0&&(
+                          <p className="text-[13px] font-bold" style={{color:"var(--text-primary)"}}>
+                            ❤️ {likeCount===1?"1 gosto":`${fmtNum(likeCount)} gostos`}
+                          </p>
+                        )}
+                      </div>
+                      {post.text&&!post.bgColor&&(
+                        <p className="text-[14px] leading-snug" style={{color:"var(--text-primary)"}}>
+                          <span className="font-bold mr-1">{profile.username}</span>
+                          <RichText text={post.text} />
+                        </p>
+                      )}
+                      {(post.commentsCount??0)>0&&(
+                        <button onClick={()=>setCommentPostId(post.id)} className="mt-1 text-[13px]" style={{color:"var(--text-muted)"}}>
+                          Ver {post.commentsCount===1?"1 comentário":`todos os ${fmtNum(post.commentsCount)} comentários`}
+                        </button>
+                      )}
                     </div>
                   </article>
                 );
