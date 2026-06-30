@@ -355,6 +355,42 @@ function ForwardModal({ post, me, onClose }: { post: any; me: any; onClose: () =
           <p className="font-semibold text-xs mb-1" style={{ color: "var(--text-muted)" }}>@{post.author_username}</p>
           <p className="line-clamp-2">{post.text || (post.photo ? "📷 Foto" : post.video ? "🎥 Vídeo" : "Publicação")}</p>
         </div>
+
+        {/* Link directo + partilha nativa */}
+        <div className="mx-4 mt-3 space-y-2">
+          <div className="flex items-center gap-2 rounded-2xl px-3 py-2.5" style={{ background: "var(--s2)" }}>
+            <span className="flex-1 text-xs truncate" style={{ color: "var(--text-muted)" }}>
+              {`${window.location.origin}/post/${post.id}`}
+            </span>
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(`${window.location.origin}/post/${post.id}`);
+                toast.success("🔗 Link copiado!");
+              }}
+              className="px-3 py-1.5 rounded-xl text-xs font-bold text-white transition active:scale-95 shrink-0"
+              style={{ background: "#5B3FCF" }}>
+              Copiar
+            </button>
+          </div>
+          {typeof navigator.share === "function" && (
+            <button
+              onClick={() => {
+                navigator.share({
+                  title: `Publicação de ${post.author_name ?? post.author_username}`,
+                  text: post.text || "Vê esta publicação na Hooda",
+                  url: `${window.location.origin}/post/${post.id}`,
+                }).catch(() => {});
+              }}
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl text-sm font-semibold transition active:scale-[0.98] border"
+              style={{ borderColor: "var(--border-default)", color: "var(--text-primary)" }}>
+              <Share2 className="h-4 w-4" /> Partilhar via...
+            </button>
+          )}
+        </div>
+
+        <p className="px-4 pt-3 pb-1 text-xs font-bold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
+          Enviar para conversa
+        </p>
         {/* Pesquisa */}
         <div className="px-4 py-2">
           <input value={search} onChange={e => setSearch(e.target.value)}

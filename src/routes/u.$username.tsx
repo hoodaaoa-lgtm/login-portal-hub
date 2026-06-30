@@ -267,7 +267,7 @@ function ForwardModal({ post, myId, onClose }: { post: any; myId: string; onClos
   async function forward(convId: string) {
     if (!myId || sending) return;
     setSending(convId);
-    const postUrl = `${window.location.origin}/u/${post.authorUsername || "?"}`;
+    const postUrl = `${window.location.origin}/post/${post.id}`;
     const text = `${post.text ? post.text.slice(0, 100) + "\n" : ""}🔗 ${postUrl}`;
     await (supabase as any).from("messages").insert({ conversation_id: convId, sender_id: myId, content: text, type: "text" });
     setSent(s => new Set([...s, convId]));
@@ -287,6 +287,42 @@ function ForwardModal({ post, myId, onClose }: { post: any; myId: string; onClos
             <X className="h-4 w-4" style={{ color: "var(--text-muted)" }} />
           </button>
         </div>
+
+        {/* Link directo + partilha nativa */}
+        <div className="mx-4 mt-3 space-y-2">
+          <div className="flex items-center gap-2 rounded-2xl px-3 py-2.5" style={{ background: "var(--s2)" }}>
+            <span className="flex-1 text-xs truncate" style={{ color: "var(--text-muted)" }}>
+              {`${window.location.origin}/post/${post.id}`}
+            </span>
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(`${window.location.origin}/post/${post.id}`);
+                toast.success("🔗 Link copiado!");
+              }}
+              className="px-3 py-1.5 rounded-xl text-xs font-bold text-white transition active:scale-95 shrink-0"
+              style={{ background: P }}>
+              Copiar
+            </button>
+          </div>
+          {typeof navigator.share === "function" && (
+            <button
+              onClick={() => {
+                navigator.share({
+                  title: `Publicação de ${post.authorName ?? post.authorUsername}`,
+                  text: post.text || "Vê esta publicação na Hooda",
+                  url: `${window.location.origin}/post/${post.id}`,
+                }).catch(() => {});
+              }}
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl text-sm font-semibold transition active:scale-[0.98] border"
+              style={{ borderColor: "var(--border-default)", color: "var(--text-primary)" }}>
+              <Share2 className="h-4 w-4" /> Partilhar via...
+            </button>
+          )}
+        </div>
+
+        <p className="px-4 pt-3 pb-1 text-xs font-bold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
+          Enviar para conversa
+        </p>
         <div className="px-4 py-2">
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Pesquisar…"
             className="w-full px-4 h-9 rounded-full text-sm outline-none border"
