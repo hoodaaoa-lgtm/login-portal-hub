@@ -526,7 +526,47 @@ function PostCard({
           onClick={(e) => e.target === e.currentTarget && setShareOpen(false)}>
           <div className="w-full lg:max-w-md lg:rounded-3xl rounded-t-3xl hooda-modal-sheet flex flex-col overflow-hidden shadow-2xl max-h-[80vh]">
             <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border-subtle)] shrink-0">
+              <span className="text-base font-bold" style={{ color: "var(--text-primary)" }}>Partilhar publicação</span>
+              <button onClick={() => setShareOpen(false)} className="p-2 rounded-full transition" style={{ background: "var(--s2)" }}>
+                <X className="h-4 w-4" style={{ color: "var(--text-primary)" }} />
+              </button>
             </div>
+
+            {/* Link directo da publicação */}
+            <div className="px-4 py-3 border-b" style={{ borderColor: "var(--border-subtle)" }}>
+              <div className="flex items-center gap-2 rounded-2xl px-3 py-2.5" style={{ background: "var(--s2)" }}>
+                <span className="flex-1 text-xs truncate" style={{ color: "var(--text-muted)" }}>
+                  {`${window.location.origin}/post/${post.id}`}
+                </span>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(`${window.location.origin}/post/${post.id}`);
+                    toast.success("🔗 Link copiado!");
+                  }}
+                  className="px-3 py-1.5 rounded-xl text-xs font-bold text-white transition active:scale-95 shrink-0"
+                  style={{ background: ACCENT }}>
+                  Copiar
+                </button>
+              </div>
+              {typeof navigator.share === "function" && (
+                <button
+                  onClick={() => {
+                    navigator.share({
+                      title: `Publicação de ${name}`,
+                      text: post.text || "Vê esta publicação na Hooda",
+                      url: `${window.location.origin}/post/${post.id}`,
+                    }).catch(() => {});
+                  }}
+                  className="w-full flex items-center justify-center gap-2 mt-2 py-2.5 rounded-2xl text-sm font-semibold transition active:scale-[0.98] border"
+                  style={{ borderColor: "var(--border-default)", color: "var(--text-primary)" }}>
+                  <Send className="h-4 w-4" /> Partilhar via...
+                </button>
+              )}
+            </div>
+
+            <p className="px-4 pt-3 pb-1 text-xs font-bold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
+              Enviar para comunidade
+            </p>
             <div className="overflow-y-auto px-3 py-2">
               {loadingShareTargets ? (
                 <div className="flex justify-center py-10">
