@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { useQuery } from "@tanstack/react-query";
@@ -36,7 +36,7 @@ export const Route = createFileRoute("/perfil")({
   component: ProfilePage,
 });
 
-type Profile = { id?: string; username: string; full_name: string; age: number | null; bio: string | null };
+type Profile = { id?: string; username: string; full_name: string; age: number | null; bio: string | null; username_changed_at?: string | null };
 type Post = {
   id: string; text: string; photo: string | null; bgColor: string | null; createdAt: Date;
   likes: number; likedByMe: boolean; comments: number; bookmarked: boolean;
@@ -562,11 +562,20 @@ function PostCard({
 }
 
 /* ─── Feed ─── */
-function PostsFeed({ posts, name, username, avatarUrl, onLike, onBookmark, onDelete, myUserId }: {
-  posts: Post[]; name: string; username: string; avatarUrl?: string | null;
+function PostsFeed({ posts, loading, name, username, avatarUrl, onLike, onBookmark, onDelete, myUserId }: {
+  posts: Post[]; loading?: boolean; name: string; username: string; avatarUrl?: string | null;
   onLike: (id: string) => void; onBookmark: (id: string) => void; onDelete: (id: string) => void;
   myUserId?: string;
 }) {
+  if (loading) return (
+    <div className="px-4 py-3 space-y-3">
+      {Array.from({ length: 3 }).map((_, i) => (
+        <div key={i} className="rounded-2xl overflow-hidden animate-pulse" style={{ background: "var(--s2)" }}>
+          <div className="h-40" style={{ background: "var(--s3)" }} />
+        </div>
+      ))}
+    </div>
+  );
   if (posts.length === 0) return (
     <div className="px-5 py-14 flex flex-col items-center gap-3 text-center">
       <div className="w-16 h-16 rounded-full bg-[#5B3FCF]/10 flex items-center justify-center">
@@ -670,7 +679,7 @@ function CreatePostModal({
 }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const name = profile?.full_name || email || "?";
+  const name = profile?.full_name || profile?.username || email?.split("@")[0] || "?";
   const [text, setText] = useState("");
   const [bgColor, setBgColor] = useState<string | null>(null);
   const [photo, setPhoto] = useState<string | null>(null);
@@ -918,16 +927,29 @@ function EditProfileModal({
   onSave: (data: Partial<Profile> & { website?: string; location?: string }) => void;
 }) {
   const { t } = useTranslation();
-  const [name, setName] = useState(profile?.full_name || "");
+  const [name, setName] = useState(profile?.full_name || profile?.username || email?.split("@")[0] || "");
   const [username, setUsername] = useState(profile?.username || "");
   const [bio, setBio] = useState(profile?.bio || "");
   const [website, setWebsite] = useState((profile as any)?.website || "");
   const [location, setLocation] = useState((profile as any)?.location || "");
   const [saving, setSaving] = useState(false);
   const [done, setDone] = useState(false);
+  const [editingUsername, setEditingUsername] = useState(false); // lápis clicado?
   const [usernameStatus, setUsernameStatus] = useState<"idle"|"checking"|"available"|"taken"|"invalid">("idle");
   const [usernameSuggestions, setUsernameSuggestions] = useState<string[]>([]);
   const usernameTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Calcular dias restantes para poder trocar username
+  const usernameCooldownDays = React.useMemo(() => {
+    if (!profile?.username_changed_at) return 0;
+    const lastChange = new Date(profile.username_changed_at).getTime();
+    const daysSince  = (Date.now() - lastChange) / (1000 * 60 * 60 * 24);
+    const remaining  = Math.ceil(31 - daysSince);
+    return remaining > 0 ? remaining : 0;
+  }, [profile?.username_changed_at]);
+
+  // Username editável apenas se: sem cooldown E lápis clicado
+  const canChangeUsername = usernameCooldownDays === 0 && editingUsername;
 
   // Gera sugestões baseadas no nome
   function generateSuggestions(name: string): string[] {
@@ -979,17 +1001,33 @@ function EditProfileModal({
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        await supabase.from("profiles").update({
+        const usernameChanged = username !== (profile?.username || "");
+        const updateData: Record<string, any> = {
           full_name: name,
           username,
           bio,
           website,
           location,
           updated_at: new Date().toISOString(),
-        } as any).eq("id", session.user.id);
+        };
+        // Gravar data de troca de username para cooldown de 30 dias
+        if (usernameChanged) {
+          updateData.username_changed_at = new Date().toISOString();
+        }
+        const { error } = await (supabase as any).from("profiles").update(updateData).eq("id", session.user.id);
+        if (error) {
+          // Se a coluna não existe ainda, tenta sem ela
+          const { full_name, username: u, bio: b, website: w, location: l, updated_at } = updateData;
+          await (supabase as any).from("profiles").update({ full_name, username: u, bio: b, website: w, location: l, updated_at }).eq("id", session.user.id);
+        }
+        // Atualizar username nos posts existentes
+        if (usernameChanged) {
+          await (supabase as any).from("posts").update({ author_username: username }).eq("author_id", session.user.id);
+        }
       }
     } catch (_) {}
-    onSave({ full_name: name, username, bio, website, location });
+    onSave({ full_name: name, username, bio, website, location,
+      ...(username !== (profile?.username || "") ? { username_changed_at: new Date().toISOString() } : {}) });
     setDone(true);
     setSaving(false);
     setTimeout(onClose, 600);
@@ -1057,29 +1095,69 @@ function EditProfileModal({
 
             {/* Username */}
             <div>
-              <label className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Nome de utilizador</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Nome de utilizador</label>
+                {usernameCooldownDays > 0 ? (
+                  <span className="text-[11px] flex items-center gap-1 font-semibold" style={{ color: "#F26B3A" }}>
+                    🔒 Bloqueado {usernameCooldownDays} dia{usernameCooldownDays !== 1 ? "s" : ""}
+                  </span>
+                ) : !editingUsername ? (
+                  <button
+                    onClick={() => setEditingUsername(true)}
+                    className="text-[11px] flex items-center gap-1 font-semibold transition hover:opacity-70"
+                    style={{ color: ACCENT }}>
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    Editar
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => { setEditingUsername(false); setUsername(profile?.username || ""); setUsernameStatus("idle"); }}
+                    className="text-[11px] font-semibold transition hover:opacity-70"
+                    style={{ color: "var(--text-muted)" }}>
+                    Cancelar
+                  </button>
+                )}
+              </div>
               <div className="relative mt-1">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] text-sm">@</span>
-                <input value={username} onChange={(e) => handleUsernameChange(e.target.value)}
+                <input value={username}
+                  onChange={(e) => canChangeUsername && handleUsernameChange(e.target.value)}
+                  readOnly={!canChangeUsername}
                   placeholder="nomedeutilizador"
                   className="w-full rounded-xl pl-8 pr-10 py-2.5 text-sm font-medium outline-none transition"
                   style={{
-                    background: "var(--s2)", color: "var(--text-primary)",
-                    border: `1.5px solid ${usernameStatus === "available" ? "#6BA547" : usernameStatus === "taken" || usernameStatus === "invalid" ? "#ef4444" : "var(--border-default)"}`,
+                    background: canChangeUsername ? "var(--s2)" : "var(--s3)",
+                    color: "var(--text-primary)",
+                    cursor: canChangeUsername ? "text" : "not-allowed",
+                    border: `1.5px solid ${!canChangeUsername ? "var(--border-default)" : usernameStatus === "available" ? "#6BA547" : usernameStatus === "taken" || usernameStatus === "invalid" ? "#ef4444" : "var(--border-default)"}`,
                     boxShadow: usernameStatus === "available" ? "0 0 0 3px #6BA54720" : usernameStatus === "taken" ? "0 0 0 3px #ef444420" : "none",
                   }}
                 />
-                {/* Indicador direito */}
-                <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                  {usernameStatus === "checking" && (
-                    <div className="w-4 h-4 rounded-full border-2 animate-spin" style={{ borderColor: ACCENT, borderTopColor: "transparent" }} />
-                  )}
-                  {usernameStatus === "available" && <span className="text-[#6BA547] text-lg">✓</span>}
-                  {usernameStatus === "taken" && <span className="text-red-500 text-lg">✗</span>}
-                  {usernameStatus === "invalid" && <span className="text-red-500 text-lg">✗</span>}
-                </div>
+                {/* Ícone cadeado quando bloqueado */}
+                {!canChangeUsername && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" strokeLinecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                  </div>
+                )}
+                {/* Indicador status */}
+                {canChangeUsername && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    {usernameStatus === "checking" && <div className="w-4 h-4 rounded-full border-2 animate-spin" style={{ borderColor: ACCENT, borderTopColor: "transparent" }} />}
+                    {usernameStatus === "available" && <span className="text-[#6BA547] text-lg">✓</span>}
+                    {(usernameStatus === "taken" || usernameStatus === "invalid") && <span className="text-red-500 text-lg">✗</span>}
+                  </div>
+                )}
               </div>
-              {usernameStatus === "available" && <p className="text-[11px] text-[#6BA547] mt-1">Disponível!</p>}
+              {/* Mensagem de cooldown */}
+              {usernameCooldownDays > 0 && (
+                <div className="flex items-center gap-1.5 mt-1.5 px-3 py-2 rounded-xl" style={{ background: "#F26B3A12" }}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#F26B3A" strokeWidth="2.5" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+                  <p className="text-[11px] font-semibold" style={{ color: "#F26B3A" }}>
+                    Podes trocar o username daqui a <strong>{usernameCooldownDays} dia{usernameCooldownDays !== 1 ? "s" : ""}</strong>
+                  </p>
+                </div>
+              )}
+              {canChangeUsername && usernameStatus === "available" && <p className="text-[11px] text-[#6BA547] mt-1">Disponível!</p>}
               {usernameStatus === "taken" && (
                 <div>
                   <p className="text-[11px] text-red-500 mt-1">Este nome de utilizador já está em uso. Experimenta:</p>
@@ -1935,7 +2013,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
 }) {
   const navigate = useNavigate();
   const [profile, setProfile] = useState(initialProfile);
-  const name = profile?.full_name || email || "?";
+  const name = profile?.full_name || profile?.username || email?.split("@")[0] || "?";
   const [tab, setTab] = useState<"posts" | "saved" | "info" | "monetization">("posts");
   const [showCreate, setShowCreate] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -1950,6 +2028,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
   const [showLanguage, setShowLanguage] = useState(false);
   const [showMsgPrivacy, setShowMsgPrivacy] = useState(false);
   const [posts, setPosts] = useState<Post[]>([]);
+  const [postsLoading, setPostsLoading] = useState(true);
   const [website, setWebsite] = useState("");
   const [location, setLocation] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -2002,8 +2081,9 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
   /* Load user's posts + follower counts from Supabase on mount */
   useEffect(() => {
     (async () => {
+      try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
+      if (!session) { return; }
       setMyUserId(session.user.id);
 
       // Carregar avatar_url e username do perfil
@@ -2102,6 +2182,9 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
           setPosts(loaded);
         }
       }
+      } finally {
+        setPostsLoading(false);
+      }
     })();
   }, []);
 
@@ -2197,10 +2280,31 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
     setPosts(prev => prev.filter(p => p.id !== id));
   }
 
-  function saveProfile(data: Partial<Profile> & { website?: string; location?: string }) {
+  async function saveProfile(data: Partial<Profile> & { website?: string; location?: string }) {
     setProfile((p) => p ? { ...p, ...data } : p);
     if (data.website) setWebsite(data.website);
     if (data.location) setLocation(data.location);
+
+    // Atualizar nome e username em todos os posts do utilizador
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session && (data.full_name || data.username)) {
+        const updates: Record<string, string> = {};
+        if (data.full_name) updates.author_name     = data.full_name;
+        if (data.username)  updates.author_username = data.username;
+        await (supabase as any).from("posts").update(updates).eq("author_id", session.user.id);
+
+        // Registar data de troca de username
+        if (data.username && data.username !== profile?.username) {
+          await (supabase as any).from("profiles")
+            .update({ username_changed_at: new Date().toISOString() })
+            .eq("id", session.user.id);
+          setProfile(p => p ? { ...p, username_changed_at: new Date().toISOString() } : p);
+        }
+      }
+    } catch (err) {
+      console.error("Erro ao atualizar nome nos posts:", err);
+    }
   }
 
   const tabs = [
@@ -2370,7 +2474,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
 
         {/* Conteúdo das tabs */}
         {tab === "posts" && (
-          <PostsFeed posts={posts} name={name} username={profile?.username || "utilizador"}
+          <PostsFeed posts={posts} loading={postsLoading} name={name} username={profile?.username || "utilizador"}
             avatarUrl={avatarUrl} onLike={toggleLike} onBookmark={toggleBookmark} onDelete={deletePost}
             myUserId={myUserId} />
         )}
@@ -2515,7 +2619,7 @@ function PublicProfile({ profile, email }: { profile: Profile | null; email: str
   const [myUserId, setMyUserId] = useState("");
   const [followListMode, setFollowListMode] = useState<"followers" | "following" | null>(null);
   const navigate = useNavigate();
-  const name = profile?.full_name || email || "?";
+  const name = profile?.full_name || profile?.username || email?.split("@")[0] || "?";
 
   useEffect(() => {
     if (!profile) return;
@@ -2623,11 +2727,24 @@ function ProfilePage() {
       const { data: session } = await supabase.auth.getSession();
       if (!session.session) { navigate({ to: "/", replace: true }); return; }
       setEmail(session.session.user.email ?? "");
-      const { data } = await supabase
+      // Tenta buscar com username_changed_at; se a coluna não existir faz fallback
+      let data: any = null;
+      const { data: d1, error: e1 } = await supabase
         .from("profiles")
-        .select("id, username, full_name, age, bio")
+        .select("id, username, full_name, age, bio, username_changed_at")
         .eq("id", session.session.user.id)
         .maybeSingle();
+      if (e1) {
+        // Coluna pode não existir ainda — fallback sem ela
+        const { data: d2 } = await supabase
+          .from("profiles")
+          .select("id, username, full_name, age, bio")
+          .eq("id", session.session.user.id)
+          .maybeSingle();
+        data = d2;
+      } else {
+        data = d1;
+      }
       if (data) setProfile(data as Profile);
     })();
   }, [navigate]);

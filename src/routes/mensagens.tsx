@@ -6,6 +6,12 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { QUERY_KEYS, REALTIME_QUERY_OPTIONS, CONVERSATIONS_QUERY_OPTIONS } from "@/lib/queryClient";
 import {
   isEncrypted,
+  encryptDM,
+  decryptDM,
+  canEncryptDM,
+  E2EE_PENDING,
+  getOrCreateKeyPair,
+  publishPublicKey,
 } from "@/lib/e2ee";
 import { supabase } from "@/integrations/supabase/client";
 import { BottomNav, SideNav, PageWrapper } from "@/components/AppShell";
@@ -25,9 +31,45 @@ import {
   Crop, Grid3x3, Download, ZoomIn, Forward, Star,
   Eye, EyeOff, Trash2, Reply, Copy,
   AlertCircle, RefreshCw, ArrowDown,
+  Lock, Unlock,
 } from "lucide-react";
 import MediaEditor, { MediaEditState, DEFAULT_EDIT, EditedMediaDisplay } from "@/components/MediaEditor";
 import { HoodaPlayer } from "@/components/HoodaPlayer";
+import { uploadImageToCloudinary } from "@/lib/cloudinary";
+
+// Upload directo para Cloudinary com progresso (suporta audio/video via resource_type=video)
+function cloudinaryUploadMedia(
+  file: File,
+  resourceType: "image" | "video",
+  folder: string,
+  onProgress?: (pct: number) => void,
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("upload_preset", "hooda_videos");
+    fd.append("folder", folder);
+    fd.append("resource_type", resourceType);
+    const xhr = new XMLHttpRequest();
+    xhr.upload.addEventListener("progress", e => {
+      if (e.lengthComputable && onProgress) onProgress(Math.round((e.loaded / e.total) * 100));
+    });
+    xhr.addEventListener("load", () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try { resolve(JSON.parse(xhr.responseText).secure_url); }
+        catch { reject(new Error("Cloudinary: resposta inválida")); }
+      } else {
+        let msg = `Cloudinary erro ${xhr.status}`;
+        try { msg = JSON.parse(xhr.responseText)?.error?.message ?? msg; } catch {}
+        reject(new Error(msg));
+      }
+    });
+    xhr.addEventListener("error", () => reject(new Error("Falha de rede no upload.")));
+    xhr.addEventListener("abort", () => reject(new Error("Upload cancelado.")));
+    xhr.open("POST", `https://api.cloudinary.com/v1_1/dy7o7tgmk/${resourceType}/upload`);
+    xhr.send(fd);
+  });
+}
 
 export const Route = createFileRoute("/mensagens")({
   head: () => ({ meta: [{ title: "hooda — Mensagens" }] }),
@@ -2347,17 +2389,45 @@ function ChatPanel({ myId, contact, onBack }: {
     } catch {}
   }
 
-  // ── E2EE desactivado para DMs ──
-  // A chave AES era gerada localmente e nunca partilhada com o outro
-  // utilizador — o destinatário nunca conseguia decifrar. Protecção
-  // feita pela RLS do Supabase (só participantes lêem a conversa).
-  const encrypt = useCallback(async (text: string): Promise<string> => text, []);
+  // ── E2EE para DMs (ECDH + AES-GCM partilhada via conversation_key_shares) ──
+  //
+  // canEncrypt = o outro participante tem chave pública ECDH publicada.
+  // Se for false caímos em fallback (envio em claro) — não bloqueia o utilizador.
+  const [canEncrypt, setCanEncrypt] = useState<boolean | null>(null);
+
+  // Publicar a minha chave pública (idempotente) + verificar a do outro
+  useEffect(() => {
+    if (!myId || !contact.id) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        await getOrCreateKeyPair();
+        await publishPublicKey(myId);
+        const ok = await canEncryptDM(contact.id);
+        if (!cancelled) setCanEncrypt(ok);
+      } catch {
+        if (!cancelled) setCanEncrypt(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [myId, contact.id]);
+
+  const encrypt = useCallback(async (text: string): Promise<string> => {
+    if (!text) return text;
+    if (!contact.conversationId) return text;
+    const ct = await encryptDM(text, contact.conversationId, myId, contact.id);
+    // Fallback: se não foi possível cifrar (outro sem chave pública), enviar em claro
+    return ct ?? text;
+  }, [contact.conversationId, contact.id, myId]);
 
   const decrypt = useCallback(async (content: string): Promise<string> => {
-    // Mensagens antigas encriptadas localmente: mostrar indicador visual
-    if (isEncrypted(content)) return "🔒 Mensagem (dispositivo anterior)";
-    return content;
-  }, []);
+    if (!content || !isEncrypted(content)) return content;
+    if (!contact.conversationId) return "🔒 Mensagem";
+    const out = await decryptDM(content, contact.conversationId, myId, contact.id);
+    if (out === E2EE_PENDING) return "🔒 A sincronizar…";
+    return out;
+  }, [contact.conversationId, contact.id, myId]);
+
 
   // ── Parse raw row → Message ──
   const parseRow = useCallback(async (r: any): Promise<Message> => {
@@ -2654,37 +2724,23 @@ function ChatPanel({ myId, contact, onBack }: {
     }
   }
 
-  // ── Upload com progresso real ──
+  // ── Upload com progresso real (Cloudinary) ──
   async function uploadFile(file: File, folder: string): Promise<string|null> {
-    setUploading(true); setUploadPct(15);
-    const ext  = file.name.split(".").pop() ?? "bin";
-    const path = `${folder}/${myId}/${Date.now()}.${ext}`;
+    setUploading(true); setUploadPct(5);
     try {
-      const { error } = await supabase.storage
-        .from("messages-media")
-        .upload(path, file, { upsert: false, cacheControl: "3600" });
-      if (error) {
-        console.error("[uploadFile] erro upload:", error.message);
-        toast.error("Erro no upload: " + error.message);
-        setUploading(false); setUploadPct(0);
-        return null;
+      // folder define o tipo: "audio" e "video" → resource_type=video; "images" → image
+      const isImage = folder === "images" || file.type.startsWith("image/");
+      const resourceType: "image" | "video" = isImage ? "image" : "video";
+      const cloudFolder = `hooda/messages/${folder}/${myId}`;
+
+      let url: string;
+      if (isImage) {
+        const r = await uploadImageToCloudinary(file, cloudFolder, pct => setUploadPct(Math.max(5, pct)));
+        url = r.url;
+      } else {
+        url = await cloudinaryUploadMedia(file, resourceType, cloudFolder, pct => setUploadPct(Math.max(5, pct)));
       }
-      const { data } = supabase.storage.from("messages-media").getPublicUrl(path);
-      const url = data.publicUrl;
-      console.log("[uploadFile] ✅ URL pública:", url);
-      
-      // Testar se a URL é acessível (verificar CORS)
-      try {
-        const res = await fetch(url, { method: "HEAD" });
-        if (!res.ok) {
-          console.warn(`[uploadFile] ⚠️  URL devolveu status ${res.status} — bucket pode estar privado ou CORS não configurado`);
-        } else {
-          console.log("[uploadFile] ✅ URL acessível (status:", res.status + ")");
-        }
-      } catch (corsErr: any) {
-        console.warn("[uploadFile] ⚠️  Erro ao testar acesso (CORS?):", corsErr.message);
-      }
-      
+      console.log("[uploadFile] ✅ Cloudinary URL:", url);
       setUploadPct(100);
       setTimeout(() => { setUploading(false); setUploadPct(0); }, 400);
       return url;
@@ -3090,11 +3146,23 @@ function ChatPanel({ myId, contact, onBack }: {
           </p>
           <p className="text-[11px] text-white/70">@{contact.username}</p>
         </div>
+        {/* Indicador de cifra ponta-a-ponta */}
+        <div
+          title={canEncrypt ? "Conversa cifrada de ponta a ponta" : "Conversa não cifrada"}
+          className="p-2 rounded-full flex items-center justify-center"
+          style={{
+            background: "rgba(255,255,255,0.12)",
+            color: canEncrypt ? "#34D399" : "rgba(255,255,255,0.55)",
+          }}
+        >
+          {canEncrypt ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
+        </div>
         <button onClick={() => setShowBgModal(true)} title="Mudar fundo"
           className="p-2 rounded-full transition active:scale-90"
           style={{ background: "rgba(255,255,255,0.12)", color: "white" }}>
           <Wand2 className="h-4 w-4" />
         </button>
+
         <div className="relative" ref={chatMenuRef}>
           <button onClick={() => setShowChatMenu(p => !p)}
             className="p-2 rounded-full transition active:scale-90"

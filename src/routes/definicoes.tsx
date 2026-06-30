@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { BottomNav, SideNav, PageWrapper } from "@/components/AppShell";
 import {
   ChevronRight, Bell, Lock, Shield, HelpCircle,
-  Info, Globe, MessageSquare, User, Activity, ArrowLeft,
+  Info, Globe, MessageSquare, Activity, ArrowLeft,
 } from "lucide-react";
 import {
   NotificationsPanel, ActivityPanel, PrivacyPanel,
@@ -56,7 +56,6 @@ function DefinicoesPage() {
     {
       title: "Conta",
       items: [
-        { icon: <User className="w-5 h-5"/>, color: ACCENT, label: "Editar perfil", desc: "Nome, foto, bio e mais", action: () => navigate({ to: "/perfil" }) },
         { icon: <Bell className="w-5 h-5"/>, color: "#E94B8A", label: "Notificações", desc: "Gere os teus alertas", action: () => setPanel("notifications") },
         { icon: <Activity className="w-5 h-5"/>, color: "#1FAFA6", label: "Atividade", desc: "Histórico de ações", action: () => setPanel("activity") },
       ],

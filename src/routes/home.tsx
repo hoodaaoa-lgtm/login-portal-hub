@@ -3145,7 +3145,11 @@ function HomePage() {
       score *= 0.9 + Math.random() * 0.2;
 
       const authorKey = p.author_id || p.user_id;
-      const name = p.author_name || nameMap[authorKey] || p.author_username || "hooda";
+      const rawName = p.author_name || nameMap[authorKey] || "";
+      // Nunca mostrar email como nome
+      const name = rawName.includes("@") && rawName.includes(".")
+        ? (p.author_username || nameMap[authorKey] || "hooda")
+        : (rawName || p.author_username || "hooda");
       const username = p.author_username || usernameMap[authorKey] || "";
       let text = p.content;
       let bg_color = null;
@@ -3272,8 +3276,22 @@ function HomePage() {
         const likesByPost: Record<string, string[]> = {};
         (likesData || []).forEach((l: any) => { if (!likesByPost[l.post_id]) likesByPost[l.post_id] = []; likesByPost[l.post_id].push(l.user_id); });
         const savedIds = new Set((savesData || []).map((s: any) => s.post_id));
+        const authorIdsExtra = [...new Set(postsData.map((p: any) => p.author_id).filter(Boolean))];
+        const { data: authorProfilesExtra } = authorIdsExtra.length > 0
+          ? await supabase.from("profiles").select("id,full_name,username,avatar_url").in("id", authorIdsExtra)
+          : { data: [] as any[] };
+        const nameMapExtra: Record<string, string> = {};
+        const avatarMapExtra: Record<string, string | null> = {};
+        (authorProfilesExtra || []).forEach((pr: any) => {
+          nameMapExtra[pr.id] = pr.full_name || pr.username || "";
+          avatarMapExtra[pr.id] = pr.avatar_url || null;
+        });
         const morePosts = postsData.map((p: any) => ({
-          ...p, user: p.author_username || "hooda", color: p.author_color || "#5B3FCF",
+          ...p,
+          user: p.author_name || nameMapExtra[p.author_id] || p.author_username || "hooda",
+          name: `@${p.author_username || "?"}`,
+          avatar_url: avatarMapExtra[p.author_id] ?? null,
+          color: p.author_color || "#5B3FCF",
           likes: (likesByPost[p.id] || []).length, liked_by_me: (likesByPost[p.id] || []).includes(myUserId),
           saved: savedIds.has(p.id), comments: 0,
         }));
