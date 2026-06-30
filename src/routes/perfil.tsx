@@ -2027,54 +2027,61 @@ function MyVideosFeed({ userId }: { userId: string }) {
 function ShareProfileModal({ username, name, onClose }: { username: string; name: string; onClose: () => void }) {
   const [copied, setCopied] = useState(false);
   const url = `${window.location.origin}/u/${username}`;
+  useScrollLock();
   async function copy() {
     await navigator.clipboard.writeText(url);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }
-  useEffect(() => {
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = prev; };
-  }, []);
-  return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4"
-      style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(4px)" }} onClick={onClose}>
-      <div className="w-full max-w-sm rounded-3xl shadow-2xl flex flex-col"
-        style={{ background: "var(--s0)", maxHeight: "calc(100vh - 32px)" }}
-        onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between p-5 pb-4 shrink-0">
-          <h3 className="font-extrabold text-base" style={{ color: "var(--text-primary)" }}>Partilhar perfil</h3>
-          <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ background: "var(--s2)" }}>
-            <X className="h-4 w-4" style={{ color: "var(--text-muted)" }} />
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-end lg:items-center justify-center" style={{ background: "rgba(0,0,0,0.6)" }}
+      onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="w-full lg:max-w-sm lg:rounded-3xl rounded-t-3xl flex flex-col overflow-hidden shadow-2xl hooda-modal-sheet"
+        style={{ maxHeight: "92vh" }}
+        onClick={(e) => e.stopPropagation()}>
+
+        {/* Drag indicator mobile */}
+        <div className="flex justify-center pt-2.5 pb-0 shrink-0 lg:hidden">
+          <div className="w-10 h-1 rounded-full" style={{ background: "var(--border-default)" }} />
+        </div>
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b shrink-0" style={{ borderColor: "var(--border-subtle)" }}>
+          <span className="text-sm font-extrabold" style={{ color: "var(--text-primary)" }}>Partilhar perfil</span>
+          <button onClick={onClose} className="p-1.5 rounded-full transition" style={{ background: "var(--s2)" }}>
+            <X className="h-5 w-5" style={{ color: "var(--text-muted)" }} />
           </button>
         </div>
-        <div className="px-5 pb-5 overflow-y-auto">
+
+        {/* Conteúdo scrollável */}
+        <div className="overflow-y-auto flex-1 px-4 py-4">
           <p className="text-sm mb-3" style={{ color: "var(--text-muted)" }}>Link do perfil de <span className="font-semibold" style={{ color: "var(--text-primary)" }}>{name}</span></p>
           {username === "utilizador" && (
             <div className="rounded-2xl px-3 py-2.5 mb-3 text-xs font-medium" style={{ background: "#fef3c7", color: "#92400e" }}>
               ⚠️ Ainda não definiste um nome de utilizador. Define um em "Editar perfil" para teres um link permanente.
             </div>
           )}
-          <div className="flex items-center gap-2 p-3 rounded-2xl border mb-1"
-            style={{ background: "var(--s2)", borderColor: "var(--border-default)" }}>
-            <p className="flex-1 text-sm truncate" style={{ color: "var(--text-secondary)" }}>{url}</p>
+          <p className="text-xs font-bold uppercase tracking-wide mb-2" style={{ color: "var(--text-muted)" }}>Link do perfil</p>
+          <div className="flex items-center gap-2 rounded-2xl px-3 py-2.5 mb-3" style={{ background: "var(--s2)" }}>
+            <span className="flex-1 text-xs truncate" style={{ color: "var(--text-muted)" }}>{url}</span>
             <button onClick={copy}
-              className="flex items-center gap-1.5 px-3 h-8 rounded-xl text-xs font-bold transition-all active:scale-95 shrink-0"
-              style={copied ? { background: "#6BA547", color: "#fff" } : { background: "#5B3FCF", color: "#fff" }}>
-              {copied ? <><Check className="h-3.5 w-3.5" /> Copiado!</> : <><Copy className="h-3.5 w-3.5" /> Copiar</>}
+              className="px-3 py-1.5 rounded-xl text-xs font-bold transition active:scale-95 shrink-0 flex items-center gap-1"
+              style={{ background: copied ? "#6BA547" : "#5B3FCF", color: "#fff" }}>
+              {copied ? (<><Check className="h-3.5 w-3.5" /> Copiado</>) : "Copiar"}
             </button>
           </div>
+
           {typeof navigator.share === "function" && (
             <button onClick={() => navigator.share({ title: name, url }).catch(() => {})}
-              className="w-full h-11 rounded-2xl text-sm font-bold mt-3 transition active:scale-[0.98]"
-              style={{ background: "var(--s2)", color: "var(--text-primary)" }}>
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-semibold transition active:scale-[0.98] border"
+              style={{ borderColor: "var(--border-default)", color: "var(--text-primary)" }}>
               Partilhar via...
             </button>
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
