@@ -20,6 +20,7 @@ import { AuthProvider, useAuth } from "../contexts/AuthContext";
 import { GlobalStoryViewer } from "../components/GlobalStoryViewer";
 import { BottomNav } from "../components/AppShell";
 import { TopProgressBar } from "../components/TopProgressBar";
+import { Footer } from "../components/Footer";
 import { SplashScreen, SPLASH_EXIT_MS } from "../components/SplashScreen";
 import { useGlobalMediaFadeIn } from "../hooks/useGlobalMediaFadeIn";
 
@@ -155,6 +156,7 @@ function RootComponent() {
           <Outlet />
           <GlobalStoryViewer />
           <ConditionalBottomNav />
+          <Footer />
         </AuthGate>
       </AppProviders>
     );
@@ -182,6 +184,7 @@ function RootComponent() {
           <Outlet />
           <GlobalStoryViewer />
           <ConditionalBottomNav />
+          <Footer />
         </AuthGate>
       </AppProviders>
     </PersistQueryClientProvider>
