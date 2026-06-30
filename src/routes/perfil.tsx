@@ -2028,6 +2028,11 @@ function ShareProfileModal({ username, name, onClose }: { username: string; name
           </button>
         </div>
         <p className="text-sm mb-3" style={{ color: "var(--text-muted)" }}>Link do perfil de <span className="font-semibold" style={{ color: "var(--text-primary)" }}>{name}</span></p>
+        {username === "utilizador" && (
+          <div className="rounded-2xl px-3 py-2.5 mb-3 text-xs font-medium" style={{ background: "#fef3c7", color: "#92400e" }}>
+            ⚠️ Ainda não definiste um nome de utilizador. Define um em "Editar perfil" para teres um link permanente.
+          </div>
+        )}
         <div className="flex items-center gap-2 p-3 rounded-2xl border mb-1"
           style={{ background: "var(--s2)", borderColor: "var(--border-default)" }}>
           <p className="flex-1 text-sm truncate" style={{ color: "var(--text-secondary)" }}>{url}</p>
@@ -2418,11 +2423,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
 
         {/* Editar perfil + Partilhar */}
         <div className="flex justify-end gap-2 px-4 pt-3 pb-0">
-          <button onClick={() => {
-            const username = profile?.username;
-            if (!username || username === "utilizador") { toast.error("Define um username primeiro!"); return; }
-            setShowShareModal(true);
-          }}
+          <button onClick={() => setShowShareModal(true)}
             title="Partilhar perfil"
             className="w-9 h-9 rounded-full flex items-center justify-center border transition hover:bg-[var(--s2)] active:scale-95"
             style={{borderColor:"var(--border-default)",color:"var(--text-muted)"}}>
@@ -2640,8 +2641,8 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
           onPublish={(data) => { addPost(data); setShowCreate(false); }}
         />
       )}
-      {showShareModal && profile?.username && (
-        <ShareProfileModal username={profile.username} name={name} onClose={() => setShowShareModal(false)} />
+      {showShareModal && (
+        <ShareProfileModal username={profile?.username || "utilizador"} name={name} onClose={() => setShowShareModal(false)} />
       )}
       {photoViewerSrc && (
         <PhotoViewer src={photoViewerSrc} alt={name} subtitle={profile?.username ? `@${profile.username}` : undefined} onClose={() => setPhotoViewerSrc(null)} />
