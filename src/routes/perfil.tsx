@@ -1012,18 +1012,34 @@ function EditProfileModal({
         if (usernameChanged) {
           updateData.username_changed_at = new Date().toISOString();
         }
-        const { error } = await (supabase as any).from("profiles").update(updateData).eq("id", session.user.id);
+        console.log("[hooda:debug] A gravar perfil:", updateData);
+        const { data: updRes, error } = await (supabase as any)
+          .from("profiles").update(updateData).eq("id", session.user.id).select();
         if (error) {
-          // Se a coluna não existe ainda, tenta sem ela
-          const { full_name, username: u, bio: b, website: w, location: l, updated_at } = updateData;
-          await (supabase as any).from("profiles").update({ full_name, username: u, bio: b, website: w, location: l, updated_at }).eq("id", session.user.id);
+          console.error(
+            "[hooda] ERRO ao gravar perfil (cooldown pode não funcionar):",
+            "\nCódigo:", error.code, "\nMensagem:", error.message,
+            "\nDetalhes:", error.details, "\nHint:", error.hint,
+            error
+          );
+          // Tenta sem username_changed_at apenas se o erro for especificamente sobre essa coluna
+          if (usernameChanged && (error.message?.includes("username_changed_at") || error.code === "42703" || error.code === "42501")) {
+            const { full_name, username: u, bio: b, website: w, location: l, updated_at } = updateData;
+            const { error: error2 } = await (supabase as any)
+              .from("profiles").update({ full_name, username: u, bio: b, website: w, location: l, updated_at }).eq("id", session.user.id);
+            if (error2) console.error("[hooda] ERRO mesmo sem username_changed_at:", error2);
+          }
+        } else {
+          console.log("[hooda:debug] Perfil gravado com sucesso:", updRes);
         }
         // Atualizar username nos posts existentes
         if (usernameChanged) {
           await (supabase as any).from("posts").update({ author_username: username }).eq("author_id", session.user.id);
         }
       }
-    } catch (_) {}
+    } catch (err) {
+      console.error("[hooda] EXCEÇÃO ao gravar perfil:", err);
+    }
     onSave({ full_name: name, username, bio, website, location,
       ...(username !== (profile?.username || "") ? { username_changed_at: new Date().toISOString() } : {}) });
     setDone(true);
