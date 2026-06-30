@@ -2789,10 +2789,14 @@ function ProfilePage() {
         .eq("id", session.session.user.id)
         .maybeSingle();
       if (e1) {
+        const isMissingColumn = e1.message?.includes("username_changed_at") || e1.code === "42703";
         console.warn(
-          "[hooda] Coluna 'username_changed_at' não existe na tabela profiles. " +
-          "O cooldown de 30 dias para trocar username NÃO vai funcionar até correres este SQL no Supabase:\n" +
-          "ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS username_changed_at TIMESTAMPTZ;",
+          isMissingColumn
+            ? "[hooda] Coluna 'username_changed_at' não existe na tabela profiles. " +
+              "O cooldown de 30 dias para trocar username NÃO vai funcionar até correres este SQL no Supabase:\n" +
+              "ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS username_changed_at TIMESTAMPTZ;"
+            : "[hooda] Erro ao carregar perfil (não é a coluna username_changed_at):",
+          "\nCódigo:", e1.code, "\nMensagem:", e1.message, "\nDetalhes:", e1.details, "\nHint:", e1.hint,
           e1
         );
         // Coluna pode não existir ainda — fallback sem ela
