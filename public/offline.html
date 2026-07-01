@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hooda — Sem ligação</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0f0f13;
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      text-align: center;
+    }
+
+    .logo {
+      font-size: 2.5rem;
+      font-weight: 900;
+      margin-bottom: 32px;
+      letter-spacing: -1px;
+    }
+    .logo span:nth-child(1) { color: #5B3FCF; }
+    .logo span:nth-child(2) { color: #E94B8A; }
+    .logo span:nth-child(3) { color: #1FAFA6; }
+    .logo span:nth-child(4) { color: #6BA547; }
+    .logo span:nth-child(5) { color: #E94B8A; }
+
+    .icon {
+      width: 96px;
+      height: 96px;
+      background: linear-gradient(135deg, #5B3FCF22, #E94B8A22);
+      border: 2px solid #5B3FCF44;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 28px;
+    }
+
+    .icon svg {
+      width: 48px;
+      height: 48px;
+      opacity: 0.7;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 800;
+      margin-bottom: 12px;
+      color: #fff;
+    }
+
+    p {
+      font-size: 0.95rem;
+      color: rgba(255,255,255,0.5);
+      margin-bottom: 32px;
+      line-height: 1.6;
+      max-width: 300px;
+    }
+
+    button {
+      background: linear-gradient(135deg, #5B3FCF, #E94B8A);
+      color: white;
+      border: none;
+      border-radius: 100px;
+      padding: 14px 36px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+    }
+    button:hover { opacity: 0.9; }
+    button:active { transform: scale(0.96); }
+
+    .pulse {
+      width: 8px;
+      height: 8px;
+      background: #E94B8A;
+      border-radius: 50%;
+      margin: 28px auto 0;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.3; transform: scale(0.6); }
+    }
+
+    .status {
+      margin-top: 12px;
+      font-size: 0.75rem;
+      color: rgba(255,255,255,0.3);
+    }
+  </style>
+</head>
+<body>
+  <div class="logo">
+    <span>h</span><span>o</span><span>o</span><span>d</span><span>a</span>
+  </div>
+
+  <div class="icon">
+    <svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="1.5">
+      <path d="M8.288 15.038a5.25 5.25 0 017.424 0M5.106 11.856c3.807-3.808 9.98-3.808 13.788 0M1.924 8.674c5.565-5.565 14.587-5.565 20.152 0M12.53 18.22l-.53.53-.53-.53a.75.75 0 011.06 0z" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </div>
+
+  <h1>Sem ligação à internet</h1>
+  <p>Verifica a tua ligação e tenta novamente. O conteúdo em cache continua disponível.</p>
+
+  <button onclick="location.reload()">Tentar novamente</button>
+
+  <div class="pulse"></div>
+  <p class="status" id="status">A verificar ligação...</p>
+
+  <script>
+    // Verifica ligação automaticamente
+    function check() {
+      fetch("/", { method: "HEAD", cache: "no-cache" })
+        .then(() => location.reload())
+        .catch(() => {
+          document.getElementById("status").textContent = "Ainda sem ligação";
+          setTimeout(check, 5000);
+        });
+    }
+    setTimeout(check, 3000);
+
+    // Event listener para quando a ligação voltar
+    window.addEventListener("online", () => location.reload());
+  </script>
+</body>
+</html>
