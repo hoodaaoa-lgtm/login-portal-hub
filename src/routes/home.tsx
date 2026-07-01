@@ -2589,6 +2589,35 @@ function ClipCard({ p, liked, likeCount, viewCount, onLike, onComment }: {
 
 function PostCard({ p }: { p: any }) {
   const [following, setFollowing] = useState<boolean | null>(null);
+  // Dwell time tracking — Fase 2 do algoritmo
+  const dwellRef = useRef<{ start: number; recorded: boolean }>({ start: 0, recorded: false });
+  const cardRef  = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = cardRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        dwellRef.current.start = Date.now();
+      } else if (dwellRef.current.start > 0 && !dwellRef.current.recorded) {
+        const dwell_ms = Date.now() - dwellRef.current.start;
+        if (dwell_ms > 1500) { // só regista se ficou mais de 1.5s
+          dwellRef.current.recorded = true;
+          supabase.auth.getUser().then(({ data: { user } }) => {
+            if (!user) return;
+            (supabase as any).from("post_impressions").upsert({
+              user_id:   user.id,
+              post_id:   p.id,
+              author_id: p.author_id,
+              dwell_ms,
+            }, { onConflict: "user_id,post_id", ignoreDuplicates: false }).then(() => {});
+          });
+        }
+        dwellRef.current.start = 0;
+      }
+    }, { threshold: 0.5 });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [p.id, p.author_id]);
   const [showComments, setShowComments] = useState(false);
   const [showForward, setShowForward] = useState(false);
   const [showRepost, setShowRepost] = useState(false);
@@ -3107,17 +3136,24 @@ function HomePage() {
       { data: profileData },
       { data: interestsData },
     ] = await Promise.all([
-      supabase.from("follows").select("target_username").eq("follower_id", uid),
+      supabase.from("follows").select("following_id,target_username").eq("follower_id", uid),
       supabase.from("profiles").select("created_at").eq("id", uid).maybeSingle(),
       (supabase as any).from("user_interests").select("author_id,score").eq("user_id", uid).order("score", { ascending: false }).limit(50),
     ]);
 
-    const followedUsernames = [...new Set((followData || []).map((f: any) => f.target_username).filter(Boolean))];
-    let followingIds: string[] = [];
-    if (followedUsernames.length > 0) {
-      const { data: followedProfiles } = await supabase
-        .from("profiles").select("id,username").in("username", followedUsernames);
-      followingIds = (followedProfiles || []).map((p: any) => p.id).filter(Boolean);
+    // Suporta both schemas: following_id (novo) e target_username (antigo)
+    let followingIds: string[] = (followData || [])
+      .map((f: any) => f.following_id)
+      .filter(Boolean);
+
+    // Se não há following_id, tenta via target_username
+    if (followingIds.length === 0) {
+      const followedUsernames = [...new Set((followData || []).map((f: any) => f.target_username).filter(Boolean))];
+      if (followedUsernames.length > 0) {
+        const { data: followedProfiles } = await supabase
+          .from("profiles").select("id").in("username", followedUsernames);
+        followingIds = (followedProfiles || []).map((p: any) => p.id).filter(Boolean);
+      }
     }
 
     // Mapa de interesses: author_id → score (do comportamento de leitura)
