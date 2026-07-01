@@ -3088,14 +3088,28 @@ function HomePage() {
   }
 
   async function fetchFeedPageInner(uid: string) {
-    // 1. Quem o utilizador segue + quando criou a conta.
-    // maybeSingle() em vez de single(): se o perfil ainda não existir (conta
-    // recém-criada, race condition no signup) isto NUNCA deve rebentar o
-    // Promise.all e deixar o feed preso em loading — apenas segue com
-    // profileData = null, tratado como "conta nova" mais abaixo.
-    const [{ data: followData }, { data: profileData }] = await Promise.all([
+    // ═══════════════════════════════════════════════════════════════════
+    // ALGORITMO DE FEED DA HOODA — 4 FASES
+    //
+    // Fase 1 — Novo (sem follows, sem histórico): mostra o mais popular
+    // Fase 2 — Com comportamento: boost por tempo de leitura (dwell time)
+    // Fase 3 — Com follows: mistura follows + popular
+    // Fase 4 — Híbrido: 60% follows | 30% popular | 10% descoberta
+    //
+    // O FEED NUNCA FICA VAZIO — múltiplos fallbacks garantem sempre conteúdo
+    // ═══════════════════════════════════════════════════════════════════
+
+    const SELECT_FIELDS = "id,author_id,user_id,author_username,author_name,author_color,content,kind,is_ad,created_at,photo_url,photos,video_url,clip_video_id,clip_start,clip_end,clip_title,channel_id,channel_handle,channel_name,channel_avatar,clip_thumb_url";
+
+    // ── 1. Dados do utilizador em paralelo ──────────────────────────
+    const [
+      { data: followData },
+      { data: profileData },
+      { data: interestsData },
+    ] = await Promise.all([
       supabase.from("follows").select("target_username").eq("follower_id", uid),
       supabase.from("profiles").select("created_at").eq("id", uid).maybeSingle(),
+      (supabase as any).from("user_interests").select("author_id,score").eq("user_id", uid).order("score", { ascending: false }).limit(50),
     ]);
 
     const followedUsernames = [...new Set((followData || []).map((f: any) => f.target_username).filter(Boolean))];
@@ -3106,59 +3120,55 @@ function HomePage() {
       followingIds = (followedProfiles || []).map((p: any) => p.id).filter(Boolean);
     }
 
-    // Utilizador novo = conta < 7 dias E sem follows
-    const accountAgeMs = profileData?.created_at
-      ? Date.now() - new Date(profileData.created_at).getTime()
-      : 0;
-    const isNewUser = accountAgeMs < 7 * 24 * 60 * 60 * 1000 && followingIds.length === 0;
+    // Mapa de interesses: author_id → score (do comportamento de leitura)
+    const interestMap: Record<string, number> = {};
+    (interestsData || []).forEach((i: any) => { interestMap[i.author_id] = i.score; });
 
-    // 2. Janela temporal — novos vêem 30 dias para ter mais conteúdo
-    const windowDays = isNewUser ? 30 : 7;
+    // Detectar fase do utilizador
+    const accountAgeMs = profileData?.created_at
+      ? Date.now() - new Date(profileData.created_at).getTime() : 0;
+    const isNewUser     = accountAgeMs < 7 * 24 * 60 * 60 * 1000 && followingIds.length === 0;
+    const hasFollows    = followingIds.length > 0;
+    const hasInterests  = Object.keys(interestMap).length > 0;
+
+    // ── 2. Buscar posts — janela adaptativa ─────────────────────────
+    const windowDays = isNewUser ? 30 : hasFollows ? 7 : 14;
     const windowStart = new Date(Date.now() - windowDays * 24 * 60 * 60 * 1000).toISOString();
 
-    let { data: postsData, error: postsErr } = await supabase
+    let { data: postsData } = await supabase
       .from("posts")
-      .select("id,author_id,user_id,author_username,author_name,author_color,content,kind,is_ad,created_at,photo_url,photos,video_url,clip_video_id,clip_start,clip_end,clip_title,channel_id,channel_handle,channel_name,channel_avatar,clip_thumb_url")
+      .select(SELECT_FIELDS)
       .gte("created_at", windowStart)
       .order("created_at", { ascending: false })
-      .limit(200);
+      .limit(300);
 
-    if (postsErr) console.error("Feed error:", postsErr);
-
-    // Fallback: nunca mostrar feed vazio — se a janela temporal não tiver
-    // posts suficientes, busca os mais populares de sempre (sem filtro de data).
+    // FALLBACK 1: janela estreita não tem posts suficientes → alarga para 90 dias
     if (!postsData || postsData.length < 10) {
-      const { data: fallbackData } = await supabase
-        .from("posts")
-        .select("id,author_id,user_id,author_username,author_name,author_color,content,kind,is_ad,created_at,photo_url,photos,video_url,clip_video_id,clip_start,clip_end,clip_title,channel_id,channel_handle,channel_name,channel_avatar,clip_thumb_url")
-        .order("created_at", { ascending: false })
-        .limit(200);
-      if (fallbackData && fallbackData.length > 0) postsData = fallbackData;
+      const { data: wider } = await supabase
+        .from("posts").select(SELECT_FIELDS)
+        .order("created_at", { ascending: false }).limit(300);
+      if (wider && wider.length > 0) postsData = wider;
     }
 
+    // FALLBACK 2: ainda sem posts → retorna array vazio (impossível, mas seguro)
     if (!postsData || postsData.length === 0) return [];
 
-    // Deduplicate
+    // ── 3. Deduplicar + filtrar clips > 5min ────────────────────────
+    const MAX_CLIP_SECONDS = 300;
     const seenIds = new Set<string>();
-    const deduped = postsData.filter((p: any) => {
+    const eligible = postsData.filter((p: any) => {
       if (!p.id || seenIds.has(p.id)) return false;
       seenIds.add(p.id);
+      if (p.kind === "clip" && ((p.clip_end ?? 0) - (p.clip_start ?? 0)) > MAX_CLIP_SECONDS) return false;
       return true;
-    });
-
-    // Filtro duro: clips > 5 min nunca aparecem
-    const MAX_CLIP_SECONDS = 300;
-    const eligible = deduped.filter((p: any) => {
-      if (p.kind !== "clip") return true;
-      return ((p.clip_end ?? 0) - (p.clip_start ?? 0)) <= MAX_CLIP_SECONDS;
     });
 
     if (eligible.length === 0) return [];
 
-    const postIds = eligible.map((p: any) => p.id);
+    const postIds   = eligible.map((p: any) => p.id);
     const authorIds = [...new Set(eligible.map((p: any) => p.author_id || p.user_id).filter(Boolean))];
 
-    // 3. Sinais em paralelo
+    // ── 4. Buscar sinais de engagement em paralelo ──────────────────
     const [
       { data: likesData },
       { data: commentsData },
@@ -3166,6 +3176,7 @@ function HomePage() {
       { data: authorProfiles },
       { data: myLikesData },
       { data: myCommentsData },
+      { data: myImpressionsData },
     ] = await Promise.all([
       supabase.from("post_likes").select("post_id,user_id").in("post_id", postIds),
       supabase.from("post_comments").select("post_id").in("post_id", postIds),
@@ -3173,10 +3184,13 @@ function HomePage() {
       authorIds.length > 0
         ? supabase.from("profiles").select("id,avatar_url,username,full_name").in("id", authorIds)
         : Promise.resolve({ data: [] as any[] }),
-      supabase.from("post_likes").select("post_id").eq("user_id", uid).limit(100),
-      supabase.from("post_comments").select("post_id").eq("user_id", uid).limit(100),
+      supabase.from("post_likes").select("post_id").eq("user_id", uid).limit(200),
+      supabase.from("post_comments").select("post_id").eq("user_id", uid).limit(200),
+      // Fase 2: buscar tempo de leitura do utilizador nestes posts
+      (supabase as any).from("post_impressions").select("post_id,author_id,dwell_ms").eq("user_id", uid).in("post_id", postIds),
     ]);
 
+    // Mapas de engagement
     const likesByPost: Record<string, string[]> = {};
     (likesData || []).forEach((l: any) => {
       if (!likesByPost[l.post_id]) likesByPost[l.post_id] = [];
@@ -3187,15 +3201,21 @@ function HomePage() {
     const savesByPost: Record<string, number> = {};
     (savesData || []).forEach((s: any) => { savesByPost[s.post_id] = (savesByPost[s.post_id] || 0) + 1; });
 
+    // Mapa de dwell time por post (Fase 2)
+    const dwellByPost: Record<string, number> = {};
+    (myImpressionsData || []).forEach((i: any) => { dwellByPost[i.post_id] = i.dwell_ms; });
+
+    // Mapas de perfil
     const avatarMap: Record<string, string | null> = {};
     const nameMap: Record<string, string> = {};
     const usernameMap: Record<string, string> = {};
     (authorProfiles || []).forEach((p: any) => {
       avatarMap[p.id] = p.avatar_url || null;
-      nameMap[p.id] = p.full_name || p.username || "";
+      nameMap[p.id]   = p.full_name || p.username || "";
       usernameMap[p.id] = p.username || "";
     });
 
+    // Posts com que já interagi
     const myInteractedPostIds = new Set([
       ...(myLikesData || []).map((l: any) => l.post_id),
       ...(myCommentsData || []).map((c: any) => c.post_id),
@@ -3206,60 +3226,77 @@ function HomePage() {
 
     const ACCENT_LOCAL = ["#5B3FCF","#F26B3A","#1FAFA6","#6BA547","#E94B8A","#FFC93C"];
 
-    // 4. Scoring
-    const LAMBDA = 0.08;
-
-    // Para utilizadores novos: lambda muito mais lento (conteúdo mais antigo ainda aparece)
-    // e o peso de engagement é muito maior (mostrar o que é popular)
-    const LAMBDA_NEW  = 0.015;
-    const ENGAGEMENT_MULTIPLIER = isNewUser ? 3.0 : 1.0;
+    // ── 5. SCORING ───────────────────────────────────────────────────
+    //
+    // Pesos cuidadosamente calibrados:
+    //  • Engagement: likes=8, comments=12, saves=15 (saves = intenção mais forte)
+    //  • Dwell time: cada segundo de leitura real vale 1 ponto (cap 30s)
+    //  • Afinidade por follow: +100 base
+    //  • Afinidade por interação histórica: +50
+    //  • Afinidade por interesse comportamental (Fase 2): até +80
+    //  • Frescura: decaimento exponencial (lambda varia por fase)
+    //  • Posts próprios: lambda 50% mais lento (ficam mais tempo relevantes)
+    //
+    const LAMBDA_NEW    = 0.015;  // novos: muito lento (conteúdo antigo ainda aparece)
+    const LAMBDA_NORMAL = 0.08;   // normal
+    const LAMBDA_OWN    = 0.04;   // posts próprios decaem mais devagar
 
     const scored = eligible.map((p: any) => {
-      const hoursOld = (Date.now() - new Date(p.created_at).getTime()) / 3_600_000;
-      const isOwn      = p.author_id === uid;
-      const isFollowed = followingIds.includes(p.author_id);
-      const isSeed     = !p.author_id;
+      const hoursOld   = (Date.now() - new Date(p.created_at).getTime()) / 3_600_000;
+      const authorKey  = p.author_id || p.user_id;
+      const isOwn      = authorKey === uid;
+      const isFollowed = followingIds.includes(authorKey);
+      const isSeed     = !authorKey;
 
-      // Relevância base
-      let score: number;
-      if (isNewUser) {
-        // Utilizador novo: tudo vale igual em relevância — o engagement decide
-        score = 30;
-        if (isOwn) score = 120; // próprio aparece sempre bem posicionado
-      } else {
-        score = isSeed ? 20 : isOwn ? 120 : isFollowed ? 100 : 15;
-      }
+      // ── Score base por relevância ──
+      let score = isSeed ? 20 : isOwn ? 120 : isFollowed ? 100 : isNewUser ? 30 : 15;
 
-      // Engagement (triplicado para novos utilizadores = mostra o mais popular)
+      // ── Engagement ──
       const likes    = (likesByPost[p.id] || []).length;
       const comments = commentsByPost[p.id] || 0;
       const saves    = savesByPost[p.id] || 0;
-      score += (likes * 8 + comments * 12 + saves * 15) * ENGAGEMENT_MULTIPLIER;
+      const engagementMultiplier = isNewUser ? 3.0 : 1.0;
+      score += (likes * 8 + comments * 12 + saves * 15) * engagementMultiplier;
 
-      // Tipo de conteúdo
-      if      (p.kind === "clip") score += 25;
+      // ── Fase 2: Dwell time (tempo de leitura real) ──
+      const dwell = dwellByPost[p.id] ?? 0;
+      if (dwell > 2_000) {
+        score += Math.min(dwell / 1_000, 30); // 1 ponto por segundo, cap 30
+      }
+
+      // ── Fase 2: Interesse comportamental por autor ──
+      if (!isNewUser && authorKey && interestMap[authorKey]) {
+        score += Math.min(interestMap[authorKey] * 2, 80); // cap 80 pontos
+      }
+
+      // ── Tipo de conteúdo ──
+      if      (p.kind === "clip")    score += 25;
       else if (p.photo_url || (Array.isArray(p.photos) && p.photos.length > 0)) score += 30;
-      else if (p.kind === "bg")   score += 10;
-      else                        score += 5;
+      else if (p.kind === "bg")      score += 10;
+      else                           score += 5;
 
-      // Afinidade (não se aplica a novos pois não têm histórico)
-      if (!isNewUser && p.author_id && interactedAuthorIds.has(p.author_id)) score += 50;
+      // ── Afinidade por interação histórica ──
+      if (!isNewUser && authorKey && interactedAuthorIds.has(authorKey)) score += 50;
 
-      // Decaimento temporal
-      const lambda = isNewUser ? LAMBDA_NEW : (isOwn ? LAMBDA * 0.5 : LAMBDA);
+      // ── Boost de frescura < 2h ──
+      if (hoursOld < 2) score *= 1.35;
+
+      // ── Decaimento temporal ──
+      const lambda = isNewUser ? LAMBDA_NEW : isOwn ? LAMBDA_OWN : LAMBDA_NORMAL;
       score *= Math.exp(-lambda * hoursOld);
 
-      // Boost de frescura (< 2h)
-      if (hoursOld < 2) score *= 1.3;
+      // ── Aleatoriedade leve ±8% para variedade ──
+      score *= 0.92 + Math.random() * 0.16;
 
-      // Aleatoriedade leve ±10%
-      score *= 0.9 + Math.random() * 0.2;
+      // ── Tag de segmento para distribuição 60/30/10 ──
+      const segment: "follow" | "popular" | "discover" =
+        isOwn || isFollowed ? "follow" :
+        (likes + comments * 1.5 + saves * 2) > 3 ? "popular" : "discover";
 
-      const authorKey = p.author_id || p.user_id;
+      // ── Construir post mapeado ──
       const rawName = p.author_name || nameMap[authorKey] || "";
-      // Nunca mostrar email como nome
       const name = rawName.includes("@") && rawName.includes(".")
-        ? (p.author_username || nameMap[authorKey] || "hooda")
+        ? (p.author_username || usernameMap[authorKey] || "hooda")
         : (rawName || p.author_username || "hooda");
       const username = p.author_username || usernameMap[authorKey] || "";
       let text = p.content;
@@ -3267,13 +3304,12 @@ function HomePage() {
       if (p.kind === "bg") { try { const j = JSON.parse(p.content); text = j.text; bg_color = j.bgColor; } catch {} }
 
       return {
-        _score: score,
-        id: p.id, user_id: p.author_id,
-        author_id: p.author_id,
+        _score: score, _segment: segment,
+        id: p.id, user_id: authorKey, author_id: authorKey,
         author_username: username || null,
         user: name, name: `@${username || "?"}`,
         color: p.author_color || ACCENT_LOCAL[(name.charCodeAt(0) || 0) % ACCENT_LOCAL.length],
-        avatar_url: (p.author_id || p.user_id) ? (avatarMap[p.author_id] ?? avatarMap[p.user_id] ?? null) : null,
+        avatar_url: authorKey ? (avatarMap[authorKey] ?? null) : null,
         text, photo: p.photo_url ?? null,
         photos: Array.isArray(p.photos) && p.photos.length > 0 ? p.photos : (p.photo_url ? [p.photo_url] : null),
         video: p.video_url ?? null,
@@ -3288,19 +3324,67 @@ function HomePage() {
       };
     });
 
-    // 5. Ordenar por score
+    // ── 6. DISTRIBUIÇÃO 60/30/10 (Fase 4) ───────────────────────────
     scored.sort((a, b) => b._score - a._score);
 
-    // 6. Anti-repetição: máx 2 posts seguidos do mesmo autor
+    const followPosts  = scored.filter(p => p._segment === "follow");
+    const popularPosts = scored.filter(p => p._segment === "popular");
+    const discoverPosts= scored.filter(p => p._segment === "discover");
+
+    const TARGET = 50;
+    let followTarget  = isNewUser ? 0  : hasFollows ? Math.round(TARGET * 0.60) : 0;
+    let popularTarget = isNewUser ? Math.round(TARGET * 0.85) : hasFollows ? Math.round(TARGET * 0.30) : Math.round(TARGET * 0.70);
+    let discoverTarget= TARGET - followTarget - popularTarget;
+
+    // Se um segmento não tem posts suficientes, redistribuir para os outros
+    const followAvail  = followPosts.length;
+    const popularAvail = popularPosts.length;
+    const discoverAvail= discoverPosts.length;
+
+    if (followAvail  < followTarget)  { const diff = followTarget - followAvail;   followTarget  = followAvail;  popularTarget += Math.ceil(diff * 0.7); discoverTarget += Math.floor(diff * 0.3); }
+    if (popularAvail < popularTarget) { const diff = popularTarget - popularAvail; popularTarget = popularAvail; discoverTarget += diff; }
+    if (discoverAvail< discoverTarget){ discoverTarget = discoverAvail; }
+
+    // Montar o feed misturado
+    const picks: typeof scored = [];
+    let fi = 0, pi = 0, di = 0;
+
+    // Intercalar seguindo um padrão: 3 follow, 1 popular, (1 discover a cada 10)
+    const pattern = isNewUser
+      ? ["popular","popular","popular","discover","popular"]
+      : hasFollows
+        ? ["follow","follow","follow","popular","follow","follow","popular","follow","follow","discover"]
+        : ["popular","popular","popular","discover","popular","popular","popular","discover","popular","popular"];
+
+    let pi2 = 0;
+    while (picks.length < TARGET) {
+      const slot = pattern[pi2 % pattern.length];
+      pi2++;
+      if (slot === "follow"  && fi < followTarget  && fi < followPosts.length)   { picks.push(followPosts[fi++]);   continue; }
+      if (slot === "popular" && pi < popularTarget && pi < popularPosts.length)  { picks.push(popularPosts[pi++]);  continue; }
+      if (slot === "discover"&& di < discoverTarget&& di < discoverPosts.length) { picks.push(discoverPosts[di++]); continue; }
+      // Slot esgotado — tenta os outros
+      if (fi < followPosts.length && fi < followTarget)   { picks.push(followPosts[fi++]);   continue; }
+      if (pi < popularPosts.length && pi < popularTarget) { picks.push(popularPosts[pi++]);  continue; }
+      if (di < discoverPosts.length)                      { picks.push(discoverPosts[di++]); continue; }
+      break; // esgotou tudo
+    }
+
+    // ── 7. Anti-repetição: máx 2 posts seguidos do mesmo autor ──────
     const result: typeof scored = [];
     const recentAuthors: string[] = [];
-    for (const post of scored) {
+    for (const post of picks) {
       const author = post.user_id || "seed";
       const recentCount = recentAuthors.slice(-4).filter(a => a === author).length;
       if (recentCount >= 2) continue;
       result.push(post);
       recentAuthors.push(author);
-      if (result.length >= 50) break;
+      if (result.length >= TARGET) break;
+    }
+
+    // ── 8. FALLBACK FINAL — nunca retornar array vazio ───────────────
+    if (result.length === 0 && scored.length > 0) {
+      return scored.slice(0, 20);
     }
 
     return result;

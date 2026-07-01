@@ -9,9 +9,11 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as UsoRouteImport } from './routes/uso'
 import { Route as StudioRouteImport } from './routes/studio'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as PrivacidadeRouteImport } from './routes/privacidade'
 import { Route as PerfilRouteImport } from './routes/perfil'
 import { Route as MensagensRouteImport } from './routes/mensagens'
 import { Route as LivrosRouteImport } from './routes/livros'
@@ -19,8 +21,6 @@ import { Route as HoodatvRouteImport } from './routes/hoodatv'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as ExplorarRouteImport } from './routes/explorar'
 import { Route as DefinicoesRouteImport } from './routes/definicoes'
-import { Route as UsoRouteImport } from './routes/uso'
-import { Route as PrivacidadeRouteImport } from './routes/privacidade'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as StudioIndexRouteImport } from './routes/studio.index'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
@@ -29,11 +29,17 @@ import { Route as StudioPlaylistsRouteImport } from './routes/studio.playlists'
 import { Route as StudioOnboardingRouteImport } from './routes/studio.onboarding'
 import { Route as StudioContentRouteImport } from './routes/studio.content'
 import { Route as StudioAnalyticsRouteImport } from './routes/studio.analytics'
+import { Route as PostIdRouteImport } from './routes/post.$id'
 import { Route as AuthBridgeRouteImport } from './routes/auth.bridge'
 import { Route as HoodatvWatchIdRouteImport } from './routes/hoodatv.watch.$id'
 import { Route as HoodatvPlaylistIdRouteImport } from './routes/hoodatv.playlist.$id'
 import { Route as HoodatvCanalHandleRouteImport } from './routes/hoodatv.canal.$handle'
 
+const UsoRoute = UsoRouteImport.update({
+  id: '/uso',
+  path: '/uso',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const StudioRoute = StudioRouteImport.update({
   id: '/studio',
   path: '/studio',
@@ -49,6 +55,11 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
   path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PrivacidadeRoute = PrivacidadeRouteImport.update({
+  id: '/privacidade',
+  path: '/privacidade',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PerfilRoute = PerfilRouteImport.update({
   id: '/perfil',
   path: '/perfil',
@@ -57,16 +68,6 @@ const PerfilRoute = PerfilRouteImport.update({
 const MensagensRoute = MensagensRouteImport.update({
   id: '/mensagens',
   path: '/mensagens',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const UsoRoute = UsoRouteImport.update({
-  id: '/uso',
-  path: '/uso',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PrivacidadeRoute = PrivacidadeRouteImport.update({
-  id: '/privacidade',
-  path: '/privacidade',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LivrosRoute = LivrosRouteImport.update({
@@ -134,6 +135,11 @@ const StudioAnalyticsRoute = StudioAnalyticsRouteImport.update({
   path: '/analytics',
   getParentRoute: () => StudioRoute,
 } as any)
+const PostIdRoute = PostIdRouteImport.update({
+  id: '/post/$id',
+  path: '/post/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthBridgeRoute = AuthBridgeRouteImport.update({
   id: '/auth/bridge',
   path: '/auth/bridge',
@@ -162,14 +168,15 @@ export interface FileRoutesByFullPath {
   '/home': typeof HomeRoute
   '/hoodatv': typeof HoodatvRouteWithChildren
   '/livros': typeof LivrosRoute
-  '/uso': typeof UsoRoute
-  '/privacidade': typeof PrivacidadeRoute
   '/mensagens': typeof MensagensRoute
   '/perfil': typeof PerfilRoute
+  '/privacidade': typeof PrivacidadeRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/studio': typeof StudioRouteWithChildren
+  '/uso': typeof UsoRoute
   '/auth/bridge': typeof AuthBridgeRoute
+  '/post/$id': typeof PostIdRoute
   '/studio/analytics': typeof StudioAnalyticsRoute
   '/studio/content': typeof StudioContentRoute
   '/studio/onboarding': typeof StudioOnboardingRoute
@@ -188,13 +195,14 @@ export interface FileRoutesByTo {
   '/home': typeof HomeRoute
   '/hoodatv': typeof HoodatvRouteWithChildren
   '/livros': typeof LivrosRoute
-  '/uso': typeof UsoRoute
-  '/privacidade': typeof PrivacidadeRoute
   '/mensagens': typeof MensagensRoute
   '/perfil': typeof PerfilRoute
+  '/privacidade': typeof PrivacidadeRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
+  '/uso': typeof UsoRoute
   '/auth/bridge': typeof AuthBridgeRoute
+  '/post/$id': typeof PostIdRoute
   '/studio/analytics': typeof StudioAnalyticsRoute
   '/studio/content': typeof StudioContentRoute
   '/studio/onboarding': typeof StudioOnboardingRoute
@@ -214,14 +222,15 @@ export interface FileRoutesById {
   '/home': typeof HomeRoute
   '/hoodatv': typeof HoodatvRouteWithChildren
   '/livros': typeof LivrosRoute
-  '/uso': typeof UsoRoute
-  '/privacidade': typeof PrivacidadeRoute
   '/mensagens': typeof MensagensRoute
   '/perfil': typeof PerfilRoute
+  '/privacidade': typeof PrivacidadeRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/studio': typeof StudioRouteWithChildren
+  '/uso': typeof UsoRoute
   '/auth/bridge': typeof AuthBridgeRoute
+  '/post/$id': typeof PostIdRoute
   '/studio/analytics': typeof StudioAnalyticsRoute
   '/studio/content': typeof StudioContentRoute
   '/studio/onboarding': typeof StudioOnboardingRoute
@@ -242,14 +251,15 @@ export interface FileRouteTypes {
     | '/home'
     | '/hoodatv'
     | '/livros'
-    | '/uso'
-    | '/privacidade'
     | '/mensagens'
     | '/perfil'
+    | '/privacidade'
     | '/reset-password'
     | '/signup'
     | '/studio'
+    | '/uso'
     | '/auth/bridge'
+    | '/post/$id'
     | '/studio/analytics'
     | '/studio/content'
     | '/studio/onboarding'
@@ -268,13 +278,14 @@ export interface FileRouteTypes {
     | '/home'
     | '/hoodatv'
     | '/livros'
-    | '/uso'
-    | '/privacidade'
     | '/mensagens'
     | '/perfil'
+    | '/privacidade'
     | '/reset-password'
     | '/signup'
+    | '/uso'
     | '/auth/bridge'
+    | '/post/$id'
     | '/studio/analytics'
     | '/studio/content'
     | '/studio/onboarding'
@@ -293,14 +304,15 @@ export interface FileRouteTypes {
     | '/home'
     | '/hoodatv'
     | '/livros'
-    | '/uso'
-    | '/privacidade'
     | '/mensagens'
     | '/perfil'
+    | '/privacidade'
     | '/reset-password'
     | '/signup'
     | '/studio'
+    | '/uso'
     | '/auth/bridge'
+    | '/post/$id'
     | '/studio/analytics'
     | '/studio/content'
     | '/studio/onboarding'
@@ -322,15 +334,25 @@ export interface RootRouteChildren {
   LivrosRoute: typeof LivrosRoute
   MensagensRoute: typeof MensagensRoute
   PerfilRoute: typeof PerfilRoute
+  PrivacidadeRoute: typeof PrivacidadeRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SignupRoute: typeof SignupRoute
   StudioRoute: typeof StudioRouteWithChildren
+  UsoRoute: typeof UsoRoute
   AuthBridgeRoute: typeof AuthBridgeRoute
+  PostIdRoute: typeof PostIdRoute
   UUsernameRoute: typeof UUsernameRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/uso': {
+      id: '/uso'
+      path: '/uso'
+      fullPath: '/uso'
+      preLoaderRoute: typeof UsoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/studio': {
       id: '/studio'
       path: '/studio'
@@ -352,6 +374,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/privacidade': {
+      id: '/privacidade'
+      path: '/privacidade'
+      fullPath: '/privacidade'
+      preLoaderRoute: typeof PrivacidadeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/perfil': {
       id: '/perfil'
       path: '/perfil'
@@ -364,20 +393,6 @@ declare module '@tanstack/react-router' {
       path: '/mensagens'
       fullPath: '/mensagens'
       preLoaderRoute: typeof MensagensRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/uso': {
-      id: '/uso'
-      path: '/uso'
-      fullPath: '/uso'
-      preLoaderRoute: typeof UsoRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/privacidade': {
-      id: '/privacidade'
-      path: '/privacidade'
-      fullPath: '/privacidade'
-      preLoaderRoute: typeof PrivacidadeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/livros': {
@@ -471,6 +486,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StudioAnalyticsRouteImport
       parentRoute: typeof StudioRoute
     }
+    '/post/$id': {
+      id: '/post/$id'
+      path: '/post/$id'
+      fullPath: '/post/$id'
+      preLoaderRoute: typeof PostIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth/bridge': {
       id: '/auth/bridge'
       path: '/auth/bridge'
@@ -545,16 +567,27 @@ const rootRouteChildren: RootRouteChildren = {
   HomeRoute: HomeRoute,
   HoodatvRoute: HoodatvRouteWithChildren,
   LivrosRoute: LivrosRoute,
-  UsoRoute: UsoRoute,
-  PrivacidadeRoute: PrivacidadeRoute,
   MensagensRoute: MensagensRoute,
   PerfilRoute: PerfilRoute,
+  PrivacidadeRoute: PrivacidadeRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SignupRoute: SignupRoute,
   StudioRoute: StudioRouteWithChildren,
+  UsoRoute: UsoRoute,
   AuthBridgeRoute: AuthBridgeRoute,
+  PostIdRoute: PostIdRoute,
   UUsernameRoute: UUsernameRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
