@@ -1185,13 +1185,12 @@ function UserProfilePage() {
               </p>
             </div>
           ) : (
-            <div className="pb-4 space-y-3 px-2">
+            <div className="pb-6 space-y-3 max-w-xl mx-auto w-full px-3 pt-2">
               {posts.map((post:any)=>{
                 const isLiked = likeOverrides[post.id]??likedPosts.has(post.id);
                 const likeCount = likeCountOverrides[post.id]??post.likesCount;
                 return (
-                  <article key={post.id} className="rounded-2xl overflow-hidden border"
-                    style={{background:"var(--s0)",borderColor:"var(--border-subtle)"}}>
+                  <article key={post.id} className="hooda-card overflow-hidden" style={{borderRadius:16}}>
 
                     {/* Cabeçalho do post */}
                     <div className="flex items-center gap-3 px-4 py-3">

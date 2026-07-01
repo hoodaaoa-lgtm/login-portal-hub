@@ -309,7 +309,7 @@ function PostCard({
 
 
   return (
-    <article className="border-b border-[var(--border-subtle)]" style={{ background: "var(--s1)" }}>
+    <article className="hooda-card overflow-hidden" style={{ borderRadius: 16 }}>
       {/* Header — estilo Instagram */}
       <div className="flex items-center gap-2.5 px-3 py-2.5">
         <Avatar name={name} size={36} src={avatarUrl} />
@@ -586,7 +586,7 @@ function PostsFeed({ posts, loading, name, username, avatarUrl, onLike, onBookma
     </div>
   );
   return (
-    <div className="pb-6">
+    <div className="pb-6 space-y-3 max-w-xl mx-auto w-full px-3 pt-2">
       {posts.map((post) => (
         <PostCard key={post.id} post={post} name={name} username={username}
           isOwner avatarUrl={avatarUrl} myUserId={myUserId} authorId={myUserId}
@@ -2667,7 +2667,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
               <p className="text-xs text-[var(--text-muted)]">As tuas respostas, reposts e citações aparecem aqui.</p>
             </div>
           ) : (
-            <div className="pb-6 divide-y divide-[var(--border-subtle)]">
+            <div className="pb-6 space-y-3 max-w-xl mx-auto w-full px-3 pt-2">
               {activities.map((a) => (
                 <div key={a.id} className="px-4 py-4">
                   {/* Tipo de actividade */}
@@ -2728,7 +2728,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
               <p className="text-xs text-[var(--text-muted)]">As publicações que guardares aparecem aqui.</p>
             </div>
           ) : (
-            <div className="pb-6">
+            <div className="pb-6 space-y-3 max-w-xl mx-auto w-full px-3 pt-2">
               {savedPosts.map((sp) => (
                 <PostCard key={sp.id} post={sp} name={sp.authorName} username={sp.authorUsername}
                   isOwner={sp.authorId === myUserId} avatarUrl={sp.authorAvatar}
