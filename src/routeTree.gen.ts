@@ -17,7 +17,6 @@ import { Route as PrivacidadeRouteImport } from './routes/privacidade'
 import { Route as PerfilRouteImport } from './routes/perfil'
 import { Route as MensagensRouteImport } from './routes/mensagens'
 import { Route as LivrosRouteImport } from './routes/livros'
-import { Route as HoodatvRouteImport } from './routes/hoodatv'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as ExplorarRouteImport } from './routes/explorar'
 import { Route as DefinicoesRouteImport } from './routes/definicoes'
@@ -73,11 +72,6 @@ const MensagensRoute = MensagensRouteImport.update({
 const LivrosRoute = LivrosRouteImport.update({
   id: '/livros',
   path: '/livros',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const HoodatvRoute = HoodatvRouteImport.update({
-  id: '/hoodatv',
-  path: '/hoodatv',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HomeRoute = HomeRouteImport.update({
@@ -146,19 +140,19 @@ const AuthBridgeRoute = AuthBridgeRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const HoodatvWatchIdRoute = HoodatvWatchIdRouteImport.update({
-  id: '/watch/$id',
-  path: '/watch/$id',
-  getParentRoute: () => HoodatvRoute,
+  id: '/hoodatv/watch/$id',
+  path: '/hoodatv/watch/$id',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const HoodatvPlaylistIdRoute = HoodatvPlaylistIdRouteImport.update({
-  id: '/playlist/$id',
-  path: '/playlist/$id',
-  getParentRoute: () => HoodatvRoute,
+  id: '/hoodatv/playlist/$id',
+  path: '/hoodatv/playlist/$id',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const HoodatvCanalHandleRoute = HoodatvCanalHandleRouteImport.update({
-  id: '/canal/$handle',
-  path: '/canal/$handle',
-  getParentRoute: () => HoodatvRoute,
+  id: '/hoodatv/canal/$handle',
+  path: '/hoodatv/canal/$handle',
+  getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -166,7 +160,6 @@ export interface FileRoutesByFullPath {
   '/definicoes': typeof DefinicoesRoute
   '/explorar': typeof ExplorarRoute
   '/home': typeof HomeRoute
-  '/hoodatv': typeof HoodatvRouteWithChildren
   '/livros': typeof LivrosRoute
   '/mensagens': typeof MensagensRoute
   '/perfil': typeof PerfilRoute
@@ -193,7 +186,6 @@ export interface FileRoutesByTo {
   '/definicoes': typeof DefinicoesRoute
   '/explorar': typeof ExplorarRoute
   '/home': typeof HomeRoute
-  '/hoodatv': typeof HoodatvRouteWithChildren
   '/livros': typeof LivrosRoute
   '/mensagens': typeof MensagensRoute
   '/perfil': typeof PerfilRoute
@@ -220,7 +212,6 @@ export interface FileRoutesById {
   '/definicoes': typeof DefinicoesRoute
   '/explorar': typeof ExplorarRoute
   '/home': typeof HomeRoute
-  '/hoodatv': typeof HoodatvRouteWithChildren
   '/livros': typeof LivrosRoute
   '/mensagens': typeof MensagensRoute
   '/perfil': typeof PerfilRoute
@@ -249,7 +240,6 @@ export interface FileRouteTypes {
     | '/definicoes'
     | '/explorar'
     | '/home'
-    | '/hoodatv'
     | '/livros'
     | '/mensagens'
     | '/perfil'
@@ -276,7 +266,6 @@ export interface FileRouteTypes {
     | '/definicoes'
     | '/explorar'
     | '/home'
-    | '/hoodatv'
     | '/livros'
     | '/mensagens'
     | '/perfil'
@@ -302,7 +291,6 @@ export interface FileRouteTypes {
     | '/definicoes'
     | '/explorar'
     | '/home'
-    | '/hoodatv'
     | '/livros'
     | '/mensagens'
     | '/perfil'
@@ -330,7 +318,6 @@ export interface RootRouteChildren {
   DefinicoesRoute: typeof DefinicoesRoute
   ExplorarRoute: typeof ExplorarRoute
   HomeRoute: typeof HomeRoute
-  HoodatvRoute: typeof HoodatvRouteWithChildren
   LivrosRoute: typeof LivrosRoute
   MensagensRoute: typeof MensagensRoute
   PerfilRoute: typeof PerfilRoute
@@ -342,6 +329,9 @@ export interface RootRouteChildren {
   AuthBridgeRoute: typeof AuthBridgeRoute
   PostIdRoute: typeof PostIdRoute
   UUsernameRoute: typeof UUsernameRoute
+  HoodatvCanalHandleRoute: typeof HoodatvCanalHandleRoute
+  HoodatvPlaylistIdRoute: typeof HoodatvPlaylistIdRoute
+  HoodatvWatchIdRoute: typeof HoodatvWatchIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -400,13 +390,6 @@ declare module '@tanstack/react-router' {
       path: '/livros'
       fullPath: '/livros'
       preLoaderRoute: typeof LivrosRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/hoodatv': {
-      id: '/hoodatv'
-      path: '/hoodatv'
-      fullPath: '/hoodatv'
-      preLoaderRoute: typeof HoodatvRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/home': {
@@ -502,42 +485,27 @@ declare module '@tanstack/react-router' {
     }
     '/hoodatv/watch/$id': {
       id: '/hoodatv/watch/$id'
-      path: '/watch/$id'
+      path: '/hoodatv/watch/$id'
       fullPath: '/hoodatv/watch/$id'
       preLoaderRoute: typeof HoodatvWatchIdRouteImport
-      parentRoute: typeof HoodatvRoute
+      parentRoute: typeof rootRouteImport
     }
     '/hoodatv/playlist/$id': {
       id: '/hoodatv/playlist/$id'
-      path: '/playlist/$id'
+      path: '/hoodatv/playlist/$id'
       fullPath: '/hoodatv/playlist/$id'
       preLoaderRoute: typeof HoodatvPlaylistIdRouteImport
-      parentRoute: typeof HoodatvRoute
+      parentRoute: typeof rootRouteImport
     }
     '/hoodatv/canal/$handle': {
       id: '/hoodatv/canal/$handle'
-      path: '/canal/$handle'
+      path: '/hoodatv/canal/$handle'
       fullPath: '/hoodatv/canal/$handle'
       preLoaderRoute: typeof HoodatvCanalHandleRouteImport
-      parentRoute: typeof HoodatvRoute
+      parentRoute: typeof rootRouteImport
     }
   }
 }
-
-interface HoodatvRouteChildren {
-  HoodatvCanalHandleRoute: typeof HoodatvCanalHandleRoute
-  HoodatvPlaylistIdRoute: typeof HoodatvPlaylistIdRoute
-  HoodatvWatchIdRoute: typeof HoodatvWatchIdRoute
-}
-
-const HoodatvRouteChildren: HoodatvRouteChildren = {
-  HoodatvCanalHandleRoute: HoodatvCanalHandleRoute,
-  HoodatvPlaylistIdRoute: HoodatvPlaylistIdRoute,
-  HoodatvWatchIdRoute: HoodatvWatchIdRoute,
-}
-
-const HoodatvRouteWithChildren =
-  HoodatvRoute._addFileChildren(HoodatvRouteChildren)
 
 interface StudioRouteChildren {
   StudioAnalyticsRoute: typeof StudioAnalyticsRoute
@@ -565,7 +533,6 @@ const rootRouteChildren: RootRouteChildren = {
   DefinicoesRoute: DefinicoesRoute,
   ExplorarRoute: ExplorarRoute,
   HomeRoute: HomeRoute,
-  HoodatvRoute: HoodatvRouteWithChildren,
   LivrosRoute: LivrosRoute,
   MensagensRoute: MensagensRoute,
   PerfilRoute: PerfilRoute,
@@ -577,6 +544,9 @@ const rootRouteChildren: RootRouteChildren = {
   AuthBridgeRoute: AuthBridgeRoute,
   PostIdRoute: PostIdRoute,
   UUsernameRoute: UUsernameRoute,
+  HoodatvCanalHandleRoute: HoodatvCanalHandleRoute,
+  HoodatvPlaylistIdRoute: HoodatvPlaylistIdRoute,
+  HoodatvWatchIdRoute: HoodatvWatchIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

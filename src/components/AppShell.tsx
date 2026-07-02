@@ -15,7 +15,6 @@ import { supabase } from "@/integrations/supabase/client";
 const NAV_ITEMS = [
   { to: "/home",       label: "Home",        Icon: Home        },
   { to: "/explorar",   label: t("nav.explore"),    Icon: Compass     },
-  { to: "/hoodatv",    label: "HoodaTV",     Icon: Tv          },
   { to: "/mensagens",  label: t("nav.messages"),   Icon: MessageSquare },
   { to: "/perfil",     label: t("nav.profile"),      Icon: User        },
 ] as const;
@@ -23,7 +22,6 @@ const NAV_ITEMS = [
 const MOBILE_ITEMS = [
   { to: "/home",       label: "Home",      Icon: Home          },
   { to: "/explorar",   label: t("nav.explore"),  Icon: Compass       },
-  { to: "/hoodatv",    label: "HoodaTV",   Icon: Tv            },
   { to: "/mensagens",  label: t("nav.messages"), Icon: MessageSquare },
   { to: null,          label: "Menu",      Icon: Menu          }, // Menu Hamburger
 ] as const;
