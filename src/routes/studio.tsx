@@ -23,7 +23,7 @@ const GRAD = "linear-gradient(135deg,#5B3FCF,#E94B8A)";
 const NAV = [
   { to: "/studio",             label: "Painel",        icon: LayoutDashboard, exact: true },
   { to: "/studio/content",     label: "Conteúdo",               icon: Video },
-  { to: "/studio/upload",      label: "Enviar vídeo",  icon: Upload },
+  { to: null,                  label: "➕ Criar Publicação",  icon: Upload, action: true },
   { to: "/studio/playlists",   label: "Playlists",     icon: ListVideo },
   { to: "/studio/analytics",   label: "Analytics",               icon: BarChart2 },
 ];
@@ -437,6 +437,7 @@ function StudioLayout() {
   const path = useRouterState({ select: (s) => s.location.pathname });
   const [open,        setOpen]        = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   const isActive = (to: string, exact?: boolean) =>
     exact ? path === to : path === to || path.startsWith(to + "/");
@@ -452,6 +453,10 @@ function StudioLayout() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: "var(--s1)" }}>
+
+      {showCreateModal && (
+        <CreateTypeModal onClose={() => setShowCreateModal(false)} navigate={navigate} />
+      )}
 
       {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
 
@@ -527,8 +532,22 @@ function StudioLayout() {
 
           {/* Nav */}
           <nav className="flex-1 py-3 overflow-y-auto">
-            {NAV.map(({ to, label, icon: Icon, exact }) => {
-              const active = isActive(to, exact);
+            {NAV.map(({ to, label, icon: Icon, exact, action }) => {
+              const active = to && isActive(to, exact);
+              if (action) {
+                return (
+                  <button key={label} onClick={() => { setShowCreateModal(true); setOpen(false); }}
+                    className="flex items-center gap-3 mx-2 px-3 py-2.5 rounded-xl text-sm transition-all mb-0.5 w-full text-left"
+                    style={{
+                      background: "transparent",
+                      color: P,
+                      fontWeight: 600,
+                    }}>
+                    <Icon className="h-4 w-4 shrink-0" />
+                    {label}
+                  </button>
+                );
+              }
               return (
                 <Link key={to} to={to as any} onClick={() => setOpen(false)}
                   className="flex items-center gap-3 mx-2 px-3 py-2.5 rounded-xl text-sm transition-all mb-0.5"
@@ -568,5 +587,45 @@ function StudioLayout() {
         </main>
       </div>
     </div>
+  );
+}
+
+function CreateTypeModal({ onClose, navigate }: { onClose: () => void; navigate: any }) {
+  return (
+    <>
+      <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center" onClick={onClose}>
+        <div className="bg-white dark:bg-neutral-900 rounded-2xl p-6 max-w-sm w-full mx-4" onClick={e => e.stopPropagation()}>
+          <h2 className="text-xl font-bold mb-4" style={{ color: "var(--text-primary)" }}>Criar Publicação</h2>
+          
+          <div className="space-y-3">
+            <button onClick={() => { navigate({ to: "/perfil" as any }); onClose(); }}
+              className="w-full flex items-center gap-3 p-4 rounded-xl border-2 transition hover:bg-purple-50 dark:hover:bg-purple-900/20"
+              style={{ borderColor: "#5B3FCF", color: "#5B3FCF" }}>
+              <Camera className="h-6 w-6" />
+              <div className="text-left">
+                <p className="font-semibold">📷 Foto/Texto</p>
+                <p className="text-xs opacity-70">Criar um post com foto ou texto</p>
+              </div>
+            </button>
+
+            <button onClick={() => { navigate({ to: "/studio/upload" as any }); onClose(); }}
+              className="w-full flex items-center gap-3 p-4 rounded-xl border-2 transition hover:bg-pink-50 dark:hover:bg-pink-900/20"
+              style={{ borderColor: "#E94B8A", color: "#E94B8A" }}>
+              <Video className="h-6 w-6" />
+              <div className="text-left">
+                <p className="font-semibold">🎥 Vídeo</p>
+                <p className="text-xs opacity-70">Carregar e publicar um vídeo</p>
+              </div>
+            </button>
+          </div>
+
+          <button onClick={onClose}
+            className="w-full mt-4 px-4 py-2 rounded-lg text-sm font-semibold transition"
+            style={{ background: "var(--s2)", color: "var(--text-primary)" }}>
+            Cancelar
+          </button>
+        </div>
+      </div>
+    </>
   );
 }
