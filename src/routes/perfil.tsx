@@ -32,7 +32,7 @@ import { PhotoViewer } from "@/components/PhotoViewer";
 import { HoodaPlayer } from "@/components/HoodaPlayer";
 
 export const Route = createFileRoute("/perfil")({
-  head: () => ({ meta: [{ title: "Hooda — Perfil" }] }),
+  head: () => ({ meta: [{ title: "Hooda" }] }),
   component: ProfilePage,
 });
 

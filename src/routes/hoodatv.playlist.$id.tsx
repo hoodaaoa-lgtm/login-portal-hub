@@ -10,7 +10,7 @@ import {
 import { playlistQuery, playlistVideosQuery } from "@/lib/playlist-queries";
 
 export const Route = createFileRoute("/hoodatv/playlist/$id")({
-  head: () => ({ meta: [{ title: "Playlist — HoodaTV" }] }),
+  head: () => ({ meta: [{ title: "Hooda" }] }),
   component: PlaylistPage,
 });
 

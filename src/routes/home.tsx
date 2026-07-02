@@ -450,7 +450,7 @@ function ForwardModal({ post, me, onClose }: { post: any; me: any; onClose: () =
 }
 
 export const Route = createFileRoute("/home")({
-  head: () => ({ meta: [{ title: "hooda — Home" }] }),
+  head: () => ({ meta: [{ title: "Hooda" }] }),
   component: HomePage,
 });
 

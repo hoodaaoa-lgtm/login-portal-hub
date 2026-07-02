@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { ChevronLeft, FileText, AlertTriangle, UserX, Scale, Mail } from "lucide-react";
 
 export const Route = createFileRoute("/uso")({
-  head: () => ({ meta: [{ title: "Termos de Uso — Hooda" }] }),
+  head: () => ({ meta: [{ title: "Hooda" }] }),
   component: UsoPage,
 });
 

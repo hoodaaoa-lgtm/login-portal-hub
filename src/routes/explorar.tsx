@@ -8,7 +8,7 @@ import { t } from "@/lib/useT";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/explorar")({
-  head: () => ({ meta: [{ title: "hooda — Explorar" }] }),
+  head: () => ({ meta: [{ title: "Hooda" }] }),
   component: ExplorePage,
 });
 

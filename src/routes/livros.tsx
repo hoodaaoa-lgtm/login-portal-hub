@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { uploadImageToCloudinary } from "@/lib/cloudinary";
 
 export const Route = createFileRoute("/livros")({
-  head: () => ({ meta: [{ title: "Livros — hooda" }] }),
+  head: () => ({ meta: [{ title: "Hooda" }] }),
   component: LivrosPage,
 });
 

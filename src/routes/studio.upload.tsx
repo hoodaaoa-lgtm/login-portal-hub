@@ -13,7 +13,7 @@ import { toast } from "sonner";
 import { uploadToCloudinary } from "@/lib/cloudinary";
 
 export const Route = createFileRoute("/studio/upload")({
-  head: () => ({ meta: [{ title: "Enviar vídeo — Hooda Studio" }] }),
+  head: () => ({ meta: [{ title: "Hooda" }] }),
   component: UploadPage,
 });
 

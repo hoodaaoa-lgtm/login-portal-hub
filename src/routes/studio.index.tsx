@@ -24,7 +24,7 @@ import { HoodaPlayer } from "@/components/HoodaPlayer";
 import { deleteFromCloudflareStream } from "@/lib/cloudflare-stream";
 
 export const Route = createFileRoute("/studio/")(  {
-  head: () => ({ meta: [{ title: "Painel — Hooda Studio" }] }),
+  head: () => ({ meta: [{ title: "Hooda" }] }),
   component: DashboardPage,
 });
 

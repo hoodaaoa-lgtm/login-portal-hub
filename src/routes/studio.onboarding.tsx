@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 
 export const Route = createFileRoute("/studio/onboarding")({
-  head: () => ({ meta: [{ title: "Criar canal — Hooda Studio" }] }),
+  head: () => ({ meta: [{ title: "Hooda" }] }),
   component: OnboardingPage,
 });
 

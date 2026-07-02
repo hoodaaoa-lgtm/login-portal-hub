@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 
 export const Route = createFileRoute("/studio/analytics")({
-  head: () => ({ meta: [{ title: "Análises — Hooda Studio" }] }),
+  head: () => ({ meta: [{ title: "Hooda" }] }),
   component: AnalyticsPage,
 });
 

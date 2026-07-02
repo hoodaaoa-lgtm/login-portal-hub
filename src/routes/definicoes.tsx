@@ -14,7 +14,7 @@ import { LanguagePanel } from "@/components/LanguageSwitcher";
 import { LANGUAGES, getCurrentLang } from "@/lib/i18n";
 
 export const Route = createFileRoute("/definicoes")({
-  head: () => ({ meta: [{ title: "Hooda — Definições" }] }),
+  head: () => ({ meta: [{ title: "Hooda" }] }),
   component: DefinicoesPage,
 });
 

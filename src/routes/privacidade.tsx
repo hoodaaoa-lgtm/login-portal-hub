@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { ChevronLeft, Shield, Lock, Eye, Database, Users, Mail } from "lucide-react";
 
 export const Route = createFileRoute("/privacidade")({
-  head: () => ({ meta: [{ title: "Privacidade — Hooda" }] }),
+  head: () => ({ meta: [{ title: "Hooda" }] }),
   component: PrivacidadePage,
 });
 

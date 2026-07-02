@@ -72,7 +72,7 @@ function cloudinaryUploadMedia(
 }
 
 export const Route = createFileRoute("/mensagens")({
-  head: () => ({ meta: [{ title: "hooda — Mensagens" }] }),
+  head: () => ({ meta: [{ title: "Hooda" }] }),
   component: MensagensPage,
 });
 

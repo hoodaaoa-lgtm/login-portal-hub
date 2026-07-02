@@ -10,7 +10,7 @@ import {
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/post/$id")({
-  head: () => ({ meta: [{ title: "Publicação — Hooda" }] }),
+  head: () => ({ meta: [{ title: "Hooda" }] }),
   component: SinglePostPage,
 });
 

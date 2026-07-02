@@ -11,7 +11,7 @@ import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/studio/playlists")({
-  head: () => ({ meta: [{ title: "Playlists — Hooda Studio" }] }),
+  head: () => ({ meta: [{ title: "Hooda" }] }),
   component: PlaylistsPage,
 });
 

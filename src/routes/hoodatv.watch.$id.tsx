@@ -16,7 +16,7 @@ import Hls from "hls.js";
 import { getVideoStreamUrl } from "@/lib/cloudinary";
 
 export const Route = createFileRoute("/hoodatv/watch/$id")({
-  head: () => ({ meta: [{ title: "HoodaTV — A ver vídeo" }] }),
+  head: () => ({ meta: [{ title: "Hooda" }] }),
   component: WatchPage,
 });
 

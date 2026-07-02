@@ -15,7 +15,7 @@ import { toast } from "sonner";
 import { deleteFromCloudflareStream } from "@/lib/cloudflare-stream";
 
 export const Route = createFileRoute("/studio/content")({
-  head: () => ({ meta: [{ title: "Conteúdo — Hooda Studio" }] }),
+  head: () => ({ meta: [{ title: "Hooda" }] }),
   component: ContentPage,
 });
 
