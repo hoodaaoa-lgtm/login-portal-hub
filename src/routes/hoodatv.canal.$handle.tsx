@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import { PhotoViewer } from "@/components/PhotoViewer";
 
 export const Route = createFileRoute("/hoodatv/canal/$handle")({
-  head: ({ params }) => ({ meta: [{ title: `@${params.handle} — Canal` }] }),
+  head: ({ params }) => ({ meta: [{ title: "Hooda" }] }),
   component: ChannelPage,
 });
 

@@ -11,7 +11,7 @@ import {
 export const Route = createFileRoute("/signup")({
   head: () => ({
     meta: [
-      { title: "hooda — Criar conta" },
+      { title: "Hooda" },
       { name: "description", content: "Crie a sua conta hooda." },
     ],
   }),
