@@ -10,6 +10,7 @@ import {
 } from "@/lib/channel-queries";
 import {
   Eye, Video as VideoIcon, Upload, ArrowUpRight, TrendingUp,
+  Plus,
   Clock, Users, PlayCircle, Globe, Lock, Tv2,
   X, Activity, BarChart2, Scissors, ChevronRight, ChevronLeft,
   Search, Heart, MessageCircle, Share2, MoreVertical, MapPin, Trash2,
@@ -345,15 +346,10 @@ export default function DashboardPage() {
           )}
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={() => setShowClipModal(true)}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-semibold transition-all active:scale-95 border"
-            style={{ color: PURPLE, borderColor: PURPLE, background: PURPLE + "10" }}>
-            <Scissors className="h-4 w-4" /> Criar Clipe
-          </button>
           <Link to="/studio/upload"
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-semibold text-white shadow-lg transition-all active:scale-95 hover:opacity-90"
             style={{ background: GRAD, boxShadow: "0 4px 16px #5B3FCF44" }}>
-            <Upload className="h-4 w-4" /> Enviar vídeo
+            <Plus className="h-4 w-4" /> Criar Publicação
           </Link>
         </div>
       </div>
