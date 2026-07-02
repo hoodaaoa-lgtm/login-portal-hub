@@ -2350,8 +2350,8 @@ function WhoToFollowCard({ myUserId, onDismiss, offset = 0 }: { myUserId: string
 }
 
 /* ── SimpleVideoPlayer — player simples para o feed ── */
-function SimpleVideoPlayer({ src, poster, postId, kind }: { src: string; poster?: string; postId?: string; kind?: string }) {
-  const [isShort, setIsShort] = useState<boolean | null>(null);
+function SimpleVideoPlayer({ src, poster, postId, kind, isShortHint }: { src: string; poster?: string; postId?: string; kind?: string; isShortHint?: boolean | null }) {
+  const [isShort, setIsShort] = useState<boolean | null>(isShortHint ?? null);
   const [playing, setPlaying] = useState(false);
   const ref = useRef<HTMLVideoElement>(null);
 

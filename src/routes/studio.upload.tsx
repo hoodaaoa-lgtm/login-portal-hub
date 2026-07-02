@@ -28,15 +28,36 @@ const MAX_IMG        = 5   * 1024 * 1024;
 type Step       = "drop" | "details" | "uploading" | "done";
 type Visibility = "public" | "private" | "unlisted" | "scheduled";
 
-/* ── Extrai duração via HTMLVideoElement ─────────────────── */
-function getVideoDuration(file: File): Promise<number | null> {
+/* ── Detecta duração + dimensões do vídeo ─────────────────── */
+function getVideoMeta(file: File): Promise<{ duration: number | null; isShort: boolean }> {
   return new Promise(resolve => {
     const url = URL.createObjectURL(file);
     const vid  = document.createElement("video");
     vid.preload = "metadata";
-    vid.onloadedmetadata = () => { URL.revokeObjectURL(url); resolve(Math.round(vid.duration) || null); };
-    vid.onerror = () => { URL.revokeObjectURL(url); resolve(null); };
+    vid.onloadedmetadata = () => {
+      URL.revokeObjectURL(url);
+      const duration = Math.round(vid.duration) || null;
+      const isShort  = vid.videoHeight > vid.videoWidth; // 9:16 → short
+      resolve({ duration, isShort });
+    };
+    vid.onerror = () => { URL.revokeObjectURL(url); resolve({ duration: null, isShort: false }); };
     vid.src = url;
+  });
+}
+
+/* ── Detecta orientação de imagem ────────────────────────── */
+function getImageOrientation(file: File): Promise<"portrait" | "landscape" | "square"> {
+  return new Promise(resolve => {
+    const url = URL.createObjectURL(file);
+    const img  = new window.Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      if (img.height > img.width * 1.2) resolve("portrait");
+      else if (img.width > img.height * 1.2) resolve("landscape");
+      else resolve("square");
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve("landscape"); };
+    img.src = url;
   });
 }
 
@@ -60,6 +81,8 @@ function UploadPage() {
   const [progLabel,    setProgLabel]    = useState("");
   const [dragging,     setDragging]     = useState(false);
   const [detectedDur,  setDetectedDur]  = useState<number | null>(null);
+  const [isShort,      setIsShort]      = useState<boolean | null>(null); // null = a detectar
+  const [imgOrientation, setImgOrientation] = useState<"portrait"|"landscape"|"square"|null>(null);
 
   const videoRef = useRef<HTMLInputElement>(null);
   const thumbRef = useRef<HTMLInputElement>(null);
@@ -91,8 +114,11 @@ function UploadPage() {
     if (f.size > MAX_VIDEO) { toast.error("O vídeo não pode ter mais de 500 MB."); return; }
     setVideoFile(f);
     if (!title) setTitle(f.name.replace(/\.[^.]+$/, "").replace(/[-_]/g, " "));
-    /* Detecta duração em background */
-    getVideoDuration(f).then(dur => setDetectedDur(dur));
+    /* Detecta duração + dimensões em background */
+    getVideoMeta(f).then(({ duration, isShort }) => {
+      setDetectedDur(duration);
+      setIsShort(isShort);
+    });
     setStep("details");
   }, [title]);
 
@@ -105,6 +131,8 @@ function UploadPage() {
     const reader = new FileReader();
     reader.onload = e => setThumbPrev(e.target?.result as string);
     reader.readAsDataURL(f);
+    // Detectar orientação da imagem
+    getImageOrientation(f).then(orientation => setImgOrientation(orientation));
   }
 
   /* Tags */
@@ -129,8 +157,10 @@ function UploadPage() {
       const uid     = ud.user!.id;
       const videoId = crypto.randomUUID();
 
-      /* 1 — Duração */
-      const duration = detectedDur ?? await getVideoDuration(videoFile);
+      /* 1 — Duração + tipo */
+      const meta = await getVideoMeta(videoFile);
+      const duration = detectedDur ?? meta.duration;
+      const videoIsShort = isShort ?? meta.isShort;
 
       /* 2 — Upload para Cloudinary */
       setProgress(5);
@@ -175,13 +205,14 @@ function UploadPage() {
         cf_stream_url:    cloudResult.playbackUrl,
         cf_embed_url:     null,
         thumbnail_url:    thumbnailUrl,
-        duration_seconds: cloudResult.duration ?? detectedDur,
+        duration_seconds: cloudResult.duration ?? duration,
         tags:             tags.length ? tags : null,
         status:           isScheduled ? "processing" : "published",
         visibility:       isScheduled ? "private" : visibility as any,
         published_at:     publishedAt,
         views_count:      0,
         likes_count:      0,
+        is_short:         videoIsShort,  // detectado automaticamente pelas dimensões
       });
 
       if (iErr) throw iErr;
@@ -491,6 +522,17 @@ function UploadPage() {
                 <div className="flex justify-between">
                   <span>Duração</span>
                   <span className="font-semibold" style={{ color: "var(--text-primary)" }}>{fmtDuration(detectedDur)}</span>
+                </div>
+              )}
+              {isShort !== null && (
+                <div className="flex justify-between items-center">
+                  <span>Tipo detectado</span>
+                  <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold"
+                    style={isShort
+                      ? { background: "#E94B8A22", color: "#E94B8A" }
+                      : { background: "#5B3FCF22", color: "#5B3FCF" }}>
+                    {isShort ? "📱 Short (9:16)" : "🖥️ Vídeo normal (16:9)"}
+                  </span>
                 </div>
               )}
               <div className="flex justify-between">
