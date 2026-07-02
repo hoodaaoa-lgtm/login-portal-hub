@@ -6,13 +6,13 @@ import { useState } from "react";
 import {
   ChevronLeft, Play, Bell, BellOff, Share2,
   Eye, Clock, Video as VideoIcon, Globe, Calendar,
-  ThumbsUp, MoreVertical, Search,
+  Image as ImageIcon, FileText, LayoutGrid,
 } from "lucide-react";
 import { toast } from "sonner";
 import { PhotoViewer } from "@/components/PhotoViewer";
 
 export const Route = createFileRoute("/hoodatv/canal/$handle")({
-  head: ({ params }) => ({ meta: [{ title: `${params.handle} — HoodaTV` }] }),
+  head: ({ params }) => ({ meta: [{ title: `@${params.handle} — Canal` }] }),
   component: ChannelPage,
 });
 
@@ -25,7 +25,7 @@ const avatarColor = (name: string) => AVATAR_COLORS[(name?.charCodeAt(0) ?? 0) %
 /* ── Helpers ── */
 const fmtDur = (s: number | null) => {
   if (!s) return "";
-  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
+  const h = Math.floor(s/3600), m = Math.floor((s%3600)/60), sec = s%60;
   return h > 0 ? `${h}:${String(m).padStart(2,"0")}:${String(sec).padStart(2,"0")}` : `${m}:${String(sec).padStart(2,"0")}`;
 };
 const fmtV = (n: number) =>
@@ -42,37 +42,37 @@ const timeAgo = (d: string) => {
 const fmtDate = (d: string) =>
   new Date(d).toLocaleDateString("pt-PT", { year: "numeric", month: "long", day: "numeric" });
 
-type Tab = "videos" | "sobre";
+type Tab = "media" | "videos" | "sobre";
 
 /* ── Queries ── */
 function useChannel(handle: string) {
   return useQuery({
-    queryKey: ["htv-canal", handle],
+    queryKey: ["canal", handle],
     queryFn: async () => {
       const { data } = await (supabase as any)
         .from("channels")
         .select("id,name,handle,avatar_url,banner_url,description,category,country,created_at")
-        .eq("handle", handle)
-        .maybeSingle();
+        .eq("handle", handle).maybeSingle();
       return data ?? null;
     },
     staleTime: 60_000,
   });
 }
 
-function useChannelVideos(channelId: string | undefined) {
+function useChannelPosts(channelId: string | undefined) {
   return useQuery({
-    queryKey: ["htv-canal-videos", channelId],
+    queryKey: ["canal-posts", channelId],
     queryFn: async () => {
       if (!channelId) return [];
-      const { data } = await (supabase as any)
+      // Buscar posts do canal (vídeos publicados como posts + posts normais do dono)
+      const { data: videos } = await (supabase as any)
         .from("videos")
-        .select("id,title,thumbnail_url,duration_seconds,views_count,likes_count,published_at,created_at,cf_embed_url,cf_stream_url,cf_stream_uid")
+        .select("id,title,thumbnail_url,duration_seconds,views_count,published_at,created_at,cf_stream_url,cf_embed_url,video_path")
         .eq("channel_id", channelId)
-        .eq("status", "published")
-        .eq("visibility", "public")
+        .eq("status", "published").eq("visibility", "public")
         .order("published_at", { ascending: false });
-      return data ?? [];
+
+      return (videos ?? []).map((v: any) => ({ ...v, _type: "video" }));
     },
     enabled: !!channelId,
     staleTime: 60_000,
@@ -81,17 +81,16 @@ function useChannelVideos(channelId: string | undefined) {
 
 function useChannelStats(channelId: string | undefined) {
   return useQuery({
-    queryKey: ["htv-canal-stats", channelId],
+    queryKey: ["canal-stats", channelId],
     queryFn: async () => {
       if (!channelId) return { subs: 0, totalViews: 0, videoCount: 0 };
       const [followRes, videoRes] = await Promise.all([
         (supabase as any).from("follows").select("*", { count: "exact", head: true }).eq("following_id", channelId),
-        (supabase as any).from("videos").select("views_count").eq("channel_id", channelId).eq("status", "published").eq("visibility", "public"),
+        (supabase as any).from("videos").select("views_count").eq("channel_id", channelId).eq("status", "published"),
       ]);
-      const subs = followRes.count ?? 0;
       const videos = videoRes.data ?? [];
       return {
-        subs,
+        subs: followRes.count ?? 0,
         videoCount: videos.length,
         totalViews: videos.reduce((s: number, v: any) => s + (v.views_count ?? 0), 0),
       };
@@ -102,12 +101,12 @@ function useChannelStats(channelId: string | undefined) {
 }
 
 function useMe() {
-  return useQuery({ queryKey: ["htv-me"], queryFn: async () => (await supabase.auth.getUser()).data.user ?? null, staleTime: 60_000 });
+  return useQuery({ queryKey: ["me"], queryFn: async () => (await supabase.auth.getUser()).data.user ?? null, staleTime: 60_000 });
 }
 
 function useIsFollowing(userId: string | null, channelId: string | undefined) {
   return useQuery({
-    queryKey: ["htv-is-following", userId, channelId],
+    queryKey: ["canal-following", userId, channelId],
     queryFn: async () => {
       if (!userId || !channelId) return false;
       const { data } = await (supabase as any).from("follows").select("id").eq("follower_id", userId).eq("following_id", channelId).maybeSingle();
@@ -118,108 +117,117 @@ function useIsFollowing(userId: string | null, channelId: string | undefined) {
   });
 }
 
-/* ── Video Card ── */
-function VideoCard({ v, onPlay }: { v: any; onPlay: (v: any) => void }) {
+/* ── Card de Vídeo ── */
+function VideoCard({ v, onClick }: { v: any; onClick: () => void }) {
   return (
-    <div className="group cursor-pointer" onClick={() => onPlay(v)}>
+    <div className="group cursor-pointer" onClick={onClick}>
       <div className="relative aspect-video rounded-2xl overflow-hidden" style={{ background: "var(--s3)" }}>
         {v.thumbnail_url
           ? <img src={v.thumbnail_url} alt={v.title} loading="lazy"
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.04]" />
+              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.04]" />
           : <div className="w-full h-full flex items-center justify-center" style={{ background: `${P}18` }}>
               <Play className="w-10 h-10" style={{ color: P, opacity: 0.5 }} />
             </div>}
-
         {v.duration_seconds && (
           <span className="absolute bottom-2 right-2 text-[11px] font-bold text-white px-1.5 py-0.5 rounded-lg"
             style={{ background: "rgba(0,0,0,0.80)" }}>
             {fmtDur(v.duration_seconds)}
           </span>
         )}
-
-        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200"
-          style={{ background: "rgba(0,0,0,0.28)" }}>
-          <div className="w-14 h-14 rounded-full flex items-center justify-center"
-            style={{ background: "var(--s0)", boxShadow: "0 2px 16px rgba(0,0,0,0.25)" }}>
-            <Play className="w-6 h-6 ml-1" style={{ color: P }} />
+        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"
+          style={{ background: "rgba(0,0,0,0.25)" }}>
+          <div className="w-12 h-12 rounded-full flex items-center justify-center"
+            style={{ background: "rgba(255,255,255,0.95)" }}>
+            <Play className="w-5 h-5 ml-0.5" style={{ color: P }} />
           </div>
         </div>
       </div>
-
-      <div className="mt-2.5 space-y-0.5">
-        <p className="text-[13px] font-bold leading-[1.35] line-clamp-2" style={{ color: "var(--text-primary)" }}>
-          {v.title}
-        </p>
+      <div className="mt-2 space-y-0.5">
+        <p className="text-[13px] font-bold leading-snug line-clamp-2" style={{ color: "var(--text-primary)" }}>{v.title}</p>
         <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
-          {fmtV(v.views_count ?? 0)} visualizações · {timeAgo(v.published_at ?? v.created_at)}
+          {fmtV(v.views_count ?? 0)} views · {timeAgo(v.published_at ?? v.created_at)}
         </p>
       </div>
     </div>
   );
 }
 
-/* ── Skeleton ── */
-function Skel() {
-  return (
-    <div className="animate-pulse space-y-3">
-      <div className="aspect-video rounded-2xl" style={{ background: "var(--s3)" }} />
-      <div className="h-3 rounded-full" style={{ background: "var(--s3)", width: "80%" }} />
-      <div className="h-3 rounded-full" style={{ background: "var(--s3)", width: "50%" }} />
-    </div>
-  );
+/* ── Card de Média (grid misto) ── */
+function MediaCard({ item, onClick }: { item: any; onClick: () => void }) {
+  if (item._type === "video") {
+    return (
+      <div className="group cursor-pointer" onClick={onClick}>
+        <div className="relative aspect-square rounded-2xl overflow-hidden" style={{ background: "var(--s3)" }}>
+          {item.thumbnail_url
+            ? <img src={item.thumbnail_url} alt={item.title} loading="lazy"
+                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+            : <div className="w-full h-full flex items-center justify-center" style={{ background: `${P}18` }}>
+                <Play className="w-8 h-8" style={{ color: P, opacity: 0.5 }} />
+              </div>}
+          <div className="absolute bottom-2 left-2 w-6 h-6 rounded-full flex items-center justify-center"
+            style={{ background: "rgba(0,0,0,0.6)" }}>
+            <Play className="w-3 h-3 text-white ml-0.5" />
+          </div>
+          {item.duration_seconds && (
+            <span className="absolute bottom-2 right-2 text-[10px] font-bold text-white px-1 py-0.5 rounded"
+              style={{ background: "rgba(0,0,0,0.75)" }}>
+              {fmtDur(item.duration_seconds)}
+            </span>
+          )}
+        </div>
+      </div>
+    );
+  }
+  return null;
 }
 
-/* ══ PÁGINA PRINCIPAL ══ */
+/* ── PÁGINA PRINCIPAL ── */
 function ChannelPage() {
   const { handle } = useParams({ from: "/hoodatv/canal/$handle" });
-  const navigate = useNavigate();
-  const qc = useQueryClient();
+  const navigate   = useNavigate();
+  const qc         = useQueryClient();
 
-  const [tab, setTab]         = useState<Tab>("videos");
-  const [search, setSearch]   = useState("");
+  const [tab, setTab]             = useState<Tab>("media");
   const [avatarOpen, setAvatarOpen] = useState(false);
 
-  const { data: channel, isLoading: chLoading } = useChannel(handle);
-  const { data: videos = [], isLoading: vLoading } = useChannelVideos(channel?.id);
-  const { data: stats } = useChannelStats(channel?.id);
-  const { data: me } = useMe();
+  const { data: channel, isLoading } = useChannel(handle);
+  const { data: posts = [], isLoading: pLoading } = useChannelPosts(channel?.id);
+  const { data: stats }               = useChannelStats(channel?.id);
+  const { data: me }                  = useMe();
   const { data: isFollowing = false } = useIsFollowing(me?.id ?? null, channel?.id);
 
   const bg = avatarColor(channel?.name ?? "");
 
+  const videos = posts.filter((p: any) => p._type === "video");
+
   async function toggleFollow() {
-    if (!me) { toast.error("Inicia sessão para seguir canais."); return; }
+    if (!me) { toast.error("Inicia sessão para seguir."); return; }
     if (!channel) return;
-
-    qc.setQueryData(["htv-is-following", me.id, channel.id], !isFollowing);
-    qc.setQueryData(["htv-canal-stats", channel.id], (old: any) => ({
-      ...old, subs: (old?.subs ?? 0) + (isFollowing ? -1 : 1),
-    }));
-
+    qc.setQueryData(["canal-following", me.id, channel.id], !isFollowing);
     if (isFollowing) {
       await (supabase as any).from("follows").delete().eq("follower_id", me.id).eq("following_id", channel.id);
-      toast.success("Deixaste de seguir o canal.");
+      toast.success("Deixaste de seguir.");
     } else {
       await (supabase as any).from("follows").insert({ follower_id: me.id, following_id: channel.id });
       toast.success("Canal seguido!");
     }
+    qc.invalidateQueries({ queryKey: ["canal-stats", channel.id] });
   }
 
-  const filteredVideos = search
-    ? videos.filter((v: any) => v.title?.toLowerCase().includes(search.toLowerCase()))
-    : videos;
+  const tabs: { key: Tab; label: string; icon: any }[] = [
+    { key: "media",  label: "Média",   icon: LayoutGrid },
+    { key: "videos", label: "Vídeos",  icon: VideoIcon  },
+    { key: "sobre",  label: "Sobre",   icon: Globe      },
+  ];
 
-  /* ── Loading ── */
-  if (chLoading) return (
-    <>
-      <SideNav />
+  if (isLoading) return (
+    <><SideNav />
       <PageWrapper className="pb-20 lg:pb-0">
         <div className="animate-pulse">
           <div className="h-40 sm:h-52" style={{ background: "var(--s3)" }} />
           <div className="px-4 pt-4 space-y-3">
             <div className="w-20 h-20 rounded-full" style={{ background: "var(--s3)" }} />
             <div className="h-5 rounded-full w-48" style={{ background: "var(--s3)" }} />
-            <div className="h-3 rounded-full w-32" style={{ background: "var(--s3)" }} />
           </div>
         </div>
         <BottomNav />
@@ -227,19 +235,16 @@ function ChannelPage() {
     </>
   );
 
-  /* ── Canal não encontrado ── */
   if (!channel) return (
-    <>
-      <SideNav />
+    <><SideNav />
       <PageWrapper className="pb-20 lg:pb-0">
         <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-6">
           <VideoIcon className="w-16 h-16 mb-4" style={{ color: "var(--text-muted)" }} />
           <h2 className="text-xl font-extrabold mb-2" style={{ color: "var(--text-primary)" }}>Canal não encontrado</h2>
           <p className="text-sm mb-6" style={{ color: "var(--text-muted)" }}>O canal @{handle} não existe.</p>
-          <button onClick={() => navigate({ to: "/hoodatv" })}
-            className="px-6 py-2.5 rounded-full text-white font-bold text-sm"
-            style={{ background: GRAD }}>
-            Voltar à HoodaTV
+          <button onClick={() => navigate({ to: "/home" })}
+            className="px-6 py-2.5 rounded-full text-white font-bold text-sm" style={{ background: GRAD }}>
+            Voltar ao início
           </button>
         </div>
         <BottomNav />
@@ -248,17 +253,13 @@ function ChannelPage() {
   );
 
   return (
-    <>
-      <SideNav />
+    <><SideNav />
       <PageWrapper className="pb-20 lg:pb-0">
 
-        {/* ── Player Modal ── */}
-        {/* navegação para /hoodatv/watch/$id em vez de modal */}
-
-        {/* ── Back button ── */}
+        {/* Back */}
         <div className="sticky top-0 z-30 flex items-center gap-2 px-4 py-3 border-b"
           style={{ background: "var(--s1)", backdropFilter: "blur(20px)", borderColor: "var(--border-subtle)" }}>
-          <button onClick={() => navigate({ to: "/hoodatv" })}
+          <button onClick={() => navigate({ to: "/home" })}
             className="w-9 h-9 rounded-full flex items-center justify-center transition hover:bg-[var(--s3)]"
             style={{ color: "var(--text-primary)" }}>
             <ChevronLeft className="w-5 h-5" />
@@ -266,35 +267,31 @@ function ChannelPage() {
           <span className="text-sm font-bold truncate" style={{ color: "var(--text-primary)" }}>{channel.name}</span>
         </div>
 
-        {/* ── Banner ── */}
+        {/* Banner */}
         <div className="relative">
-          <div className="h-40 sm:h-52 w-full overflow-hidden"
-            style={{ background: channel.banner_url ? undefined : `${bg}22` }}>
+          <div className="h-36 sm:h-48 w-full overflow-hidden" style={{ background: `${bg}22` }}>
             {channel.banner_url
               ? <img src={channel.banner_url} alt="" className="w-full h-full object-cover" />
-              : <div className="w-full h-full" style={{ background: `linear-gradient(135deg, ${bg}33, ${bg}11)` }} />}
+              : <div className="w-full h-full" style={{ background: `linear-gradient(135deg,${bg}44,${bg}11)` }} />}
           </div>
 
-          {/* ── Avatar sobre o banner ── */}
           <div className="px-4 sm:px-6">
-            <div className="flex items-end gap-4 -mt-10 sm:-mt-12">
-              <div
-                className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden flex items-center justify-center text-white text-2xl font-black ring-4 shrink-0 cursor-pointer transition hover:opacity-90 active:scale-95"
+            <div className="flex items-end gap-4 -mt-10">
+              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden flex items-center justify-center text-white text-2xl font-black ring-4 ring-[var(--s1)] shrink-0 cursor-pointer"
                 style={{ background: bg }}
                 onClick={() => channel.avatar_url && setAvatarOpen(true)}>
                 {channel.avatar_url
                   ? <img src={channel.avatar_url} alt="" className="w-full h-full object-cover" />
                   : (channel.name?.[0] ?? "?").toUpperCase()}
               </div>
-              {/* Share button (desktop) */}
-              <div className="hidden sm:flex items-center gap-2 ml-auto mb-2">
+              <div className="hidden sm:flex items-center gap-2 ml-auto mb-1">
                 <button onClick={() => { navigator.clipboard.writeText(window.location.href); toast.success("Link copiado!"); }}
                   className="flex items-center gap-1.5 px-4 h-9 rounded-full text-xs font-bold border transition hover:bg-[var(--s2)]"
                   style={{ color: "var(--text-secondary)", borderColor: "var(--border-default)" }}>
                   <Share2 className="w-3.5 h-3.5" /> Partilhar
                 </button>
                 <button onClick={toggleFollow}
-                  className="flex items-center gap-1.5 px-5 h-9 rounded-full text-sm font-bold transition-all active:scale-95"
+                  className="flex items-center gap-1.5 px-5 h-9 rounded-full text-sm font-bold transition active:scale-95"
                   style={isFollowing
                     ? { background: "var(--s2)", color: "var(--text-secondary)", border: "1.5px solid var(--border-default)" }
                     : { background: GRAD, color: "#fff" }}>
@@ -305,37 +302,20 @@ function ChannelPage() {
           </div>
         </div>
 
-        {/* ── Info do canal ── */}
-        <div className="px-4 sm:px-6 pt-3 pb-4">
-          <h1 className="text-xl font-extrabold tracking-tight" style={{ color: "var(--text-primary)" }}>{channel.name}</h1>
+        {/* Info */}
+        <div className="px-4 sm:px-6 pt-3 pb-2">
+          <h1 className="text-xl font-extrabold" style={{ color: "var(--text-primary)" }}>{channel.name}</h1>
           <p className="text-sm mt-0.5" style={{ color: P }}>@{channel.handle}</p>
-
-          {/* Stats */}
           <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs" style={{ color: "var(--text-muted)" }}>
-            <span className="flex items-center gap-1">
-              <Eye className="w-3.5 h-3.5" />
-              {fmtV(stats?.totalViews ?? 0)} visualizações
-            </span>
-            <span className="flex items-center gap-1">
-              <VideoIcon className="w-3.5 h-3.5" />
-              {stats?.videoCount ?? 0} vídeos
-            </span>
-            <span className="flex items-center gap-1">
-              <Globe className="w-3.5 h-3.5" />
-              {fmtV(stats?.subs ?? 0)} seguidores
-            </span>
-            {channel.created_at && (
-              <span className="flex items-center gap-1">
-                <Calendar className="w-3.5 h-3.5" />
-                Desde {fmtDate(channel.created_at)}
-              </span>
-            )}
+            <span className="flex items-center gap-1"><Eye className="w-3.5 h-3.5" />{fmtV(stats?.totalViews ?? 0)} views</span>
+            <span className="flex items-center gap-1"><VideoIcon className="w-3.5 h-3.5" />{stats?.videoCount ?? 0} vídeos</span>
+            <span className="flex items-center gap-1"><Globe className="w-3.5 h-3.5" />{fmtV(stats?.subs ?? 0)} seguidores</span>
           </div>
 
           {/* Botões mobile */}
           <div className="flex items-center gap-2 mt-3 sm:hidden">
             <button onClick={toggleFollow}
-              className="flex-1 flex items-center justify-center gap-1.5 h-9 rounded-full text-sm font-bold transition-all active:scale-95"
+              className="flex-1 flex items-center justify-center gap-1.5 h-9 rounded-full text-sm font-bold transition active:scale-95"
               style={isFollowing
                 ? { background: "var(--s2)", color: "var(--text-secondary)", border: "1.5px solid var(--border-default)" }
                 : { background: GRAD, color: "#fff" }}>
@@ -349,73 +329,98 @@ function ChannelPage() {
           </div>
         </div>
 
-        {/* ── Tabs ── */}
+        {/* Tabs */}
         <div className="sticky top-[53px] z-20 border-b"
           style={{ background: "var(--s1)", backdropFilter: "blur(20px)", borderColor: "var(--border-subtle)" }}>
           <div className="flex px-4 sm:px-6">
-            {(["videos", "sobre"] as Tab[]).map(t => (
-              <button key={t} onClick={() => setTab(t)}
-                className="px-4 py-3 text-sm font-bold capitalize transition-all relative"
-                style={{ color: tab === t ? P : "var(--text-muted)" }}>
-                {t === "videos" ? `Vídeos (${stats?.videoCount ?? 0})` : "Sobre"}
-                {tab === t && (
-                  <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full" style={{ background: P }} />
-                )}
+            {tabs.map(t => (
+              <button key={t.key} onClick={() => setTab(t.key)}
+                className="flex items-center gap-1.5 px-4 py-3 text-sm font-bold transition relative"
+                style={{ color: tab === t.key ? P : "var(--text-muted)" }}>
+                <t.icon className="w-4 h-4" />
+                {t.label}
+                {tab === t.key && <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full" style={{ background: P }} />}
               </button>
             ))}
           </div>
         </div>
 
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-5">
 
-          {/* ══ TAB: VÍDEOS ══ */}
-          {tab === "videos" && (
+          {/* ══ MÉDIA ══ */}
+          {tab === "media" && (
             <div>
-              {/* Search dentro do canal */}
-              <div className="flex items-center gap-2 rounded-full px-4 h-10 border mb-6 transition-all"
-                style={{ background: "var(--s2)", borderColor: "var(--border-default)" }}>
-                <Search className="w-4 h-4 shrink-0" style={{ color: "var(--text-muted)" }} />
-                <input value={search} onChange={e => setSearch(e.target.value)}
-                  placeholder="Pesquisar neste canal…"
-                  className="flex-1 bg-transparent text-sm outline-none"
-                  style={{ color: "var(--text-primary)" }} />
-                {search && <button onClick={() => setSearch("")}><span style={{ color: "var(--text-muted)", fontSize: 18 }}>×</span></button>}
-              </div>
-
-              {vLoading
-                ? <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
-                    {Array.from({ length: 8 }).map((_, i) => <Skel key={i} />)}
+              {pLoading
+                ? <div className="grid grid-cols-3 sm:grid-cols-4 gap-1">
+                    {Array.from({ length: 9 }).map((_, i) => (
+                      <div key={i} className="aspect-square rounded-xl animate-pulse" style={{ background: "var(--s3)" }} />
+                    ))}
                   </div>
-                : !filteredVideos.length
+                : !posts.length
                   ? <div className="py-20 text-center rounded-2xl border"
                       style={{ background: "var(--s2)", borderColor: "var(--border-subtle)" }}>
-                      <VideoIcon className="w-12 h-12 mx-auto mb-3" style={{ color: "var(--text-muted)" }} />
-                      <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>
-                        {search ? `Sem resultados para "${search}"` : "Este canal ainda não tem vídeos publicados."}
-                      </p>
+                      <LayoutGrid className="w-12 h-12 mx-auto mb-3" style={{ color: "var(--text-muted)" }} />
+                      <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>Ainda não há publicações.</p>
                     </div>
-                  : <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
-                      {filteredVideos.map((v: any) => (
-                        <VideoCard key={v.id} v={v} onPlay={(vid) => navigate({ to: `/hoodatv/watch/${vid.id}` })} />
+                  : <div className="grid grid-cols-3 sm:grid-cols-4 gap-1">
+                      {posts.map((item: any) => (
+                        <MediaCard key={item.id} item={item}
+                          onClick={() => item._type === "video" && navigate({ to: "/hoodatv/watch/$id", params: { id: item.id } })} />
                       ))}
                     </div>}
             </div>
           )}
 
-          {/* ══ TAB: SOBRE ══ */}
-          {tab === "sobre" && (
-            <div className="max-w-xl space-y-6">
+          {/* ══ VÍDEOS ══ */}
+          {tab === "videos" && (
+            <div>
+              {pLoading
+                ? <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {Array.from({ length: 6 }).map((_, i) => (
+                      <div key={i} className="space-y-2 animate-pulse">
+                        <div className="aspect-video rounded-2xl" style={{ background: "var(--s3)" }} />
+                        <div className="h-3 rounded-full w-3/4" style={{ background: "var(--s3)" }} />
+                      </div>
+                    ))}
+                  </div>
+                : !videos.length
+                  ? <div className="py-20 text-center rounded-2xl border"
+                      style={{ background: "var(--s2)", borderColor: "var(--border-subtle)" }}>
+                      <VideoIcon className="w-12 h-12 mx-auto mb-3" style={{ color: "var(--text-muted)" }} />
+                      <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>Ainda não há vídeos.</p>
+                    </div>
+                  : <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                      {videos.map((v: any) => (
+                        <VideoCard key={v.id} v={v}
+                          onClick={() => navigate({ to: "/hoodatv/watch/$id", params: { id: v.id } })} />
+                      ))}
+                    </div>}
+            </div>
+          )}
 
+          {/* ══ SOBRE ══ */}
+          {tab === "sobre" && (
+            <div className="max-w-xl space-y-4">
               {channel.description && (
                 <div className="rounded-2xl p-5 border" style={{ background: "var(--s2)", borderColor: "var(--border-subtle)" }}>
                   <p className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: "var(--text-muted)" }}>Descrição</p>
                   <p className="text-sm leading-relaxed" style={{ color: "var(--text-primary)" }}>{channel.description}</p>
                 </div>
               )}
-
-              <div className="rounded-2xl p-5 border space-y-4" style={{ background: "var(--s2)", borderColor: "var(--border-subtle)" }}>
-                <p className="text-xs font-bold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Detalhes</p>
-
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  { label: "Seguidores", value: fmtV(stats?.subs ?? 0) },
+                  { label: "Vídeos",     value: String(stats?.videoCount ?? 0) },
+                  { label: "Views",      value: fmtV(stats?.totalViews ?? 0) },
+                ].map(s => (
+                  <div key={s.label} className="rounded-2xl p-4 text-center border"
+                    style={{ background: "var(--s2)", borderColor: "var(--border-subtle)" }}>
+                    <p className="text-xl font-extrabold" style={{ color: P }}>{s.value}</p>
+                    <p className="text-[11px] mt-0.5" style={{ color: "var(--text-muted)" }}>{s.label}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="rounded-2xl p-5 border space-y-3" style={{ background: "var(--s2)", borderColor: "var(--border-subtle)" }}>
                 {channel.category && (
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: `${P}15` }}>
@@ -427,7 +432,6 @@ function ChannelPage() {
                     </div>
                   </div>
                 )}
-
                 {channel.country && (
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: `${P}15` }}>
@@ -439,7 +443,6 @@ function ChannelPage() {
                     </div>
                   </div>
                 )}
-
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: `${P}15` }}>
                     <Calendar className="w-4 h-4" style={{ color: P }} />
@@ -449,44 +452,13 @@ function ChannelPage() {
                     <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{fmtDate(channel.created_at)}</p>
                   </div>
                 </div>
-
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: `${P}15` }}>
-                    <Eye className="w-4 h-4" style={{ color: P }} />
-                  </div>
-                  <div>
-                    <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>Total de visualizações</p>
-                    <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{fmtV(stats?.totalViews ?? 0)}</p>
-                  </div>
-                </div>
               </div>
-
-              {/* Stats destacadas */}
-              <div className="grid grid-cols-3 gap-3">
-                {[
-                  { label: "Seguidores", value: fmtV(stats?.subs ?? 0) },
-                  { label: "Vídeos", value: String(stats?.videoCount ?? 0) },
-                  { label: "Visualizações", value: fmtV(stats?.totalViews ?? 0) },
-                ].map(s => (
-                  <div key={s.label} className="rounded-2xl p-4 text-center border"
-                    style={{ background: "var(--s2)", borderColor: "var(--border-subtle)" }}>
-                    <p className="text-xl font-extrabold" style={{ color: P }}>{s.value}</p>
-                    <p className="text-[11px] mt-0.5" style={{ color: "var(--text-muted)" }}>{s.label}</p>
-                  </div>
-                ))}
-              </div>
-
             </div>
           )}
         </div>
 
         {avatarOpen && channel?.avatar_url && (
-          <PhotoViewer
-            src={channel.avatar_url}
-            alt={channel.name}
-            subtitle={`@${channel.handle}`}
-            onClose={() => setAvatarOpen(false)}
-          />
+          <PhotoViewer src={channel.avatar_url} alt={channel.name} subtitle={`@${channel.handle}`} onClose={() => setAvatarOpen(false)} />
         )}
         <BottomNav />
       </PageWrapper>
