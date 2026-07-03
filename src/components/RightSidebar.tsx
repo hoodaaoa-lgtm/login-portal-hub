@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { RefreshCw, Users } from "lucide-react";
+import { RefreshCw, Users, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "@tanstack/react-router";
 
@@ -42,6 +42,14 @@ export function RightSidebar() {
 
   return (
     <aside className="hidden xl:flex flex-col h-screen sticky top-0 overflow-y-auto py-4 space-y-4" style={{ scrollbarWidth: "none" }}>
+
+      {/* Pesquisa */}
+      <button onClick={() => navigate({ to: "/explorar" })}
+        className="w-full flex items-center gap-2 px-4 py-2.5 rounded-full text-left transition"
+        style={{ background: "var(--s1)", border: "1px solid var(--border-subtle)" }}>
+        <Search className="h-4 w-4 shrink-0" style={{ color: "var(--text-muted)" }} />
+        <span className="text-sm" style={{ color: "var(--text-muted)" }}>Pesquisar…</span>
+      </button>
 
       {/* Sugestões de pessoas a seguir */}
       <div className="rounded-2xl overflow-hidden" style={{ background: "var(--s1)", border: "1px solid var(--border-subtle)" }}>

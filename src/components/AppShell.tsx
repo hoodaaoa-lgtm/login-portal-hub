@@ -13,11 +13,12 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 
 const NAV_ITEMS = [
-  { to: "/home",       label: "Home",        Icon: Home        },
-  { to: "/explorar",   label: t("nav.explore"),    Icon: Compass     },
-  { to: "/drops",      label: "Drops",       Icon: Droplet     },
-  { to: "/mensagens",  label: t("nav.messages"),   Icon: MessageSquare },
-  { to: "/perfil",     label: t("nav.profile"),      Icon: User        },
+  { to: "/home",       label: "Home",          Icon: Home,          search: undefined as Record<string, string> | undefined },
+  { to: "/explorar",   label: t("nav.explore"),     Icon: Compass,       search: undefined as Record<string, string> | undefined },
+  { to: "/drops",      label: "Drops",         Icon: Droplet,       search: undefined as Record<string, string> | undefined },
+  { to: "/mensagens",  label: t("nav.messages"),    Icon: MessageSquare, search: undefined as Record<string, string> | undefined },
+  { to: "/home",       label: "Notificações",  Icon: Bell,          search: { notifications: "1" } as Record<string, string> | undefined },
+  { to: "/perfil",     label: t("nav.profile"),       Icon: User,          search: undefined as Record<string, string> | undefined },
 ] as const;
 
 const MOBILE_ITEMS = [
@@ -77,7 +78,7 @@ export function SideNav() {
       {showDrawer && (
         <UserDrawer userId={currentUserId} onClose={() => setShowDrawer(false)} />
       )}
-      <aside className="hooda-sidenav hidden lg:flex flex-col fixed left-0 top-0 bottom-0 w-[260px] border-r z-40"
+      <aside className="hooda-sidenav hidden lg:flex flex-col fixed left-0 top-0 bottom-0 w-[280px] border-r z-40"
         style={{
           background: "var(--surface-0)",
         borderColor: "var(--border-subtle)",
@@ -89,13 +90,16 @@ export function SideNav() {
 
       {/* Nav links */}
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-        {NAV_ITEMS.map(({ to, label, Icon }) => {
-          const active = (to as string) === "/hoodatv" || (to as string) === "/studio"
-            ? pathname.startsWith(to as string)
-            : pathname === to;
+        {NAV_ITEMS.map(({ to, label, Icon, search }) => {
+          const isNotif = label === "Notificações";
+          const active = isNotif
+            ? false
+            : (to as string) === "/hoodatv" || (to as string) === "/studio"
+              ? pathname.startsWith(to as string)
+              : pathname === to;
           const isPerfil = to === "/perfil";
           return (
-            <Link key={to} to={to}
+            <Link key={label} to={to} search={search}
               className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-150 group"
               style={{
                 background: active ? "rgba(91,63,207,0.10)" : "transparent",
@@ -255,7 +259,7 @@ export function PageWrapper({ children, className = "" }: { children: React.Reac
   return (
     <div
       key={pathname}
-      className={`lg:ml-[260px] min-h-screen hooda-page-enter overflow-x-hidden ${className}`}
+      className={`lg:ml-[280px] min-h-screen hooda-page-enter overflow-x-hidden ${className}`}
       style={{ background: "var(--s1)" }}
     >
       {children}
@@ -263,12 +267,15 @@ export function PageWrapper({ children, className = "" }: { children: React.Reac
   );
 }
 
-/* ─── Layout de 3 colunas (feed centrado + sidebar direita) ─── */
+/* ─── Layout de 3 colunas (feed largo + sidebar direita) ───
+   Sidebar esquerda: 280px (fixa, fora deste componente).
+   Área restante: máximo 1120px (para um total geral de 1400px),
+   dividida em feed (até 820px) + gap 20px + sidebar direita (320px). */
 export function FeedLayout({ feed, sidebar }: { feed: React.ReactNode; sidebar?: React.ReactNode }) {
   return (
-    <div className="flex w-full min-h-screen">
-      {/* Feed — ocupa o espaço disponível, máximo 760px */}
-      <div className="flex-1 min-w-0 max-w-[760px]">
+    <div className="flex w-full min-h-screen mx-auto max-w-[1120px]">
+      {/* Feed — ocupa o espaço disponível, entre 750px e 820px */}
+      <div className="flex-1 min-w-0 max-w-[820px]">
         {feed}
       </div>
       {/* Sidebar direita — 320px, gap 20px, só em xl */}

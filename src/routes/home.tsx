@@ -36,6 +36,7 @@ import { usePostVideoView } from "@/hooks/usePostVideoView";
 import { useTranslation } from "react-i18next";
 import i18n from "@/lib/i18n";
 import { useScrollLock } from "@/hooks/useScrollLock";
+import { ComposeBox } from "@/components/QuickComposer";
 function t(key: string, opts?: Record<string, unknown>) { return i18n.t(key, opts) as string; }
 
 /* ── RichText — renderiza @menções e #hashtags clicáveis ── */
@@ -3023,11 +3024,22 @@ function HomePage() {
   // silenciosa em segundo plano — nunca limpa a lista nem mostra vazio).
   const [showCreator, setShowCreator] = useState(false);
   const [viewerIdx, setViewerIdx] = useState<number | null>(null);
-  const { avatarUrl: userAvatarUrl } = useAvatar();
+  const { avatarUrl: userAvatarUrl, name: myDisplayName } = useAvatar();
 
   /* ── Notifications ── */
   const [notifications, setNotifications] = useState<Notif[]>([]);
   const [showNotifCenter, setShowNotifCenter] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("notifications") === "1") {
+      setShowNotifCenter(true);
+      params.delete("notifications");
+      const qs = params.toString();
+      window.history.replaceState({}, "", `/home${qs ? `?${qs}` : ""}`);
+    }
+  }, []);
   const [toast, setToast] = useState<Notif | null>(null);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
@@ -3991,9 +4003,10 @@ function HomePage() {
   return (
     <div className="flex">
       <SideNav />
+      <PageWrapper className="pb-20 lg:pb-0">
       <FeedLayout
         feed={
-          <PageWrapper className="pb-20 lg:pb-0">
+          <>
         {viewerIdx !== null && (
           <StoryViewer stories={stories} startIndex={viewerIdx} onClose={() => setViewerIdx(null)} onDelete={handleDeleteStory} userAvatarUrl={userAvatarUrl} />
         )}
@@ -4026,6 +4039,14 @@ function HomePage() {
       </header>
 
       <main className="w-full max-w-full">
+        <div className="px-3 pt-3">
+          <ComposeBox
+            name={myDisplayName || "Utilizador"}
+            username={myUsername || "utilizador"}
+            avatarUrl={userAvatarUrl}
+            onPublished={() => qc.invalidateQueries({ queryKey: QUERY_KEYS.feed(effectiveUserId) })}
+          />
+        </div>
         {/* Feed - sem stories */}
             {stories.map((s, i) => (
               <li key={s.name} className="flex flex-col items-center gap-1 shrink-0">
@@ -4162,10 +4183,11 @@ function HomePage() {
           onMarkAll={markAllRead}
         />
       )}
-      </PageWrapper>
+          </>
         }
         sidebar={<RightSidebar />}
       />
+      </PageWrapper>
     </div>
   );
 }
