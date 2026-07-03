@@ -36,7 +36,7 @@ function DefinicoesPage() {
   useEffect(() => {
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { navigate({ to: "/auth" }); return; }
+      if (!session) { navigate({ to: "/" }); return; }
       setEmail(session.user.email ?? "");
       const { data } = await supabase.from("profiles")
         .select("id,username,full_name,bio,avatar_url,msg_permission")

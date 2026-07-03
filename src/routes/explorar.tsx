@@ -182,7 +182,7 @@ function ExplorePage() {
         .order("views_count", { ascending: false }).limit(6);
       return data ?? [];
     },
-    enabled: tab === "trending" || tab === "videos",
+    enabled: tab === "trending",
     staleTime: 60_000,
   });
 
@@ -487,7 +487,7 @@ function ExplorePage() {
             <section className="px-4">
               <div className="flex items-center justify-between mb-2.5">
                 <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>Vídeos em destaque</p>
-                <button onClick={() => setTab("videos")} className="text-xs font-semibold" style={{ color: P }}>Ver tudo →</button>
+                <button onClick={() => setTab("posts")} className="text-xs font-semibold" style={{ color: P }}>Ver tudo →</button>
               </div>
               {featuredVideos.length === 0 ? (
                 <p className="text-sm text-center py-8" style={{ color: "var(--text-muted)" }}>
@@ -560,17 +560,6 @@ function ExplorePage() {
               Pessoas sugeridas
             </p>
             {suggestedPeople.map((p: any) => <PersonCard key={p.id} p={p} />)}
-          </div>
-
-        /* ══════════ VÍDEOS ══════════ */
-        ) : tab === "videos" ? (
-          <div className="px-4 py-4">
-            <p className="text-[11px] font-bold uppercase tracking-wider mb-4" style={{ color: "var(--text-muted)" }}>
-              Vídeos em destaque
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {featuredVideos.map((v: any) => <VideoThumb key={v.id} v={v} />)}
-            </div>
           </div>
 
         /* ══════════ POSTS ══════════ */

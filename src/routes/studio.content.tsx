@@ -1,18 +1,18 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { t } from "@/lib/useT";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { myChannelQuery, myVideosQuery } from "@/lib/channel-queries";
-import { supabase } from "@/integrations/supabase/client";
-import {
+import { Video, createFileRoute, Link } from "@tanstack/react-router";
+import { Video, t } from "@/lib/useT";
+import { Video, useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Video, myChannelQuery, myVideosQuery } from "@/lib/channel-queries";
+import { Video, supabase } from "@/integrations/supabase/client";
+import { Video,
   Upload, MoreVertical, Trash2, Globe, Lock, Link as LinkIcon,
   Video as VideoIcon, Eye, Pencil, X, Save, CheckCircle,
   Search, Filter,
 } from "lucide-react";
-import { format } from "date-fns";
-import { pt } from "date-fns/locale";
-import { useState } from "react";
-import { toast } from "sonner";
-import { deleteFromCloudflareStream } from "@/lib/cloudflare-stream";
+import { Video, format } from "date-fns";
+import { Video, pt } from "date-fns/locale";
+import { Video, useState } from "react";
+import { Video, toast } from "sonner";
+import { Video, deleteFromCloudflareStream } from "@/lib/cloudflare-stream";
 
 export const Route = createFileRoute("/studio/content")({
   head: () => ({ meta: [{ title: "Hooda" }] }),

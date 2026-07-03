@@ -4,6 +4,7 @@ import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { BottomNav, SideNav, PageWrapper } from "@/components/AppShell";
 import { DropsCreator } from "@/components/DropsCreator";
+import {
   Heart, MessageCircle, Repeat2, Share2, Eye, Plus, Clock,
   X, Image as ImageIcon, Music, Video, Type as TypeIcon, Play, Send, Droplet,
 } from "lucide-react";
@@ -186,11 +187,10 @@ function DropsPage() {
       </PageWrapper>
 
       {showCreate && userId && (
-        <DropsCreator onClose={() => setShowCreate(false)} onPublish={(videoUrl, thumbnail, musicUrl, duration) => {
-          // Publicar drop na BD
-          publishDrop(videoUrl, thumbnail, musicUrl, duration);
+        <DropsCreator onClose={() => setShowCreate(false)} onPublish={(_v, _t, _m, _d) => {
+          setShowCreate(false);
+          qc.invalidateQueries({ queryKey: ["drops-feed"] });
         }} />
-          onCreated={() => { setShowCreate(false); qc.invalidateQueries({ queryKey: ["drops-feed"] }); }} />
       )}
     </>
   );
@@ -482,177 +482,7 @@ function DropCommentsModal({ dropId, userId, onClose, onCountChange }: {
     </div>
   );
 }
-  const [type, setType] = useState<ContentType>("text");
-  const [text, setText] = useState("");
-  const [musicUrl, setMusicUrl] = useState("");
-  const [musicTitle, setMusicTitle] = useState("");
-  const [file, setFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
-  const [duration, setDuration] = useState(24);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
 
-  const [aspect, setAspect] = useState<number | null>(null);
-
-  function pickFile(f: File | null) {
-    setFile(f);
-    setAspect(null);
-    const url = f ? URL.createObjectURL(f) : null;
-    setPreview(url);
-    if (!f || !url) return;
-    // Lê as dimensões naturais para preservar o tamanho/aspeto (shorts incluídos)
-    if (f.type.startsWith("image/")) {
-      const img = new Image();
-      img.onload = () => { if (img.naturalHeight) setAspect(img.naturalWidth / img.naturalHeight); };
-      img.src = url;
-    } else if (f.type.startsWith("video/")) {
-      const v = document.createElement("video");
-      v.preload = "metadata";
-      v.onloadedmetadata = () => { if (v.videoHeight) setAspect(v.videoWidth / v.videoHeight); };
-      v.src = url;
-    }
-  }
-
-  async function submit() {
-    setError(null);
-    if (type === "text" && !text.trim()) { setError(t("drops.err_text", "Escreve algo")); return; }
-    if ((type === "photo" || type === "video") && !file) { setError(t("drops.err_media", "Escolhe um ficheiro")); return; }
-    if (type === "music" && !musicUrl.trim()) { setError(t("drops.err_music", "Indica o link da música")); return; }
-
-    setBusy(true);
-    try {
-      let contentUrl: string | null = null;
-      if (file) {
-        const ext = file.name.split(".").pop() || "bin";
-        const path = `${userId}/${Date.now()}.${ext}`;
-        const { error: upErr } = await supabase.storage.from("posts-media")
-          .upload(path, file, { upsert: true, contentType: file.type });
-        if (upErr) throw upErr;
-        contentUrl = supabase.storage.from("posts-media").getPublicUrl(path).data.publicUrl;
-      }
-      const { error: insErr } = await (supabase as any).from("drops").insert({
-        user_id: userId,
-        content_type: type,
-        content_url: contentUrl,
-        text_content: text.trim() || null,
-        music_url: type === "music" ? musicUrl.trim() : null,
-        music_title: type === "music" ? (musicTitle.trim() || null) : null,
-        aspect_ratio: (type === "photo" || type === "video") ? aspect : null,
-        duration_hours: duration,
-      });
-      if (insErr) throw insErr;
-      onCreated();
-    } catch (e: any) {
-      setError(e?.message || t("drops.err_generic", "Não foi possível publicar"));
-      setBusy(false);
-    }
-  }
-
-  const TYPES: { type: ContentType; icon: typeof ImageIcon; label: string }[] = [
-    { type: "text", icon: TypeIcon, label: t("drops.text", "Texto") },
-    { type: "photo", icon: ImageIcon, label: t("drops.photo", "Foto") },
-    { type: "video", icon: Video, label: t("drops.video", "Vídeo") },
-    { type: "music", icon: Music, label: t("drops.music", "Música") },
-  ];
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center" style={{ background: "rgba(0,0,0,.5)" }}
-      onClick={onClose}>
-      <div className="w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl p-5 shadow-2xl max-h-[92vh] overflow-y-auto"
-        style={{ background: "var(--s0)" }} onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-5">
-          <h2 className="text-lg font-extrabold" style={{ color: "var(--text-primary)" }}>{t("drops.create_drop", "Criar Drop")}</h2>
-          <button onClick={onClose} className="w-8 h-8 rounded-full grid place-items-center" style={{ background: "var(--s2)" }}>
-            <X className="w-4 h-4" style={{ color: "var(--text-muted)" }} />
-          </button>
-        </div>
-
-        <div className="grid grid-cols-4 gap-2 mb-5">
-          {TYPES.map(({ type: ty, icon: Icon, label }) => (
-            <button key={ty} onClick={() => { setType(ty); setFile(null); setPreview(null); }}
-              className="py-3 rounded-2xl flex flex-col items-center gap-1.5 text-xs font-semibold transition"
-              style={{
-                background: type === ty ? `${ACCENT}18` : "var(--s2)",
-                color: type === ty ? ACCENT : "var(--text-secondary)",
-                border: type === ty ? `1.5px solid ${ACCENT}` : "1.5px solid transparent",
-              }}>
-              <Icon className="w-5 h-5" /> {label}
-            </button>
-          ))}
-        </div>
-
-        {(type === "text" || type === "photo" || type === "video") && (
-          <textarea value={text} onChange={(e) => setText(e.target.value)} rows={type === "text" ? 4 : 2}
-            placeholder={t("drops.text_placeholder", "Escreve algo…")}
-            className="w-full px-4 py-3 rounded-2xl mb-4 resize-none outline-none text-sm"
-            style={{ background: "var(--s2)", color: "var(--text-primary)" }} />
-        )}
-
-        {(type === "photo" || type === "video") && (
-          <div className="mb-4">
-            <input ref={fileRef} type="file" hidden accept={type === "photo" ? "image/*" : "video/*"}
-              onChange={(e) => pickFile(e.target.files?.[0] ?? null)} />
-            {preview ? (
-              <div className="relative rounded-2xl overflow-hidden flex justify-center" style={{ background: "var(--s2)" }}>
-                {type === "photo"
-                  ? <img src={preview} alt="" className="w-full max-h-72 object-contain" />
-                  : <video src={preview} controls playsInline className="w-full max-h-72 object-contain bg-black" />}
-                <button onClick={() => pickFile(null)}
-                  className="absolute top-2 right-2 w-8 h-8 rounded-full grid place-items-center" style={{ background: "rgba(0,0,0,.6)" }}>
-                  <X className="w-4 h-4 text-white" />
-                </button>
-              </div>
-            ) : (
-              <button onClick={() => fileRef.current?.click()}
-                className="w-full py-8 rounded-2xl border-2 border-dashed flex flex-col items-center gap-2 text-sm"
-                style={{ borderColor: "var(--border-default)", color: "var(--text-muted)" }}>
-                {type === "photo" ? <ImageIcon className="w-6 h-6" /> : <Play className="w-6 h-6" />}
-                {t("drops.pick_file", "Escolher ficheiro")}
-              </button>
-            )}
-          </div>
-        )}
-
-        {type === "music" && (
-          <div className="space-y-3 mb-4">
-            <input value={musicTitle} onChange={(e) => setMusicTitle(e.target.value)}
-              placeholder={t("drops.music_title", "Título (opcional)")}
-              className="w-full px-4 h-11 rounded-2xl outline-none text-sm"
-              style={{ background: "var(--s2)", color: "var(--text-primary)" }} />
-            <input value={musicUrl} onChange={(e) => setMusicUrl(e.target.value)}
-              placeholder={t("drops.music_url", "Link do áudio (mp3…)")}
-              className="w-full px-4 h-11 rounded-2xl outline-none text-sm"
-              style={{ background: "var(--s2)", color: "var(--text-primary)" }} />
-          </div>
-        )}
-
-        {/* Duração */}
-        <p className="text-sm font-bold mb-2" style={{ color: "var(--text-primary)" }}>{t("drops.duration", "Duração")}</p>
-        <div className="grid grid-cols-4 gap-2 mb-5">
-          {[6, 12, 24, 48].map((h) => (
-            <button key={h} onClick={() => setDuration(h)}
-              className="py-2.5 rounded-xl text-sm font-bold transition"
-              style={{
-                background: duration === h ? ACCENT : "var(--s2)",
-                color: duration === h ? "#fff" : "var(--text-secondary)",
-              }}>
-              {h}h
-            </button>
-          ))}
-        </div>
-
-        {error && <p className="text-sm mb-3" style={{ color: "#ef4444" }}>{error}</p>}
-
-        <button onClick={submit} disabled={busy}
-          className="w-full py-3.5 rounded-2xl font-bold text-white transition active:scale-[.98] disabled:opacity-50"
-          style={{ background: `linear-gradient(135deg, ${ACCENT}, ${PINK})` }}>
-          {busy ? t("drops.publishing", "A publicar…") : t("drops.publish", "Publicar Drop")}
-        </button>
-      </div>
-    </div>
-  );
-}
 
 function DropSkeleton() {
   return (
