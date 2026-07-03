@@ -80,7 +80,7 @@ function DefinicoesPage() {
     <>
       <SideNav />
       <PageWrapper className="pb-20 lg:pb-0">
-        <div className="px-4 py-6">
+        <div className="px-4 py-6 max-w-[680px] mx-auto">
 
           {/* Header */}
           <div className="flex items-center gap-3 mb-6">

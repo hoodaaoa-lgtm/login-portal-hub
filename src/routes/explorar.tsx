@@ -380,7 +380,7 @@ function ExplorePage() {
         {/* ── Barra de pesquisa ── */}
         <div className="sticky top-0 z-30 border-b"
           style={{ background: "var(--s0)", borderColor: "var(--border-subtle)" }}>
-          <div className="px-4 py-3">
+          <div className="px-4 py-3 max-w-[680px] mx-auto">
             <div className="relative flex items-center">
               <Search className="absolute left-3.5 h-4 w-4 pointer-events-none" style={{ color: "var(--text-muted)" }} />
               <input
@@ -423,6 +423,7 @@ function ExplorePage() {
         </div>
 
         {/* ══════════ RESULTADOS DE PESQUISA ══════════ */}
+        <div className="max-w-[680px] mx-auto">
         {searchActive ? (
           <div className="px-4 py-4 space-y-6">
             {/* Pessoas */}
@@ -600,6 +601,7 @@ function ExplorePage() {
         ) : tab === "books" ? (
           <BooksSection search={search} navigate={navigate} />
         ) : null}
+        </div>
 
         <BottomNav />
       </PageWrapper>
