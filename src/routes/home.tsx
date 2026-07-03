@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { HoodaLogo } from "@/components/HoodaLogo";
 import { BottomNav, SideNav, PageWrapper } from "@/components/AppShell";
+import { RightSidebar } from "@/components/RightSidebar";
 import { useAvatar } from "@/contexts/AvatarContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { ProfileAvatarLink } from "@/components/ProfileAvatarLink";
@@ -3988,15 +3989,15 @@ function HomePage() {
   if (!ready) return <div className="min-h-screen bg-[var(--s2)]" />;
 
   return (
-    <>
-    <SideNav />
-    <PageWrapper className="pb-20 lg:pb-0">
-      {viewerIdx !== null && (
-        <StoryViewer stories={stories} startIndex={viewerIdx} onClose={() => setViewerIdx(null)} onDelete={handleDeleteStory} userAvatarUrl={userAvatarUrl} />
-      )}
-      {showCreator && (
-        <StoryCreator onClose={() => setShowCreator(false)} onPublish={handlePublish} />
-      )}
+    <div className="flex">
+      <SideNav />
+      <PageWrapper className="pb-20 lg:pb-0 flex-1">
+        {viewerIdx !== null && (
+          <StoryViewer stories={stories} startIndex={viewerIdx} onClose={() => setViewerIdx(null)} onDelete={handleDeleteStory} userAvatarUrl={userAvatarUrl} />
+        )}
+        {showCreator && (
+          <StoryCreator onClose={() => setShowCreator(false)} onPublish={handlePublish} />
+        )}
 
       <header className="sticky top-0 z-30 border-b hooda-sticky-header"
         style={{ background: "var(--s0)", borderColor: "var(--border-subtle)", backdropFilter: "blur(20px)" }}>
@@ -4168,7 +4169,8 @@ function HomePage() {
           onMarkAll={markAllRead}
         />
       )}
-    </PageWrapper>
-    </>
+      </PageWrapper>
+      <RightSidebar />
+    </div>
   );
 }
