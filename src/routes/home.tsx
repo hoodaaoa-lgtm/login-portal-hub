@@ -4003,7 +4003,7 @@ function HomePage() {
   return (
     <div className="flex">
       <SideNav />
-      <PageWrapper className="pb-20 lg:pb-0">
+      <PageWrapper className="pb-20 lg:pb-0 flex-1 min-w-0">
       <FeedLayout
         feed={
           <>

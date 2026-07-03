@@ -41,7 +41,7 @@ export function RightSidebar() {
   }
 
   return (
-    <aside className="hidden xl:flex flex-col h-screen sticky top-0 overflow-y-auto py-4 space-y-4" style={{ scrollbarWidth: "none" }}>
+    <aside className="hidden xl:flex flex-col sticky top-4 space-y-4" style={{ maxHeight: "calc(100vh - 2rem)" }}>
 
       {/* Pesquisa */}
       <button onClick={() => navigate({ to: "/explorar" })}
