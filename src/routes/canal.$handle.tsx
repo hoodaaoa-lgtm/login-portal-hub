@@ -2,8 +2,7 @@ import { createFileRoute, useNavigate, useParams } from "@tanstack/react-router"
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { BottomNav, SideNav, PageWrapper, FeedLayout } from "@/components/AppShell";
-import { RightSidebar } from "@/components/RightSidebar";
+import { BottomNav, SideNav, PageWrapper } from "@/components/AppShell";
 import { PostCommentsModal } from "@/components/PostCommentsModal";
 import { PhotoViewer } from "@/components/PhotoViewer";
 import { useScrollLock } from "@/hooks/useScrollLock";
@@ -372,8 +371,6 @@ function CanalPage() {
     <>
       <SideNav />
       <PageWrapper className="pb-20 lg:pb-0">
-      <FeedLayout
-        feed={<>
         <div className="w-full max-w-[680px]">
 
           {/* Header fixo */}
@@ -569,9 +566,6 @@ function CanalPage() {
             </div>
           )}
         </div>
-        </>}
-        sidebar={<RightSidebar />}
-      />
       </PageWrapper>
       <BottomNav />
 
