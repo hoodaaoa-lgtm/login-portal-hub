@@ -219,6 +219,16 @@ export type Database = {
           name: string
           owner_id: string
           updated_at: string
+          watermark_enabled: boolean | null
+          watermark_type: string | null
+          watermark_text: string | null
+          watermark_image_url: string | null
+          watermark_size: string | null
+          watermark_opacity: number | null
+          watermark_position: string | null
+          signature_enabled: boolean | null
+          signature_style: string | null
+          signature_position: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -232,6 +242,16 @@ export type Database = {
           name: string
           owner_id: string
           updated_at?: string
+          watermark_enabled?: boolean | null
+          watermark_type?: string | null
+          watermark_text?: string | null
+          watermark_image_url?: string | null
+          watermark_size?: string | null
+          watermark_opacity?: number | null
+          watermark_position?: string | null
+          signature_enabled?: boolean | null
+          signature_style?: string | null
+          signature_position?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -245,6 +265,16 @@ export type Database = {
           name?: string
           owner_id?: string
           updated_at?: string
+          watermark_enabled?: boolean | null
+          watermark_type?: string | null
+          watermark_text?: string | null
+          watermark_image_url?: string | null
+          watermark_size?: string | null
+          watermark_opacity?: number | null
+          watermark_position?: string | null
+          signature_enabled?: boolean | null
+          signature_style?: string | null
+          signature_position?: string | null
         }
         Relationships: []
       }
@@ -2226,6 +2256,8 @@ export type Database = {
           video_path: string | null
           views_count: number
           visibility: Database["public"]["Enums"]["video_visibility"]
+          override_watermark: boolean | null
+          override_signature: boolean | null
         }
         Insert: {
           category?: string | null
@@ -2250,6 +2282,8 @@ export type Database = {
           video_path?: string | null
           views_count?: number
           visibility?: Database["public"]["Enums"]["video_visibility"]
+          override_watermark?: boolean | null
+          override_signature?: boolean | null
         }
         Update: {
           category?: string | null
@@ -2274,6 +2308,8 @@ export type Database = {
           video_path?: string | null
           views_count?: number
           visibility?: Database["public"]["Enums"]["video_visibility"]
+          override_watermark?: boolean | null
+          override_signature?: boolean | null
         }
         Relationships: [
           {

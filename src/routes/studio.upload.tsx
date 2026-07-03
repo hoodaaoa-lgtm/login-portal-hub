@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   Upload, Video as VideoIcon, X, Image as ImageIcon,
   Globe, Lock, Link as LinkIcon, Calendar,
-  CheckCircle, Info,
+  CheckCircle, Info, Palette,
 } from "lucide-react";
 import { toast } from "sonner";
 import { uploadToCloudinary } from "@/lib/cloudinary";
@@ -83,6 +83,8 @@ function UploadPage() {
   const [detectedDur,  setDetectedDur]  = useState<number | null>(null);
   const [isShort,      setIsShort]      = useState<boolean | null>(null); // null = a detectar
   const [imgOrientation, setImgOrientation] = useState<"portrait"|"landscape"|"square"|null>(null);
+  const [overrideWatermark, setOverrideWatermark] = useState(true); // by default true (use channel setting if enabled)
+  const [overrideSignature, setOverrideSignature] = useState(true);
 
   const videoRef = useRef<HTMLInputElement>(null);
   const thumbRef = useRef<HTMLInputElement>(null);
@@ -214,6 +216,8 @@ function UploadPage() {
         views_count:      0,
         likes_count:      0,
         is_short:         videoIsShort,  // detectado automaticamente pelas dimensões
+        override_watermark: overrideWatermark ? null : false, // if true, leave null so it uses global channel settings. If false, disable.
+        override_signature: overrideSignature ? null : false,
       });
 
       if (iErr) throw iErr;
@@ -552,6 +556,51 @@ function UploadPage() {
 
             </div>
           </div>
+
+          {/* Personalização (Marca de água e Assinatura) */}
+          {(channel.watermark_enabled || channel.signature_enabled) && (
+            <div>
+              <label className="block text-[13px] font-bold uppercase tracking-wider mb-3" style={{ color: "var(--text-muted)" }}>
+                Personalização (Definições do Canal)
+              </label>
+              <div className="space-y-3 p-4 rounded-2xl border bg-[var(--s2)]" style={{ borderColor: "var(--border-subtle)" }}>
+                {channel.watermark_enabled && (
+                  <label className="flex items-center justify-between cursor-pointer">
+                    <div className="flex items-center gap-2">
+                      <Palette className="w-4 h-4" style={{ color: P }} />
+                      <div>
+                        <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Marca de Água</p>
+                        <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>Aplicar marca de água neste vídeo</p>
+                      </div>
+                    </div>
+                    <div className="relative inline-flex h-5 w-9 cursor-pointer items-center rounded-full transition-colors"
+                      style={{ background: overrideWatermark ? P : "var(--s3)" }}
+                      onClick={() => setOverrideWatermark(!overrideWatermark)}>
+                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${overrideWatermark ? "translate-x-4" : "translate-x-1"}`} />
+                    </div>
+                  </label>
+                )}
+                
+                {channel.signature_enabled && (
+                  <label className="flex items-center justify-between cursor-pointer mt-3">
+                    <div className="flex items-center gap-2">
+                      <Palette className="w-4 h-4" style={{ color: P }} />
+                      <div>
+                        <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Assinatura</p>
+                        <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>Aplicar assinatura neste vídeo</p>
+                      </div>
+                    </div>
+                    <div className="relative inline-flex h-5 w-9 cursor-pointer items-center rounded-full transition-colors"
+                      style={{ background: overrideSignature ? P : "var(--s3)" }}
+                      onClick={() => setOverrideSignature(!overrideSignature)}>
+                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${overrideSignature ? "translate-x-4" : "translate-x-1"}`} />
+                    </div>
+                  </label>
+                )}
+              </div>
+            </div>
+          )}
+
         </div>
 
         {/* ── Coluna direita: thumbnail + publish ── */}

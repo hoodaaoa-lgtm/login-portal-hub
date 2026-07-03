@@ -23,6 +23,24 @@ function fmtTime(s: number) {
   return `${m}:${String(sec).padStart(2, "0")}`;
 }
 
+export interface WatermarkConfig {
+  enabled: boolean;
+  type: string;
+  text?: string;
+  imageUrl?: string;
+  size: string;
+  opacity: number;
+  position: string;
+}
+
+export interface SignatureConfig {
+  enabled: boolean;
+  style: string;
+  position: string;
+  channelName: string;
+  handle?: string;
+}
+
 interface HoodaPlayerProps {
   src: string;
   poster?: string;
@@ -31,6 +49,8 @@ interface HoodaPlayerProps {
   className?: string;
   aspectRatio?: string; // e.g. "16/9", "9/16", "1/1"
   rounded?: string;     // e.g. "rounded-2xl"
+  watermark?: WatermarkConfig | null;
+  signature?: SignatureConfig | null;
 }
 
 export function HoodaPlayer({
@@ -41,6 +61,8 @@ export function HoodaPlayer({
   className = "",
   aspectRatio = "16/9",
   rounded = "rounded-2xl",
+  watermark,
+  signature,
 }: HoodaPlayerProps) {
   const videoRef    = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -176,6 +198,47 @@ export function HoodaPlayer({
       {isBuffering && hasStarted && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="w-11 h-11 rounded-full border-4 border-white/20 border-t-white animate-spin" />
+        </div>
+      )}
+
+      {/* Watermark Overlay */}
+      {watermark?.enabled && (
+        <div 
+          className={`absolute pointer-events-none z-10 p-4 transition-opacity duration-300 ${
+            watermark.position === 'top-left' ? 'top-0 left-0' :
+            watermark.position === 'top-right' ? 'top-0 right-0' :
+            watermark.position === 'bottom-left' ? 'bottom-16 left-0' :
+            watermark.position === 'center' ? 'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2' :
+            'bottom-16 right-0'
+          } ${
+            watermark.size === 'small' ? 'scale-75 origin-center' :
+            watermark.size === 'large' ? 'scale-125 origin-center' : ''
+          }`}
+          style={{ opacity: watermark.opacity / 100 }}
+        >
+          {watermark.type === 'image' && watermark.imageUrl ? (
+            <img src={watermark.imageUrl} alt="Watermark" className="max-h-12 object-contain" />
+          ) : (
+            <span className="text-white font-bold text-lg drop-shadow-md select-none">{watermark.text}</span>
+          )}
+        </div>
+      )}
+
+      {/* Signature Overlay */}
+      {signature?.enabled && (
+        <div 
+          className={`absolute pointer-events-none z-10 p-4 transition-opacity duration-300 flex items-center gap-2 ${
+            signature.position === 'top-left' ? 'top-0 left-0' :
+            signature.position === 'bottom-right' ? 'bottom-16 right-0' :
+            'bottom-16 left-0'
+          } ${
+            signature.style === 'small' ? 'scale-75 origin-left opacity-70' :
+            signature.style === 'large' ? 'scale-125 origin-left font-extrabold' : 'font-bold'
+          }`}
+        >
+          <span className="text-white drop-shadow-md select-none tracking-tight">
+            {signature.channelName} {signature.handle && <span className="opacity-80">@{signature.handle}</span>}
+          </span>
         </div>
       )}
 
