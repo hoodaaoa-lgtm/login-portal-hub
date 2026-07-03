@@ -26,7 +26,7 @@ const MAX_VIDEO_FREE = 100 * 1024 * 1024;  // 100 MB — threshold para upload r
 const MAX_IMG        = 5   * 1024 * 1024;
 
 type Step       = "drop" | "details" | "uploading" | "done";
-type Visibility = "public" | "private" | "unlisted" | "scheduled";
+type Visibility = "public" | "scheduled" | "announced";
 
 /* ── Detecta duração + dimensões do vídeo ─────────────────── */
 function getVideoMeta(file: File): Promise<{ duration: number | null; isShort: boolean }> {
@@ -73,7 +73,7 @@ function UploadPage() {
   const [thumbPrev,    setThumbPrev]    = useState<string>("");
   const [title,        setTitle]        = useState("");
   const [description,  setDescription]  = useState("");
-  const [visibility,   setVisibility]   = useState<Visibility>("private");
+  const [visibility,   setVisibility]   = useState<Visibility>("public");
   const [scheduledAt,  setScheduledAt]  = useState<string>("");
   const [tags,         setTags]         = useState<string[]>([]);
   const [tagInput,     setTagInput]     = useState("");
@@ -192,7 +192,7 @@ function UploadPage() {
       const isScheduled = visibility === "scheduled";
       const publishedAt = isScheduled
         ? (scheduledAt ? new Date(scheduledAt).toISOString() : null)
-        : (visibility === "public" ? new Date().toISOString() : null);
+        : new Date().toISOString();
 
       const { error: iErr } = await (supabase as any).from("videos").insert({
         id:               videoId,
@@ -208,7 +208,8 @@ function UploadPage() {
         duration_seconds: cloudResult.duration ?? duration,
         tags:             tags.length ? tags : null,
         status:           isScheduled ? "processing" : "published",
-        visibility:       isScheduled ? "private" : visibility as any,
+        visibility:       isScheduled ? "private" : "public",
+        announced:        visibility === "announced",
         published_at:     publishedAt,
         views_count:      0,
         likes_count:      0,
@@ -224,7 +225,11 @@ function UploadPage() {
 
       setTimeout(() => {
         setStep("done");
-        toast.success(isScheduled ? "Vídeo agendado!" : "Vídeo publicado com sucesso!");
+        toast.success(
+        isScheduled ? "Vídeo agendado!" :
+        visibility === "announced" ? "Vídeo publicado e anunciado!" :
+        "Vídeo publicado com sucesso!"
+      );
       }, 600);
 
     } catch (e: any) {
@@ -424,47 +429,128 @@ function UploadPage() {
             </div>
           </div>
 
-          {/* Visibilidade */}
+          {/* Publicação */}
           <div>
-            <label className="block text-[13px] font-bold uppercase tracking-wider mb-2" style={{ color: "var(--text-muted)" }}>
-              Visibilidade
+            <label className="block text-[13px] font-bold uppercase tracking-wider mb-3" style={{ color: "var(--text-muted)" }}>
+              Quando publicar
             </label>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {([
-                { key: "public",    icon: Globe,    label: t("studio.public"),   desc: "Visível na HoodaTV" },
-                { key: "unlisted",  icon: LinkIcon, label: "Com link",  desc: "Só com o link" },
-                { key: "private",   icon: Lock,     label: t("studio.private"),   desc: "Só tu podes ver" },
-                { key: "scheduled", icon: Calendar, label: "Agendado",  desc: "Publica na data" },
-              ] as const).map(opt => {
-                const Icon = opt.icon;
-                const sel  = visibility === opt.key;
-                return (
-                  <button key={opt.key} onClick={() => setVisibility(opt.key)}
-                    className="flex flex-col items-center gap-1.5 p-3.5 rounded-2xl border-2 transition-all text-center"
-                    style={{ borderColor: sel ? P : "var(--border-default)", background: sel ? `${P}08` : "var(--s3)" }}>
-                    <Icon className="w-5 h-5" style={{ color: sel ? P : "var(--text-muted)" }} />
-                    <span className="text-xs font-bold" style={{ color: sel ? P : "var(--text-primary)" }}>{opt.label}</span>
-                    <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>{opt.desc}</span>
-                  </button>
-                );
-              })}
-            </div>
+            <div className="space-y-2.5">
 
-            {/* Date picker para agendado */}
-            {visibility === "scheduled" && (
-              <div className="mt-3">
-                <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-muted)" }}>
-                  Data e hora de publicação
-                </label>
-                <input
-                  type="datetime-local"
-                  value={scheduledAt}
-                  min={new Date(Date.now() + 60_000).toISOString().slice(0, 16)}
-                  onChange={e => setScheduledAt(e.target.value)}
-                  className={inputCls}
-                />
-              </div>
-            )}
+              {/* Opção 1 — Publicar agora */}
+              <button onClick={() => setVisibility("public")}
+                className="w-full flex items-start gap-4 p-4 rounded-2xl border-2 text-left transition-all active:scale-[0.99]"
+                style={{ borderColor: visibility === "public" ? P : "var(--border-default)", background: visibility === "public" ? `${P}08` : "var(--s2)" }}>
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 mt-0.5"
+                  style={{ background: visibility === "public" ? P : "var(--s3)" }}>
+                  <Globe className="w-5 h-5" style={{ color: visibility === "public" ? "#fff" : "var(--text-muted)" }} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-sm" style={{ color: "var(--text-primary)" }}>Publicar agora</p>
+                  <p className="text-[12px] mt-0.5" style={{ color: "var(--text-muted)" }}>
+                    O vídeo vai ao ar imediatamente e os teus seguidores são notificados.
+                  </p>
+                  {visibility === "public" && (
+                    <div className="flex items-center gap-1.5 mt-2 text-[11px] font-semibold" style={{ color: "#6BA547" }}>
+                      <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                      Publica assim que o upload terminar
+                    </div>
+                  )}
+                </div>
+                <div className="w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5 transition"
+                  style={{ borderColor: visibility === "public" ? P : "var(--border-default)", background: visibility === "public" ? P : "transparent" }}>
+                  {visibility === "public" && <div className="w-2 h-2 rounded-full bg-white" />}
+                </div>
+              </button>
+
+              {/* Opção 2 — Agendar */}
+              <button onClick={() => setVisibility("scheduled")}
+                className="w-full flex items-start gap-4 p-4 rounded-2xl border-2 text-left transition-all active:scale-[0.99]"
+                style={{ borderColor: visibility === "scheduled" ? P : "var(--border-default)", background: visibility === "scheduled" ? `${P}08` : "var(--s2)" }}>
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 mt-0.5"
+                  style={{ background: visibility === "scheduled" ? P : "var(--s3)" }}>
+                  <Calendar className="w-5 h-5" style={{ color: visibility === "scheduled" ? "#fff" : "var(--text-muted)" }} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-sm" style={{ color: "var(--text-primary)" }}>Agendar publicação</p>
+                  <p className="text-[12px] mt-0.5" style={{ color: "var(--text-muted)" }}>
+                    O vídeo é enviado agora mas o sistema lança-o automaticamente na hora que escolheres.
+                  </p>
+                  {visibility === "scheduled" && (
+                    <div className="mt-3 space-y-2">
+                      {/* Atalhos rápidos */}
+                      <div className="flex gap-2 flex-wrap">
+                        {[
+                          { label: "Hoje 13h",    value: (() => { const d = new Date(); d.setHours(13,0,0,0); return d; })() },
+                          { label: "Hoje 18h",    value: (() => { const d = new Date(); d.setHours(18,0,0,0); return d; })() },
+                          { label: "Amanhã 9h",   value: (() => { const d = new Date(); d.setDate(d.getDate()+1); d.setHours(9,0,0,0); return d; })() },
+                          { label: "Amanhã 18h",  value: (() => { const d = new Date(); d.setDate(d.getDate()+1); d.setHours(18,0,0,0); return d; })() },
+                        ].map(opt => {
+                          const val = opt.value.toISOString().slice(0,16);
+                          const sel = scheduledAt === val;
+                          return (
+                            <button key={opt.label} type="button"
+                              onClick={e => { e.stopPropagation(); setScheduledAt(val); }}
+                              className="px-3 py-1.5 rounded-xl text-[11px] font-bold border transition active:scale-95"
+                              style={{
+                                borderColor: sel ? P : "var(--border-default)",
+                                background:  sel ? P : "var(--s3)",
+                                color:       sel ? "#fff" : "var(--text-secondary)",
+                              }}>
+                              {opt.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {/* Input personalizado */}
+                      <input type="datetime-local"
+                        value={scheduledAt}
+                        min={new Date(Date.now() + 5 * 60_000).toISOString().slice(0,16)}
+                        onChange={e => setScheduledAt(e.target.value)}
+                        onClick={e => e.stopPropagation()}
+                        className="w-full rounded-xl px-3 py-2 text-sm border outline-none"
+                        style={{ background: "var(--s0)", borderColor: "var(--border-default)", color: "var(--text-primary)" }} />
+                      {scheduledAt && (
+                        <p className="text-[11px] font-semibold flex items-center gap-1.5" style={{ color: P }}>
+                          <Calendar className="w-3 h-3" />
+                          Será publicado em {new Date(scheduledAt).toLocaleString("pt-PT", { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <div className="w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5 transition"
+                  style={{ borderColor: visibility === "scheduled" ? P : "var(--border-default)", background: visibility === "scheduled" ? P : "transparent" }}>
+                  {visibility === "scheduled" && <div className="w-2 h-2 rounded-full bg-white" />}
+                </div>
+              </button>
+
+              {/* Opção 3 — Publicar e Anunciar */}
+              <button onClick={() => setVisibility("announced")}
+                className="w-full flex items-start gap-4 p-4 rounded-2xl border-2 text-left transition-all active:scale-[0.99]"
+                style={{ borderColor: visibility === "announced" ? P : "var(--border-default)", background: visibility === "announced" ? `${P}08` : "var(--s2)" }}>
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 mt-0.5"
+                  style={{ background: visibility === "announced" ? P : "var(--s3)" }}>
+                  <Bell className="w-5 h-5" style={{ color: visibility === "announced" ? "#fff" : "var(--text-muted)" }} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-sm" style={{ color: "var(--text-primary)" }}>Publicar e Anunciar</p>
+                  <p className="text-[12px] mt-0.5" style={{ color: "var(--text-muted)" }}>
+                    Vai ao ar agora e aparece um aviso especial no feed dos seguidores com a hora de publicação.
+                  </p>
+                  {visibility === "announced" && (
+                    <div className="mt-2 flex items-center gap-1.5 text-[11px] font-semibold" style={{ color: "#F26B3A" }}>
+                      <Bell className="w-3 h-3" />
+                      Os seguidores verão "Novo vídeo publicado às {new Date().toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit" })}"
+                    </div>
+                  )}
+                </div>
+                <div className="w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5 transition"
+                  style={{ borderColor: visibility === "announced" ? P : "var(--border-default)", background: visibility === "announced" ? P : "transparent" }}>
+                  {visibility === "announced" && <div className="w-2 h-2 rounded-full bg-white" />}
+                </div>
+              </button>
+
+            </div>
           </div>
         </div>
 
