@@ -189,8 +189,8 @@ export function BottomNav() {
           {MOBILE_ITEMS.map(({ to, label, Icon }) => {
             const isMenu = to === null;
             const active = !isMenu && (
-              to === "/hoodatv" || (to as string) === "/studio"
-                ? pathname.startsWith(to)
+              (to as string) === "/hoodatv" || (to as string) === "/studio"
+                ? pathname.startsWith(to as string)
                 : pathname === to
             );
             const badgeCount = !isMenu ? badgeCountFor(to as string, unreadMessages, unreadCommunities) : 0;
