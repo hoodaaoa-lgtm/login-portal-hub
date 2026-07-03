@@ -589,22 +589,23 @@
 /* ── hooda-card: universal card class ── */
 .hooda-card {
   background: var(--s0);
-  border: 1px solid var(--border-subtle);
-  border-radius: 16px;
-  transition: box-shadow 0.2s ease;
+  border: none;
+  border-bottom: 1px solid var(--border-subtle);
+  border-radius: 0;
+  transition: background 0.15s ease;
 }
 .hooda-card:hover {
-  box-shadow: var(--shadow-card);
+  background: var(--s2);
 }
 
-/* In dark mode, cards are s2 (elevated from page bg s1) */
+/* In dark mode */
 .dark .hooda-card {
-  background: var(--s2);
-  border-color: var(--border-subtle);
+  background: var(--s1);
+  border-bottom-color: var(--border-subtle);
   box-shadow: none;
 }
 .dark .hooda-card:hover {
-  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  background: var(--s2);
 }
 
 /* ── Scrollbar: custom thin scrollbar in light/dark ── */

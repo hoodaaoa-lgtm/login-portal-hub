@@ -2444,7 +2444,7 @@ function ClipCard({ p, liked, likeCount, viewCount, onLike, onComment }: {
   const dur = fmt((p.clip_end ?? 0) - (p.clip_start ?? 0));
 
   return (
-    <article className="hooda-card overflow-hidden animate-fade-in-up" style={{ borderRadius: 16 }}>
+    <article className="hooda-card overflow-hidden animate-fade-in-up">
 
       {/* ── Cabeçalho do canal ── */}
       <button
@@ -2805,7 +2805,7 @@ function PostCard({ p }: { p: any }) {
   }
 
   return (
-    <article className="hooda-card overflow-hidden animate-fade-in-up" style={{ borderRadius: 16 }}>
+    <article className="hooda-card overflow-hidden animate-fade-in-up">
 
       {/* Banner "X repostou" */}
       {p.reposted_by_name && (
