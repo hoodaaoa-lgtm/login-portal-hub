@@ -268,23 +268,16 @@ export function PageWrapper({ children, className = "" }: { children: React.Reac
 }
 
 /* ─── Layout de 3 colunas (feed largo + sidebar direita) ───
-   Sidebar esquerda: 280px (fixa, fora deste componente).
-   Encostado à esquerda (sem centrar), estilo X: feed cresce até 820px,
-   sidebar direita (320px) cola-se logo a seguir com gap de 20px.
-   O espaço sobrante (se o ecrã for muito largo) fica livre à direita. */
+   Sidebar esquerda: 280px (fixa). Sidebar direita: 320px (fixa, à direita) —
+   ambas fora do fluxo, nunca acompanham o scroll da página.
+   O feed reserva espaço à direita (xl:pr) para não ficar por baixo da sidebar. */
 export function FeedLayout({ feed, sidebar }: { feed: React.ReactNode; sidebar?: React.ReactNode }) {
   return (
     <div className="flex w-full min-h-screen">
-      {/* Feed — ocupa o espaço disponível, entre 750px e 820px */}
-      <div className="flex-1 min-w-0 max-w-[820px]">
+      <div className="flex-1 min-w-0 max-w-[820px] xl:mr-[320px]">
         {feed}
       </div>
-      {/* Sidebar direita — 320px, gap 20px, colada ao feed, só em xl */}
-      {sidebar && (
-        <div className="hidden xl:block w-[320px] shrink-0 ml-5">
-          {sidebar}
-        </div>
-      )}
+      {sidebar}
     </div>
   );
 }
