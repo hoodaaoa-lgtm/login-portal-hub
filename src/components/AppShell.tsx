@@ -88,8 +88,8 @@ export function SideNav() {
       {/* Nav links */}
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
         {NAV_ITEMS.map(({ to, label, Icon }) => {
-          const active = to === "/hoodatv" || (to as string) === "/studio"
-            ? pathname.startsWith(to)
+          const active = (to as string) === "/hoodatv" || (to as string) === "/studio"
+            ? pathname.startsWith(to as string)
             : pathname === to;
           const isPerfil = to === "/perfil";
           return (
