@@ -25,23 +25,78 @@ type Vis = "public" | "private" | "unlisted";
 
 /* ── Edit modal ── */
 function EditModal({ v, onClose, onSave }: { v: any; onClose: () => void; onSave: () => void }) {
-  const [title, setTitle]       = useState(v.title ?? "");
-  const [desc,  setDesc]        = useState(v.description ?? "");
-  const [vis,   setVis]         = useState<Vis>(v.visibility ?? "private");
-  const [saving, setSaving]     = useState(false);
+  const [title,    setTitle]    = useState(v.title ?? "");
+  const [desc,     setDesc]     = useState(v.description ?? "");
+  const [vis,      setVis]      = useState<Vis>(v.visibility ?? "public");
+  const [saving,   setSaving]   = useState(false);
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [videoPreview, setVideoPreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadPct, setUploadPct] = useState(0);
+
+  function pickVideo() {
+    const inp = document.createElement("input");
+    inp.type = "file"; inp.accept = "video/*";
+    inp.onchange = (e: any) => {
+      const f = e.target.files?.[0];
+      if (!f) return;
+      setVideoFile(f);
+      setVideoPreview(URL.createObjectURL(f));
+    };
+    inp.click();
+  }
 
   async function save() {
     if (!title.trim()) { toast.error("O título não pode estar vazio."); return; }
     setSaving(true);
+
+    let videoUrl = v.cf_stream_url ?? v.video_path ?? null;
+
+    // Upload do vídeo se foi selecionado
+    if (videoFile) {
+      setUploading(true);
+      try {
+        const { uploadImageToCloudinary } = await import("@/lib/cloudinary");
+        // Para vídeos usamos Cloudinary via fetch direto
+        const formData = new FormData();
+        formData.append("file", videoFile);
+        formData.append("upload_preset", "hooda_videos");
+        formData.append("folder", `hooda/videos`);
+        formData.append("resource_type", "video");
+
+        const xhr = new XMLHttpRequest();
+        videoUrl = await new Promise<string>((resolve, reject) => {
+          xhr.upload.addEventListener("progress", e => {
+            if (e.lengthComputable) setUploadPct(Math.round(e.loaded / e.total * 100));
+          });
+          xhr.addEventListener("load", () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              const data = JSON.parse(xhr.responseText);
+              resolve(data.secure_url);
+            } else reject(new Error("Upload falhou"));
+          });
+          xhr.addEventListener("error", () => reject(new Error("Erro de rede")));
+          xhr.open("POST", `https://api.cloudinary.com/v1_1/dy7o7tgmk/video/upload`);
+          xhr.send(formData);
+        });
+      } catch {
+        toast.error("Erro ao enviar vídeo."); setSaving(false); setUploading(false); return;
+      }
+      setUploading(false);
+    }
+
     const { error } = await (supabase as any).from("videos").update({
       title: title.trim(),
       description: desc.trim() || null,
-      visibility: vis,
-      published_at: vis === "public" && !v.published_at ? new Date().toISOString() : v.published_at,
+      visibility: "public",
+      cf_stream_url: videoUrl,
+      status: "published",
+      published_at: v.published_at ?? new Date().toISOString(),
     }).eq("id", v.id);
+
     setSaving(false);
     if (error) { toast.error("Erro ao guardar. Tenta novamente."); return; }
-    toast.success("Vídeo atualizado!");
+    toast.success(videoFile ? "Vídeo adicionado e publicado!" : "Vídeo atualizado!");
     onSave();
     onClose();
   }
@@ -104,16 +159,45 @@ function EditModal({ v, onClose, onSave }: { v: any; onClose: () => void; onSave
           </div>
         </div>
 
+        {/* Adicionar vídeo */}
+        <div>
+          <label className="text-[12px] font-bold uppercase tracking-wider block mb-2"
+            style={{ color: "var(--text-muted)" }}>
+            {v.cf_stream_url || v.video_path ? "Substituir vídeo" : "Adicionar vídeo"}
+          </label>
+          {videoPreview
+            ? <div className="space-y-2">
+                <video src={videoPreview} controls className="w-full aspect-video rounded-2xl bg-black" />
+                {uploading && (
+                  <div className="space-y-1">
+                    <div className="h-2 rounded-full overflow-hidden" style={{ background: "var(--s3)" }}>
+                      <div className="h-full rounded-full transition-all" style={{ width: `${uploadPct}%`, background: GRAD }} />
+                    </div>
+                    <p className="text-[11px] font-semibold" style={{ color: "var(--text-muted)" }}>{uploadPct}% enviado…</p>
+                  </div>
+                )}
+                <button onClick={() => { setVideoFile(null); setVideoPreview(null); }}
+                  className="text-xs text-red-500 underline">Remover</button>
+              </div>
+            : <button onClick={pickVideo}
+                className="w-full aspect-video rounded-2xl border-2 border-dashed flex flex-col items-center justify-center gap-2 transition hover:bg-[var(--s2)]"
+                style={{ borderColor: "var(--border-default)" }}>
+                {v.cf_stream_url || v.video_path
+                  ? <><Video className="w-8 h-8" style={{ color: "var(--text-muted)" }} /><p className="text-sm font-semibold" style={{ color: "var(--text-muted)" }}>Vídeo já adicionado — clica para substituir</p></>
+                  : <><Upload className="w-8 h-8" style={{ color: P }} /><p className="text-sm font-bold" style={{ color: P }}>Clica para adicionar o vídeo</p><p className="text-xs" style={{ color: "var(--text-muted)" }}>MP4, MOV, WEBM até 500MB</p></>}
+              </button>}
+        </div>
+
         <div className="flex gap-3 pt-2">
-          <button onClick={onClose} disabled={saving}
+          <button onClick={onClose} disabled={saving || uploading}
             className="flex-1 py-2.5 rounded-2xl text-sm font-bold border transition"
             style={{ borderColor: "var(--border-default)", color: "var(--text-secondary)" }}>
             Cancelar
           </button>
-          <button onClick={save} disabled={saving}
+          <button onClick={save} disabled={saving || uploading}
             className="flex-1 py-2.5 rounded-2xl text-sm font-bold text-white flex items-center justify-center gap-2 transition"
             style={{ background: GRAD }}>
-            {saving ? t("settings.saving") : <><Save className="w-3.5 h-3.5" /> Guardar</>}
+            {uploading ? `A enviar ${uploadPct}%…` : saving ? "A guardar…" : <><Save className="w-3.5 h-3.5" /> Guardar</>}
           </button>
         </div>
       </div>
