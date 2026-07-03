@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS public.drops (
   text_content    TEXT,
   music_url       TEXT,
   music_title     TEXT,
+  aspect_ratio    REAL,
   duration_hours  INTEGER NOT NULL DEFAULT 24 CHECK (duration_hours IN (6,12,24,48)),
   created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
   expires_at      TIMESTAMPTZ NOT NULL DEFAULT now() + INTERVAL '24 hours',
@@ -29,6 +30,8 @@ CREATE INDEX IF NOT EXISTS drops_created_idx  ON public.drops(created_at DESC);
 CREATE INDEX IF NOT EXISTS drops_expires_idx  ON public.drops(expires_at);
 CREATE INDEX IF NOT EXISTS drops_author_idx   ON public.drops(author_username);
 CREATE INDEX IF NOT EXISTS drops_user_idx     ON public.drops(user_id);
+-- Caso a tabela já exista de uma execução anterior, garante a coluna de aspeto
+ALTER TABLE public.drops ADD COLUMN IF NOT EXISTS aspect_ratio REAL;
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.drops TO authenticated;
 GRANT ALL ON public.drops TO service_role;

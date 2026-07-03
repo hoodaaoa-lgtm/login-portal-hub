@@ -8,6 +8,7 @@ import {
   X, Image as ImageIcon, Music, Video, Type as TypeIcon, Play, Send, Droplet,
 } from "lucide-react";
 import { timeAgo } from "@/hooks/useTimeAgo";
+import { HoodaPlayer } from "@/components/HoodaPlayer";
 import i18n from "@/lib/i18n";
 
 function t(key: string, fallback: string) {
@@ -36,6 +37,7 @@ interface Drop {
   text_content: string | null;
   music_url: string | null;
   music_title: string | null;
+  aspect_ratio: number | null;
   duration_hours: number;
   created_at: string;
   expires_at: string;
@@ -284,13 +286,16 @@ function DropCard({ drop, userId }: { drop: Drop; userId: string | null }) {
         </p>
       )}
       {drop.content_type === "photo" && drop.content_url && (
-        <div className="rounded-2xl overflow-hidden mb-3">
-          <img src={drop.content_url} alt="" className="w-full max-h-[420px] object-cover" />
+        <div className="rounded-2xl overflow-hidden mb-3 flex justify-center" style={{ background: "var(--s2)" }}>
+          <img src={drop.content_url} alt=""
+            className="w-full h-auto object-contain"
+            style={drop.aspect_ratio ? { aspectRatio: String(drop.aspect_ratio) } : undefined} />
         </div>
       )}
       {drop.content_type === "video" && drop.content_url && (
-        <div className="rounded-2xl overflow-hidden mb-3 relative">
-          <video src={drop.content_url} controls playsInline className="w-full max-h-[420px] object-cover bg-black" />
+        <div className="mb-3">
+          <HoodaPlayer src={drop.content_url}
+            aspectRatio={drop.aspect_ratio ? String(drop.aspect_ratio) : "9/16"} />
         </div>
       )}
       {drop.content_type === "music" && drop.music_url && (
@@ -454,9 +459,25 @@ function CreateDropModal({ userId, onClose, onCreated }: {
   const [error, setError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  const [aspect, setAspect] = useState<number | null>(null);
+
   function pickFile(f: File | null) {
     setFile(f);
-    setPreview(f ? URL.createObjectURL(f) : null);
+    setAspect(null);
+    const url = f ? URL.createObjectURL(f) : null;
+    setPreview(url);
+    if (!f || !url) return;
+    // Lê as dimensões naturais para preservar o tamanho/aspeto (shorts incluídos)
+    if (f.type.startsWith("image/")) {
+      const img = new Image();
+      img.onload = () => { if (img.naturalHeight) setAspect(img.naturalWidth / img.naturalHeight); };
+      img.src = url;
+    } else if (f.type.startsWith("video/")) {
+      const v = document.createElement("video");
+      v.preload = "metadata";
+      v.onloadedmetadata = () => { if (v.videoHeight) setAspect(v.videoWidth / v.videoHeight); };
+      v.src = url;
+    }
   }
 
   async function submit() {
@@ -483,6 +504,7 @@ function CreateDropModal({ userId, onClose, onCreated }: {
         text_content: text.trim() || null,
         music_url: type === "music" ? musicUrl.trim() : null,
         music_title: type === "music" ? (musicTitle.trim() || null) : null,
+        aspect_ratio: (type === "photo" || type === "video") ? aspect : null,
         duration_hours: duration,
       });
       if (insErr) throw insErr;
@@ -538,10 +560,10 @@ function CreateDropModal({ userId, onClose, onCreated }: {
             <input ref={fileRef} type="file" hidden accept={type === "photo" ? "image/*" : "video/*"}
               onChange={(e) => pickFile(e.target.files?.[0] ?? null)} />
             {preview ? (
-              <div className="relative rounded-2xl overflow-hidden">
+              <div className="relative rounded-2xl overflow-hidden flex justify-center" style={{ background: "var(--s2)" }}>
                 {type === "photo"
-                  ? <img src={preview} alt="" className="w-full max-h-52 object-cover" />
-                  : <video src={preview} className="w-full max-h-52 object-cover bg-black" />}
+                  ? <img src={preview} alt="" className="w-full max-h-72 object-contain" />
+                  : <video src={preview} controls playsInline className="w-full max-h-72 object-contain bg-black" />}
                 <button onClick={() => pickFile(null)}
                   className="absolute top-2 right-2 w-8 h-8 rounded-full grid place-items-center" style={{ background: "rgba(0,0,0,.6)" }}>
                   <X className="w-4 h-4 text-white" />
