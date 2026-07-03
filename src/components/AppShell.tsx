@@ -274,7 +274,7 @@ export function PageWrapper({ children, className = "" }: { children: React.Reac
 export function FeedLayout({ feed, sidebar }: { feed: React.ReactNode; sidebar?: React.ReactNode }) {
   return (
     <div className="flex w-full min-h-screen">
-      <div className="flex-1 min-w-0 max-w-[820px] xl:mr-[320px]">
+      <div className="flex-1 min-w-0 max-w-[820px]">
         {feed}
       </div>
       {sidebar}

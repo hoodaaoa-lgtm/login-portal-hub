@@ -41,7 +41,7 @@ export function RightSidebar() {
   }
 
   return (
-    <aside className="hidden xl:flex flex-col fixed right-0 top-0 bottom-0 w-[320px] border-l z-40 px-4 py-4 space-y-4"
+    <aside className="hidden xl:flex flex-col sticky top-0 h-screen w-[320px] shrink-0 border-l z-40 px-4 py-4 space-y-4 overflow-y-auto"
       style={{ background: "var(--surface-0)", borderColor: "var(--border-subtle)" }}>
 
       {/* Pesquisa */}
