@@ -1031,7 +1031,7 @@ function UserProfilePage() {
         {/* ── Header fixo ── */}
         <header className="sticky top-0 z-30 border-b"
           style={{background:"var(--s0)",borderColor:"var(--border-subtle)"}}>
-          <div className="max-w-2xl mx-auto px-4 h-14 flex items-center gap-3">
+          <div className="px-4 h-14 flex items-center gap-3">
             <button onClick={()=>navigate({to:"/home"})}
               className="p-2 rounded-full hover:bg-[var(--s2)] transition active:scale-90">
               <ChevronLeft className="h-5 w-5" style={{color:"var(--text-primary)"}} />
@@ -1062,7 +1062,7 @@ function UserProfilePage() {
           </div>
         </header>
 
-        <main className="max-w-2xl mx-auto">
+        <main className="w-full">
 
           {/* ── Capa ── */}
           <div className="relative" style={{height:140}}>

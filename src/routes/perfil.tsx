@@ -586,7 +586,7 @@ function PostsFeed({ posts, loading, name, username, avatarUrl, onLike, onBookma
     </div>
   );
   return (
-    <div className="pb-6 space-y-3 max-w-xl mx-auto w-full px-3 pt-2">
+    <div className="pb-6 space-y-3 w-full px-3 pt-2">
       {posts.map((post) => (
         <PostCard key={post.id} post={post} name={name} username={username}
           isOwner avatarUrl={avatarUrl} myUserId={myUserId} authorId={myUserId}
@@ -2503,7 +2503,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
     <PageWrapper className="pb-20 lg:pb-0">
       {/* Header */}
       <header className="sticky top-0 z-30 border-b" style={{ background: "var(--surface-0)", borderColor: "var(--border-subtle)" }}>
-        <div className="mx-auto max-w-2xl lg:max-w-3xl px-4 h-14 flex items-center justify-between">
+        <div className="px-4 h-14 flex items-center justify-between">
           <HoodaLogo size="sm" className="lg:hidden" />
           <span className="hidden lg:block text-sm font-bold" style={{ color: "var(--text-primary)" }}>Perfil</span>
           <span aria-hidden className="w-9" />
@@ -2514,7 +2514,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
       <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" />
       <input ref={coverInputRef} type="file" accept="image/*" className="hidden" />
 
-      <main className="mx-auto max-w-2xl lg:max-w-3xl">
+      <main className="w-full">
         {/* Capa */}
         <div className="relative">
           <div className="h-32 relative overflow-hidden"
@@ -2667,7 +2667,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
               <p className="text-xs text-[var(--text-muted)]">As tuas respostas, reposts e citações aparecem aqui.</p>
             </div>
           ) : (
-            <div className="pb-6 space-y-3 max-w-xl mx-auto w-full px-3 pt-2">
+            <div className="pb-6 space-y-3 w-full px-3 pt-2">
               {activities.map((a) => (
                 <div key={a.id} className="px-4 py-4">
                   {/* Tipo de actividade */}
@@ -2728,7 +2728,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
               <p className="text-xs text-[var(--text-muted)]">As publicações que guardares aparecem aqui.</p>
             </div>
           ) : (
-            <div className="pb-6 space-y-3 max-w-xl mx-auto w-full px-3 pt-2">
+            <div className="pb-6 space-y-3 w-full px-3 pt-2">
               {savedPosts.map((sp) => (
                 <PostCard key={sp.id} post={sp} name={sp.authorName} username={sp.authorUsername}
                   isOwner={sp.authorId === myUserId} avatarUrl={sp.authorAvatar}
@@ -2896,11 +2896,11 @@ function PublicProfile({ profile, email }: { profile: Profile | null; email: str
     <SideNav />
     <PageWrapper className="pb-20 lg:pb-0">
       <header className="sticky top-0 z-30 border-b" style={{ background: "var(--surface-0)", borderColor: "var(--border-subtle)" }}>
-        <div className="mx-auto max-w-2xl lg:max-w-3xl px-4 h-14 flex items-center">
+        <div className="px-4 h-14 flex items-center">
           <HoodaLogo size="sm" />
         </div>
       </header>
-      <main className="mx-auto max-w-2xl lg:max-w-3xl">
+      <main className="w-full">
         <div className="h-32 relative" style={{ background: "linear-gradient(135deg,#5B3FCF 0%,#1FAFA6 50%,#FFC93C 100%)" }}>
           <div className="absolute left-5" style={{ bottom: -42 }}>
             <Avatar name={name} size={84} />

@@ -3,7 +3,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { HoodaLogo } from "@/components/HoodaLogo";
-import { BottomNav, SideNav, PageWrapper } from "@/components/AppShell";
+import { BottomNav, SideNav, PageWrapper, FeedLayout } from "@/components/AppShell";
 import { RightSidebar } from "@/components/RightSidebar";
 import { useAvatar } from "@/contexts/AvatarContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -3991,7 +3991,9 @@ function HomePage() {
   return (
     <div className="flex">
       <SideNav />
-      <PageWrapper className="pb-20 lg:pb-0 flex-1">
+      <FeedLayout
+        feed={
+          <PageWrapper className="pb-20 lg:pb-0">
         {viewerIdx !== null && (
           <StoryViewer stories={stories} startIndex={viewerIdx} onClose={() => setViewerIdx(null)} onDelete={handleDeleteStory} userAvatarUrl={userAvatarUrl} />
         )}
@@ -4001,7 +4003,7 @@ function HomePage() {
 
       <header className="sticky top-0 z-30 border-b hooda-sticky-header"
         style={{ background: "var(--s0)", borderColor: "var(--border-subtle)", backdropFilter: "blur(20px)" }}>
-        <div className="mx-auto max-w-2xl lg:max-w-3xl px-4 h-14 flex items-center justify-between">
+        <div className="mx-auto px-4 h-14 flex items-center justify-between max-w-full">
           <HoodaLogo size="sm" className="lg:hidden" />
           <span className="hidden lg:block" />
           <div className="flex items-center gap-1">
@@ -4023,7 +4025,7 @@ function HomePage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-2xl lg:max-w-3xl">
+      <main className="w-full max-w-full">
         {/* Feed - sem stories */}
             {stories.map((s, i) => (
               <li key={s.name} className="flex flex-col items-center gap-1 shrink-0">
@@ -4108,7 +4110,7 @@ function HomePage() {
               </li>
             ))}
         {/* Feed */}
-        <section className="pt-1 pb-6 space-y-1 max-w-xl mx-auto w-full px-3">
+        <section className="pt-1 pb-6 space-y-1 w-full px-3">
           {loadingFeed && <FeedSkeleton count={4} />}
 
           {!loadingFeed && realPosts.length === 0 && (
@@ -4161,7 +4163,9 @@ function HomePage() {
         />
       )}
       </PageWrapper>
-      <RightSidebar />
+        }
+        sidebar={<RightSidebar />}
+      />
     </div>
   );
 }

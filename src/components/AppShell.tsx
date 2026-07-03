@@ -262,3 +262,21 @@ export function PageWrapper({ children, className = "" }: { children: React.Reac
     </div>
   );
 }
+
+/* ─── Layout de 3 colunas (feed + sidebar direita) ─── */
+export function FeedLayout({ feed, sidebar }: { feed: React.ReactNode; sidebar?: React.ReactNode }) {
+  return (
+    <div className="flex w-full min-h-screen">
+      {/* Feed — ocupa todo o espaço disponível */}
+      <div className="flex-1 min-w-0">
+        {feed}
+      </div>
+      {/* Sidebar direita — fixa, só aparece em xl */}
+      {sidebar && (
+        <div className="hidden xl:block w-[300px] 2xl:w-[340px] shrink-0">
+          {sidebar}
+        </div>
+      )}
+    </div>
+  );
+}
