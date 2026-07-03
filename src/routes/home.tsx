@@ -4024,12 +4024,7 @@ function HomePage() {
       </header>
 
       <main className="mx-auto max-w-2xl lg:max-w-3xl">
-        {/* Stories row — mostra skeleton circular imediatamente, substitui pelo conteúdo real */}
-        {loadingStories ? (
-          <StoriesRowSkeleton count={6} />
-        ) : (
-        <section className="border-b mb-2" style={{ background: "var(--surface-0)", borderColor: "var(--border-subtle)", minHeight: 108 }}>
-          <ul className="flex gap-4 overflow-x-auto px-4 py-4 no-scrollbar">
+        {/* Feed - sem stories */}
             {stories.map((s, i) => (
               <li key={s.name} className="flex flex-col items-center gap-1 shrink-0">
                 {s.isYou ? (
@@ -4112,12 +4107,8 @@ function HomePage() {
                 </span>
               </li>
             ))}
-          </ul>
-        </section>
-        )}
-
         {/* Feed */}
-        <section className="pt-2 pb-6 space-y-4 max-w-xl mx-auto w-full px-3">
+        <section className="pt-2 pb-6 space-y-2 max-w-xl mx-auto w-full px-3">
           {loadingFeed && <FeedSkeleton count={4} />}
 
           {!loadingFeed && realPosts.length === 0 && (
