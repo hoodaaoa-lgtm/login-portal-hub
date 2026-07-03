@@ -4108,7 +4108,7 @@ function HomePage() {
               </li>
             ))}
         {/* Feed */}
-        <section className="pt-2 pb-6 space-y-2 max-w-xl mx-auto w-full px-3">
+        <section className="pt-1 pb-6 space-y-1 max-w-xl mx-auto w-full px-3">
           {loadingFeed && <FeedSkeleton count={4} />}
 
           {!loadingFeed && realPosts.length === 0 && (
