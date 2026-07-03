@@ -371,7 +371,7 @@ function CanalPage() {
     <>
       <SideNav />
       <PageWrapper className="pb-20 lg:pb-0">
-        <div className="w-full max-w-[680px]">
+        <div className="w-full max-w-[960px]">
 
           {/* Header fixo */}
           <div className="flex items-center gap-3 px-4 py-3 border-b sticky top-0 z-10"

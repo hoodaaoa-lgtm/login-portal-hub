@@ -1062,7 +1062,7 @@ function UserProfilePage() {
           </div>
         </header>
 
-        <main className="w-full max-w-[680px]">
+        <main className="w-full max-w-[960px]">
 
           {/* ── Capa ── */}
           <div className="relative" style={{height:140}}>
