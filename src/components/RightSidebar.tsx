@@ -41,8 +41,9 @@ export function RightSidebar() {
   }
 
   return (
-    <aside className="hidden xl:flex flex-col sticky top-0 h-screen w-[320px] shrink-0 border-l z-40 px-4 py-4 space-y-4 overflow-y-auto"
+    <aside className="hidden xl:flex flex-col sticky top-0 h-screen flex-1 min-w-[320px] border-l z-40 px-6 py-4 overflow-y-auto"
       style={{ background: "var(--surface-0)", borderColor: "var(--border-subtle)" }}>
+      <div className="w-full max-w-[360px] space-y-4">
 
       {/* Pesquisa */}
       <button onClick={() => navigate({ to: "/explorar" })}
@@ -111,6 +112,7 @@ export function RightSidebar() {
       </div>
 
       <p className="text-[11px] text-center" style={{ color: "var(--text-muted)" }}>© 2025 Hooda</p>
+      </div>
     </aside>
   );
 }
