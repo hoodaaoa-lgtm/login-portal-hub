@@ -1409,9 +1409,11 @@ export type Database = {
           content: string
           created_at: string
           emoji: string | null
+          hashtags: string[] | null
           id: string
           image_url: string | null
           is_ad: boolean
+          is_draft: boolean
           kind: string | null
           likes_count: number
           music_artist: string | null
@@ -1420,14 +1422,19 @@ export type Database = {
           music_url: string | null
           photo_url: string | null
           photos: string[] | null
+          poll: Json | null
           quotes_count: number
           replies_count: number
           reposts_count: number
+          scheduled_at: string | null
           shared_from_post_id: string | null
+          thumbnail_url: string | null
+          title: string | null
           video_embed_url: string | null
           video_stream_url: string | null
           video_url: string | null
           views_count: number
+          visibility: string
         }
         Insert: {
           audio_url?: string | null
@@ -1448,9 +1455,11 @@ export type Database = {
           content: string
           created_at?: string
           emoji?: string | null
+          hashtags?: string[] | null
           id?: string
           image_url?: string | null
           is_ad?: boolean
+          is_draft?: boolean
           kind?: string | null
           likes_count?: number
           music_artist?: string | null
@@ -1459,14 +1468,19 @@ export type Database = {
           music_url?: string | null
           photo_url?: string | null
           photos?: string[] | null
+          poll?: Json | null
           quotes_count?: number
           replies_count?: number
           reposts_count?: number
+          scheduled_at?: string | null
           shared_from_post_id?: string | null
+          thumbnail_url?: string | null
+          title?: string | null
           video_embed_url?: string | null
           video_stream_url?: string | null
           video_url?: string | null
           views_count?: number
+          visibility?: string
         }
         Update: {
           audio_url?: string | null
@@ -1487,9 +1501,11 @@ export type Database = {
           content?: string
           created_at?: string
           emoji?: string | null
+          hashtags?: string[] | null
           id?: string
           image_url?: string | null
           is_ad?: boolean
+          is_draft?: boolean
           kind?: string | null
           likes_count?: number
           music_artist?: string | null
@@ -1498,14 +1514,19 @@ export type Database = {
           music_url?: string | null
           photo_url?: string | null
           photos?: string[] | null
+          poll?: Json | null
           quotes_count?: number
           replies_count?: number
           reposts_count?: number
+          scheduled_at?: string | null
           shared_from_post_id?: string | null
+          thumbnail_url?: string | null
+          title?: string | null
           video_embed_url?: string | null
           video_stream_url?: string | null
           video_url?: string | null
           views_count?: number
+          visibility?: string
         }
         Relationships: [
           {
