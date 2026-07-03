@@ -586,7 +586,7 @@ function PostsFeed({ posts, loading, name, username, avatarUrl, onLike, onBookma
     </div>
   );
   return (
-    <div className="pb-6 space-y-3 w-full px-3 pt-2">
+    <div className="pb-6 space-y-2 w-full px-3 pt-2">
       {posts.map((post) => (
         <PostCard key={post.id} post={post} name={name} username={username}
           isOwner avatarUrl={avatarUrl} myUserId={myUserId} authorId={myUserId}

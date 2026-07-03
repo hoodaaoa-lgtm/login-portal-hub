@@ -145,7 +145,7 @@ function DropsPage() {
       <PageWrapper className="pb-24 lg:pb-8">
         <div className="px-3 sm:px-6 max-w-[680px] mx-auto">
           {/* Header */}
-          <div className="sticky top-0 z-10 flex items-center justify-between py-4 mb-2"
+          <div className="sticky top-0 z-10 flex items-center justify-between py-3 mb-2"
             style={{ background: "var(--s1)" }}>
             <div className="flex items-center gap-2.5">
               <span className="w-9 h-9 rounded-full grid place-items-center shrink-0"
@@ -169,7 +169,7 @@ function DropsPage() {
           </div>
 
           {/* Feed */}
-          <div className="space-y-4">
+          <div className="space-y-3">
             {isLoading ? (
               [0, 1, 2].map((i) => <DropSkeleton key={i} />)
             ) : drops.length === 0 ? (
