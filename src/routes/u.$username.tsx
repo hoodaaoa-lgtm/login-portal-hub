@@ -1185,7 +1185,7 @@ function UserProfilePage() {
               </p>
             </div>
           ) : (
-            <div className="pb-6 space-y-3 max-w-xl mx-auto w-full px-3 pt-2">
+            <div className="pb-6 space-y-3 w-full px-3 pt-2">
               {posts.map((post:any)=>{
                 const isLiked = likeOverrides[post.id]??likedPosts.has(post.id);
                 const likeCount = likeCountOverrides[post.id]??post.likesCount;

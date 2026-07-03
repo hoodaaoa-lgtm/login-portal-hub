@@ -37,6 +37,7 @@ import { Route as StudioBibliotecaRouteImport } from './routes/studio.biblioteca
 import { Route as StudioAnalyticsRouteImport } from './routes/studio.analytics'
 import { Route as StudioAgendaRouteImport } from './routes/studio.agenda'
 import { Route as PostIdRouteImport } from './routes/post.$id'
+import { Route as CanalHandleRouteImport } from './routes/canal.$handle'
 import { Route as AuthBridgeRouteImport } from './routes/auth.bridge'
 
 const UsoRoute = UsoRouteImport.update({
@@ -179,6 +180,11 @@ const PostIdRoute = PostIdRouteImport.update({
   path: '/post/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CanalHandleRoute = CanalHandleRouteImport.update({
+  id: '/canal/$handle',
+  path: '/canal/$handle',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthBridgeRoute = AuthBridgeRouteImport.update({
   id: '/auth/bridge',
   path: '/auth/bridge',
@@ -200,6 +206,7 @@ export interface FileRoutesByFullPath {
   '/studio': typeof StudioRouteWithChildren
   '/uso': typeof UsoRoute
   '/auth/bridge': typeof AuthBridgeRoute
+  '/canal/$handle': typeof CanalHandleRoute
   '/post/$id': typeof PostIdRoute
   '/studio/agenda': typeof StudioAgendaRoute
   '/studio/analytics': typeof StudioAnalyticsRoute
@@ -230,6 +237,7 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/uso': typeof UsoRoute
   '/auth/bridge': typeof AuthBridgeRoute
+  '/canal/$handle': typeof CanalHandleRoute
   '/post/$id': typeof PostIdRoute
   '/studio/agenda': typeof StudioAgendaRoute
   '/studio/analytics': typeof StudioAnalyticsRoute
@@ -262,6 +270,7 @@ export interface FileRoutesById {
   '/studio': typeof StudioRouteWithChildren
   '/uso': typeof UsoRoute
   '/auth/bridge': typeof AuthBridgeRoute
+  '/canal/$handle': typeof CanalHandleRoute
   '/post/$id': typeof PostIdRoute
   '/studio/agenda': typeof StudioAgendaRoute
   '/studio/analytics': typeof StudioAnalyticsRoute
@@ -295,6 +304,7 @@ export interface FileRouteTypes {
     | '/studio'
     | '/uso'
     | '/auth/bridge'
+    | '/canal/$handle'
     | '/post/$id'
     | '/studio/agenda'
     | '/studio/analytics'
@@ -325,6 +335,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/uso'
     | '/auth/bridge'
+    | '/canal/$handle'
     | '/post/$id'
     | '/studio/agenda'
     | '/studio/analytics'
@@ -356,6 +367,7 @@ export interface FileRouteTypes {
     | '/studio'
     | '/uso'
     | '/auth/bridge'
+    | '/canal/$handle'
     | '/post/$id'
     | '/studio/agenda'
     | '/studio/analytics'
@@ -388,6 +400,7 @@ export interface RootRouteChildren {
   StudioRoute: typeof StudioRouteWithChildren
   UsoRoute: typeof UsoRoute
   AuthBridgeRoute: typeof AuthBridgeRoute
+  CanalHandleRoute: typeof CanalHandleRoute
   PostIdRoute: typeof PostIdRoute
   UUsernameRoute: typeof UUsernameRoute
 }
@@ -590,6 +603,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PostIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/canal/$handle': {
+      id: '/canal/$handle'
+      path: '/canal/$handle'
+      fullPath: '/canal/$handle'
+      preLoaderRoute: typeof CanalHandleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth/bridge': {
       id: '/auth/bridge'
       path: '/auth/bridge'
@@ -650,6 +670,7 @@ const rootRouteChildren: RootRouteChildren = {
   StudioRoute: StudioRouteWithChildren,
   UsoRoute: UsoRoute,
   AuthBridgeRoute: AuthBridgeRoute,
+  CanalHandleRoute: CanalHandleRoute,
   PostIdRoute: PostIdRoute,
   UUsernameRoute: UUsernameRoute,
 }

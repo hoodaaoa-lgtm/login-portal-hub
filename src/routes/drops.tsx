@@ -143,7 +143,7 @@ function DropsPage() {
     <>
       <SideNav />
       <PageWrapper className="pb-24 lg:pb-8">
-        <div className="max-w-xl mx-auto px-3 sm:px-4">
+        <div className="px-3 sm:px-6">
           {/* Header */}
           <div className="sticky top-0 z-10 flex items-center justify-between py-4 mb-2"
             style={{ background: "var(--s1)" }}>
