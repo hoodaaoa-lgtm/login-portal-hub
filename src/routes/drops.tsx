@@ -2,7 +2,8 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { BottomNav, SideNav, PageWrapper } from "@/components/AppShell";
+import { BottomNav, SideNav, PageWrapper, FeedLayout } from "@/components/AppShell";
+import { RightSidebar } from "@/components/RightSidebar";
 import { DropsCreator } from "@/components/DropsCreator";
 import {
   Heart, MessageCircle, Repeat2, Share2, Eye, Plus, Clock,
@@ -143,6 +144,8 @@ function DropsPage() {
     <>
       <SideNav />
       <PageWrapper className="pb-24 lg:pb-8">
+      <FeedLayout
+        feed={<>
         <div className="px-3 sm:px-6 max-w-[680px]">
           {/* Header */}
           <div className="sticky top-0 z-10 flex items-center justify-between py-3 mb-2"
@@ -183,6 +186,9 @@ function DropsPage() {
             {isFetchingNextPage ? t("drops.loading", "A carregar…") : ""}
           </div>
         </div>
+        </>}
+        sidebar={<RightSidebar />}
+      />
         <BottomNav />
       </PageWrapper>
 

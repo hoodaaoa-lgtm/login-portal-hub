@@ -8,7 +8,8 @@ import { useScrollLock } from "@/hooks/useScrollLock";
 import { RichText } from "@/components/RichText";
 import { PostCommentsModal } from "@/components/PostCommentsModal";
 import { fetchPostComments, sendPostComment, replyToPostComment, toggleCommentLike } from "@/lib/comments";
-import { BottomNav, SideNav, PageWrapper } from "@/components/AppShell";
+import { BottomNav, SideNav, PageWrapper, FeedLayout } from "@/components/AppShell";
+import { RightSidebar } from "@/components/RightSidebar";
 import {
   ChevronLeft, MessageCircle, Flag, Heart, Share2,
   MoreHorizontal, UserCheck, UserPlus, X, MapPin,
@@ -1027,7 +1028,8 @@ function UserProfilePage() {
     <>
       <SideNav />
       <PageWrapper className="pb-20 lg:pb-0">
-
+      <FeedLayout
+        feed={<>
         {/* ── Header fixo ── */}
         <header className="sticky top-0 z-30 border-b"
           style={{background:"var(--s0)",borderColor:"var(--border-subtle)"}}>
@@ -1334,6 +1336,9 @@ function UserProfilePage() {
         </main>
 
         <BottomNav />
+        </>}
+        sidebar={<RightSidebar />}
+      />
       </PageWrapper>
 
       {/* ── Modais ── */}

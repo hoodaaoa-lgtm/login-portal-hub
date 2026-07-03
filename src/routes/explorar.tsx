@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { BottomNav, SideNav, PageWrapper } from "@/components/AppShell";
+import { BottomNav, SideNav, PageWrapper, FeedLayout } from "@/components/AppShell";
+import { RightSidebar } from "@/components/RightSidebar";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect, useMemo } from "react";
@@ -376,6 +377,8 @@ function ExplorePage() {
     <>
       <SideNav />
       <PageWrapper className="pb-20 lg:pb-0">
+      <FeedLayout
+        feed={<>
 
         {/* ── Barra de pesquisa ── */}
         <div className="sticky top-0 z-30 border-b"
@@ -602,6 +605,9 @@ function ExplorePage() {
           <BooksSection search={search} navigate={navigate} />
         ) : null}
         </div>
+        </>}
+        sidebar={<RightSidebar />}
+      />
 
         <BottomNav />
       </PageWrapper>

@@ -7,7 +7,8 @@ import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { usePostVideoView } from "@/hooks/usePostVideoView";
 import { STATIC_QUERY_OPTIONS } from "@/lib/queryClient";
-import { BottomNav, SideNav, PageWrapper } from "@/components/AppShell";
+import { BottomNav, SideNav, PageWrapper, FeedLayout } from "@/components/AppShell";
+import { RightSidebar } from "@/components/RightSidebar";
 import { HoodaLogo } from "@/components/HoodaLogo";
 import {
   Settings, LogOut, MessageCircle, Flag, X, Image, Type, Plus, Repeat2, Quote,
@@ -2501,6 +2502,8 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
     <>
     <SideNav />
     <PageWrapper className="pb-20 lg:pb-0">
+      <FeedLayout
+        feed={<>
       {/* Header */}
       <header className="sticky top-0 z-30 border-b" style={{ background: "var(--surface-0)", borderColor: "var(--border-subtle)" }}>
         <div className="px-4 h-14 flex items-center justify-between">
@@ -2763,6 +2766,9 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
 
         {tab === "monetization" && <MonetizationPanel />}
       </main>
+        </>}
+        sidebar={<RightSidebar />}
+      />
 
       {/* Drawers & Modais */}
       {showSettings && (
@@ -2895,6 +2901,8 @@ function PublicProfile({ profile, email }: { profile: Profile | null; email: str
     <>
     <SideNav />
     <PageWrapper className="pb-20 lg:pb-0">
+      <FeedLayout
+        feed={<>
       <header className="sticky top-0 z-30 border-b" style={{ background: "var(--surface-0)", borderColor: "var(--border-subtle)" }}>
         <div className="px-4 h-14 flex items-center">
           <HoodaLogo size="sm" />
@@ -2937,6 +2945,9 @@ function PublicProfile({ profile, email }: { profile: Profile | null; email: str
           </button>
         </div>
       </main>
+        </>}
+        sidebar={<RightSidebar />}
+      />
       {followListMode && profile && (
         <FollowListModal
           mode={followListMode}
