@@ -24,7 +24,7 @@ const TABS = [
   { key: "trending", label: "Tendência",  icon: TrendingUp },
   { key: "people",   label: "Pessoas",    icon: Users      },
   { key: "videos",   label: "Vídeos",     icon: Video      },
-  { key: "posts",    label: "Media",      icon: FileText   },
+  { key: "posts",    label: "Mídia",      icon: FileText   },
   { key: "channels", label: "Canais",     icon: Tv2        },
   { key: "books",    label: "Livros",     icon: BookOpen   },
 ] as const;
