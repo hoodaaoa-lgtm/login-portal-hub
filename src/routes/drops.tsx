@@ -3,7 +3,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { BottomNav, SideNav, PageWrapper } from "@/components/AppShell";
-import {
+import { DropsCreator } from "@/components/DropsCreator";
   Heart, MessageCircle, Repeat2, Share2, Eye, Plus, Clock,
   X, Image as ImageIcon, Music, Video, Type as TypeIcon, Play, Send, Droplet,
 } from "lucide-react";
@@ -186,7 +186,10 @@ function DropsPage() {
       </PageWrapper>
 
       {showCreate && userId && (
-        <CreateDropModal userId={userId} onClose={() => setShowCreate(false)}
+        <DropsCreator onClose={() => setShowCreate(false)} onPublish={(videoUrl, thumbnail, musicUrl, duration) => {
+          // Publicar drop na BD
+          publishDrop(videoUrl, thumbnail, musicUrl, duration);
+        }} />
           onCreated={() => { setShowCreate(false); qc.invalidateQueries({ queryKey: ["drops-feed"] }); }} />
       )}
     </>
@@ -479,10 +482,6 @@ function DropCommentsModal({ dropId, userId, onClose, onCountChange }: {
     </div>
   );
 }
-
-function CreateDropModal({ userId, onClose, onCreated }: {
-  userId: string; onClose: () => void; onCreated: () => void;
-}) {
   const [type, setType] = useState<ContentType>("text");
   const [text, setText] = useState("");
   const [musicUrl, setMusicUrl] = useState("");
