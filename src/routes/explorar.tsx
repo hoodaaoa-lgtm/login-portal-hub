@@ -23,10 +23,7 @@ const fmtNum = (n: number) => n >= 1_000_000 ? `${(n/1_000_000).toFixed(1)}M` : 
 const TABS = [
   { key: "trending", label: "Tendência",  icon: TrendingUp },
   { key: "people",   label: "Pessoas",    icon: Users      },
-  { key: "videos",   label: "Vídeos",     icon: Video      },
   { key: "posts",    label: "Mídia",      icon: FileText   },
-  { key: "channels", label: "Canais",     icon: Tv2        },
-  { key: "books",    label: "Livros",     icon: BookOpen   },
 ] as const;
 type Tab = typeof TABS[number]["key"];
 
