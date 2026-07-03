@@ -19,12 +19,14 @@ import { Route as MensagensRouteImport } from './routes/mensagens'
 import { Route as LivrosRouteImport } from './routes/livros'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as ExplorarRouteImport } from './routes/explorar'
+import { Route as DropsRouteImport } from './routes/drops'
 import { Route as DefinicoesRouteImport } from './routes/definicoes'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as StudioIndexRouteImport } from './routes/studio.index'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
 import { Route as StudioUploadRouteImport } from './routes/studio.upload'
 import { Route as StudioPlaylistsRouteImport } from './routes/studio.playlists'
+import { Route as StudioPersonalizacaoRouteImport } from './routes/studio.personalizacao'
 import { Route as StudioOnboardingRouteImport } from './routes/studio.onboarding'
 import { Route as StudioEstatisticasRouteImport } from './routes/studio.estatisticas'
 import { Route as StudioDefinicoesRouteImport } from './routes/studio.definicoes'
@@ -87,6 +89,11 @@ const ExplorarRoute = ExplorarRouteImport.update({
   path: '/explorar',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DropsRoute = DropsRouteImport.update({
+  id: '/drops',
+  path: '/drops',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DefinicoesRoute = DefinicoesRouteImport.update({
   id: '/definicoes',
   path: '/definicoes',
@@ -115,6 +122,11 @@ const StudioUploadRoute = StudioUploadRouteImport.update({
 const StudioPlaylistsRoute = StudioPlaylistsRouteImport.update({
   id: '/playlists',
   path: '/playlists',
+  getParentRoute: () => StudioRoute,
+} as any)
+const StudioPersonalizacaoRoute = StudioPersonalizacaoRouteImport.update({
+  id: '/personalizacao',
+  path: '/personalizacao',
   getParentRoute: () => StudioRoute,
 } as any)
 const StudioOnboardingRoute = StudioOnboardingRouteImport.update({
@@ -176,6 +188,7 @@ const AuthBridgeRoute = AuthBridgeRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/definicoes': typeof DefinicoesRoute
+  '/drops': typeof DropsRoute
   '/explorar': typeof ExplorarRoute
   '/home': typeof HomeRoute
   '/livros': typeof LivrosRoute
@@ -197,6 +210,7 @@ export interface FileRoutesByFullPath {
   '/studio/definicoes': typeof StudioDefinicoesRoute
   '/studio/estatisticas': typeof StudioEstatisticasRoute
   '/studio/onboarding': typeof StudioOnboardingRoute
+  '/studio/personalizacao': typeof StudioPersonalizacaoRoute
   '/studio/playlists': typeof StudioPlaylistsRoute
   '/studio/upload': typeof StudioUploadRoute
   '/u/$username': typeof UUsernameRoute
@@ -205,6 +219,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/definicoes': typeof DefinicoesRoute
+  '/drops': typeof DropsRoute
   '/explorar': typeof ExplorarRoute
   '/home': typeof HomeRoute
   '/livros': typeof LivrosRoute
@@ -225,6 +240,7 @@ export interface FileRoutesByTo {
   '/studio/definicoes': typeof StudioDefinicoesRoute
   '/studio/estatisticas': typeof StudioEstatisticasRoute
   '/studio/onboarding': typeof StudioOnboardingRoute
+  '/studio/personalizacao': typeof StudioPersonalizacaoRoute
   '/studio/playlists': typeof StudioPlaylistsRoute
   '/studio/upload': typeof StudioUploadRoute
   '/u/$username': typeof UUsernameRoute
@@ -234,6 +250,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/definicoes': typeof DefinicoesRoute
+  '/drops': typeof DropsRoute
   '/explorar': typeof ExplorarRoute
   '/home': typeof HomeRoute
   '/livros': typeof LivrosRoute
@@ -255,6 +272,7 @@ export interface FileRoutesById {
   '/studio/definicoes': typeof StudioDefinicoesRoute
   '/studio/estatisticas': typeof StudioEstatisticasRoute
   '/studio/onboarding': typeof StudioOnboardingRoute
+  '/studio/personalizacao': typeof StudioPersonalizacaoRoute
   '/studio/playlists': typeof StudioPlaylistsRoute
   '/studio/upload': typeof StudioUploadRoute
   '/u/$username': typeof UUsernameRoute
@@ -265,6 +283,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/definicoes'
+    | '/drops'
     | '/explorar'
     | '/home'
     | '/livros'
@@ -286,6 +305,7 @@ export interface FileRouteTypes {
     | '/studio/definicoes'
     | '/studio/estatisticas'
     | '/studio/onboarding'
+    | '/studio/personalizacao'
     | '/studio/playlists'
     | '/studio/upload'
     | '/u/$username'
@@ -294,6 +314,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/definicoes'
+    | '/drops'
     | '/explorar'
     | '/home'
     | '/livros'
@@ -314,6 +335,7 @@ export interface FileRouteTypes {
     | '/studio/definicoes'
     | '/studio/estatisticas'
     | '/studio/onboarding'
+    | '/studio/personalizacao'
     | '/studio/playlists'
     | '/studio/upload'
     | '/u/$username'
@@ -322,6 +344,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/definicoes'
+    | '/drops'
     | '/explorar'
     | '/home'
     | '/livros'
@@ -343,6 +366,7 @@ export interface FileRouteTypes {
     | '/studio/definicoes'
     | '/studio/estatisticas'
     | '/studio/onboarding'
+    | '/studio/personalizacao'
     | '/studio/playlists'
     | '/studio/upload'
     | '/u/$username'
@@ -352,6 +376,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DefinicoesRoute: typeof DefinicoesRoute
+  DropsRoute: typeof DropsRoute
   ExplorarRoute: typeof ExplorarRoute
   HomeRoute: typeof HomeRoute
   LivrosRoute: typeof LivrosRoute
@@ -439,6 +464,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ExplorarRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/drops': {
+      id: '/drops'
+      path: '/drops'
+      fullPath: '/drops'
+      preLoaderRoute: typeof DropsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/definicoes': {
       id: '/definicoes'
       path: '/definicoes'
@@ -479,6 +511,13 @@ declare module '@tanstack/react-router' {
       path: '/playlists'
       fullPath: '/studio/playlists'
       preLoaderRoute: typeof StudioPlaylistsRouteImport
+      parentRoute: typeof StudioRoute
+    }
+    '/studio/personalizacao': {
+      id: '/studio/personalizacao'
+      path: '/personalizacao'
+      fullPath: '/studio/personalizacao'
+      preLoaderRoute: typeof StudioPersonalizacaoRouteImport
       parentRoute: typeof StudioRoute
     }
     '/studio/onboarding': {
@@ -571,6 +610,7 @@ interface StudioRouteChildren {
   StudioDefinicoesRoute: typeof StudioDefinicoesRoute
   StudioEstatisticasRoute: typeof StudioEstatisticasRoute
   StudioOnboardingRoute: typeof StudioOnboardingRoute
+  StudioPersonalizacaoRoute: typeof StudioPersonalizacaoRoute
   StudioPlaylistsRoute: typeof StudioPlaylistsRoute
   StudioUploadRoute: typeof StudioUploadRoute
   StudioIndexRoute: typeof StudioIndexRoute
@@ -586,6 +626,7 @@ const StudioRouteChildren: StudioRouteChildren = {
   StudioDefinicoesRoute: StudioDefinicoesRoute,
   StudioEstatisticasRoute: StudioEstatisticasRoute,
   StudioOnboardingRoute: StudioOnboardingRoute,
+  StudioPersonalizacaoRoute: StudioPersonalizacaoRoute,
   StudioPlaylistsRoute: StudioPlaylistsRoute,
   StudioUploadRoute: StudioUploadRoute,
   StudioIndexRoute: StudioIndexRoute,
@@ -597,6 +638,7 @@ const StudioRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DefinicoesRoute: DefinicoesRoute,
+  DropsRoute: DropsRoute,
   ExplorarRoute: ExplorarRoute,
   HomeRoute: HomeRoute,
   LivrosRoute: LivrosRoute,
@@ -614,3 +656,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
