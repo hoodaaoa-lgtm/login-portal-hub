@@ -1158,6 +1158,36 @@ export type Database = {
           },
         ]
       }
+      post_impressions: {
+        Row: {
+          author_id: string | null
+          created_at: string
+          dwell_ms: number
+          id: string
+          kind: string | null
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          author_id?: string | null
+          created_at?: string
+          dwell_ms?: number
+          id?: string
+          kind?: string | null
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          author_id?: string | null
+          created_at?: string
+          dwell_ms?: number
+          id?: string
+          kind?: string | null
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       post_likes: {
         Row: {
           created_at: string
@@ -1177,6 +1207,126 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "post_likes_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_quotes: {
+        Row: {
+          author_id: string
+          author_username: string
+          content: string
+          created_at: string
+          id: string
+          media_type: string | null
+          media_url: string | null
+          original_post_id: string
+          updated_at: string
+        }
+        Insert: {
+          author_id: string
+          author_username: string
+          content: string
+          created_at?: string
+          id?: string
+          media_type?: string | null
+          media_url?: string | null
+          original_post_id: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          author_username?: string
+          content?: string
+          created_at?: string
+          id?: string
+          media_type?: string | null
+          media_url?: string | null
+          original_post_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_quotes_original_post_id_fkey"
+            columns: ["original_post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_replies: {
+        Row: {
+          author_color: string
+          author_id: string
+          author_username: string
+          content: string
+          created_at: string
+          id: string
+          media_type: string | null
+          media_url: string | null
+          post_id: string
+          updated_at: string
+        }
+        Insert: {
+          author_color?: string
+          author_id: string
+          author_username: string
+          content: string
+          created_at?: string
+          id?: string
+          media_type?: string | null
+          media_url?: string | null
+          post_id: string
+          updated_at?: string
+        }
+        Update: {
+          author_color?: string
+          author_id?: string
+          author_username?: string
+          content?: string
+          created_at?: string
+          id?: string
+          media_type?: string | null
+          media_url?: string | null
+          post_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_replies_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_reposts: {
+        Row: {
+          created_at: string
+          id: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_reposts_post_id_fkey"
             columns: ["post_id"]
             isOneToOne: false
             referencedRelation: "posts"
@@ -1270,6 +1420,8 @@ export type Database = {
           music_url: string | null
           photo_url: string | null
           photos: string[] | null
+          quotes_count: number
+          replies_count: number
           reposts_count: number
           shared_from_post_id: string | null
           video_embed_url: string | null
@@ -1307,6 +1459,8 @@ export type Database = {
           music_url?: string | null
           photo_url?: string | null
           photos?: string[] | null
+          quotes_count?: number
+          replies_count?: number
           reposts_count?: number
           shared_from_post_id?: string | null
           video_embed_url?: string | null
@@ -1344,6 +1498,8 @@ export type Database = {
           music_url?: string | null
           photo_url?: string | null
           photos?: string[] | null
+          quotes_count?: number
+          replies_count?: number
           reposts_count?: number
           shared_from_post_id?: string | null
           video_embed_url?: string | null
@@ -1404,6 +1560,7 @@ export type Database = {
           read_receipts_off: boolean
           updated_at: string
           username: string
+          username_changed_at: string | null
           website: string | null
         }
         Insert: {
@@ -1427,6 +1584,7 @@ export type Database = {
           read_receipts_off?: boolean
           updated_at?: string
           username: string
+          username_changed_at?: string | null
           website?: string | null
         }
         Update: {
@@ -1450,6 +1608,7 @@ export type Database = {
           read_receipts_off?: boolean
           updated_at?: string
           username?: string
+          username_changed_at?: string | null
           website?: string | null
         }
         Relationships: []
@@ -1743,6 +1902,33 @@ export type Database = {
           message_type?: string
           story_id?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      user_interests: {
+        Row: {
+          author_id: string
+          id: string
+          interactions: number
+          score: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          author_id: string
+          id?: string
+          interactions?: number
+          score?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          author_id?: string
+          id?: string
+          interactions?: number
+          score?: number
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -2110,6 +2296,14 @@ export type Database = {
         Args: { p_my_id: string; p_other_id: string }
         Returns: string
       }
+      decrement_post_replies: {
+        Args: { p_post_id: string }
+        Returns: undefined
+      }
+      decrement_post_reposts: {
+        Args: { p_post_id: string }
+        Returns: undefined
+      }
       get_feed_clips: {
         Args: { p_limit?: number; p_offset?: number }
         Returns: {
@@ -2157,6 +2351,19 @@ export type Database = {
       increment_library_book_counter: {
         Args: { p_book_id: string; p_counter: string }
         Returns: undefined
+      }
+      increment_post_quotes: { Args: { p_post_id: string }; Returns: undefined }
+      increment_post_replies: {
+        Args: { p_post_id: string }
+        Returns: undefined
+      }
+      increment_post_reposts: {
+        Args: { p_post_id: string }
+        Returns: undefined
+      }
+      is_community_member: {
+        Args: { _community_id: string; _user_id: string }
+        Returns: boolean
       }
       is_conversation_participant: {
         Args: { p_conversation_id: string; p_user_id: string }
