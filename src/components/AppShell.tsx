@@ -266,14 +266,14 @@ export function PageWrapper({ children, className = "" }: { children: React.Reac
 /* ─── Layout de 3 colunas (feed centrado + sidebar direita) ─── */
 export function FeedLayout({ feed, sidebar }: { feed: React.ReactNode; sidebar?: React.ReactNode }) {
   return (
-    <div className="flex w-full min-h-screen justify-center">
-      {/* Feed — largura máxima confortável, centrado */}
-      <div className="flex-1 min-w-0 max-w-[680px]">
+    <div className="flex w-full min-h-screen">
+      {/* Feed — ocupa o espaço disponível, máximo 760px */}
+      <div className="flex-1 min-w-0 max-w-[760px]">
         {feed}
       </div>
-      {/* Sidebar direita — só aparece em xl, largura fixa */}
+      {/* Sidebar direita — 320px, gap 20px, só em xl */}
       {sidebar && (
-        <div className="hidden xl:block w-[320px] shrink-0 ml-6">
+        <div className="hidden xl:block w-[320px] shrink-0 ml-5">
           {sidebar}
         </div>
       )}

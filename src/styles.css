@@ -589,19 +589,20 @@
 /* ── hooda-card: universal card class ── */
 .hooda-card {
   background: var(--s0);
-  border: none;
-  border-bottom: 1px solid var(--border-subtle);
-  border-radius: 0;
-  transition: background 0.15s ease;
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+  margin-bottom: 8px;
 }
 .hooda-card:hover {
   background: var(--s2);
+  box-shadow: 0 2px 12px rgba(91,63,207,0.06);
 }
 
 /* In dark mode */
 .dark .hooda-card {
   background: var(--s1);
-  border-bottom-color: var(--border-subtle);
+  border-color: var(--border-subtle);
   box-shadow: none;
 }
 .dark .hooda-card:hover {
