@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/canal/$handle" as any)({
+export const Route = createFileRoute("/canal/$handle")({
   head: () => ({ meta: [{ title: "Canal — Hooda" }] }),
   component: CanalPage,
 });
