@@ -8,7 +8,6 @@ import {
   X, Image as ImageIcon, Music, Video, Type as TypeIcon, Play, Send, Droplet,
 } from "lucide-react";
 import { timeAgo } from "@/hooks/useTimeAgo";
-import { HoodaPlayer } from "@/components/HoodaPlayer";
 import i18n from "@/lib/i18n";
 
 function t(key: string, fallback: string) {
@@ -286,16 +285,14 @@ function DropCard({ drop, userId }: { drop: Drop; userId: string | null }) {
         </p>
       )}
       {drop.content_type === "photo" && drop.content_url && (
-        <div className="rounded-2xl overflow-hidden mb-3 flex justify-center" style={{ background: "var(--s2)" }}>
-          <img src={drop.content_url} alt=""
-            className="w-full h-auto object-contain"
-            style={drop.aspect_ratio ? { aspectRatio: String(drop.aspect_ratio) } : undefined} />
+        <div className="rounded-2xl overflow-hidden mb-3 bg-black flex justify-center">
+          <img src={drop.content_url} alt="" className="w-full object-contain"
+            style={{ maxHeight: drop.aspect_ratio != null && drop.aspect_ratio < 1 ? "75vh" : "560px" }} />
         </div>
       )}
       {drop.content_type === "video" && drop.content_url && (
-        <div className="mb-3">
-          <HoodaPlayer src={drop.content_url}
-            aspectRatio={drop.aspect_ratio ? String(drop.aspect_ratio) : "9/16"} />
+        <div className="rounded-2xl overflow-hidden mb-3">
+          <DropVideo src={drop.content_url} aspect={drop.aspect_ratio} />
         </div>
       )}
       {drop.content_type === "music" && drop.music_url && (
@@ -338,6 +335,44 @@ function DropCard({ drop, userId }: { drop: Drop; userId: string | null }) {
         <DropCommentsModal dropId={drop.id} userId={userId}
           onClose={() => setShowComments(false)}
           onCountChange={setComments} />
+      )}
+    </div>
+  );
+}
+
+/* Player estilo feed: deteta short (retrato) e limita a altura, como no Home/Studio */
+function DropVideo({ src, aspect }: { src: string; aspect: number | null }) {
+  const [isShort, setIsShort] = useState<boolean | null>(aspect != null ? aspect < 1 : null);
+  const [playing, setPlaying] = useState(false);
+  const ref = useRef<HTMLVideoElement>(null);
+
+  function toggle() {
+    const v = ref.current; if (!v) return;
+    if (v.paused) { v.play(); setPlaying(true); } else { v.pause(); setPlaying(false); }
+  }
+
+  return (
+    <div className="w-full bg-black relative cursor-pointer"
+      style={{ aspectRatio: isShort === true ? "9/16" : "16/9", maxHeight: isShort === true ? "75vh" : "560px" }}
+      onClick={toggle}>
+      <video ref={ref} src={src} playsInline preload="metadata"
+        onLoadedMetadata={() => { const v = ref.current; if (v) setIsShort(v.videoHeight > v.videoWidth); }}
+        onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)}
+        className="w-full h-full block"
+        style={{ display: "block", pointerEvents: "none", objectFit: "contain" }}
+        onContextMenu={(e) => e.preventDefault()} />
+      {!playing && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="w-14 h-14 rounded-full flex items-center justify-center transition active:scale-90"
+            style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(4px)" }}>
+            <svg className="h-7 w-7 text-white ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+          </div>
+        </div>
+      )}
+      {isShort === null && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="w-7 h-7 rounded-full border-2 border-white/20 border-t-white animate-spin" />
+        </div>
       )}
     </div>
   );
