@@ -35,13 +35,14 @@ function StatsPage() {
     })();
   }, []);
 
+  const s = (stats ?? {}) as Stats;
   const cards = [
-    { label: "Visualizações", value: stats?.views ?? 0, icon: Eye },
-    { label: "Alcance",       value: stats?.reach ?? stats?.views ?? 0, icon: TrendingUp },
-    { label: "Seguidores",    value: stats?.followers ?? 0, icon: Users },
-    { label: "Gostos",        value: stats?.likes ?? 0, icon: Heart },
-    { label: "Comentários",   value: stats?.comments ?? 0, icon: MessageCircle },
-    { label: "Partilhas",     value: stats?.shares ?? 0, icon: Share2 },
+    { label: "Visualizações", value: s.views ?? 0, icon: Eye },
+    { label: "Alcance",       value: s.reach ?? s.views ?? 0, icon: TrendingUp },
+    { label: "Seguidores",    value: s.followers ?? 0, icon: Users },
+    { label: "Gostos",        value: s.likes ?? 0, icon: Heart },
+    { label: "Comentários",   value: s.comments ?? 0, icon: MessageCircle },
+    { label: "Partilhas",     value: s.shares ?? 0, icon: Share2 },
   ];
 
   return (
