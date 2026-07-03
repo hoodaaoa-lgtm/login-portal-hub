@@ -2514,7 +2514,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
       <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" />
       <input ref={coverInputRef} type="file" accept="image/*" className="hidden" />
 
-      <main className="w-full max-w-[680px] mx-auto">
+      <main className="w-full max-w-[680px]">
         {/* Capa */}
         <div className="relative">
           <div className="h-32 relative overflow-hidden"
@@ -2900,7 +2900,7 @@ function PublicProfile({ profile, email }: { profile: Profile | null; email: str
           <HoodaLogo size="sm" />
         </div>
       </header>
-      <main className="w-full max-w-[680px] mx-auto">
+      <main className="w-full max-w-[680px]">
         <div className="h-32 relative" style={{ background: "linear-gradient(135deg,#5B3FCF 0%,#1FAFA6 50%,#FFC93C 100%)" }}>
           <div className="absolute left-5" style={{ bottom: -42 }}>
             <Avatar name={name} size={84} />
