@@ -1,18 +1,18 @@
-import { Video, createFileRoute, Link } from "@tanstack/react-router";
-import { Video, t } from "@/lib/useT";
-import { Video, useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Video, myChannelQuery, myVideosQuery } from "@/lib/channel-queries";
-import { Video, supabase } from "@/integrations/supabase/client";
-import { Video,
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { t } from "@/lib/useT";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { myChannelQuery, myVideosQuery } from "@/lib/channel-queries";
+import { supabase } from "@/integrations/supabase/client";
+import {
   Upload, MoreVertical, Trash2, Globe, Lock, Link as LinkIcon,
   Video as VideoIcon, Eye, Pencil, X, Save, CheckCircle,
   Search, Filter,
 } from "lucide-react";
-import { Video, format } from "date-fns";
-import { Video, pt } from "date-fns/locale";
-import { Video, useState } from "react";
-import { Video, toast } from "sonner";
-import { Video, deleteFromCloudflareStream } from "@/lib/cloudflare-stream";
+import { format } from "date-fns";
+import { pt } from "date-fns/locale";
+import { useState } from "react";
+import { toast } from "sonner";
+import { deleteFromCloudflareStream } from "@/lib/cloudflare-stream";
 
 export const Route = createFileRoute("/studio/content")({
   head: () => ({ meta: [{ title: "Hooda" }] }),
@@ -183,7 +183,7 @@ function EditModal({ v, onClose, onSave }: { v: any; onClose: () => void; onSave
                 className="w-full aspect-video rounded-2xl border-2 border-dashed flex flex-col items-center justify-center gap-2 transition hover:bg-[var(--s2)]"
                 style={{ borderColor: "var(--border-default)" }}>
                 {v.cf_stream_url || v.video_path
-                  ? <><Video className="w-8 h-8" style={{ color: "var(--text-muted)" }} /><p className="text-sm font-semibold" style={{ color: "var(--text-muted)" }}>Vídeo já adicionado — clica para substituir</p></>
+                  ? <><VideoIcon className="w-8 h-8" style={{ color: "var(--text-muted)" }} /><p className="text-sm font-semibold" style={{ color: "var(--text-muted)" }}>Vídeo já adicionado — clica para substituir</p></>
                   : <><Upload className="w-8 h-8" style={{ color: P }} /><p className="text-sm font-bold" style={{ color: P }}>Clica para adicionar o vídeo</p><p className="text-xs" style={{ color: "var(--text-muted)" }}>MP4, MOV, WEBM até 500MB</p></>}
               </button>}
         </div>
