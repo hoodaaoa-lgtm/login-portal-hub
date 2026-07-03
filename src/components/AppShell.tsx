@@ -8,13 +8,14 @@ import { useBadges } from "@/contexts/BadgeContext";
 import { UserDrawer } from "@/components/UserDrawer";
 import {
   Home, Compass, MessageSquare, Users, User, Tv, Menu,
-  Moon, Sun, Bell,
+  Moon, Sun, Bell, Droplet,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 const NAV_ITEMS = [
   { to: "/home",       label: "Home",        Icon: Home        },
   { to: "/explorar",   label: t("nav.explore"),    Icon: Compass     },
+  { to: "/drops",      label: "Drops",       Icon: Droplet     },
   { to: "/mensagens",  label: t("nav.messages"),   Icon: MessageSquare },
   { to: "/perfil",     label: t("nav.profile"),      Icon: User        },
 ] as const;
@@ -22,6 +23,7 @@ const NAV_ITEMS = [
 const MOBILE_ITEMS = [
   { to: "/home",       label: "Home",      Icon: Home          },
   { to: "/explorar",   label: t("nav.explore"),  Icon: Compass       },
+  { to: "/drops",      label: "Drops",     Icon: Droplet       },
   { to: "/mensagens",  label: t("nav.messages"), Icon: MessageSquare },
   { to: null,          label: "Menu",      Icon: Menu          }, // Menu Hamburger
 ] as const;
