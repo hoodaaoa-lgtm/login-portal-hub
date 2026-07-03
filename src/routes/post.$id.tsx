@@ -148,7 +148,9 @@ function SinglePostPage() {
   async function handleSendComment(text: string) {
     if (!myId || !post) { toast.error("Inicia sessão."); return; }
     setSendingComment(true);
-    await supabase.from("post_comments").insert({ post_id: post.id, user_id: myId, content: text });
+    // Get author_username from current session profile for insert
+    const { data: myProfile } = await supabase.from("profiles").select("username").eq("id", myId).maybeSingle();
+    await supabase.from("post_comments").insert({ post_id: post.id, user_id: myId, author_id: myId, author_username: myProfile?.username || "user", content: text });
     setCommentCount(c => c + 1);
     await loadComments();
     setSendingComment(false);

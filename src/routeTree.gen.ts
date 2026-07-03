@@ -30,9 +30,6 @@ import { Route as StudioContentRouteImport } from './routes/studio.content'
 import { Route as StudioAnalyticsRouteImport } from './routes/studio.analytics'
 import { Route as PostIdRouteImport } from './routes/post.$id'
 import { Route as AuthBridgeRouteImport } from './routes/auth.bridge'
-import { Route as HoodatvWatchIdRouteImport } from './routes/hoodatv.watch.$id'
-import { Route as HoodatvPlaylistIdRouteImport } from './routes/hoodatv.playlist.$id'
-import { Route as HoodatvCanalHandleRouteImport } from './routes/hoodatv.canal.$handle'
 
 const UsoRoute = UsoRouteImport.update({
   id: '/uso',
@@ -139,21 +136,6 @@ const AuthBridgeRoute = AuthBridgeRouteImport.update({
   path: '/auth/bridge',
   getParentRoute: () => rootRouteImport,
 } as any)
-const HoodatvWatchIdRoute = HoodatvWatchIdRouteImport.update({
-  id: '/hoodatv/watch/$id',
-  path: '/hoodatv/watch/$id',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const HoodatvPlaylistIdRoute = HoodatvPlaylistIdRouteImport.update({
-  id: '/hoodatv/playlist/$id',
-  path: '/hoodatv/playlist/$id',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const HoodatvCanalHandleRoute = HoodatvCanalHandleRouteImport.update({
-  id: '/hoodatv/canal/$handle',
-  path: '/hoodatv/canal/$handle',
-  getParentRoute: () => rootRouteImport,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -177,9 +159,6 @@ export interface FileRoutesByFullPath {
   '/studio/upload': typeof StudioUploadRoute
   '/u/$username': typeof UUsernameRoute
   '/studio/': typeof StudioIndexRoute
-  '/hoodatv/canal/$handle': typeof HoodatvCanalHandleRoute
-  '/hoodatv/playlist/$id': typeof HoodatvPlaylistIdRoute
-  '/hoodatv/watch/$id': typeof HoodatvWatchIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -202,9 +181,6 @@ export interface FileRoutesByTo {
   '/studio/upload': typeof StudioUploadRoute
   '/u/$username': typeof UUsernameRoute
   '/studio': typeof StudioIndexRoute
-  '/hoodatv/canal/$handle': typeof HoodatvCanalHandleRoute
-  '/hoodatv/playlist/$id': typeof HoodatvPlaylistIdRoute
-  '/hoodatv/watch/$id': typeof HoodatvWatchIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -229,9 +205,6 @@ export interface FileRoutesById {
   '/studio/upload': typeof StudioUploadRoute
   '/u/$username': typeof UUsernameRoute
   '/studio/': typeof StudioIndexRoute
-  '/hoodatv/canal/$handle': typeof HoodatvCanalHandleRoute
-  '/hoodatv/playlist/$id': typeof HoodatvPlaylistIdRoute
-  '/hoodatv/watch/$id': typeof HoodatvWatchIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -257,9 +230,6 @@ export interface FileRouteTypes {
     | '/studio/upload'
     | '/u/$username'
     | '/studio/'
-    | '/hoodatv/canal/$handle'
-    | '/hoodatv/playlist/$id'
-    | '/hoodatv/watch/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -282,9 +252,6 @@ export interface FileRouteTypes {
     | '/studio/upload'
     | '/u/$username'
     | '/studio'
-    | '/hoodatv/canal/$handle'
-    | '/hoodatv/playlist/$id'
-    | '/hoodatv/watch/$id'
   id:
     | '__root__'
     | '/'
@@ -308,9 +275,6 @@ export interface FileRouteTypes {
     | '/studio/upload'
     | '/u/$username'
     | '/studio/'
-    | '/hoodatv/canal/$handle'
-    | '/hoodatv/playlist/$id'
-    | '/hoodatv/watch/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -329,9 +293,6 @@ export interface RootRouteChildren {
   AuthBridgeRoute: typeof AuthBridgeRoute
   PostIdRoute: typeof PostIdRoute
   UUsernameRoute: typeof UUsernameRoute
-  HoodatvCanalHandleRoute: typeof HoodatvCanalHandleRoute
-  HoodatvPlaylistIdRoute: typeof HoodatvPlaylistIdRoute
-  HoodatvWatchIdRoute: typeof HoodatvWatchIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -483,27 +444,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthBridgeRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/hoodatv/watch/$id': {
-      id: '/hoodatv/watch/$id'
-      path: '/hoodatv/watch/$id'
-      fullPath: '/hoodatv/watch/$id'
-      preLoaderRoute: typeof HoodatvWatchIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/hoodatv/playlist/$id': {
-      id: '/hoodatv/playlist/$id'
-      path: '/hoodatv/playlist/$id'
-      fullPath: '/hoodatv/playlist/$id'
-      preLoaderRoute: typeof HoodatvPlaylistIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/hoodatv/canal/$handle': {
-      id: '/hoodatv/canal/$handle'
-      path: '/hoodatv/canal/$handle'
-      fullPath: '/hoodatv/canal/$handle'
-      preLoaderRoute: typeof HoodatvCanalHandleRouteImport
-      parentRoute: typeof rootRouteImport
-    }
   }
 }
 
@@ -544,20 +484,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthBridgeRoute: AuthBridgeRoute,
   PostIdRoute: PostIdRoute,
   UUsernameRoute: UUsernameRoute,
-  HoodatvCanalHandleRoute: HoodatvCanalHandleRoute,
-  HoodatvPlaylistIdRoute: HoodatvPlaylistIdRoute,
-  HoodatvWatchIdRoute: HoodatvWatchIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
