@@ -2369,11 +2369,12 @@ function SimpleVideoPlayer({ src, poster, postId, kind, isShortHint }: { src: st
 
   return (
     <div
-      className="w-full bg-black relative cursor-pointer"
-      style={{
-        aspectRatio: isShort === true ? "9/16" : isShort === false ? "16/9" : "16/9",
-        maxHeight: isShort === true ? "75vh" : "560px",
-      }}
+      className={isShort === true ? "bg-black relative cursor-pointer overflow-hidden rounded-2xl" : "w-full bg-black relative cursor-pointer"}
+      style={
+        isShort === true
+          ? { aspectRatio: "9/16", height: "min(75vh, 640px)", width: "auto", maxWidth: "100%" }
+          : { aspectRatio: "16/9", maxHeight: "560px" }
+      }
       onClick={togglePlay}
     >
       <video
@@ -2389,7 +2390,7 @@ function SimpleVideoPlayer({ src, poster, postId, kind, isShortHint }: { src: st
         onPlay={() => setPlaying(true)}
         onPause={() => setPlaying(false)}
         className="w-full h-full block"
-        style={{ display: "block", pointerEvents: "none", objectFit: "contain" }}
+        style={{ display: "block", pointerEvents: "none", objectFit: "cover" }}
       />
       {!playing && (
         <div className="absolute inset-0 flex items-center justify-center">
