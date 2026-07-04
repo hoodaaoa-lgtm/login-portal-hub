@@ -1,7 +1,18 @@
 /**
  * FeedVideoPlayer — player unificado para o feed (Home, Perfil, Explorador/Canal).
- * Usa o HoodaPlayer (controles tipo YouTube: progresso, tempo, mudo, tela cheia)
- * e, quando o vídeo é vertical (short), aplica a moldura estilo anúncio (ShortFrame).
+ *
+ * Usa o HoodaPlayer (skeleton/shimmer, lazy load, altura máxima responsiva,
+ * proporção automática sem distorção — ver HoodaPlayer.tsx para os detalhes)
+ * e, quando o vídeo é vertical (short), aplica a moldura estilo anúncio
+ * (ShortFrame), igual ao tratamento de vídeos verticais do X/Instagram.
+ *
+ * A única responsabilidade deste componente é decidir "é um short ou não":
+ *  - kind="clip" nunca é short (players de clip usam o layout normal).
+ *  - isShortHint, quando fornecido pelo post (ideal — evita qualquer probe),
+ *    é usado diretamente.
+ *  - Caso contrário, faz um probe leve (preload="metadata") só para saber a
+ *    orientação antes de decidir o layout — o HoodaPlayer, por si, já lida
+ *    com a proporção exata e o lazy load real do vídeo em si.
  */
 import { useEffect, useRef, useState } from "react";
 import { HoodaPlayer } from "@/components/HoodaPlayer";
@@ -24,7 +35,10 @@ export function FeedVideoPlayer({ src, poster, postId, kind, isShortHint, rounde
   usePostVideoView(postId, kind, videoRef);
 
   useEffect(() => {
-    if (kind === "clip") { setIsShort(false); return; }
+    if (kind === "clip") {
+      setIsShort(false);
+      return;
+    }
     if (isShortHint !== undefined && isShortHint !== null) {
       setIsShort(isShortHint);
       return;
@@ -37,13 +51,32 @@ export function FeedVideoPlayer({ src, poster, postId, kind, isShortHint, rounde
     probe.onloadedmetadata = () => {
       if (!cancelled) setIsShort(probe.videoHeight > probe.videoWidth);
     };
-    return () => { cancelled = true; probe.src = ""; };
+    return () => {
+      cancelled = true;
+      probe.src = "";
+    };
   }, [src, isShortHint, kind]);
 
   if (isShort === null) {
+    // Ainda a decidir short vs normal (probe rápido de metadata). Usa uma
+    // proporção neutra (4/5) para minimizar qualquer salto de layout —
+    // e já mostra a miniatura + shimmer, igual ao estado de loading final
+    // do HoodaPlayer, para a transição ser imperceptível.
     return (
-      <div className="w-full flex items-center justify-center bg-black" style={{ aspectRatio: "16/9" }}>
-        <div className="w-7 h-7 rounded-full border-2 border-white/20 border-t-white animate-spin" />
+      <div
+        className={`relative w-full overflow-hidden bg-black ${rounded ?? "rounded-none"}`}
+        style={{ aspectRatio: "4/5" }}
+      >
+        {poster && (
+          <img
+            src={poster}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover"
+            style={{ filter: "blur(6px)" }}
+          />
+        )}
+        <div className="absolute inset-0 bg-black/40" />
+        <div className="absolute inset-0 skeleton-shimmer" />
       </div>
     );
   }
