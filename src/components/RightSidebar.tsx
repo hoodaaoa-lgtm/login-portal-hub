@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { RefreshCw, Users, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "@tanstack/react-router";
@@ -40,7 +41,7 @@ export function RightSidebar() {
     setSuggestions(p => p.filter(u => u.id !== userId));
   }
 
-  return (
+  return createPortal(
     <aside className="hidden xl:flex flex-col fixed right-0 top-0 bottom-0 w-[360px] z-30 pl-8 pr-6 py-3 overflow-hidden"
       style={{ background: "var(--surface-0)" }}>
       <div className="w-full space-y-4">
@@ -116,6 +117,7 @@ export function RightSidebar() {
 
       <p className="text-[11px] text-center" style={{ color: "var(--text-muted)" }}>© 2025 Hooda</p>
       </div>
-    </aside>
+    </aside>,
+    document.body
   );
 }
