@@ -148,7 +148,7 @@ function DropsPage() {
       <FeedLayout
         feed={
         <>
-        <div className="px-3 sm:px-6 max-w-[680px]">
+        <div className="px-3 sm:px-6 w-full">
           {/* Header */}
           <div className="sticky top-0 z-10 flex items-center justify-between py-3 mb-2"
             style={{ background: "var(--s1)" }}>
