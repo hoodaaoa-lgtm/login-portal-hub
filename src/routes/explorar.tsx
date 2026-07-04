@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { BottomNav, SideNav, PageWrapper } from "@/components/AppShell";
+import { BottomNav, SideNav, PageWrapper, FeedLayout } from "@/components/AppShell";
+import { RightSidebar } from "@/components/RightSidebar";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect, useMemo } from "react";
@@ -374,13 +375,17 @@ function ExplorePage() {
 
   return (
     <>
+      <div className="flex">
       <SideNav />
-      <PageWrapper className="pb-20 lg:pb-0">
+      <PageWrapper className="pb-20 lg:pb-0 flex-1 min-w-0">
+      <FeedLayout
+        feed={
+        <>
 
         {/* ── Barra de pesquisa ── */}
         <div className="sticky top-0 z-30 border-b"
           style={{ background: "var(--s0)", borderColor: "var(--border-subtle)" }}>
-          <div className="px-4 py-3 max-w-[680px] lg:ml-10">
+          <div className="px-4 py-3 w-full">
             <div className="relative flex items-center">
               <Search className="absolute left-3.5 h-4 w-4 pointer-events-none" style={{ color: "var(--text-muted)" }} />
               <input
@@ -423,7 +428,7 @@ function ExplorePage() {
         </div>
 
         {/* ══════════ RESULTADOS DE PESQUISA ══════════ */}
-        <div className="max-w-[680px] lg:ml-10">
+        <div className="w-full">
         {searchActive ? (
           <div className="px-4 py-4 space-y-6">
             {/* Pessoas */}
@@ -604,7 +609,12 @@ function ExplorePage() {
         </div>
 
         <BottomNav />
+        </>
+        }
+        sidebar={<RightSidebar />}
+      />
       </PageWrapper>
+      </div>
     </>
   );
 }
