@@ -214,24 +214,28 @@ function VideoCard({ v, myId }: { v: any; myId: string | null }) {
         </button>
       )}
 
-      {/* Acções */}
-      <div className="flex items-center px-3 pt-2 pb-1 gap-1">
-        <button onClick={toggleLike} className="flex items-center gap-1 p-1.5 rounded-full transition active:scale-90">
-          <Heart className={`h-[22px] w-[22px] transition-all ${liked ? "fill-red-500 text-red-500 scale-110" : ""}`}
+      {/* Acções — ordem estilo X: comentar, gosto, visualizações | guardar, partilhar */}
+      <div className="flex items-center justify-between px-3 pt-2 pb-1">
+        <button onClick={() => setShowComments(true)} className="flex items-center gap-1.5 p-1.5 rounded-full transition active:scale-90">
+          <MessageCircle className="h-5 w-5" style={{ color: "var(--text-primary)" }} />
+        </button>
+        <button onClick={toggleLike} className="flex items-center gap-1.5 p-1.5 rounded-full transition active:scale-90">
+          <Heart className={`h-5 w-5 transition-all ${liked ? "fill-red-500 text-red-500 scale-110" : ""}`}
             style={{ color: liked ? undefined : "var(--text-primary)" }} />
+          {likeCount > 0 && <span className="text-xs font-semibold" style={{ color: liked ? "#ef4444" : "var(--text-muted)" }}>{fmtNum(likeCount)}</span>}
         </button>
-        {likeCount > 0 && <span className="text-xs font-semibold mr-2" style={{ color: "var(--text-muted)" }}>{fmtNum(likeCount)}</span>}
-        <button onClick={() => setShowComments(true)} className="p-1.5 rounded-full transition active:scale-90">
-          <MessageCircle className="h-[22px] w-[22px]" style={{ color: "var(--text-primary)" }} />
-        </button>
-        <button onClick={() => setShowShare(true)} className="p-1.5 rounded-full transition active:scale-90">
-          <Share2 className="h-[22px] w-[22px]" style={{ color: "var(--text-primary)" }} />
-        </button>
-        <div className="flex-1" />
-        <button onClick={() => setBookmarked(b => !b)} className="p-1.5 rounded-full transition active:scale-90">
-          <Bookmark className={`h-[22px] w-[22px] transition ${bookmarked ? "fill-[#5B3FCF] text-[#5B3FCF]" : ""}`}
-            style={{ color: bookmarked ? undefined : "var(--text-primary)" }} />
-        </button>
+        <span className="flex items-center gap-1.5 p-1.5 text-xs font-semibold" style={{ color: "var(--text-muted)" }}>
+          <Eye className="h-5 w-5" />{fmtNum(v.views_count ?? 0)}
+        </span>
+        <div className="flex items-center gap-0.5">
+          <button onClick={() => setBookmarked(b => !b)} className="p-1.5 rounded-full transition active:scale-90">
+            <Bookmark className={`h-5 w-5 transition ${bookmarked ? "fill-[#5B3FCF] text-[#5B3FCF]" : ""}`}
+              style={{ color: bookmarked ? undefined : "var(--text-primary)" }} />
+          </button>
+          <button onClick={() => setShowShare(true)} className="p-1.5 rounded-full transition active:scale-90">
+            <Share2 className="h-5 w-5" style={{ color: "var(--text-primary)" }} />
+          </button>
+        </div>
       </div>
 
       {showComments && (

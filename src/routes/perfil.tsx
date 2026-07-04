@@ -397,39 +397,32 @@ function PostCard({
         </div>
       )}
 
-      {/* Actions — estilo Instagram */}
-      <div className="flex items-center px-3 pt-2 pb-1 gap-1">
-        <button onClick={() => onLike(post.id)} className="flex items-center gap-1 p-1.5 rounded-full transition active:scale-90 group">
-          <Heart className={`h-[22px] w-[22px] transition-all ${post.likedByMe ? "fill-red-500 text-red-500 scale-110" : "group-hover:text-red-400"}`}
+      {/* Actions — ordem estilo X: comentar, gosto, visualizações | guardar, partilhar */}
+      <div className="flex items-center justify-between px-3 pt-2 pb-1">
+        <button onClick={() => setShowComments(true)} className="flex items-center gap-1.5 p-1.5 rounded-full transition active:scale-90">
+          <MessageCircle className="h-5 w-5" style={{ color: "var(--text-primary)" }} />
+          {commentCount > 0 && <span className="text-xs font-semibold" style={{ color: "var(--text-muted)" }}>{fmtNum(commentCount)}</span>}
+        </button>
+        <button onClick={() => onLike(post.id)} className="flex items-center gap-1.5 p-1.5 rounded-full transition active:scale-90 group">
+          <Heart className={`h-5 w-5 transition-all ${post.likedByMe ? "fill-red-500 text-red-500 scale-110" : "group-hover:text-red-400"}`}
             style={{ color: post.likedByMe ? undefined : "var(--text-primary)" }} />
+          {post.likes > 0 && <span className="text-xs font-semibold" style={{ color: post.likedByMe ? "#ef4444" : "var(--text-muted)" }}>{fmtNum(post.likes)}</span>}
         </button>
-        <button onClick={() => setShowComments(true)} className="flex items-center gap-1 p-1.5 rounded-full transition active:scale-90">
-          <MessageCircle className="h-[22px] w-[22px]" style={{ color: "var(--text-primary)" }} />
-        </button>
-        <button onClick={openShareSheet} className="flex items-center gap-1 p-1.5 rounded-full transition active:scale-90">
-          <Share2 className="h-[22px] w-[22px]" style={{ color: "var(--text-primary)" }} />
-        </button>
-        <div className="flex-1" />
-        <button onClick={() => onBookmark(post.id)} className="p-1.5 rounded-full transition active:scale-90">
-          <Bookmark className={`h-[22px] w-[22px] transition ${post.bookmarked ? "fill-[#5B3FCF] text-[#5B3FCF]" : ""}`}
-            style={{ color: post.bookmarked ? undefined : "var(--text-primary)" }} />
-        </button>
+        <span className="flex items-center gap-1.5 p-1.5 text-xs font-semibold" style={{ color: "var(--text-muted)" }}>
+          <Eye className="h-5 w-5" />{viewCount > 0 ? fmtNum(viewCount) : 0}
+        </span>
+        <div className="flex items-center gap-0.5">
+          <button onClick={() => onBookmark(post.id)} className="p-1.5 rounded-full transition active:scale-90">
+            <Bookmark className={`h-5 w-5 transition ${post.bookmarked ? "fill-[#5B3FCF] text-[#5B3FCF]" : ""}`}
+              style={{ color: post.bookmarked ? undefined : "var(--text-primary)" }} />
+          </button>
+          <button onClick={openShareSheet} className="p-1.5 rounded-full transition active:scale-90">
+            <Share2 className="h-5 w-5" style={{ color: "var(--text-primary)" }} />
+          </button>
+        </div>
       </div>
 
-      {/* Views + Likes count — estilo Facebook/Instagram */}
       <div className="px-3 pb-3">
-        <div className="flex items-center gap-3 mb-1">
-          {viewCount > 0 && (
-            <p className="text-[12px] font-semibold" style={{ color: "var(--text-muted)" }}>
-              👁 {viewCount.toLocaleString("pt-PT")} visualizaç{viewCount === 1 ? "ão" : "ões"}
-            </p>
-          )}
-          {post.likes > 0 && (
-            <p className="text-[13px] font-bold" style={{ color: "var(--text-primary)" }}>
-              ❤️ {post.likes === 1 ? "1 gosto" : `${fmtNum(post.likes)} gostos`}
-            </p>
-          )}
-        </div>
         {post.text && !post.bgColor && (
           <p className="text-[14px] leading-snug" style={{ color: "var(--text-primary)" }}>
             <span className="font-bold mr-1">{username}</span>
@@ -477,12 +470,15 @@ function PostCard({
             </>
           }
           actions={
-            <div className="flex items-center gap-1 pt-2 pb-1">
+            <div className="flex items-center justify-between pt-2 pb-1">
               <button onClick={() => onLike(post.id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all active:scale-95 ${post.likedByMe ? "text-red-500" : "hover:bg-[var(--s1)]"}`}>
+                className={`flex items-center gap-1.5 px-2 py-1.5 rounded-full transition-all active:scale-95 ${post.likedByMe ? "text-red-500" : "hover:bg-[var(--s1)]"}`}>
                 <Heart className={`h-5 w-5 ${post.likedByMe ? "fill-red-500 text-red-500" : "text-[var(--text-muted)]"}`} />
               </button>
-              <Share2 className="h-5 w-5 text-[var(--text-muted)] ml-1" />
+              <span className="flex items-center gap-1.5 px-2 py-1.5 text-xs font-semibold" style={{ color: "var(--text-muted)" }}>
+                <Eye className="h-5 w-5" />{viewCount > 0 ? fmtNum(viewCount) : 0}
+              </span>
+              <Share2 className="h-5 w-5 text-[var(--text-muted)]" />
             </div>
           }
           comments={comments}

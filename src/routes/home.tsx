@@ -1262,29 +1262,35 @@ function PostCard({ p }: { p: any }) {
       )}
       {!isAd && (
         <div className="flex items-center justify-between px-3 py-2 border-t border-neutral-50">
+          {/* Comentar */}
+          <button onClick={() => setShowComments(true)} className="flex items-center gap-1.5 px-2 py-1.5 rounded-full hover:bg-[var(--s1)]">
+            <MessageCircle className="h-5 w-5 text-[var(--text-muted)]" />
+            <span className="text-xs font-semibold text-[var(--text-muted)]">{p.comments ?? 0}</span>
+          </button>
+          {/* Repost */}
+          <button onClick={() => setShowRepost(true)}
+            className="flex items-center gap-1.5 px-2 py-1.5 rounded-full transition-all active:scale-95 hover:bg-[var(--s1)]">
+            <Repeat2 className="h-5 w-5" style={{ color: didRepost ? "#1FAFA6" : "var(--text-muted)" }} />
+            {repostCount > 0 && (
+              <span className="text-xs font-semibold" style={{ color: didRepost ? "#1FAFA6" : "var(--text-muted)" }}>{repostCount}</span>
+            )}
+          </button>
+          {/* Gosto */}
+          <button onClick={toggleLike}
+            className={`flex items-center gap-1.5 px-2 py-1.5 rounded-full transition-all active:scale-95 ${liked ? "text-red-500" : "hover:bg-[var(--s1)]"}`}>
+            <Heart className={`h-5 w-5 ${liked ? "fill-red-500 text-red-500" : "text-[var(--text-muted)]"}`} />
+            <span className="text-xs font-semibold" style={{ color: liked ? "#ef4444" : "var(--text-muted)" }}>{likeCount}</span>
+          </button>
+          {/* Visualizações */}
+          <span className="flex items-center gap-1.5 px-2 py-1.5 text-xs font-semibold" style={{ color: "var(--text-muted)" }}>
+            <Eye className="h-5 w-5" />{viewCount > 0 ? viewCount.toLocaleString("pt-PT") : 0}
+          </span>
           <div className="flex items-center gap-0.5">
-            <button onClick={toggleLike}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all active:scale-95 ${liked ? "text-red-500" : "hover:bg-[var(--s1)]"}`}>
-              <Heart className={`h-5 w-5 ${liked ? "fill-red-500 text-red-500" : "text-[var(--text-muted)]"}`} />
-              <span className="text-xs font-semibold" style={{ color: liked ? "#ef4444" : "var(--text-muted)" }}>{likeCount}</span>
-            </button>
-            <button onClick={() => setShowComments(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full hover:bg-[var(--s1)]">
-              <MessageCircle className="h-5 w-5 text-[var(--text-muted)]" />
-              <span className="text-xs font-semibold text-[var(--text-muted)]">{p.comments ?? 0}</span>
-            </button>
-            {/* Repost */}
-            <button onClick={() => setShowRepost(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all active:scale-95 hover:bg-[var(--s1)]">
-              <Repeat2 className="h-5 w-5" style={{ color: didRepost ? "#1FAFA6" : "var(--text-muted)" }} />
-              {repostCount > 0 && (
-                <span className="text-xs font-semibold" style={{ color: didRepost ? "#1FAFA6" : "var(--text-muted)" }}>{repostCount}</span>
-              )}
-            </button>
+            <BookmarkButton />
             <button onClick={() => setShowForward(true)} className="p-2 rounded-full hover:bg-[var(--s1)] transition">
-              <Forward className="h-5 w-5 text-[var(--text-muted)]" />
+              <Share2 className="h-5 w-5 text-[var(--text-muted)]" />
             </button>
           </div>
-          <BookmarkButton />
         </div>
       )}
       {showRepost && (
@@ -1348,12 +1354,19 @@ function PostCard({ p }: { p: any }) {
             </>
           }
           actions={
-            <div className="flex items-center gap-1 pt-2 pb-1">
+            <div className="flex items-center justify-between pt-2 pb-1">
+              <button onClick={() => setShowRepost(true)}
+                className="flex items-center gap-1.5 px-2 py-1.5 rounded-full transition-all active:scale-95 hover:bg-[var(--s1)]">
+                <Repeat2 className="h-5 w-5" style={{ color: didRepost ? "#1FAFA6" : "var(--text-muted)" }} />
+              </button>
               <button onClick={toggleLike}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all active:scale-95 ${liked ? "text-red-500" : "hover:bg-[var(--s1)]"}`}>
+                className={`flex items-center gap-1.5 px-2 py-1.5 rounded-full transition-all active:scale-95 ${liked ? "text-red-500" : "hover:bg-[var(--s1)]"}`}>
                 <Heart className={`h-5 w-5 ${liked ? "fill-red-500 text-red-500" : "text-[var(--text-muted)]"}`} />
               </button>
-              <Share2 className="h-5 w-5 text-[var(--text-muted)] ml-1" />
+              <span className="flex items-center gap-1.5 px-2 py-1.5 text-xs font-semibold" style={{ color: "var(--text-muted)" }}>
+                <Eye className="h-5 w-5" />{viewCount > 0 ? viewCount.toLocaleString("pt-PT") : 0}
+              </span>
+              <Share2 className="h-5 w-5 text-[var(--text-muted)]" />
             </div>
           }
           comments={comments}

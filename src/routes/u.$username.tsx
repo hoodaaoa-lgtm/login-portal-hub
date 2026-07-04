@@ -1194,52 +1194,45 @@ function UserProfilePage() {
                       </div>
                     )}
 
-                    {/* Ações */}
-                    <div className="flex items-center px-3 py-2 border-t gap-0.5"
+                    {/* Ações — ordem estilo X: comentar, repost, gosto, visualizações | guardar, reencaminhar, partilhar */}
+                    <div className="flex items-center justify-between px-3 py-2 border-t"
                       style={{borderColor:"var(--border-subtle)"}}>
-                      <button onClick={()=>toggleLike(post.id,post.likesCount)}
-                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl transition active:scale-90 group">
-                        <Heart className={`h-5 w-5 transition-all ${isLiked?"fill-red-500 text-red-500 scale-110":"text-[var(--text-muted)] group-hover:text-red-400"}`}/>
-                      </button>
                       <button onClick={()=>setCommentPostId(post.id)}
-                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl transition active:scale-90 hover:bg-[var(--s2)]">
+                        className="flex items-center gap-1.5 px-2 py-2 rounded-xl transition active:scale-90 hover:bg-[var(--s2)]">
                         <MessageSquare className="h-5 w-5" style={{color:"var(--text-muted)"}}/>
+                        {(post.commentsCount??0)>0 && <span className="text-xs font-semibold" style={{color:"var(--text-muted)"}}>{fmtNum(post.commentsCount??0)}</span>}
                       </button>
                       <button onClick={()=>{ if(!myId){toast.error("Inicia sessão para repostar.");return;} setRepostingPost(post); }}
-                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl transition active:scale-90 hover:bg-[var(--s2)]">
+                        className="flex items-center gap-1.5 px-2 py-2 rounded-xl transition active:scale-90 hover:bg-[var(--s2)]">
                         <Repeat2 className="h-5 w-5" style={{color: repostedIds.has(post.id) ? "#1FAFA6" : "var(--text-muted)"}}/>
                       </button>
-                      <button onClick={()=>{ if(!myId){toast.error("Inicia sessão para reencaminhar.");return;} setForwardingPost(post); }}
-                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl transition active:scale-90 hover:bg-[var(--s2)]">
-                        <Forward className="h-5 w-5" style={{color:"var(--text-muted)"}}/>
+                      <button onClick={()=>toggleLike(post.id,post.likesCount)}
+                        className="flex items-center gap-1.5 px-2 py-2 rounded-xl transition active:scale-90 group">
+                        <Heart className={`h-5 w-5 transition-all ${isLiked?"fill-red-500 text-red-500 scale-110":"text-[var(--text-muted)] group-hover:text-red-400"}`}/>
+                        {likeCount>0 && <span className="text-xs font-semibold" style={{color: isLiked ? "#ef4444" : "var(--text-muted)"}}>{fmtNum(likeCount)}</span>}
                       </button>
-                      <button onClick={()=>setSharingPost(post)}
-                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl transition active:scale-90 hover:bg-[var(--s2)]">
-                        <Share2 className="h-5 w-5" style={{color:"var(--text-muted)"}}/>
-                      </button>
-                      <div className="flex-1" />
-                      <button onClick={()=>toggleBookmark(post.id)}
-                        className="p-1.5 rounded-full transition active:scale-90">
-                        {bookmarkedIds.has(post.id)
-                          ? <BookmarkCheck className="h-5 w-5" style={{color:P}}/>
-                          : <Bookmark className="h-5 w-5" style={{color:"var(--text-muted)"}}/>}
-                      </button>
+                      <span className="flex items-center gap-1.5 px-2 py-2 text-xs font-semibold" style={{color:"var(--text-muted)"}}>
+                        <Eye className="h-5 w-5" />{fmtNum(post.viewsCount??0)}
+                      </span>
+                      <div className="flex items-center gap-0.5">
+                        <button onClick={()=>toggleBookmark(post.id)}
+                          className="p-1.5 rounded-full transition active:scale-90">
+                          {bookmarkedIds.has(post.id)
+                            ? <BookmarkCheck className="h-5 w-5" style={{color:P}}/>
+                            : <Bookmark className="h-5 w-5" style={{color:"var(--text-muted)"}}/>}
+                        </button>
+                        <button onClick={()=>{ if(!myId){toast.error("Inicia sessão para reencaminhar.");return;} setForwardingPost(post); }}
+                          className="p-1.5 rounded-full transition active:scale-90 hover:bg-[var(--s2)]">
+                          <Forward className="h-5 w-5" style={{color:"var(--text-muted)"}}/>
+                        </button>
+                        <button onClick={()=>setSharingPost(post)}
+                          className="p-1.5 rounded-full transition active:scale-90 hover:bg-[var(--s2)]">
+                          <Share2 className="h-5 w-5" style={{color:"var(--text-muted)"}}/>
+                        </button>
+                      </div>
                     </div>
 
-                    {/* Views + Likes count — estilo Facebook/Instagram */}
                     <div className="px-3 pb-3">
-                      <div className="flex items-center gap-3 mb-1">
-                        {(post.viewsCount??0)>0&&(
-                          <p className="text-[12px] font-semibold" style={{color:"var(--text-muted)"}}>
-                            👁 {fmtNum(post.viewsCount??0)} visualizaç{post.viewsCount===1?"ão":"ões"}
-                          </p>
-                        )}
-                        {likeCount>0&&(
-                          <p className="text-[13px] font-bold" style={{color:"var(--text-primary)"}}>
-                            ❤️ {likeCount===1?"1 gosto":`${fmtNum(likeCount)} gostos`}
-                          </p>
-                        )}
-                      </div>
                       {post.text&&!post.bgColor&&(
                         <p className="text-[14px] leading-snug" style={{color:"var(--text-primary)"}}>
                           <span className="font-bold mr-1">{profile.username}</span>
