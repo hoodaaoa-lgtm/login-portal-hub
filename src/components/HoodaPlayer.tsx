@@ -74,9 +74,10 @@ interface HoodaPlayerProps {
   signature?: SignatureConfig | null;
 }
 
-/** Cap de altura responsiva (só faz sentido em modo "auto"). Tamanho
- * "normal" de feed — nada de vídeo dominando o ecrã inteiro. */
-const HEIGHT_CAP_CLASSES = "max-h-[280px] sm:max-h-[360px]";
+/** Cap de altura responsiva — tamanho "normal" de feed. Usa min() para
+ * nunca deixar o vídeo dominar o ecrã inteiro (nem em mobile, nem em
+ * desktop), qualquer que seja a proporção real do vídeo. */
+const MAX_HEIGHT_CSS = "min(60vh, 520px)";
 
 export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(function HoodaPlayer(
   {
@@ -252,15 +253,27 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
       ref={(el) => {
         (wrapperRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
       }}
-      className={`relative w-full overflow-hidden bg-black select-none ${rounded} ${isAutoMode ? HEIGHT_CAP_CLASSES : ""} ${className}`}
-      style={{ aspectRatio: effectiveRatio }}
+      className={`w-full flex items-center justify-center overflow-hidden bg-black select-none ${rounded} ${className}`}
       onMouseMove={resetTimer}
       onTouchStart={resetTimer}
       onClick={togglePlay}
     >
-      {/* Video element — object-fit dinâmico (ver objectFitClass acima):
-          "cover" no modo auto para nunca sobrar barra preta lateral,
-          "contain" no modo fixo (short) para nunca cortar o vertical. */}
+      {/* Caixa interna: largura e altura ambas "auto", limitadas por
+          max-width (nunca ultrapassa o post) e max-height (nunca fica
+          gigante) — ambas encolhem juntas para preservar a proporção
+          real do vídeo. Isto é o que impede o vídeo vertical de tomar
+          o ecrã inteiro sem cortar nem esticar nada. */}
+      <div
+        className="relative"
+        style={{
+          aspectRatio: effectiveRatio,
+          width: "auto",
+          height: "auto",
+          maxWidth: "100%",
+          maxHeight: MAX_HEIGHT_CSS,
+        }}
+      >
+      {/* Video element — object-fit: contain, sempre. */}
       <video
         ref={(el) => {
           (videoRef as React.MutableRefObject<HTMLVideoElement | null>).current = el;
@@ -499,6 +512,7 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
             </button>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );
