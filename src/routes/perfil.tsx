@@ -5,7 +5,6 @@ import { useScrollLock } from "@/hooks/useScrollLock";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
-import { usePostVideoView } from "@/hooks/usePostVideoView";
 import { STATIC_QUERY_OPTIONS } from "@/lib/queryClient";
 import { BottomNav, SideNav, PageWrapper, FeedLayout } from "@/components/AppShell";
 import { RightSidebar } from "@/components/RightSidebar";
@@ -30,7 +29,7 @@ import { fetchPostComments, sendPostComment, replyToPostComment, toggleCommentLi
 import { deletePostForEveryone, fetchMyShareableCommunities, sharePostToCommunity, type MyCommunity } from "@/lib/posts";
 import { toast } from "sonner";
 import { PhotoViewer } from "@/components/PhotoViewer";
-import { HoodaPlayer } from "@/components/HoodaPlayer";
+import { FeedVideoPlayer } from "@/components/FeedVideoPlayer";
 
 export const Route = createFileRoute("/perfil")({
   head: () => ({ meta: [{ title: "Hooda" }] }),
@@ -357,14 +356,14 @@ function PostCard({
 
       {/* Media — ocupa largura total, sem padding lateral */}
       {post.videoUrl && (
-        <SimpleVideoPlayer src={post.videoUrl} postId={post.id} kind="video" />
+        <FeedVideoPlayer src={post.videoUrl} postId={post.id} kind="video" />
       )}
       {(post as any).kind === "clip" && (post as any).clipVideoId && (
         <div className="mx-3 mb-3 rounded-2xl overflow-hidden border" style={{ borderColor: "var(--border-subtle)" }}>
           {(post as any).videoStreamUrl
             ? <div style={{ aspectRatio: "16/9", background: "#000", maxHeight: 260, overflow: "hidden", width: "100%" }}>
                 <div style={{ width: "100%", height: "100%" }}>
-                  <SimpleVideoPlayer src={(post as any).videoStreamUrl} postId={post.id} kind="clip" rounded="rounded-none" />
+                  <FeedVideoPlayer src={(post as any).videoStreamUrl} postId={post.id} kind="clip" rounded="rounded-none" />
                 </div>
               </div>
             : (post as any).clipThumb
@@ -460,7 +459,7 @@ function PostCard({
             <>
               {post.videoUrl && (
                 <div className="w-full">
-                  <SimpleVideoPlayer src={post.videoUrl} postId={post.id} kind="video" />
+                  <FeedVideoPlayer src={post.videoUrl} postId={post.id} kind="video" />
                 </div>
               )}
               {post.photo && !post.videoUrl && <img src={post.photo} alt="" className="w-full" style={{ display: "block" }} />}
@@ -597,76 +596,7 @@ function PostsFeed({ posts, loading, name, username, avatarUrl, onLike, onBookma
 }
 
 /* ─── Modal Criar Publicação ─── */
-/* ── SimpleVideoPlayer — play overlay, deteta short, regista views ── */
-function SimpleVideoPlayer({ src, rounded = "rounded-none", postId, kind }: {
-  src: string; rounded?: string; postId?: string; kind?: string;
-}) {
-  const [isShort, setIsShort] = useState<boolean | null>(null);
-  const [playing, setPlaying] = useState(false);
-  const ref = useRef<HTMLVideoElement>(null);
-
-  usePostVideoView(postId, kind, ref);
-
-  function toggle() {
-    const v = ref.current; if (!v) return;
-    if (v.paused) { v.play(); setPlaying(true); }
-    else { v.pause(); setPlaying(false); }
-  }
-
-  return (
-    <div
-      className={`w-full bg-black relative cursor-pointer overflow-hidden ${rounded}`}
-      style={{
-        aspectRatio: kind === "clip" ? "16/9" : (isShort === true ? "9/16" : "16/9"),
-        maxHeight: kind === "clip" ? 260 : isShort === true ? "480px" : "420px",
-      }}
-      onClick={toggle}>
-      <video
-        ref={ref}
-        src={src}
-        playsInline
-        preload="metadata"
-        onLoadedMetadata={() => {
-          const v = ref.current;
-          if (v) setIsShort(v.videoHeight > v.videoWidth);
-        }}
-        onPlay={() => setPlaying(true)}
-        onPause={() => setPlaying(false)}
-        onContextMenu={e => e.preventDefault()}
-        className="w-full h-full block"
-        style={{
-          pointerEvents: "none",
-          objectFit: "contain",
-        }}
-      />
-      {!playing && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-14 h-14 rounded-full flex items-center justify-center transition active:scale-90"
-            style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(4px)" }}>
-            <svg className="h-7 w-7 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M8 5v14l11-7z" />
-            </svg>
-          </div>
-        </div>
-      )}
-      {playing && (
-        <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-          <div className="w-12 h-12 rounded-full flex items-center justify-center"
-            style={{ background: "rgba(0,0,0,0.4)" }}>
-            <svg className="h-6 w-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
-            </svg>
-          </div>
-        </div>
-      )}
-      {isShort === null && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="w-7 h-7 rounded-full border-2 border-white/20 border-t-white animate-spin" />
-        </div>
-      )}
-    </div>
-  );
-}
+/* SimpleVideoPlayer local foi substituído por FeedVideoPlayer (moldura + controles tipo YouTube) */
 
 function CreatePostModal({
   profile, email, onClose, onPublish,
@@ -825,7 +755,7 @@ function CreatePostModal({
           )}
           {videoPreview && (
             <div className="relative mb-3">
-              <SimpleVideoPlayer src={videoPreview} rounded="rounded-xl" />
+              <FeedVideoPlayer src={videoPreview} rounded="rounded-xl" isShortHint={false} />
               <button onClick={() => { setVideoFile(null); setVideoPreview(null); }}
                 className="absolute top-2 right-2 bg-black/60 text-white rounded-full p-1 z-20">
                 <X className="h-4 w-4" />

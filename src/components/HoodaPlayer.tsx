@@ -9,7 +9,7 @@
  *   loop?     — default false
  *   className? — classes extras no wrapper
  */
-import { useRef, useState, useEffect, useCallback } from "react";
+import { useRef, useState, useEffect, useCallback, forwardRef } from "react";
 import {
   Play, Pause, Volume2, VolumeX, Maximize, Minimize,
   RotateCcw,
@@ -53,7 +53,7 @@ interface HoodaPlayerProps {
   signature?: SignatureConfig | null;
 }
 
-export function HoodaPlayer({
+export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(function HoodaPlayer({
   src,
   poster,
   autoPlay = false,
@@ -63,7 +63,7 @@ export function HoodaPlayer({
   rounded = "rounded-2xl",
   watermark,
   signature,
-}: HoodaPlayerProps) {
+}, forwardedRef) {
   const videoRef    = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const hideTimer   = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -164,7 +164,11 @@ export function HoodaPlayer({
     >
       {/* Video element */}
       <video
-        ref={videoRef}
+        ref={(el) => {
+          (videoRef as React.MutableRefObject<HTMLVideoElement | null>).current = el;
+          if (typeof forwardedRef === "function") forwardedRef(el);
+          else if (forwardedRef) (forwardedRef as React.MutableRefObject<HTMLVideoElement | null>).current = el;
+        }}
         poster={poster}
         autoPlay={autoPlay}
         playsInline
@@ -330,4 +334,4 @@ export function HoodaPlayer({
       `}</style>
     </div>
   );
-}
+});

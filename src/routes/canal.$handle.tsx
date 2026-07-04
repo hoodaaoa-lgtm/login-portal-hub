@@ -14,6 +14,7 @@ import {
   Eye, Grid3x3, Film, Image as ImageIcon,
 } from "lucide-react";
 import { toast } from "sonner";
+import { FeedVideoPlayer } from "@/components/FeedVideoPlayer";
 
 export const Route = createFileRoute("/canal/$handle")({
   head: () => ({ meta: [{ title: "Canal — Hooda" }] }),
@@ -37,36 +38,7 @@ function timeAgo(d: string) {
   return new Date(d).toLocaleDateString("pt-PT", { day: "numeric", month: "short", year: "numeric" });
 }
 
-/* ── SimpleVideoPlayer ── */
-function SimpleVideoPlayer({ src, poster }: { src: string; poster?: string }) {
-  const [isShort, setIsShort] = useState<boolean | null>(null);
-  const [playing, setPlaying] = useState(false);
-  const ref = useRef<HTMLVideoElement>(null);
-
-  function toggle() {
-    const v = ref.current;
-    if (!v) return;
-    v.paused ? (v.play(), setPlaying(true)) : (v.pause(), setPlaying(false));
-  }
-
-  return (
-    <div className="w-full bg-black relative cursor-pointer"
-      style={{ aspectRatio: isShort ? "9/16" : "16/9", maxHeight: isShort ? "75vh" : "560px" }}
-      onClick={toggle}>
-      <video ref={ref} src={src} poster={poster} playsInline preload="metadata"
-        onLoadedMetadata={() => { const v = ref.current; if (v) setIsShort(v.videoHeight > v.videoWidth); }}
-        onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)}
-        className="w-full h-full block" style={{ objectFit: "contain" }} />
-      {!playing && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{ background: "rgba(0,0,0,0.55)" }}>
-            <Play className="h-7 w-7 text-white ml-1" fill="white" />
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
+/* SimpleVideoPlayer local foi substituído por FeedVideoPlayer (moldura + controles tipo YouTube) */
 
 /* ── ForwardModal ── */
 function ForwardModal({ item, myId, onClose, isVideo = false }: { item: any; myId: string; onClose: () => void; isVideo?: boolean }) {
@@ -230,7 +202,7 @@ function VideoCard({ v, myId }: { v: any; myId: string | null }) {
       </div>
 
       {/* Player */}
-      {streamSrc && <SimpleVideoPlayer src={streamSrc} poster={v.thumbnail_url || undefined} />}
+      {streamSrc && <FeedVideoPlayer src={streamSrc} poster={v.thumbnail_url || undefined} />}
       {!streamSrc && v.thumbnail_url && (
         <button onClick={() => navigate({ to: `/watch/${v.id}` })} className="w-full relative block aspect-video bg-black">
           <img src={v.thumbnail_url} alt="" className="w-full h-full object-cover" />

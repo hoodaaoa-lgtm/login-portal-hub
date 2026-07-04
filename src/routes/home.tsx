@@ -31,8 +31,7 @@ import { useTimeAgo } from "@/hooks/useTimeAgo";
 import { useQuery, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { QUERY_KEYS, FEED_QUERY_OPTIONS, STATIC_QUERY_OPTIONS, REALTIME_QUERY_OPTIONS } from "@/lib/queryClient";
 import { FeedSkeleton, BackgroundRefreshDot, StoriesRowSkeleton } from "@/components/Skeletons";
-import { HoodaPlayer } from "@/components/HoodaPlayer";
-import { usePostVideoView } from "@/hooks/usePostVideoView";
+import { FeedVideoPlayer } from "@/components/FeedVideoPlayer";
 import { useTranslation } from "react-i18next";
 import i18n from "@/lib/i18n";
 import { useScrollLock } from "@/hooks/useScrollLock";
@@ -2351,75 +2350,7 @@ function WhoToFollowCard({ myUserId, onDismiss, offset = 0 }: { myUserId: string
   );
 }
 
-/* ── SimpleVideoPlayer — player simples para o feed ── */
-function SimpleVideoPlayer({ src, poster, postId, kind, isShortHint }: { src: string; poster?: string; postId?: string; kind?: string; isShortHint?: boolean | null }) {
-  const [isShort, setIsShort] = useState<boolean | null>(isShortHint ?? null);
-  const [playing, setPlaying] = useState(false);
-  const ref = useRef<HTMLVideoElement>(null);
-
-  // Regista view após 3s (só video/clip)
-  usePostVideoView(postId, kind, ref);
-
-  function togglePlay() {
-    const v = ref.current;
-    if (!v) return;
-    if (v.paused) { v.play(); setPlaying(true); }
-    else { v.pause(); setPlaying(false); }
-  }
-
-  return (
-    <div
-      className={isShort === true ? "bg-black relative cursor-pointer overflow-hidden rounded-2xl" : "w-full bg-black relative cursor-pointer"}
-      style={
-        isShort === true
-          ? { aspectRatio: "9/16", height: "min(75vh, 640px)", width: "auto", maxWidth: "100%" }
-          : { aspectRatio: "16/9", maxHeight: "560px" }
-      }
-      onClick={togglePlay}
-    >
-      <video
-        ref={ref}
-        src={src}
-        poster={poster}
-        playsInline
-        preload="metadata"
-        onLoadedMetadata={() => {
-          const v = ref.current;
-          if (v) setIsShort(v.videoHeight > v.videoWidth);
-        }}
-        onPlay={() => setPlaying(true)}
-        onPause={() => setPlaying(false)}
-        className="w-full h-full block"
-        style={{ display: "block", pointerEvents: "none", objectFit: "cover" }}
-      />
-      {!playing && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-14 h-14 rounded-full flex items-center justify-center transition active:scale-90"
-            style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(4px)" }}>
-            <svg className="h-7 w-7 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M8 5v14l11-7z" />
-            </svg>
-          </div>
-        </div>
-      )}
-      {playing && (
-        <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-          <div className="w-14 h-14 rounded-full flex items-center justify-center"
-            style={{ background: "rgba(0,0,0,0.45)" }}>
-            <svg className="h-7 w-7 text-white" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
-            </svg>
-          </div>
-        </div>
-      )}
-      {isShort === null && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="w-7 h-7 rounded-full border-2 border-white/20 border-t-white animate-spin" />
-        </div>
-      )}
-    </div>
-  );
-}
+/* SimpleVideoPlayer local foi substituído por FeedVideoPlayer (moldura + controles tipo YouTube) */
 
 /* ── Card de Clipe no Feed ── */
 function ClipCard({ p, liked, likeCount, viewCount, onLike, onComment }: {
@@ -2479,7 +2410,7 @@ function ClipCard({ p, liked, likeCount, viewCount, onLike, onComment }: {
 
       {/* ── Player do clipe ── */}
       {streamSrc ? (
-        <SimpleVideoPlayer src={streamSrc} poster={p.clip_thumb_url || p.thumbnail_url || undefined} postId={p.id} kind="clip" />
+        <FeedVideoPlayer src={streamSrc} poster={p.clip_thumb_url || p.thumbnail_url || undefined} postId={p.id} kind="clip" />
       ) : (
         /* Sem stream URL — mostra thumbnail clicável que vai para o vídeo */
         <button
@@ -2854,7 +2785,7 @@ function PostCard({ p }: { p: any }) {
 
       {/* Vídeo */}
       {p.video && (
-        <SimpleVideoPlayer src={p.video} poster={p.video_thumb || p.photo || undefined} postId={p.id} kind="video" />
+        <FeedVideoPlayer src={p.video} poster={p.video_thumb || p.photo || undefined} postId={p.id} kind="video" />
       )}
 
       {/* Texto */}
@@ -2963,7 +2894,7 @@ function PostCard({ p }: { p: any }) {
           body={
             <>
               {p.video && (
-                <SimpleVideoPlayer src={p.video} poster={p.video_thumb || p.photo || undefined} postId={p.id} kind="video" />
+                <FeedVideoPlayer src={p.video} poster={p.video_thumb || p.photo || undefined} postId={p.id} kind="video" />
               )}
               {p.text && !p.video && (p.bg_color
                 ? <div className="px-4 pb-3">
