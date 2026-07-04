@@ -310,7 +310,7 @@ function PostCard({
   return (
     <article className="hooda-card overflow-hidden" style={{ borderRadius: 16 }}>
       {/* Header — estilo Instagram */}
-      <div className="flex items-center gap-2.5 px-3 py-2.5">
+      <div className="flex items-center gap-2.5 px-3 py-2">
         <Avatar name={name} size={36} src={avatarUrl} />
         <div className="flex-1 min-w-0">
           <span className="font-bold text-[14px]" style={{ color: "var(--text-primary)" }}>{name}</span>
@@ -398,7 +398,7 @@ function PostCard({
       )}
 
       {/* Actions — ordem estilo X: comentar, gosto, visualizações | guardar, partilhar */}
-      <div className="flex items-center justify-between px-3 pt-2 pb-1">
+      <div className="flex items-center justify-between px-3 pt-1.5 pb-0.5">
         <button onClick={() => setShowComments(true)} className="flex items-center gap-1.5 p-1.5 rounded-full transition active:scale-90">
           <MessageCircle className="h-5 w-5" style={{ color: "var(--text-primary)" }} />
           {commentCount > 0 && <span className="text-xs font-semibold" style={{ color: "var(--text-muted)" }}>{fmtNum(commentCount)}</span>}
@@ -422,7 +422,7 @@ function PostCard({
         </div>
       </div>
 
-      <div className="px-3 pb-3">
+      <div className="px-3 pb-2.5">
         {post.text && !post.bgColor && (
           <p className="text-[14px] leading-snug" style={{ color: "var(--text-primary)" }}>
             <span className="font-bold mr-1">{username}</span>

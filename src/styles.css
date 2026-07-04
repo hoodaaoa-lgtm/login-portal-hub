@@ -592,7 +592,7 @@
   border: 1px solid var(--border-subtle);
   border-radius: 16px;
   transition: background 0.15s ease, box-shadow 0.15s ease;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 .hooda-card:hover {
   background: var(--s2);
