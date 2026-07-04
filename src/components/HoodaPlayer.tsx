@@ -74,6 +74,12 @@ interface HoodaPlayerProps {
   signature?: SignatureConfig | null;
 }
 
+/** Limite de altura estilo X/Twitter: o vídeo ocupa sempre a largura total
+ * do post; se a proporção real fizer a altura ultrapassar este valor
+ * (vídeos verticais/shorts), a altura fica presa aqui e o vídeo aparece
+ * inteiro, centrado, com barra preta lateral (nunca corta, nunca estica). */
+const MAX_HEIGHT_CSS = "min(70vh, 600px)";
+
 export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(function HoodaPlayer(
   {
     src,
@@ -109,9 +115,10 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
   const [naturalRatio, setNaturalRatio] = useState<string | null>(null);
   const effectiveRatio = isAutoMode ? (naturalRatio ?? "16/9") : aspectRatio;
   // object-fit: SEMPRE "contain". Nunca cortamos nem deformamos o vídeo —
-  // a caixa segue exatamente a proporção real dele (naturalRatio para
-  // vídeos normais, 9/16 fixo para shorts), sem nenhum limite artificial
-  // de altura a forçar encolhimento.
+  // a caixa segue a proporção real dele (naturalRatio para vídeos normais,
+  // 9/16 fixo para shorts) até ao limite de altura (MAX_HEIGHT_CSS); se
+  // esse limite entrar em ação, o vídeo encolhe mantendo a proporção
+  // (barra preta lateral em vez de cortar).
   const objectFitClass = "object-contain";
 
   /* ─── Regista no mediaManager: só um vídeo toca de cada vez ─── */
@@ -252,13 +259,17 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
       onTouchStart={resetTimer}
       onClick={togglePlay}
     >
-      {/* Caixa interna: largura total do post, altura calculada pela
-          proporção real do vídeo (effectiveRatio) — sem nenhum limite
-          artificial de altura. Vídeo normal fica com o tamanho normal;
-          short fica com a proporção 9/16 dele, certinho. */}
+      {/* Caixa interna: largura sempre 100% do post (nunca "auto" — isso é
+          o que causava o vídeo desaparecer, porque o <video> é absolute
+          e não conta como conteúdo para um "auto" se basear). A altura
+          segue a proporção real do vídeo, presa por MAX_HEIGHT_CSS. */}
       <div
         className="relative w-full"
-        style={{ aspectRatio: effectiveRatio }}
+        style={{
+          aspectRatio: effectiveRatio,
+          maxHeight: MAX_HEIGHT_CSS,
+          overflow: "hidden",
+        }}
       >
       {/* Video element — object-fit: contain, sempre. */}
       <video
