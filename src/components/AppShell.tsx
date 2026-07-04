@@ -6,6 +6,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useAvatar } from "@/contexts/AvatarContext";
 import { useBadges } from "@/contexts/BadgeContext";
 import { UserDrawer } from "@/components/UserDrawer";
+import { QuickPostModal } from "@/components/QuickComposer";
 import {
   Home, Compass, MessageSquare, Users, User, Tv, Menu,
   Moon, Sun, Bell, Droplet, Feather, MoreHorizontal, ArrowLeft,
@@ -66,11 +67,17 @@ export function SideNav() {
   const initial = (name?.[0] ?? "?").toUpperCase();
   const isPerfilActive = pathname === "/perfil";
   const [showDrawer, setShowDrawer] = React.useState(false);
+  const [showComposer, setShowComposer] = React.useState(false);
   const [currentUserId, setCurrentUserId] = React.useState("");
+  const [currentUsername, setCurrentUsername] = React.useState("");
 
   React.useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) setCurrentUserId(session.user.id);
+      if (session) {
+        setCurrentUserId(session.user.id);
+        supabase.from("profiles").select("username").eq("id", session.user.id).maybeSingle()
+          .then(({ data }) => setCurrentUsername((data as any)?.username ?? ""));
+      }
     });
   }, []);
 
@@ -151,7 +158,7 @@ export function SideNav() {
         {/* Botão Publicar — estilo X */}
         <div className="pt-3 px-1">
           <button
-            onClick={() => { navigate({ to: "/home" }); setTimeout(() => window.dispatchEvent(new CustomEvent("hooda:open-composer")), 60); }}
+            onClick={() => setShowComposer(true)}
             className="w-full h-[52px] rounded-full text-white font-extrabold text-[16px] flex items-center justify-center gap-2 transition active:scale-[0.98]"
             style={{ background: "#5B3FCF", boxShadow: "0 6px 18px rgba(91,63,207,0.35)" }}>
             <Feather className="h-5 w-5" />
@@ -159,6 +166,16 @@ export function SideNav() {
           </button>
         </div>
       </nav>
+
+      {showComposer && (
+        <QuickPostModal
+          name={name || "Utilizador"}
+          username={currentUsername}
+          avatarUrl={avatarUrl}
+          onClose={() => setShowComposer(false)}
+          onPublished={() => setShowComposer(false)}
+        />
+      )}
 
       {/* Bottom user card — X style */}
       <div className="px-2 py-3">

@@ -23,7 +23,7 @@ function MiniAvatar({ name, src, size = 40 }: { name: string; src?: string | nul
 }
 
 /* ── Modal de criação de publicação (texto / foto / vídeo) ── */
-function QuickPostModal({ name, username, avatarUrl, onClose, onPublished }: {
+export function QuickPostModal({ name, username, avatarUrl, onClose, onPublished }: {
   name: string; username: string; avatarUrl?: string | null;
   onClose: () => void;
   onPublished: () => void;
