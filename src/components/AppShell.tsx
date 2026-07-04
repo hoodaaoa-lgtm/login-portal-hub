@@ -58,6 +58,7 @@ function NavCountBadge({ count, compact = false }: { count: number; compact?: bo
 
 /* ─── Desktop Sidebar ─── */
 export function SideNav() {
+  const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { theme, toggle } = useTheme();
   const { avatarUrl, name } = useAvatar();
