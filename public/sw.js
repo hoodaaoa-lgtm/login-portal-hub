@@ -1,4 +1,4 @@
-const CACHE_NAME = "hooda-v1";
+const CACHE_NAME = "hooda-v2";
 const OFFLINE_URL = "/offline.html";
 
 const PRECACHE = ["/", "/offline.html"];
