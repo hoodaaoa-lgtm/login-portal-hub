@@ -1,12 +1,10 @@
 /**
  * ShortFrame — moldura estilo "anúncio" para vídeos verticais (shorts).
  *
- * No MOBILE (< 640px): o short vai de ponta a ponta do card, sem bezel
- * nem espaço à direita — igual ao comportamento nativo do X no telemóvel
- * (o vídeo só faz "letterbox" com barras pretas se não preencher 9:16).
- *
- * A partir de sm (>= 640px): aplica o bezel preto arredondado + espaço
- * à direita, estilo anúncio.
+ * Em todos os tamanhos de ecrã (incluindo mobile) o short aparece como um
+ * cartão vertical mais estreito e com altura limitada, centrado no post —
+ * igual ao comportamento do X/Twitter — em vez de ocupar o ecrã de ponta
+ * a ponta e "comer" muito espaço ao fazer scroll.
  */
 import type { ReactNode } from "react";
 
@@ -24,35 +22,35 @@ export function ShortFrame({ children }: { children: ReactNode }) {
         .hooda-short-frame-outer {
           width: 100%;
           display: flex;
+          justify-content: center;
+          padding: 8px 8px 10px;
         }
         .hooda-short-frame-box {
           position: relative;
-          width: 100%;
+          width: auto;
+          max-width: 100%;
+          height: min(56vh, 480px);
           aspect-ratio: 9 / 16;
-          max-height: 78vh;
-          background: transparent;
-          border-radius: 0;
+          background: #0b0b0d;
+          border-radius: 18px;
           padding: 0;
         }
         .hooda-short-frame-inner {
           width: 100%;
           height: 100%;
           overflow: hidden;
-          border-radius: 0;
+          border-radius: 18px;
         }
         @media (min-width: 640px) {
           .hooda-short-frame-outer {
             padding-left: 14px;
-            padding-right: 8px;
+            padding-right: 14px;
             padding-top: 6px;
             padding-bottom: 10px;
           }
           .hooda-short-frame-box {
-            width: auto;
             height: min(68vh, 560px);
             aspect-ratio: 9 / 17.2;
-            max-height: none;
-            background: #0b0b0d;
             border-radius: 26px;
             padding: 10px;
           }
