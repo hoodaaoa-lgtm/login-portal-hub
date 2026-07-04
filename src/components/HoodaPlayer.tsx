@@ -267,7 +267,7 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
         className="relative"
         style={{
           aspectRatio: effectiveRatio,
-          width: "auto",
+          width: "100%",
           height: "auto",
           maxWidth: "100%",
           maxHeight: MAX_HEIGHT_CSS,
