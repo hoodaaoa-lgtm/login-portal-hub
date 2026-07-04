@@ -391,9 +391,9 @@ function PostCard({
           onError={(e) => { e.currentTarget.style.display = "none"; }} />
       )}
       {post.bgColor && !post.photo && !post.videoUrl && (
-        <div className="mx-3 rounded-2xl flex items-center justify-center"
-          style={{ background: post.bgColor, minHeight: 180 }}>
-          <p className="font-bold text-center leading-snug px-6 py-8 text-white text-[18px]">{post.text}</p>
+        <div className="w-full flex items-center justify-center"
+          style={{ background: post.bgColor, minHeight: 260 }}>
+          <p className="font-bold text-center leading-snug px-8 py-10 text-white text-[20px]">{post.text}</p>
         </div>
       )}
 
