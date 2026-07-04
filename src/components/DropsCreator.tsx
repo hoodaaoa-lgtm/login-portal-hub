@@ -2,6 +2,7 @@ import React, { useState, useRef } from "react";
 import { X, Upload, Music, Play, Pause, Volume2, VolumeX, Type, Smile, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import toast from "react-hot-toast";
+import { MusicLibrary, type Song } from "@/components/MusicLibrary";
 
 interface DropsCreatorProps {
   onClose: () => void;
@@ -12,7 +13,6 @@ type Tab = "fundo" | "texto" | "stickers" | "filtros" | "musica";
 
 export function DropsCreator({ onClose, onPublish }: DropsCreatorProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const musicInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   
@@ -21,6 +21,8 @@ export function DropsCreator({ onClose, onPublish }: DropsCreatorProps) {
   const [videoUrl, setVideoUrl] = useState<string>("");
   const [thumbnail, setThumbnail] = useState<string>("");
   const [musicUrl, setMusicUrl] = useState<string>("");
+  const [musicTitle, setMusicTitle] = useState<string>("");
+  const [showMusicLib, setShowMusicLib] = useState(false);
   const [musicVolume, setMusicVolume] = useState(70);
   const [duration, setDuration] = useState("24h");
   const [textOverlay, setTextOverlay] = useState("");
@@ -45,18 +47,11 @@ export function DropsCreator({ onClose, onPublish }: DropsCreatorProps) {
     setVideoUrl(url);
   };
 
-  // Handle music selection
-  const handleMusicSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith("audio/")) {
-      toast.error("Apenas áudio é permitido");
-      return;
-    }
-
-    const url = URL.createObjectURL(file);
-    setMusicUrl(url);
+  // Handle music selection (biblioteca musical partilhada)
+  const handleMusicSelect = (song: Song) => {
+    setMusicUrl(song.stream_url || song.url);
+    setMusicTitle(song.artist ? `${song.title} — ${song.artist}` : song.title);
+    setShowMusicLib(false);
     toast.success("Música adicionada!");
   };
 
@@ -225,6 +220,21 @@ export function DropsCreator({ onClose, onPublish }: DropsCreatorProps) {
                       {isPlaying ? <Pause className="h-6 w-6 text-white" /> : <Play className="h-6 w-6 text-white" />}
                     </button>
                   </div>
+
+                  {/* X — remover/trocar vídeo */}
+                  <button
+                    onClick={() => {
+                      setVideoFile(null);
+                      setVideoUrl("");
+                      setThumbnail("");
+                      setIsPlaying(false);
+                      if (fileInputRef.current) fileInputRef.current.value = "";
+                    }}
+                    className="absolute top-2 right-2 z-10 p-1.5 rounded-full bg-black/60 hover:bg-black/80 transition"
+                    aria-label="Trocar vídeo/foto"
+                  >
+                    <X className="h-4 w-4 text-white" />
+                  </button>
                 </div>
 
                 {/* Thumbnail */}
@@ -334,21 +344,26 @@ export function DropsCreator({ onClose, onPublish }: DropsCreatorProps) {
                 {/* Música Tab */}
                 {activeTab === "musica" && (
                   <div className="space-y-3">
-                    <button onClick={() => musicInputRef.current?.click()}
+                    <button onClick={() => setShowMusicLib(true)}
                       className="w-full py-2 px-3 rounded-lg text-sm font-semibold flex items-center gap-2"
                       style={{ background: "var(--s2)", color: "var(--text-primary)" }}>
-                      <Music className="h-4 w-4" /> Adicionar Música
+                      <Music className="h-4 w-4" /> {musicTitle ? "Trocar Música" : "Escolher Música"}
                     </button>
                     {musicUrl && (
                       <div className="space-y-2">
+                        {musicTitle && (
+                          <p className="text-xs font-semibold" style={{ color: "var(--text-primary)" }}>🎵 {musicTitle}</p>
+                        )}
                         <label className="text-xs font-semibold" style={{ color: "var(--text-muted)" }}>Volume: {musicVolume}%</label>
                         <input type="range" min="0" max="100" value={musicVolume}
                           onChange={(e) => setMusicVolume(parseInt(e.target.value))}
                           className="w-full" />
-                        <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>🎵 Música adicionada</p>
+                        <button onClick={() => { setMusicUrl(""); setMusicTitle(""); }}
+                          className="text-[10px] font-semibold underline" style={{ color: "var(--text-muted)" }}>
+                          Remover música
+                        </button>
                       </div>
                     )}
-                    <input ref={musicInputRef} type="file" accept="audio/*" onChange={handleMusicSelect} className="hidden" />
                   </div>
                 )}
 
@@ -398,6 +413,10 @@ export function DropsCreator({ onClose, onPublish }: DropsCreatorProps) {
         )}
 
         <canvas ref={canvasRef} className="hidden" />
+
+        {showMusicLib && (
+          <MusicLibrary onSelect={handleMusicSelect} onClose={() => setShowMusicLib(false)} />
+        )}
       </div>
     </div>
   );
