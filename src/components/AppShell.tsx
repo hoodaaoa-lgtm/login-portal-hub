@@ -130,7 +130,7 @@ export function SideNav() {
         {/* Botão Publicar — estilo X */}
         <div className="pt-3 px-1">
           <button
-            onClick={() => window.dispatchEvent(new CustomEvent("hooda:open-composer"))}
+            onClick={() => { navigate({ to: "/home" }); setTimeout(() => window.dispatchEvent(new CustomEvent("hooda:open-composer")), 60); }}
             className="w-full h-[52px] rounded-full text-white font-extrabold text-[16px] flex items-center justify-center gap-2 transition active:scale-[0.98]"
             style={{ background: "#5B3FCF", boxShadow: "0 6px 18px rgba(91,63,207,0.35)" }}>
             <Feather className="h-5 w-5" />
