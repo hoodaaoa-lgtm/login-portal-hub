@@ -1419,7 +1419,7 @@ function HomePage() {
   const [showWhoToFollow, setShowWhoToFollow] = React.useState(true);
   const [showWhoToFollow2, setShowWhoToFollow2] = React.useState(true);
   const [feedVisible, setFeedVisible] = useState(15);
-  const [feedOffset, setFeedOffset] = useState(0);
+  const [feedCursor, setFeedCursor] = useState<string | null>(null);
   const [hasMorePosts, setHasMorePosts] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [extraPosts, setExtraPosts] = useState<any[]>([]); // páginas extra carregadas via scroll infinito
@@ -1471,39 +1471,58 @@ function HomePage() {
     }
   }
 
-  async function fetchFeedPageInner(uid: string) {
-    // ═══════════════════════════════════════════════════════════════════
-    // FEED CRONOLÓGICO — sem algoritmo
-    //
-    // Mostra todos os posts/vídeos publicados, de qualquer pessoa (incluindo
-    // os próprios), simplesmente por ordem de publicação (mais recentes
-    // primeiro). Sem scoring, sem segmentação por "follows"/"popular"/
-    // "descoberta", sem decaimento por tempo, sem filtragem por engagement.
-    // ═══════════════════════════════════════════════════════════════════
+  const FEED_CHUNK_SIZE = 30;
+  const ACCENT_LOCAL = ["#5B3FCF","#F26B3A","#1FAFA6","#6BA547","#E94B8A","#FFC93C"];
+  const POST_SELECT_FIELDS = "id,author_id,user_id,author_username,author_name,author_color,content,kind,is_ad,created_at,photo_url,photos,video_url,clip_video_id,clip_start,clip_end,clip_title,channel_id,channel_handle,channel_name,channel_avatar,clip_thumb_url,views_count,reposts_count";
+  const VIDEO_SELECT_FIELDS = "id,title,thumbnail_url,duration_seconds,views_count,likes_count,created_at,owner_id,channel_id,channels(name,avatar_url,handle)";
 
-    const SELECT_FIELDS = "id,author_id,user_id,author_username,author_name,author_color,content,kind,is_ad,created_at,photo_url,photos,video_url,clip_video_id,clip_start,clip_end,clip_title,channel_id,channel_handle,channel_name,channel_avatar,clip_thumb_url";
-    const PAGE_SIZE = 30;
-
-    const { data: postsData } = await supabase
+  // ─── FEED SEM ALGORITMO — busca e funde posts + vídeos publicados ──────────
+  //
+  // Mostra tudo o que foi publicado por qualquer pessoa (posts de texto/foto/
+  // vídeo E vídeos publicados nos canais), fundido por ordem cronológica —
+  // sem scoring, sem segmentação e sem qualquer curadoria automática.
+  // `cursor` (created_at ISO) permite continuar a busca a partir de onde a
+  // página anterior parou, para o scroll infinito.
+  async function fetchFeedChunk(uid: string, cursor: string | null) {
+    let postsQuery = supabase
       .from("posts")
-      .select(SELECT_FIELDS)
+      .select(POST_SELECT_FIELDS)
       .order("created_at", { ascending: false })
-      .limit(PAGE_SIZE);
+      .limit(FEED_CHUNK_SIZE);
+    if (cursor) postsQuery = postsQuery.lt("created_at", cursor);
 
-    if (!postsData || postsData.length === 0) return [];
+    let videosQuery = (supabase as any)
+      .from("videos")
+      .select(VIDEO_SELECT_FIELDS)
+      .eq("status", "published").eq("visibility", "public")
+      .order("created_at", { ascending: false })
+      .limit(FEED_CHUNK_SIZE);
+    if (cursor) videosQuery = videosQuery.lt("created_at", cursor);
+
+    const [{ data: postsData }, { data: videosData }] = await Promise.all([postsQuery, videosQuery]);
+
+    const rawPosts  = postsData ?? [];
+    const rawVideos = videosData ?? [];
+    if (rawPosts.length === 0 && rawVideos.length === 0) return { items: [] as any[], nextCursor: null, hasMore: false };
 
     // Deduplicar por id (segurança)
-    const seenIds = new Set<string>();
-    const eligible = postsData.filter((p: any) => {
-      if (!p.id || seenIds.has(p.id)) return false;
-      seenIds.add(p.id);
+    const seenPostIds = new Set<string>();
+    const eligiblePosts = rawPosts.filter((p: any) => {
+      if (!p.id || seenPostIds.has(p.id)) return false;
+      seenPostIds.add(p.id);
+      return true;
+    });
+    const seenVideoIds = new Set<string>();
+    const eligibleVideos = rawVideos.filter((v: any) => {
+      if (!v.id || seenVideoIds.has(v.id)) return false;
+      seenVideoIds.add(v.id);
       return true;
     });
 
-    if (eligible.length === 0) return [];
-
-    const postIds   = eligible.map((p: any) => p.id);
-    const authorIds = [...new Set(eligible.map((p: any) => p.author_id || p.user_id).filter(Boolean))];
+    const postIds    = eligiblePosts.map((p: any) => p.id);
+    const authorIds  = new Set<string>();
+    eligiblePosts.forEach((p: any) => { const k = p.author_id || p.user_id; if (k) authorIds.add(k); });
+    eligibleVideos.forEach((v: any) => { if (v.owner_id) authorIds.add(v.owner_id); });
 
     // ── Sinais de exibição (likes/comentários/perfis) — sem influenciar ordem ──
     const [
@@ -1511,10 +1530,14 @@ function HomePage() {
       { data: commentsData },
       { data: authorProfiles },
     ] = await Promise.all([
-      supabase.from("post_likes").select("post_id,user_id").in("post_id", postIds),
-      supabase.from("post_comments").select("post_id").in("post_id", postIds),
-      authorIds.length > 0
-        ? supabase.from("profiles").select("id,avatar_url,username,full_name").in("id", authorIds)
+      postIds.length > 0
+        ? supabase.from("post_likes").select("post_id,user_id").in("post_id", postIds)
+        : Promise.resolve({ data: [] as any[] }),
+      postIds.length > 0
+        ? supabase.from("post_comments").select("post_id").in("post_id", postIds)
+        : Promise.resolve({ data: [] as any[] }),
+      authorIds.size > 0
+        ? supabase.from("profiles").select("id,avatar_url,username,full_name").in("id", [...authorIds])
         : Promise.resolve({ data: [] as any[] }),
     ]);
 
@@ -1535,10 +1558,8 @@ function HomePage() {
       usernameMap[p.id] = p.username || "";
     });
 
-    const ACCENT_LOCAL = ["#5B3FCF","#F26B3A","#1FAFA6","#6BA547","#E94B8A","#FFC93C"];
-
-    // ── Mapear posts na ordem cronológica em que já vieram da BD ──
-    return eligible.map((p: any) => {
+    // ── Mapear posts ──
+    const mappedPosts = eligiblePosts.map((p: any) => {
       const authorKey = p.author_id || p.user_id;
       const rawName = p.author_name || nameMap[authorKey] || "";
       const name = rawName.includes("@") && rawName.includes(".")
@@ -1561,12 +1582,54 @@ function HomePage() {
         bg_color, created_at: p.created_at, kind: p.kind, is_ad: p.is_ad,
         likes: (likesByPost[p.id] || []).length, liked_by_me: (likesByPost[p.id] || []).includes(uid),
         comments: commentsByPost[p.id] || 0,
+        views_count: p.views_count ?? 0, reposts_count: p.reposts_count ?? 0,
         clip_video_id: p.clip_video_id, clip_start: p.clip_start, clip_end: p.clip_end,
         clip_title: p.clip_title, clip_thumb_url: p.clip_thumb_url,
         channel_id: p.channel_id, channel_handle: p.channel_handle,
         channel_name: p.channel_name, channel_avatar: p.channel_avatar,
       };
     });
+
+    // ── Mapear vídeos publicados (aparecem como "clipe" completo no feed) ──
+    const mappedVideos = eligibleVideos.map((v: any) => {
+      const authorKey = v.owner_id;
+      const name = nameMap[authorKey] || usernameMap[authorKey] || "hooda";
+      const username = usernameMap[authorKey] || "";
+      const ch = v.channels;
+      return {
+        id: `vidfeed_${v.id}`, user_id: authorKey, author_id: authorKey,
+        author_username: username || null,
+        user: name, name: `@${username || "?"}`,
+        color: ACCENT_LOCAL[(name.charCodeAt(0) || 0) % ACCENT_LOCAL.length],
+        avatar_url: authorKey ? (avatarMap[authorKey] ?? null) : null,
+        text: null, photo: null, photos: null, video: null,
+        bg_color: null, created_at: v.created_at, kind: "clip", is_ad: false,
+        likes: v.likes_count ?? 0, liked_by_me: false, comments: 0,
+        views_count: v.views_count ?? 0, reposts_count: 0,
+        clip_video_id: v.id, clip_start: 0, clip_end: v.duration_seconds ?? 0,
+        clip_title: v.title, clip_thumb_url: v.thumbnail_url,
+        channel_id: v.channel_id, channel_handle: ch?.handle ?? null,
+        channel_name: ch?.name ?? null, channel_avatar: ch?.avatar_url ?? null,
+      };
+    });
+
+    // ── Fundir por ordem cronológica ──
+    const merged = [...mappedPosts, ...mappedVideos].sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+
+    const page = merged.slice(0, FEED_CHUNK_SIZE);
+    const nextCursor = page.length > 0 ? page[page.length - 1].created_at : null;
+    // Há mais conteúdo se qualquer uma das fontes devolveu uma página cheia
+    // (pode haver mais posts e/ou vídeos por buscar a seguir)
+    const hasMore = rawPosts.length === FEED_CHUNK_SIZE || rawVideos.length === FEED_CHUNK_SIZE || merged.length > FEED_CHUNK_SIZE;
+
+    return { items: page, nextCursor, hasMore };
+  }
+
+  async function fetchFeedPageInner(uid: string) {
+    const { items } = await fetchFeedChunk(uid, null);
+    return items;
   }
 
   // persistência em localStorage configurada no root, restaura este
@@ -1602,15 +1665,11 @@ function HomePage() {
         // linhas silenciosamente (sem erro), porque tecnicamente "correu
         // bem". Por isso esperamos aqui explicitamente por getSession()
         // antes de disparar a busca, garantindo que o token já está pronto.
-        await supabase.auth.getSession();
+        const { data: { session: forcedSession } } = await supabase.auth.getSession();
+        const forcedUid = forcedSession?.user?.id ?? "";
 
-        const { data, error } = await supabase
-          .from("posts")
-          .select("id,author_id,user_id,author_username,author_name,author_color,content,kind,is_ad,created_at,photo_url,photos,video_url,clip_video_id,clip_start,clip_end,clip_title,channel_id,channel_handle,channel_name,channel_avatar,clip_thumb_url")
-          .order("created_at", { ascending: false })
-          .limit(50);
-        if (error) console.error("Busca de recurso do feed falhou:", error);
-        if (!cancelled && data && data.length > 0) setForcedPublicFeed(data as any[]);
+        const { items } = await fetchFeedChunk(forcedUid, null);
+        if (!cancelled && items.length > 0) setForcedPublicFeed(items);
       } catch (e) {
         console.error("Busca de recurso do feed rebentou:", e);
       } finally {
@@ -1638,17 +1697,18 @@ function HomePage() {
   const loadingFeed = firstPagePosts.length === 0 && !forcedPublicFeed && !forcedFeedTried;
   const refreshingFeedInBackground = feedQuery.isFetching && !loadingFeed;
 
-  // Inicializa o offset do scroll infinito com base no tamanho da primeira
-  // página já carregada (cronológica), para que loadMoreFeed continue
-  // exatamente de onde a primeira página parou, sem repetir nem saltar posts.
+  // Inicializa o cursor do scroll infinito com base no último item da
+  // primeira página já carregada (cronológica), para que loadMoreFeed
+  // continue exatamente de onde a primeira página parou.
   const paginationInitRef = useRef(false);
   useEffect(() => {
     if (paginationInitRef.current) return;
-    const firstPageSize = firstPagePosts.length > 0 ? firstPagePosts.length : (forcedPublicFeed?.length ?? 0);
-    if (firstPageSize === 0) return;
+    const base = firstPagePosts.length > 0 ? firstPagePosts : (forcedPublicFeed ?? []);
+    if (base.length === 0) return;
     paginationInitRef.current = true;
-    setFeedOffset(firstPageSize);
-    setHasMorePosts(true);
+    const last = base[base.length - 1];
+    setFeedCursor(last?.created_at ?? null);
+    setHasMorePosts(base.length >= FEED_CHUNK_SIZE);
   }, [firstPagePosts.length, forcedPublicFeed]);
 
   useEffect(() => {
@@ -1686,49 +1746,20 @@ function HomePage() {
   const notifIdRef = useRef(1);
 
 
-    // ── Carregar mais publicações (scroll infinito) ──────────
+    // ── Carregar mais publicações (scroll infinito) — mesma busca fundida ──
     async function loadMoreFeed() {
       if (loadingMore || !hasMorePosts || !myUserId) return;
       setLoadingMore(true);
       try {
-        const { data: postsData } = await supabase
-          .from("posts")
-          .select("id,author_id,author_username,author_name,author_color,content,kind,is_ad,created_at")
-          .order("created_at", { ascending: false })
-          .range(feedOffset, feedOffset + 14);
-        if (!postsData || postsData.length === 0) { setHasMorePosts(false); setLoadingMore(false); return; }
-        const newIds = postsData.map((p: any) => p.id);
-        const { data: likesData } = await supabase.from("post_likes").select("post_id,user_id").in("post_id", newIds);
-        const { data: savesData } = await supabase.from("post_saves").select("post_id").in("post_id", newIds).eq("user_id", myUserId);
-        const likesByPost: Record<string, string[]> = {};
-        (likesData || []).forEach((l: any) => { if (!likesByPost[l.post_id]) likesByPost[l.post_id] = []; likesByPost[l.post_id].push(l.user_id); });
-        const savedIds = new Set((savesData || []).map((s: any) => s.post_id));
-        const authorIdsExtra = [...new Set(postsData.map((p: any) => p.author_id).filter(Boolean))];
-        const { data: authorProfilesExtra } = authorIdsExtra.length > 0
-          ? await supabase.from("profiles").select("id,full_name,username,avatar_url").in("id", authorIdsExtra)
-          : { data: [] as any[] };
-        const nameMapExtra: Record<string, string> = {};
-        const avatarMapExtra: Record<string, string | null> = {};
-        (authorProfilesExtra || []).forEach((pr: any) => {
-          nameMapExtra[pr.id] = pr.full_name || pr.username || "";
-          avatarMapExtra[pr.id] = pr.avatar_url || null;
-        });
-        const morePosts = postsData.map((p: any) => ({
-          ...p,
-          user: p.author_name || nameMapExtra[p.author_id] || p.author_username || "hooda",
-          name: `@${p.author_username || "?"}`,
-          avatar_url: avatarMapExtra[p.author_id] ?? null,
-          color: p.author_color || "#5B3FCF",
-          likes: (likesByPost[p.id] || []).length, liked_by_me: (likesByPost[p.id] || []).includes(myUserId),
-          saved: savedIds.has(p.id), comments: 0,
-        }));
+        const { items, nextCursor, hasMore } = await fetchFeedChunk(myUserId, feedCursor);
+        if (items.length === 0) { setHasMorePosts(false); setLoadingMore(false); return; }
         setExtraPosts(prev => {
           const seen = new Set([...firstPagePosts, ...prev].map((p: any) => p.id));
-          return [...prev, ...morePosts.filter((p: any) => !seen.has(p.id))];
+          return [...prev, ...items.filter((p: any) => !seen.has(p.id))];
         });
-        setHasMorePosts(postsData.length === 15);
-        setFeedOffset(prev => prev + postsData.length);
-        setFeedVisible(prev => prev + postsData.length);
+        setHasMorePosts(hasMore);
+        setFeedCursor(nextCursor);
+        setFeedVisible(prev => prev + items.length);
       } catch { /* silencioso */ } finally { setLoadingMore(false); }
     }
 
@@ -1742,7 +1773,7 @@ function HomePage() {
       obs.observe(el);
       return () => obs.disconnect();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [hasMorePosts, loadingMore, feedOffset, myUserId]);
+    }, [hasMorePosts, loadingMore, feedCursor, myUserId]);
 
   
   function pushNotif(notif: Omit<Notif, "id">) {
@@ -1970,10 +2001,17 @@ function HomePage() {
           {loadingFeed && <FeedSkeleton count={4} />}
 
           {!loadingFeed && realPosts.length === 0 && (
-            <div className="flex flex-col items-center gap-3 py-16 text-center">
-              <div className="h-6 w-6 rounded-full border-2 animate-spin" style={{ borderColor: "var(--s3)", borderTopColor: "#5B3FCF" }} />
-              <p className="text-sm" style={{ color: "var(--text-muted)" }}>A carregar publicações…</p>
-            </div>
+            refreshingFeedInBackground ? (
+              <div className="flex flex-col items-center gap-3 py-16 text-center">
+                <div className="h-6 w-6 rounded-full border-2 animate-spin" style={{ borderColor: "var(--s3)", borderTopColor: "#5B3FCF" }} />
+                <p className="text-sm" style={{ color: "var(--text-muted)" }}>A carregar publicações…</p>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center gap-2 py-16 text-center">
+                <p className="font-bold text-sm" style={{ color: "var(--text-primary)" }}>Ainda não há publicações</p>
+                <p className="text-xs" style={{ color: "var(--text-muted)" }}>Publica algo ou segue outras pessoas para veres conteúdo aqui.</p>
+              </div>
+            )
           )}
           {!loadingFeed && realPosts.length > 0 && refreshingFeedInBackground && (
             <div className="flex items-center justify-center gap-1.5 -mt-1 mb-1">
