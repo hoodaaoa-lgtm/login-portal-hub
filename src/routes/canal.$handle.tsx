@@ -2,7 +2,8 @@ import { createFileRoute, useNavigate, useParams } from "@tanstack/react-router"
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { BottomNav, SideNav, PageWrapper } from "@/components/AppShell";
+import { BottomNav, SideNav, PageWrapper, FeedLayout } from "@/components/AppShell";
+import { RightSidebar } from "@/components/RightSidebar";
 import { PostCommentsModal } from "@/components/PostCommentsModal";
 import { PhotoViewer } from "@/components/PhotoViewer";
 import { useScrollLock } from "@/hooks/useScrollLock";
@@ -369,9 +370,13 @@ function CanalPage() {
 
   return (
     <>
+      <div className="flex">
       <SideNav />
-      <PageWrapper className="pb-20 lg:pb-0">
-        <div className="w-full max-w-[680px] lg:ml-10">
+      <PageWrapper className="pb-20 lg:pb-0 flex-1 min-w-0">
+      <FeedLayout
+        feed={
+        <>
+        <div className="w-full max-w-[680px]">
 
           {/* Header fixo */}
           <div className="flex items-center gap-3 px-4 py-3 border-b sticky top-0 z-10"
@@ -566,7 +571,12 @@ function CanalPage() {
             </div>
           )}
         </div>
+        </>
+        }
+        sidebar={<RightSidebar />}
+      />
       </PageWrapper>
+      </div>
       <BottomNav />
 
       {/* Modais */}

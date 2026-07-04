@@ -8,7 +8,8 @@ import { useScrollLock } from "@/hooks/useScrollLock";
 import { RichText } from "@/components/RichText";
 import { PostCommentsModal } from "@/components/PostCommentsModal";
 import { fetchPostComments, sendPostComment, replyToPostComment, toggleCommentLike } from "@/lib/comments";
-import { BottomNav, SideNav, PageWrapper } from "@/components/AppShell";
+import { BottomNav, SideNav, PageWrapper, FeedLayout } from "@/components/AppShell";
+import { RightSidebar } from "@/components/RightSidebar";
 import {
   ChevronLeft, MessageCircle, Flag, Heart, Share2,
   MoreHorizontal, UserCheck, UserPlus, X, MapPin,
@@ -1025,9 +1026,12 @@ function UserProfilePage() {
 
   return (
     <>
+    <div className="flex">
       <SideNav />
-      <PageWrapper className="pb-20 lg:pb-0">
-
+      <PageWrapper className="pb-20 lg:pb-0 flex-1 min-w-0">
+      <FeedLayout
+        feed={
+        <>
         {/* ── Header fixo ── */}
         <header className="sticky top-0 z-30 border-b"
           style={{background:"var(--s0)",borderColor:"var(--border-subtle)"}}>
@@ -1065,7 +1069,7 @@ function UserProfilePage() {
         <main className="w-full max-w-[680px] mx-auto">
 
           {/* ── Capa ── */}
-          <div className="relative" style={{height:140}}>
+          <div className="relative" style={{height:176}}>
             {coverUrl
               ? <img src={coverUrl} alt="" className="w-full h-full object-cover"/>
               : <div className="w-full h-full"
@@ -1136,19 +1140,18 @@ function UserProfilePage() {
           </div>
 
           {/* ── Stats ── */}
-          <div className="grid grid-cols-3 gap-2 px-4 pb-4">
+          <div className="flex items-center gap-5 px-4 pb-4">
             {[
               {n:postCount, l:"Publicações", action:undefined},
               {n:followerCount, l:"Seguidores", action:()=>setShowFollowers(true)},
               {n:followingCount, l:"Seguindo", action:()=>setShowFollowing(true)},
             ].map(s=>(
-              <button key={s.l} onClick={s.action}
-                className="rounded-2xl py-3 text-center border transition hover:bg-[var(--s2)] active:scale-95"
-                style={{background:"var(--s0)",borderColor:"var(--border-subtle)"}}>
+              <button key={s.l} onClick={s.action} disabled={!s.action}
+                className="flex items-center gap-1.5 text-sm transition active:opacity-70">
                 {statsQuery.isLoading
-                  ? <div className="h-5 w-8 rounded-full mx-auto animate-pulse" style={{background:"var(--s3)"}}/>
-                  : <p className="text-lg font-extrabold" style={{color:"var(--text-primary)"}}>{fmtNum(s.n)}</p>}
-                <p className="text-[11px] font-medium mt-0.5" style={{color:"var(--text-muted)"}}>{s.l}</p>
+                  ? <div className="h-4 w-6 rounded-full animate-pulse" style={{background:"var(--s3)"}}/>
+                  : <span className="font-extrabold" style={{color:"var(--text-primary)"}}>{fmtNum(s.n)}</span>}
+                <span style={{color:"var(--text-muted)"}}>{s.l}</span>
               </button>
             ))}
           </div>
@@ -1334,7 +1337,12 @@ function UserProfilePage() {
         </main>
 
         <BottomNav />
+        </>
+        }
+        sidebar={<RightSidebar />}
+      />
       </PageWrapper>
+      </div>
 
       {/* ── Modais ── */}
       {showFollowers && <FollowListModal userId={profileId!} kind="followers" onClose={()=>setShowFollowers(false)}/>}

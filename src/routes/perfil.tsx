@@ -7,7 +7,8 @@ import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { usePostVideoView } from "@/hooks/usePostVideoView";
 import { STATIC_QUERY_OPTIONS } from "@/lib/queryClient";
-import { BottomNav, SideNav, PageWrapper } from "@/components/AppShell";
+import { BottomNav, SideNav, PageWrapper, FeedLayout } from "@/components/AppShell";
+import { RightSidebar } from "@/components/RightSidebar";
 import { HoodaLogo } from "@/components/HoodaLogo";
 import {
   Settings, LogOut, MessageCircle, Flag, X, Image, Type, Plus, Repeat2, Quote,
@@ -99,13 +100,13 @@ function StatsGrid({ publications, followers, following, onFollowersClick, onFol
     { n: following, l: t("profile.following"), onClick: onFollowingClick },
   ];
   return (
-    <div className="grid grid-cols-3 gap-2 px-5 pb-4">
+    <div className="flex items-center gap-5 px-5 pb-4">
       {items.map((s) => (
         <button key={s.l} onClick={s.onClick} disabled={!s.onClick}
-          className="bg-[var(--s2)] border border-[var(--border-subtle)] rounded-2xl py-3 text-center stat-card transition active:scale-[0.97] disabled:active:scale-100"
+          className="flex items-center gap-1.5 text-sm transition active:opacity-70 disabled:active:opacity-100"
           style={{ cursor: s.onClick ? "pointer" : "default" }}>
-          <p className="text-lg font-extrabold text-black">{fmtNum(s.n)}</p>
-          <p className="text-[11px] text-[var(--text-muted)] mt-0.5 font-medium">{s.l}</p>
+          <span className="font-extrabold text-[var(--text-primary)]">{fmtNum(s.n)}</span>
+          <span className="text-[var(--text-muted)]">{s.l}</span>
         </button>
       ))}
     </div>
@@ -2498,12 +2499,15 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
   ] as const;
 
   return (
-    <>
+    <div className="flex">
     <SideNav />
-    <PageWrapper className="pb-20 lg:pb-0">
+    <PageWrapper className="pb-20 lg:pb-0 flex-1 min-w-0">
+    <FeedLayout
+      feed={
+      <>
       {/* Header */}
       <header className="sticky top-0 z-30 border-b" style={{ background: "var(--surface-0)", borderColor: "var(--border-subtle)" }}>
-        <div className="px-4 lg:pl-10 h-14 flex items-center justify-between">
+        <div className="px-4 h-14 flex items-center justify-between">
           <HoodaLogo size="sm" className="lg:hidden" />
           <span className="hidden lg:block text-sm font-bold" style={{ color: "var(--text-primary)" }}>Perfil</span>
           <span aria-hidden className="w-9" />
@@ -2514,10 +2518,10 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
       <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" />
       <input ref={coverInputRef} type="file" accept="image/*" className="hidden" />
 
-      <main className="w-full max-w-[680px] lg:ml-10">
+      <main className="w-full max-w-[680px]">
         {/* Capa */}
         <div className="relative">
-          <div className="h-32 relative overflow-hidden"
+          <div className="h-44 relative overflow-hidden"
             style={coverUrl ? undefined : { background: "linear-gradient(135deg,#5B3FCF 0%,#1FAFA6 50%,#FFC93C 100%)" }}>
             {coverUrl && <img src={coverUrl} alt="capa" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = "none"; }} />}
             {/* Botão câmera da capa */}
@@ -2599,51 +2603,37 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
 
         <StatsGrid publications={posts.length} followers={followerCount} following={followingCount} onFollowersClick={() => setFollowListMode("followers")} onFollowingClick={() => setFollowListMode("following")} />
 
-        {/* Caixa criar publicação */}
+        {/* Botão flutuante de criar publicação — só ícone, sem caixa duplicada */}
         {tab === "posts" && (
-          <div className="px-5 mb-4">
+          <div className="px-5 mb-2 flex justify-end">
             <button onClick={() => setShowCreate(true)}
-              className="w-full flex items-center gap-3 bg-[var(--s2)] border border-[var(--border-default)] rounded-2xl px-4 py-3.5 hover:bg-[var(--s1)] transition active:scale-[0.99] text-left shadow-sm">
-              <Avatar name={name} size={36} src={avatarUrl} />
-              <span className="text-[var(--text-muted)] text-sm flex-1">{t("post.placeholder")}</span>
-              <Plus className="h-5 w-5 text-[#5B3FCF]" />
+              className="flex items-center gap-1.5 text-xs font-bold rounded-full px-3.5 py-1.5 text-white transition active:scale-95"
+              style={{ background: ACCENT }}>
+              <Plus className="h-3.5 w-3.5" /> {t("post.placeholder")}
             </button>
-            <div className="flex gap-2 mt-2">
-              <button onClick={() => setShowCreate(true)}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-[var(--border-default)] bg-[var(--s2)] text-sm font-semibold text-[var(--text-secondary)] hover:bg-[var(--s1)] transition active:scale-95 shadow-sm">
-                <Image className="h-4 w-4 text-[#6BA547]" /> {t("post.photo")}
-              </button>
-              <button onClick={() => setShowCreate(true)}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-[var(--border-default)] bg-[var(--s2)] text-sm font-semibold text-[var(--text-secondary)] hover:bg-[var(--s1)] transition active:scale-95 shadow-sm">
-                <Type className="h-4 w-4 text-[#5B3FCF]" /> {"Texto"}
-              </button>
-              <button onClick={() => setShowCreate(true)}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-[var(--border-default)] bg-[var(--s2)] text-sm font-semibold text-[var(--text-secondary)] hover:bg-[var(--s1)] transition active:scale-95 shadow-sm">
-                <Film className="h-4 w-4 text-[#E94B8A]" /> {"Vídeo"}
-              </button>
-            </div>
           </div>
         )}
 
-        {/* Tabs */}
-        <div className="px-5 mb-3">
-          <div className="flex bg-[var(--s2)] border border-[var(--border-subtle)] rounded-2xl p-1 shadow-sm">
-            {tabs.map((t) => (
-              <button key={t.key}
-                onClick={async () => {
-                  if (t.key === "monetization") {
-                    navigate({ to: "/studio" });
-                    return;
-                  }
-                  setTab(t.key);
-                }}
-                className={`flex-1 flex flex-col items-center gap-0.5 py-2 rounded-xl text-[10px] font-bold transition-all ${tab === t.key ? "text-white shadow-sm" : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"}`}
-                style={{ background: tab === t.key ? ACCENT : "transparent" }}>
-                <t.icon className="h-4 w-4" />
-                {t.label}
-              </button>
-            ))}
-          </div>
+        {/* Tabs com sublinhado */}
+        <div className="px-5 flex border-b" style={{ borderColor: "var(--border-subtle)" }}>
+          {tabs.map((t) => (
+            <button key={t.key}
+              onClick={async () => {
+                if (t.key === "monetization") {
+                  navigate({ to: "/studio" });
+                  return;
+                }
+                setTab(t.key);
+              }}
+              className="flex-1 flex flex-col items-center gap-1 py-2.5 text-[11px] font-bold transition-colors"
+              style={{
+                color: tab === t.key ? ACCENT : "var(--text-muted)",
+                borderBottom: tab === t.key ? `2px solid ${ACCENT}` : "2px solid transparent",
+              }}>
+              <t.icon className="h-4 w-4" />
+              {t.label}
+            </button>
+          ))}
         </div>
 
         {/* Conteúdo das tabs */}
@@ -2763,6 +2753,10 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
 
         {tab === "monetization" && <MonetizationPanel />}
       </main>
+      </>
+      }
+      sidebar={<RightSidebar />}
+    />
 
       {/* Drawers & Modais */}
       {showSettings && (
@@ -2843,7 +2837,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
         <PhotoViewer src={photoViewerSrc} alt={name} subtitle={profile?.username ? `@${profile.username}` : undefined} onClose={() => setPhotoViewerSrc(null)} />
       )}
     </PageWrapper>
-    </>
+    </div>
   );
 }
 
