@@ -2503,7 +2503,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
     <PageWrapper className="pb-20 lg:pb-0">
       {/* Header */}
       <header className="sticky top-0 z-30 border-b" style={{ background: "var(--surface-0)", borderColor: "var(--border-subtle)" }}>
-        <div className="px-4 h-14 flex items-center justify-between">
+        <div className="px-4 lg:pl-10 h-14 flex items-center justify-between">
           <HoodaLogo size="sm" className="lg:hidden" />
           <span className="hidden lg:block text-sm font-bold" style={{ color: "var(--text-primary)" }}>Perfil</span>
           <span aria-hidden className="w-9" />
@@ -2514,7 +2514,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
       <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" />
       <input ref={coverInputRef} type="file" accept="image/*" className="hidden" />
 
-      <main className="w-full max-w-[680px] mx-auto">
+      <main className="w-full max-w-[680px] lg:ml-10">
         {/* Capa */}
         <div className="relative">
           <div className="h-32 relative overflow-hidden"
@@ -2896,11 +2896,11 @@ function PublicProfile({ profile, email }: { profile: Profile | null; email: str
     <SideNav />
     <PageWrapper className="pb-20 lg:pb-0">
       <header className="sticky top-0 z-30 border-b" style={{ background: "var(--surface-0)", borderColor: "var(--border-subtle)" }}>
-        <div className="px-4 h-14 flex items-center">
+        <div className="px-4 lg:pl-10 h-14 flex items-center">
           <HoodaLogo size="sm" />
         </div>
       </header>
-      <main className="w-full max-w-[680px] mx-auto">
+      <main className="w-full max-w-[680px] lg:ml-10">
         <div className="h-32 relative" style={{ background: "linear-gradient(135deg,#5B3FCF 0%,#1FAFA6 50%,#FFC93C 100%)" }}>
           <div className="absolute left-5" style={{ bottom: -42 }}>
             <Avatar name={name} size={84} />
