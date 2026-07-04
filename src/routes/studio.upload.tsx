@@ -650,7 +650,7 @@ function UploadPage() {
               <div className="flex justify-between">
                 <span>Visibilidade</span>
                 <span className="font-semibold" style={{ color: visibility === "public" ? "#10b981" : visibility === "scheduled" ? "#F97316" : "var(--text-primary)" }}>
-                  {visibility === "public" ? t("studio.public") : visibility === "unlisted" ? "Com link" : visibility === "scheduled" ? "Agendado" : t("studio.private")}
+                  {visibility === "public" ? t("studio.public") : visibility === "announced" ? "Anunciado" : visibility === "scheduled" ? "Agendado" : t("studio.private")}
                 </span>
               </div>
               {detectedDur && (
