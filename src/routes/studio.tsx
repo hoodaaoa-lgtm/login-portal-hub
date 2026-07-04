@@ -6,7 +6,7 @@ import {
   LayoutDashboard, PlusCircle, Calendar, FolderOpen, BarChart2,
   Users, Settings, HelpCircle, LogOut, ArrowLeft, Menu, X, Tv2, Palette,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export const Route = createFileRoute("/studio")({
   component: StudioLayout,
@@ -27,10 +27,18 @@ const NAV = [
 ];
 
 function StudioLayout() {
-  const { data: channel } = useQuery(myChannelQuery());
+  const { data: channel, isLoading: channelLoading } = useQuery(myChannelQuery());
   const navigate = useNavigate();
   const path = useRouterState({ select: (s) => s.location.pathname });
   const [open, setOpen] = useState(false);
+
+  const isOnboarding = path === "/studio/onboarding";
+
+  useEffect(() => {
+    if (!channelLoading && !channel && !isOnboarding) {
+      navigate({ to: "/studio/onboarding", replace: true });
+    }
+  }, [channelLoading, channel, isOnboarding, navigate]);
 
   const isActive = (to: string, exact?: boolean) =>
     exact ? path === to : path === to || path.startsWith(to + "/");
@@ -163,7 +171,14 @@ function StudioLayout() {
 
         {/* Content */}
         <main className="flex-1 min-w-0 overflow-y-auto">
-          <Outlet />
+          {isOnboarding || channel ? (
+            <Outlet />
+          ) : (
+            <div className="flex items-center justify-center h-full py-24">
+              <div className="h-6 w-6 rounded-full border-2 animate-spin"
+                style={{ borderColor: "#5B3FCF33", borderTopColor: "#5B3FCF" }} />
+            </div>
+          )}
         </main>
       </div>
     </div>
