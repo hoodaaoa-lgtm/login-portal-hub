@@ -78,7 +78,7 @@ interface HoodaPlayerProps {
  * largura total do post, mas a altura fica presa aqui — compacto,
  * sem dominar o ecrã. Vídeos verticais (shorts) usam este mesmo valor
  * como a sua altura fixa (ver isAutoMode mais abaixo). */
-const MAX_HEIGHT_CSS = "min(50vh, 420px)";
+const MAX_HEIGHT_CSS = "min(38vh, 320px)";
 
 export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(function HoodaPlayer(
   {
