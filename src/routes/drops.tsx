@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { timeAgo } from "@/hooks/useTimeAgo";
 import i18n from "@/lib/i18n";
+import toast from "react-hot-toast";
 
 function t(key: string, fallback: string) {
   const val = i18n.t(key) as string;
@@ -198,9 +199,27 @@ function DropsPage() {
       </div>
 
       {showCreate && userId && (
-        <DropsCreator onClose={() => setShowCreate(false)} onPublish={(_v, _t, _m, _d) => {
-          setShowCreate(false);
-          qc.invalidateQueries({ queryKey: ["drops-feed"] });
+        <DropsCreator onClose={() => setShowCreate(false)} onPublish={async (url, thumb, contentType, musicUrl, duration) => {
+          try {
+            const hours = parseInt((duration || "24h").replace("h", ""), 10) || 24;
+            const { data: prof } = await supabase.from("profiles").select("username").eq("id", userId).maybeSingle();
+            const { error } = await (supabase.from("drops") as any).insert({
+              user_id: userId,
+              author_username: prof?.username || "",
+              content_type: contentType,
+              content_url: url,
+              music_url: musicUrl || null,
+              duration_hours: hours,
+            });
+            if (error) throw error;
+            toast.success("Drop publicado!");
+            qc.invalidateQueries({ queryKey: ["drops-feed"] });
+          } catch (err: any) {
+            console.error("Erro ao publicar drop:", err);
+            toast.error(err.message || "Erro ao publicar o drop");
+          } finally {
+            setShowCreate(false);
+          }
         }} />
       )}
     </>

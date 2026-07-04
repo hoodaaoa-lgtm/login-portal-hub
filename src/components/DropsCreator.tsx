@@ -1,12 +1,12 @@
 import React, { useState, useRef } from "react";
 import { X, Upload, Music, Play, Pause, Volume2, VolumeX, Type, Smile, Sparkles } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import toast from "react-hot-toast";
 import { MusicLibrary, type Song } from "@/components/MusicLibrary";
+import { uploadToCloudinary as uploadToCloudinaryVideo, uploadImageToCloudinary } from "@/lib/cloudinary";
 
 interface DropsCreatorProps {
   onClose: () => void;
-  onPublish: (videoUrl: string, thumbnail: string, musicUrl?: string, duration?: string) => void;
+  onPublish: (videoUrl: string, thumbnail: string, contentType: "video" | "photo", musicUrl?: string, duration?: string) => void;
 }
 
 type Tab = "fundo" | "texto" | "stickers" | "filtros" | "musica";
@@ -93,48 +93,32 @@ export function DropsCreator({ onClose, onPublish }: DropsCreatorProps) {
     setProgress(0);
 
     try {
-      const CLOUD_NAME = process.env.VITE_CLOUDINARY_CLOUD_NAME || "";
-      const UPLOAD_PRESET = process.env.VITE_CLOUDINARY_UPLOAD_PRESET || "";
+      const isVideo = videoFile.type.startsWith("video/");
+      let cloudinaryVideoUrl: string;
 
-      // Upload video/image
-      const formData = new FormData();
-      formData.append("file", videoFile);
-      formData.append("upload_preset", UPLOAD_PRESET);
-      formData.append("cloud_name", CLOUD_NAME);
-      formData.append("resource_type", videoFile.type.startsWith("video/") ? "video" : "image");
-
-      const resourceType = videoFile.type.startsWith("video/") ? "video" : "image";
-      const videoRes = await fetch(
-        `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/${resourceType}/upload`,
-        { method: "POST", body: formData }
-      );
-      
-      if (!videoRes.ok) throw new Error("Erro no upload");
-      
-      const videoData = await videoRes.json();
-      const cloudinaryVideoUrl = videoData.secure_url;
+      if (isVideo) {
+        const result = await uploadToCloudinaryVideo(
+          videoFile,
+          { title: textOverlay || "Drop", channelId: "", userId: "" },
+          (pct) => setProgress(Math.round(pct * 0.9)),
+        );
+        cloudinaryVideoUrl = result.playbackUrl;
+      } else {
+        const result = await uploadImageToCloudinary(videoFile, "hooda/drops", (pct) => setProgress(Math.round(pct * 0.9)));
+        cloudinaryVideoUrl = result.url;
+      }
 
       // Upload thumbnail
-      const thumbFormData = new FormData();
       const thumbBlob = await (await fetch(thumbnail)).blob();
-      thumbFormData.append("file", thumbBlob);
-      thumbFormData.append("upload_preset", UPLOAD_PRESET);
-
-      const thumbRes = await fetch(
-        `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
-        { method: "POST", body: thumbFormData }
-      );
-
-      if (!thumbRes.ok) throw new Error("Erro no upload");
-
-      const thumbData = await thumbRes.json();
-      const cloudinaryThumbUrl = thumbData.secure_url;
+      const thumbFile = new File([thumbBlob], "thumb.jpg", { type: "image/jpeg" });
+      const thumbResult = await uploadImageToCloudinary(thumbFile, "hooda/drops");
+      const cloudinaryThumbUrl = thumbResult.url;
 
       setProgress(100);
       setUploading(false);
-      
-      onPublish(cloudinaryVideoUrl, cloudinaryThumbUrl, musicUrl, duration);
-      toast.success("Drop publicado!");
+
+      const contentType: "video" | "photo" = isVideo ? "video" : "photo";
+      onPublish(cloudinaryVideoUrl, cloudinaryThumbUrl, contentType, musicUrl, duration);
       onClose();
     } catch (err: any) {
       console.error("Erro:", err);
