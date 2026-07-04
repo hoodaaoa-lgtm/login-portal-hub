@@ -256,7 +256,7 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
       ref={(el) => {
         (wrapperRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
       }}
-      className={`relative w-full overflow-hidden bg-black select-none p-1.5 ${rounded} ${isAutoMode ? HEIGHT_CAP_CLASSES : ""} ${className}`}
+      className={`relative w-full overflow-hidden bg-black select-none ${rounded} ${isAutoMode ? HEIGHT_CAP_CLASSES : ""} ${className}`}
       style={{ aspectRatio: effectiveRatio }}
       onMouseMove={resetTimer}
       onTouchStart={resetTimer}
@@ -276,7 +276,7 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
         playsInline
         loop={loop}
         preload={preload}
-        className={`absolute inset-0 w-full h-full rounded-md ${objectFitClass}`}
+        className={`absolute inset-0 w-full h-full ${objectFitClass}`}
         onWaiting={() => setIsBuffering(true)}
         onPlaying={() => {
           setIsBuffering(false);
@@ -311,19 +311,19 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
               src={poster}
               alt=""
               decoding="async"
-              className={`absolute inset-0 w-full h-full rounded-md ${objectFitClass} transition-[filter] duration-300`}
+              className={`absolute inset-0 w-full h-full ${objectFitClass} transition-[filter] duration-300`}
               style={{ filter: "blur(6px)", transform: "scale(1.02)" }}
             />
           )}
-          <div className="absolute inset-0 rounded-md bg-black/40" />
-          <div className="absolute inset-0 rounded-md skeleton-shimmer" />
+          <div className="absolute inset-0 bg-black/40" />
+          <div className="absolute inset-0 skeleton-shimmer" />
         </div>
       )}
 
       {/* Poster nítido + botão de play, antes de o utilizador iniciar */}
       {!hasStarted && metadataLoaded && (
         <div
-          className="absolute inset-0 rounded-md flex items-center justify-center hooda-fade-in"
+          className="absolute inset-0 flex items-center justify-center hooda-fade-in"
           style={{ background: "rgba(0,0,0,0.35)" }}
         >
           {poster && (
@@ -331,7 +331,7 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
               src={poster}
               alt=""
               decoding="async"
-              className={`absolute inset-0 w-full h-full rounded-md ${objectFitClass}`}
+              className={`absolute inset-0 w-full h-full ${objectFitClass}`}
             />
           )}
           <div
