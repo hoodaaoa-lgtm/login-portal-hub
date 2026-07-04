@@ -1,16 +1,16 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { t } from "@/lib/useT";
-import { useState, useRef, useCallback } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { myChannelQuery } from "@/lib/channel-queries";
-import { supabase } from "@/integrations/supabase/client";
-import {
+import { Bell, createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Bell, t } from "@/lib/useT";
+import { Bell, useState, useRef, useCallback } from "react";
+import { Bell, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Bell, myChannelQuery } from "@/lib/channel-queries";
+import { Bell, supabase } from "@/integrations/supabase/client";
+import { Bell,
   Upload, Video as VideoIcon, X, Image as ImageIcon,
   Globe, Lock, Link as LinkIcon, Calendar,
   CheckCircle, Info, Palette,
 } from "lucide-react";
-import { toast } from "sonner";
-import { uploadToCloudinary } from "@/lib/cloudinary";
+import { Bell, toast } from "sonner";
+import { Bell, uploadToCloudinary } from "@/lib/cloudinary";
 
 export const Route = createFileRoute("/studio/upload")({
   head: () => ({ meta: [{ title: "Hooda" }] }),
@@ -558,13 +558,13 @@ function UploadPage() {
           </div>
 
           {/* Personalização (Marca de água e Assinatura) */}
-          {(channel.watermark_enabled || channel.signature_enabled) && (
+          {((channel as any).watermark_enabled || (channel as any).signature_enabled) && (
             <div>
               <label className="block text-[13px] font-bold uppercase tracking-wider mb-3" style={{ color: "var(--text-muted)" }}>
                 Personalização (Definições do Canal)
               </label>
               <div className="space-y-3 p-4 rounded-2xl border bg-[var(--s2)]" style={{ borderColor: "var(--border-subtle)" }}>
-                {channel.watermark_enabled && (
+                {(channel as any).watermark_enabled && (
                   <label className="flex items-center justify-between cursor-pointer">
                     <div className="flex items-center gap-2">
                       <Palette className="w-4 h-4" style={{ color: P }} />
@@ -581,7 +581,7 @@ function UploadPage() {
                   </label>
                 )}
                 
-                {channel.signature_enabled && (
+                {(channel as any).signature_enabled && (
                   <label className="flex items-center justify-between cursor-pointer mt-3">
                     <div className="flex items-center gap-2">
                       <Palette className="w-4 h-4" style={{ color: P }} />
