@@ -7,9 +7,10 @@
  *    (600px em mobile, 700px em desktop) quando aspectRatio="auto".
  *  - Detecta a proporção real do vídeo (16:9, 1:1, 4:5, 9:16, 21:9, ...)
  *    a partir do próprio ficheiro — nunca estica nem deforma.
- *  - object-fit: contain — mostra o vídeo inteiro, sem cortar conteúdo;
- *    quando a altura é limitada (vídeos muito verticais), aparecem barras
- *    pretas laterais em vez de esticar ou cortar a imagem.
+ *  - object-fit: cover no modo "auto" — preenche 100% da caixa, sem
+ *    esticar e sem barras pretas; se a proporção não bater exatamente,
+ *    ajusta só as laterais (nunca corta em cima/baixo, já que a altura
+ *    da caixa nunca excede a proporção real do vídeo).
  *  - Reserva o espaço final antes do vídeo carregar (sem CLS): skeleton
  *    escuro com shimmer + miniatura, do tamanho exato do player final.
  *  - Lazy load real via IntersectionObserver: só começa a carregar dados
@@ -109,12 +110,18 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
   const [hasStarted, setHasStarted] = useState(false);
   const [metadataLoaded, setMetadataLoaded] = useState(false);
   // Proporção real do vídeo, detectada assim que o metadata carrega.
-  // Em modo "auto" é isto que reserva o espaço final (sem CLS) e nunca
-  // deixa o vídeo esticar/deformar — a altura máxima é aplicada por CSS
-  // (HEIGHT_CAP_CLASSES), e o object-fit: contain garante que, quando a
-  // altura é limitada, aparecem barras pretas em vez de cortar/esticar.
+  // Em modo "auto" é isto que reserva o espaço final (sem CLS).
   const [naturalRatio, setNaturalRatio] = useState<string | null>(null);
   const effectiveRatio = isAutoMode ? (naturalRatio ?? "16/9") : aspectRatio;
+  // object-fit: em modo "auto" a caixa tem largura fixa (100%) e altura
+  // limitada por CSS (HEIGHT_CAP_CLASSES) — ou seja, a caixa nunca fica
+  // "mais alta" que a proporção real do vídeo, só "mais larga/achatada".
+  // Por isso, "cover" nunca corta em cima/baixo: só ajusta as laterais
+  // quando necessário, preenchendo 100% sem sobrar espaço preto (igual
+  // ao YouTube/Instagram/X). O modo fixo (usado dentro do ShortFrame,
+  // para vídeos verticais) usa "contain" para nunca cortar o conteúdo
+  // vertical, já que ali o enquadramento é intencionalmente uma moldura.
+  const objectFitClass = isAutoMode ? "object-cover" : "object-contain";
 
   /* ─── Regista no mediaManager: só um vídeo toca de cada vez ─── */
   useEffect(() => {
@@ -255,10 +262,9 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
       onTouchStart={resetTimer}
       onClick={togglePlay}
     >
-      {/* Video element — object-fit: contain preserva sempre a proporção
-          original; nunca estica nem corta. Quando a altura é limitada
-          (vídeo vertical), aparecem barras pretas laterais em vez de
-          deformar a imagem. */}
+      {/* Video element — object-fit dinâmico (ver objectFitClass acima):
+          "cover" no modo auto para nunca sobrar barra preta lateral,
+          "contain" no modo fixo (short) para nunca cortar o vertical. */}
       <video
         ref={(el) => {
           (videoRef as React.MutableRefObject<HTMLVideoElement | null>).current = el;
@@ -270,7 +276,7 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
         playsInline
         loop={loop}
         preload={preload}
-        className="absolute inset-0 w-full h-full object-contain"
+        className={`absolute inset-0 w-full h-full ${objectFitClass}`}
         onWaiting={() => setIsBuffering(true)}
         onPlaying={() => {
           setIsBuffering(false);
@@ -305,7 +311,7 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
               src={poster}
               alt=""
               decoding="async"
-              className="absolute inset-0 w-full h-full object-contain transition-[filter] duration-300"
+              className={`absolute inset-0 w-full h-full ${objectFitClass} transition-[filter] duration-300`}
               style={{ filter: "blur(6px)", transform: "scale(1.02)" }}
             />
           )}
@@ -325,7 +331,7 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
               src={poster}
               alt=""
               decoding="async"
-              className="absolute inset-0 w-full h-full object-contain"
+              className={`absolute inset-0 w-full h-full ${objectFitClass}`}
             />
           )}
           <div
