@@ -74,11 +74,10 @@ interface HoodaPlayerProps {
   signature?: SignatureConfig | null;
 }
 
-/** Limite de altura estilo Instagram/X: o vídeo horizontal ocupa a
- * largura total do post, mas a altura fica presa aqui — compacto,
- * sem dominar o ecrã. Vídeos verticais (shorts) usam este mesmo valor
- * como a sua altura fixa (ver isAutoMode mais abaixo). */
-const MAX_HEIGHT_CSS = "min(38vh, 320px)";
+/** Limite de altura estilo X: o vídeo ocupa sempre a largura total do
+ * post; a altura segue a proporção real dele (horizontal ou vertical),
+ * só ficando presa aqui se for um caso extremo — igual ao feed do X. */
+const MAX_HEIGHT_CSS = "min(75vh, 650px)";
 
 export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(function HoodaPlayer(
   {
@@ -98,7 +97,6 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
   const videoRef = useRef<HTMLVideoElement>(null);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const isAutoMode = aspectRatio === "auto";
   const { ref: wrapperRef, isInView, hasEnteredOnce } = useVideoInView<HTMLDivElement>();
 
   const [isPlaying, setIsPlaying] = useState(false);
@@ -110,10 +108,13 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
   const [metadataLoaded, setMetadataLoaded] = useState(false);
-  // Proporção real do vídeo, detectada assim que o metadata carrega.
-  // Em modo "auto" é isto que reserva o espaço final (sem CLS).
+  // Proporção real do vídeo, detectada assim que o metadata carrega —
+  // usada SEMPRE (horizontal ou vertical), igual ao X: a caixa segue o
+  // vídeo, nunca o contrário. Antes do metadata carregar, usa a
+  // proporção sugerida por quem chamou (aspectRatio) como palpite inicial
+  // para minimizar qualquer salto de layout.
   const [naturalRatio, setNaturalRatio] = useState<string | null>(null);
-  const effectiveRatio = isAutoMode ? (naturalRatio ?? "16/9") : aspectRatio;
+  const effectiveRatio = naturalRatio ?? (aspectRatio !== "auto" ? aspectRatio : "16/9");
   // object-fit: SEMPRE "contain". Nunca cortamos nem deformamos o vídeo —
   // a caixa segue a proporção real dele (naturalRatio para vídeos normais,
   // 9/16 fixo para shorts) até ao limite de altura (MAX_HEIGHT_CSS); se
@@ -254,32 +255,21 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
       ref={(el) => {
         (wrapperRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
       }}
-      className={`w-full overflow-hidden select-none ${rounded} ${className} ${isAutoMode ? "bg-black" : "flex justify-center"}`}
+      className={`w-full overflow-hidden bg-black select-none ${rounded} ${className}`}
       onMouseMove={resetTimer}
       onTouchStart={resetTimer}
       onClick={togglePlay}
     >
-      {/* Caixa interna.
-          — Modo "auto" (vídeo normal/paisagem): largura sempre 100% do
-            post (nunca "auto" — isso é o que causava o vídeo desaparecer,
-            porque o <video> é absolute e não conta como conteúdo para um
-            "auto" se basear). Altura segue a proporção real, presa por
-            MAX_HEIGHT_CSS.
-          — Modo fixo (short 9:16): é a ALTURA que fica presa em
-            MAX_HEIGHT_CSS, e a LARGURA fica "auto" — o browser calcula-a
-            a partir da proporção 9:16 e da altura definida (isto funciona
-            porque agora há uma dimensão definida, ao contrário do bug
-            anterior em que largura E altura eram "auto" ao mesmo tempo).
-            Resultado: a caixa fica só do tamanho do vídeo, centrada, sem
-            sobra de preto à volta — igual ao Instagram/TikTok. O preto
-            fica só nesta caixa (bg-black aqui), não no post inteiro. */}
+      {/* Caixa interna: largura sempre 100% do post (nunca "auto" — o
+          <video> é absolute e não conta como conteúdo para um "auto" se
+          basear, foi isso que causava o vídeo desaparecer). A altura
+          segue a proporção real do vídeo (naturalRatio) — igual ao X:
+          horizontal fica baixinho, vertical fica alto, cada um com o
+          tamanho certo, sem forçar caixa estreita nem barra preta,
+          só presa por MAX_HEIGHT_CSS em casos extremos. */}
       <div
-        className={`bg-black relative ${isAutoMode ? "w-full" : ""}`}
-        style={
-          isAutoMode
-            ? { aspectRatio: effectiveRatio, maxHeight: MAX_HEIGHT_CSS, overflow: "hidden" }
-            : { aspectRatio: effectiveRatio, height: MAX_HEIGHT_CSS, maxWidth: "100%", overflow: "hidden" }
-        }
+        className="relative w-full"
+        style={{ aspectRatio: effectiveRatio, maxHeight: MAX_HEIGHT_CSS, overflow: "hidden" }}
       >
       {/* Video element — object-fit: contain, sempre. */}
       <video
