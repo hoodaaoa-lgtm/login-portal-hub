@@ -15,7 +15,7 @@ const resources = {
   "pt": {
     "common": {
       "nav": {
-        "home": "Início",
+        "home": "Lar",
         "explore": "Explorar",
         "tv": "HoodaTV",
         "messages": "Mensagens",

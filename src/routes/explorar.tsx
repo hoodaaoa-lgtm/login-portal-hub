@@ -223,14 +223,14 @@ function ExplorePage() {
     staleTime: 30_000,
   });
 
-  /* ── Query: vídeos em destaque (também alimenta a aba Mídia) ── */
+  /* ── Query: vídeos (aba Mídia + trending) — todos, por ordem cronológica, sem algoritmo ── */
   const { data: featuredVideos = [] } = useQuery({
     queryKey: ["explore-videos"],
     queryFn: async () => {
       const { data } = await (supabase as any).from("videos")
-        .select("id,title,thumbnail_url,views_count,duration_seconds,channel_id,channels(name,avatar_url,handle)")
+        .select("id,title,thumbnail_url,views_count,duration_seconds,channel_id,channels(name,avatar_url,handle),created_at")
         .eq("status","published").eq("visibility","public")
-        .order("views_count", { ascending: false }).limit(24);
+        .order("created_at", { ascending: false }).limit(200);
       return data ?? [];
     },
     enabled: tab === "trending" || tab === "posts",
@@ -251,14 +251,14 @@ function ExplorePage() {
     staleTime: 60_000,
   });
 
-  /* ── Query: posts populares ── */
+  /* ── Query: posts (aba Mídia + trending) — todos, por ordem cronológica, sem algoritmo ── */
   const { data: popularPosts = [] } = useQuery({
     queryKey: ["explore-posts"],
     queryFn: async () => {
       const { data } = await (supabase as any).from("posts")
         .select("id,content,kind,photo_url,image_url,likes_count,author_username,author_color,author_id,created_at,profiles(avatar_url,full_name)")
         .in("kind",["photo","post","video"])
-        .order("likes_count", { ascending: false }).limit(12);
+        .order("created_at", { ascending: false }).limit(100);
       return data ?? [];
     },
     enabled: tab === "trending" || tab === "posts",
@@ -567,11 +567,11 @@ function ExplorePage() {
               </div>
             </section>
 
-            {/* Posts populares */}
+            {/* Posts */}
             {popularPosts.length > 0 && (
               <section className="px-4">
                 <div className="flex items-center justify-between mb-2.5">
-                  <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>Posts populares</p>
+                  <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>Posts</p>
                   <button onClick={() => setTab("posts")} className="text-xs font-semibold" style={{ color: P }}>Ver mais →</button>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
@@ -580,11 +580,11 @@ function ExplorePage() {
               </section>
             )}
 
-            {/* Canais HoodaTV */}
+            {/* Canais */}
             {channels.length > 0 && (
               <section className="px-4">
                 <div className="flex items-center justify-between mb-2.5">
-                  <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>Canais HoodaTV</p>
+                  <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>Canais</p>
                   <button onClick={() => setTab("channels")} className="text-xs font-semibold" style={{ color: P }}>Ver todos →</button>
                 </div>
                 <div className="flex gap-4 overflow-x-auto no-scrollbar pb-1">
@@ -634,7 +634,7 @@ function ExplorePage() {
             {popularPosts.length > 0 && (
               <section>
                 <p className="text-[11px] font-bold uppercase tracking-wider mb-3" style={{ color: "var(--text-muted)" }}>
-                  Posts populares
+                  Posts
                 </p>
                 <div className="grid grid-cols-2 gap-2">
                   {popularPosts.map((p: any) => <PostThumb key={p.id} p={p} />)}
@@ -652,7 +652,7 @@ function ExplorePage() {
         ) : tab === "channels" ? (
           <div className="px-4 py-4 space-y-2">
             <p className="text-[11px] font-bold uppercase tracking-wider mb-3" style={{ color: "var(--text-muted)" }}>
-              Canais HoodaTV
+              Canais
             </p>
             {channels.map((ch: any) => {
               const isF = channelFollowMap[ch.id] ?? myChannelFollowsSet.has(ch.id);

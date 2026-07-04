@@ -22,7 +22,7 @@ export function Footer() {
           <div>
             <p className="font-bold text-xs uppercase tracking-wider mb-3" style={{ color: "var(--text-muted)" }}>Produto</p>
             <ul className="space-y-2.5 text-sm">
-              <li><Link to="/home" className="transition hover:opacity-70" style={{ color: "var(--text-secondary)" }}>Home</Link></li>
+              <li><Link to="/home" className="transition hover:opacity-70" style={{ color: "var(--text-secondary)" }}>Lar</Link></li>
               <li><Link to="/explorar" className="transition hover:opacity-70" style={{ color: "var(--text-secondary)" }}>Explorar</Link></li>
               <li><a href="/hoodatv" className="transition hover:opacity-70" style={{ color: "var(--text-secondary)" }}>HoodaTV</a></li>
               <li><Link to="/mensagens" className="transition hover:opacity-70" style={{ color: "var(--text-secondary)" }}>Mensagens</Link></li>

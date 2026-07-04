@@ -14,7 +14,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 
 const NAV_ITEMS = [
-  { to: "/home",       label: "Home",          Icon: Home,          search: undefined as Record<string, string> | undefined },
+  { to: "/home",       label: t("nav.home"),          Icon: Home,          search: undefined as Record<string, string> | undefined },
   { to: "/explorar",   label: t("nav.explore"),     Icon: Compass,       search: undefined as Record<string, string> | undefined },
   { to: "/drops",      label: "Drops",         Icon: Droplet,       search: undefined as Record<string, string> | undefined },
   { to: "/mensagens",  label: t("nav.messages"),    Icon: MessageSquare, search: undefined as Record<string, string> | undefined },
@@ -23,7 +23,7 @@ const NAV_ITEMS = [
 ] as const;
 
 const MOBILE_ITEMS = [
-  { to: "/home",       label: "Home",      Icon: Home          },
+  { to: "/home",       label: t("nav.home"),      Icon: Home          },
   { to: "/explorar",   label: t("nav.explore"),  Icon: Compass       },
   { to: "/drops",      label: "Drops",     Icon: Droplet       },
   { to: "/mensagens",  label: t("nav.messages"), Icon: MessageSquare },
