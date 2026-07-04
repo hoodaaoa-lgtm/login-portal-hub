@@ -1069,26 +1069,22 @@ function UserProfilePage() {
         <main className="w-full">
 
           {/* ── Capa ── */}
-          <div className="relative" style={{height:176}}>
+          <div className="relative" style={{height:208}}>
             {coverUrl
               ? <img src={coverUrl} alt="" className="w-full h-full object-cover"/>
               : <div className="w-full h-full"
-                  style={{background:`linear-gradient(135deg,${color} 0%,#1FAFA6 50%,#FFC93C 100%)`}}/>}
+                  style={{background:`linear-gradient(135deg,${color} 0%,#8B5CF6 55%,#E94B8A 100%)`}}/>}
             {/* Avatar */}
-            <div className="absolute" style={{bottom:-44,left:16}}>
-              <div className="rounded-full p-[3px]" style={{background:GRAD}}>
-                <div className="rounded-full p-[2px]" style={{background:"var(--s0)"}}>
-                  {avatarUrl
-                    ? <img src={avatarUrl} alt={name}
-                        className="rounded-full object-cover cursor-pointer"
-                        style={{width:86,height:86,border:"3px solid var(--s0)"}}
-                        onClick={()=>setPhotoViewing(avatarUrl)}/>
-                    : <div className="rounded-full flex items-center justify-center font-bold text-white text-3xl"
-                        style={{width:86,height:86,background:color}}>
-                        {name[0]?.toUpperCase()}
-                      </div>}
-                </div>
-              </div>
+            <div className="absolute" style={{bottom:-66,left:20}}>
+              {avatarUrl
+                ? <img src={avatarUrl} alt={name}
+                    className="rounded-full object-cover cursor-pointer"
+                    style={{width:132,height:132,border:"4px solid var(--s0)"}}
+                    onClick={()=>setPhotoViewing(avatarUrl)}/>
+                : <div className="rounded-full flex items-center justify-center font-bold text-white"
+                    style={{width:132,height:132,background:color,border:"4px solid var(--s0)",fontSize:40}}>
+                    {name[0]?.toUpperCase()}
+                  </div>}
             </div>
           </div>
 
@@ -1112,7 +1108,7 @@ function UserProfilePage() {
           </div>
 
           {/* ── Info ── */}
-          <div className="px-4 pt-8 pb-3">
+          <div className="px-4 pt-9 pb-3">
             <h1 className="text-xl font-extrabold" style={{color:"var(--text-primary)"}}>{name}</h1>
             <p className="text-sm mt-0.5" style={{color:"var(--text-muted)"}}>@{profile.username}</p>
             {profile.bio && (
@@ -1142,9 +1138,8 @@ function UserProfilePage() {
           {/* ── Stats ── */}
           <div className="flex items-center gap-5 px-4 pb-4">
             {[
-              {n:postCount, l:"Publicações", action:undefined},
-              {n:followerCount, l:"Seguidores", action:()=>setShowFollowers(true)},
               {n:followingCount, l:"Seguindo", action:()=>setShowFollowing(true)},
+              {n:followerCount, l:"Seguidores", action:()=>setShowFollowers(true)},
             ].map(s=>(
               <button key={s.l} onClick={s.action} disabled={!s.action}
                 className="flex items-center gap-1.5 text-sm transition active:opacity-70">

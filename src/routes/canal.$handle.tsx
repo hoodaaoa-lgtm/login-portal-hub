@@ -392,20 +392,20 @@ function CanalPage() {
 
           {/* Banner */}
           <div className="relative">
-            <div className="h-32 w-full" style={{
+            <div className="h-52 w-full" style={{
               background: channel.banner_url ? undefined : GRAD,
             }}>
               {channel.banner_url && <img src={channel.banner_url} alt="" className="w-full h-full object-cover" />}
             </div>
 
             {/* Avatar */}
-            <div className="absolute -bottom-10 left-4">
+            <div className="absolute -bottom-16 left-5">
               <button onClick={() => channel.avatar_url && setPhotoViewer(channel.avatar_url)}
-                className="w-20 h-20 rounded-full border-4 overflow-hidden flex items-center justify-center"
+                className="w-[132px] h-[132px] rounded-full border-4 overflow-hidden flex items-center justify-center"
                 style={{ borderColor: "var(--s1)", background: P + "20" }}>
                 {channel.avatar_url
                   ? <img src={channel.avatar_url} alt="" className="w-full h-full object-cover" />
-                  : <span className="text-2xl font-bold" style={{ color: P }}>{channel.name?.[0]}</span>}
+                  : <span className="text-4xl font-bold" style={{ color: P }}>{channel.name?.[0]}</span>}
               </button>
             </div>
 
@@ -430,7 +430,7 @@ function CanalPage() {
           </div>
 
           {/* Info */}
-          <div className="px-4 pt-12 pb-3">
+          <div className="px-5 pt-9 pb-3">
             <div className="flex items-start justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <h1 className="text-xl font-extrabold leading-tight" style={{ color: "var(--text-primary)" }}>{channel.name}</h1>
