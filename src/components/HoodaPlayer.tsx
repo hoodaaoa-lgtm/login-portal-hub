@@ -118,7 +118,11 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
     const v = videoRef.current;
     if (!v) return;
     if (!hasStarted) setHasStarted(true);
-    v.paused ? v.play() : v.pause();
+    if (v.paused) {
+      v.play()?.catch(() => { /* autoplay/gesto bloqueado — ignora, utilizador pode tentar de novo */ });
+    } else {
+      v.pause();
+    }
     resetTimer();
   }
 

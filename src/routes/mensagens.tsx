@@ -35,6 +35,7 @@ import {
 } from "lucide-react";
 import MediaEditor, { MediaEditState, DEFAULT_EDIT, EditedMediaDisplay } from "@/components/MediaEditor";
 import { HoodaPlayer } from "@/components/HoodaPlayer";
+import { FeedVideoPlayer } from "@/components/FeedVideoPlayer";
 import { uploadImageToCloudinary } from "@/lib/cloudinary";
 
 // Upload directo para Cloudinary com progresso (suporta audio/video via resource_type=video)
@@ -1871,7 +1872,7 @@ function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit
               <div className="w-full max-w-xs">
                 {m.editState
                   ? <EditedMediaDisplay src={m.mediaUrl} type="video" edit={m.editState} maxH={280} />
-                  : <HoodaPlayer src={m.mediaUrl} rounded="rounded-xl" aspectRatio="16/9" />}
+                  : <FeedVideoPlayer src={m.mediaUrl} rounded="rounded-xl" />}
               </div>
             )}
 

@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { BottomNav, SideNav, PageWrapper } from "@/components/AppShell";
 import { PostCommentsModal } from "@/components/PostCommentsModal";
+import { FeedVideoPlayer } from "@/components/FeedVideoPlayer";
 import {
   ChevronLeft, Heart, MessageCircle, Share2, Bookmark,
   Loader, X,
@@ -24,36 +25,6 @@ function timeAgo(d: string) {
   if (s < 86400) return `${Math.floor(s / 3600)}h`;
   if (s < 86400 * 30) return `${Math.floor(s / 86400)}d`;
   return new Date(d).toLocaleDateString("pt-PT", { day: "numeric", month: "short" });
-}
-
-function SimplePostVideo({ src, poster }: { src: string; poster?: string }) {
-  const [isShort, setIsShort] = useState<boolean | null>(null);
-  const [playing, setPlaying] = useState(false);
-  const ref = useRef<HTMLVideoElement>(null);
-
-  function toggle() {
-    const v = ref.current;
-    if (!v) return;
-    if (v.paused) { v.play(); setPlaying(true); } else { v.pause(); setPlaying(false); }
-  }
-
-  return (
-    <div className="w-full bg-black relative cursor-pointer"
-      style={{ aspectRatio: isShort ? "9/16" : "16/9", maxHeight: isShort ? "75vh" : "560px" }}
-      onClick={toggle}>
-      <video ref={ref} src={src} poster={poster} playsInline preload="metadata"
-        onLoadedMetadata={() => { const v = ref.current; if (v) setIsShort(v.videoHeight > v.videoWidth); }}
-        onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)}
-        className="w-full h-full block" style={{ objectFit: "contain" }} />
-      {!playing && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{ background: "rgba(0,0,0,0.55)" }}>
-            <svg className="h-7 w-7 text-white ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
-          </div>
-        </div>
-      )}
-    </div>
-  );
 }
 
 function SinglePostPage() {
@@ -215,7 +186,7 @@ function SinglePostPage() {
               </button>
 
               {/* Conteúdo */}
-              {post.video_url && <SimplePostVideo src={post.video_url} poster={post.photo_url || undefined} />}
+              {post.video_url && <FeedVideoPlayer src={post.video_url} poster={post.photo_url || undefined} postId={post.id} kind="video" rounded="rounded-none" />}
               {post.photo_url && !post.video_url && (
                 <img src={post.photo_url} alt="" className="w-full block" style={{ maxHeight: 600, objectFit: "cover" }} />
               )}
@@ -283,7 +254,7 @@ function SinglePostPage() {
           }
           body={
             <>
-              {post.video_url && <SimplePostVideo src={post.video_url} poster={post.photo_url || undefined} />}
+              {post.video_url && <FeedVideoPlayer src={post.video_url} poster={post.photo_url || undefined} postId={post.id} kind="video" rounded="rounded-none" />}
               {post.photo_url && !post.video_url && <img src={post.photo_url} alt="" className="w-full block" />}
               {text && !post.video_url && (
                 bgColor ? (
