@@ -74,8 +74,9 @@ interface HoodaPlayerProps {
   signature?: SignatureConfig | null;
 }
 
-/** Cap de altura responsiva (só faz sentido em modo "auto"). */
-const HEIGHT_CAP_CLASSES = "max-h-[600px] sm:max-h-[700px]";
+/** Cap de altura responsiva (só faz sentido em modo "auto"). Tamanho
+ * "normal" de feed — nada de vídeo dominando o ecrã inteiro. */
+const HEIGHT_CAP_CLASSES = "max-h-[380px] sm:max-h-[460px]";
 
 export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(function HoodaPlayer(
   {
