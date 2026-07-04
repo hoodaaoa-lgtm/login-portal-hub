@@ -27,9 +27,8 @@ export function ShortFrame({ children }: { children: ReactNode }) {
         }
         .hooda-short-frame-box {
           position: relative;
-          width: auto;
-          max-width: 100%;
-          height: min(56vh, 480px);
+          width: min(100%, 380px);
+          height: auto;
           aspect-ratio: 9 / 16;
           background: #0b0b0d;
           border-radius: 18px;
