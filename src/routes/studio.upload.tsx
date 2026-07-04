@@ -1,16 +1,16 @@
-import { Bell, createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Bell, t } from "@/lib/useT";
-import { Bell, useState, useRef, useCallback } from "react";
-import { Bell, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Bell, myChannelQuery } from "@/lib/channel-queries";
-import { Bell, supabase } from "@/integrations/supabase/client";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { t } from "@/lib/useT";
+import { useState, useRef, useCallback } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { myChannelQuery } from "@/lib/channel-queries";
+import { supabase } from "@/integrations/supabase/client";
 import { Bell,
   Upload, Video as VideoIcon, X, Image as ImageIcon,
   Globe, Lock, Link as LinkIcon, Calendar,
   CheckCircle, Info, Palette,
 } from "lucide-react";
-import { Bell, toast } from "sonner";
-import { Bell, uploadToCloudinary } from "@/lib/cloudinary";
+import { toast } from "sonner";
+import { uploadToCloudinary } from "@/lib/cloudinary";
 
 export const Route = createFileRoute("/studio/upload")({
   head: () => ({ meta: [{ title: "Hooda" }] }),
