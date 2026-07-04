@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { t } from "@/lib/useT";
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useRouterState, useNavigate, useRouter } from "@tanstack/react-router";
 import { HoodaLogo } from "@/components/HoodaLogo";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useAvatar } from "@/contexts/AvatarContext";
@@ -8,7 +8,7 @@ import { useBadges } from "@/contexts/BadgeContext";
 import { UserDrawer } from "@/components/UserDrawer";
 import {
   Home, Compass, MessageSquare, Users, User, Tv, Menu,
-  Moon, Sun, Bell, Droplet,
+  Moon, Sun, Bell, Droplet, Feather, MoreHorizontal, ArrowLeft,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
