@@ -137,8 +137,6 @@ function EditModal({ v, onClose, onSave }: { v: any; onClose: () => void; onSave
           <div className="flex gap-2">
             {([
               { key: "public",   icon: Globe,    label: t("studio.public")   },
-              { key: "unlisted", icon: LinkIcon,  label: "Com link"  },
-              { key: "private",  icon: Lock,     label: t("studio.private")   },
             ] as const).map(opt => {
               const Icon = opt.icon;
               const sel  = vis === opt.key;
@@ -380,8 +378,6 @@ function ContentPage() {
                         color: visCl[v.visibility as Vis] ?? "#475569",
                       }}
                     >
-                      <option value="private">Privado</option>
-                      <option value="unlisted">Com link</option>
                       <option value="public">Público</option>
                     </select>
                   </div>

@@ -6,7 +6,7 @@ import { uploadToCloudinary, uploadImageToCloudinary } from "@/lib/cloudinary";
 import { useRef, useState } from "react";
 import {
   FileText, Image as ImageIcon, Video as VideoIcon, BarChart3,
-  Upload, X, Calendar, Send, Save, Loader2, Hash, Globe, Lock, Users,
+  Upload, X, Calendar, Send, Save, Loader2, Hash, Globe,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -368,8 +368,6 @@ function CreatePage() {
           <div className="mt-2 flex gap-2">
             {([
               { v: "public",   label: "Público",       Icon: Globe },
-              { v: "unlisted", label: "Não listado",   Icon: Users },
-              { v: "private",  label: "Privado",       Icon: Lock  },
             ] as const).map(({ v, label, Icon }) => {
               const active = visibility === v;
               return (

@@ -4,7 +4,7 @@ import { myChannelQuery } from "@/lib/channel-queries";
 import { supabase } from "@/integrations/supabase/client";
 import { uploadImageToCloudinary } from "@/lib/cloudinary";
 import { useEffect, useRef, useState } from "react";
-import { Camera, Loader2, Save } from "lucide-react";
+import { Camera, Loader2, Save, Trash2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/studio/definicoes")({
@@ -27,6 +27,9 @@ function SettingsPage() {
   const [avatar, setAvatar] = useState("");
   const [banner, setBanner] = useState("");
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [confirmText, setConfirmText] = useState("");
   const avRef = useRef<HTMLInputElement>(null);
   const bnRef = useRef<HTMLInputElement>(null);
 
@@ -61,6 +64,16 @@ function SettingsPage() {
     if (error) { toast.error(error.message); return; }
     toast.success("Guardado!");
     refetch();
+  }
+
+  async function deleteChannel() {
+    if (!channel) return;
+    setDeleting(true);
+    const { error } = await (supabase as any).from("channels").delete().eq("id", channel.id);
+    setDeleting(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Canal eliminado.");
+    navigate({ to: "/studio" as any });
   }
 
   if (!channel) return (
@@ -143,6 +156,54 @@ function SettingsPage() {
         {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
         Guardar alterações
       </button>
+
+      {/* Zona de Perigo */}
+      <div className="rounded-2xl p-5 space-y-3" style={{ background: "var(--s0)", border: "1px solid #ef444440" }}>
+        <div className="flex items-center gap-2">
+          <AlertTriangle className="h-4 w-4" style={{ color: "#ef4444" }} />
+          <p className="text-sm font-bold" style={{ color: "#ef4444" }}>Zona de Perigo</p>
+        </div>
+        <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+          Eliminar o canal apaga permanentemente o canal e todos os vídeos publicados. Esta ação não pode ser desfeita.
+        </p>
+        <button onClick={() => setShowDeleteConfirm(true)}
+          className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-bold active:scale-95"
+          style={{ background: "#ef444420", color: "#ef4444" }}>
+          <Trash2 className="h-4 w-4" /> Eliminar Canal
+        </button>
+      </div>
+
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.7)" }}>
+          <div className="w-full max-w-sm rounded-2xl p-5 space-y-4" style={{ background: "var(--s0)" }}>
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5" style={{ color: "#ef4444" }} />
+              <p className="font-bold" style={{ color: "var(--text-primary)" }}>Eliminar canal?</p>
+            </div>
+            <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+              Isto vai apagar o canal <strong>@{channel.handle}</strong> e todos os seus vídeos, para sempre.
+              Escreve <strong>{channel.handle}</strong> para confirmar.
+            </p>
+            <input value={confirmText} onChange={(e) => setConfirmText(e.target.value)}
+              placeholder={channel.handle}
+              className="w-full px-4 py-2.5 rounded-xl text-sm outline-none border"
+              style={{ background: "var(--s2)", borderColor: "var(--border-default)", color: "var(--text-primary)" }} />
+            <div className="flex gap-2">
+              <button onClick={() => { setShowDeleteConfirm(false); setConfirmText(""); }}
+                className="flex-1 py-2.5 rounded-xl text-sm font-bold"
+                style={{ background: "var(--s2)", color: "var(--text-primary)" }}>
+                Cancelar
+              </button>
+              <button onClick={deleteChannel} disabled={deleting || confirmText !== channel.handle}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-40"
+                style={{ background: "#ef4444" }}>
+                {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
