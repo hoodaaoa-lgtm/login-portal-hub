@@ -55,6 +55,7 @@ export function FeedVideoPlayer({ src, poster, postId, kind, isShortHint, rounde
       poster={poster}
       aspectRatio={isShort ? "9/16" : "16/9"}
       rounded={isShort ? "rounded-2xl" : (rounded ?? "rounded-none")}
+      className={isShort ? "w-full h-full" : ""}
     />
   );
 
