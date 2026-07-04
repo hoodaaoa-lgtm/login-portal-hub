@@ -36,7 +36,7 @@ export function RightSidebar() {
   async function follow(userId: string) {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
-    await supabase.from("follows").insert({ follower_id: session.user.id, following_id: userId });
+    await (supabase as any).from("follows").insert({ follower_id: session.user.id, following_id: userId });
     setSuggestions(p => p.filter(u => u.id !== userId));
   }
 
