@@ -1,24 +1,68 @@
 /**
- * ShortFrame — moldura estilo "anúncio" para vídeos verticais (shorts)
- * no feed: bezel preto arredondado + contorno fino + espaço à direita,
- * em vez do vídeo ocupar a largura toda do card.
+ * ShortFrame — moldura estilo "anúncio" para vídeos verticais (shorts).
  *
- * A moldura é limitada pela ALTURA (não pela largura do card), pra não
- * ficar gigante em ecrãs largos — a largura ajusta-se sozinha ao 9:16.
+ * No MOBILE (< 640px): o short vai de ponta a ponta do card, sem bezel
+ * nem espaço à direita — igual ao comportamento nativo do X no telemóvel
+ * (o vídeo só faz "letterbox" com barras pretas se não preencher 9:16).
+ *
+ * A partir de sm (>= 640px): aplica o bezel preto arredondado + espaço
+ * à direita, estilo anúncio.
  */
 import type { ReactNode } from "react";
 
 export function ShortFrame({ children }: { children: ReactNode }) {
   return (
-    <div className="w-full flex pl-3.5 pr-2 py-1.5">
-      <div
-        className="relative rounded-[26px] p-2.5"
-        style={{ height: "min(60vh, 480px)", width: "auto", aspectRatio: "9/17.2", background: "#0b0b0d" }}
-      >
-        <div className="w-full h-full rounded-2xl overflow-hidden" style={{ outline: "1.5px solid rgba(120,120,255,0.5)", outlineOffset: "-1.5px" }}>
-          {children}
+    <>
+      <div className="hooda-short-frame-outer">
+        <div className="hooda-short-frame-box">
+          <div className="hooda-short-frame-inner">
+            {children}
+          </div>
         </div>
       </div>
-    </div>
+      <style>{`
+        .hooda-short-frame-outer {
+          width: 100%;
+          display: flex;
+        }
+        .hooda-short-frame-box {
+          position: relative;
+          width: 100%;
+          aspect-ratio: 9 / 16;
+          max-height: 78vh;
+          background: transparent;
+          border-radius: 0;
+          padding: 0;
+        }
+        .hooda-short-frame-inner {
+          width: 100%;
+          height: 100%;
+          overflow: hidden;
+          border-radius: 0;
+        }
+        @media (min-width: 640px) {
+          .hooda-short-frame-outer {
+            padding-left: 14px;
+            padding-right: 8px;
+            padding-top: 6px;
+            padding-bottom: 10px;
+          }
+          .hooda-short-frame-box {
+            width: auto;
+            height: min(68vh, 560px);
+            aspect-ratio: 9 / 17.2;
+            max-height: none;
+            background: #0b0b0d;
+            border-radius: 26px;
+            padding: 10px;
+          }
+          .hooda-short-frame-inner {
+            border-radius: 16px;
+            outline: 1.5px solid rgba(120,120,255,0.5);
+            outline-offset: -1.5px;
+          }
+        }
+      `}</style>
+    </>
   );
 }
