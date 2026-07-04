@@ -26,7 +26,7 @@ const MAX_VIDEO_FREE = 100 * 1024 * 1024;  // 100 MB — threshold para upload r
 const MAX_IMG        = 5   * 1024 * 1024;
 
 type Step       = "drop" | "details" | "uploading" | "done";
-type Visibility = "public" | "scheduled" | "announced";
+type Visibility = "public" | "scheduled" | "announced" | "private";
 
 /* ── Detecta duração + dimensões do vídeo ─────────────────── */
 function getVideoMeta(file: File): Promise<{ duration: number | null; isShort: boolean }> {
