@@ -74,11 +74,6 @@ interface HoodaPlayerProps {
   signature?: SignatureConfig | null;
 }
 
-/** Cap de altura responsiva — tamanho "normal" de feed. Usa min() para
- * nunca deixar o vídeo dominar o ecrã inteiro (nem em mobile, nem em
- * desktop), qualquer que seja a proporção real do vídeo. */
-const MAX_HEIGHT_CSS = "min(60vh, 520px)";
-
 export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(function HoodaPlayer(
   {
     src,
@@ -113,11 +108,10 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
   // Em modo "auto" é isto que reserva o espaço final (sem CLS).
   const [naturalRatio, setNaturalRatio] = useState<string | null>(null);
   const effectiveRatio = isAutoMode ? (naturalRatio ?? "16/9") : aspectRatio;
-  // object-fit: SEMPRE "contain". Nunca cortamos o vídeo — nem nas
-  // laterais nem em cima/baixo. A caixa reserva o espaço pela proporção
-  // real (naturalRatio); se o cap de altura entrar em ação, o vídeo
-  // encolhe mantendo a proporção (deixando barra preta se precisar),
-  // nunca corta o conteúdo.
+  // object-fit: SEMPRE "contain". Nunca cortamos nem deformamos o vídeo —
+  // a caixa segue exatamente a proporção real dele (naturalRatio para
+  // vídeos normais, 9/16 fixo para shorts), sem nenhum limite artificial
+  // de altura a forçar encolhimento.
   const objectFitClass = "object-contain";
 
   /* ─── Regista no mediaManager: só um vídeo toca de cada vez ─── */
@@ -253,25 +247,18 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
       ref={(el) => {
         (wrapperRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
       }}
-      className={`w-full flex items-center justify-center overflow-hidden bg-black select-none ${rounded} ${className}`}
+      className={`w-full overflow-hidden bg-black select-none ${rounded} ${className}`}
       onMouseMove={resetTimer}
       onTouchStart={resetTimer}
       onClick={togglePlay}
     >
-      {/* Caixa interna: largura e altura ambas "auto", limitadas por
-          max-width (nunca ultrapassa o post) e max-height (nunca fica
-          gigante) — ambas encolhem juntas para preservar a proporção
-          real do vídeo. Isto é o que impede o vídeo vertical de tomar
-          o ecrã inteiro sem cortar nem esticar nada. */}
+      {/* Caixa interna: largura total do post, altura calculada pela
+          proporção real do vídeo (effectiveRatio) — sem nenhum limite
+          artificial de altura. Vídeo normal fica com o tamanho normal;
+          short fica com a proporção 9/16 dele, certinho. */}
       <div
-        className="relative"
-        style={{
-          aspectRatio: effectiveRatio,
-          width: "100%",
-          height: "auto",
-          maxWidth: "100%",
-          maxHeight: MAX_HEIGHT_CSS,
-        }}
+        className="relative w-full"
+        style={{ aspectRatio: effectiveRatio }}
       >
       {/* Video element — object-fit: contain, sempre. */}
       <video
