@@ -25,7 +25,7 @@ export function ShortFrame({ children }: { children: ReactNode }) {
           position: relative;
           width: min(100%, 380px);
           height: auto;
-          aspect-ratio: 9 / 16;
+          aspect-ratio: 9 / 15;
           background: #0b0b0d;
           border-radius: 18px;
           padding: 0;
