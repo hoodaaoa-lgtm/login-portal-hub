@@ -218,17 +218,17 @@ export type Database = {
           id: string
           name: string
           owner_id: string
+          signature_enabled: boolean | null
+          signature_position: string | null
+          signature_style: string | null
           updated_at: string
           watermark_enabled: boolean | null
-          watermark_type: string | null
-          watermark_text: string | null
           watermark_image_url: string | null
-          watermark_size: string | null
           watermark_opacity: number | null
           watermark_position: string | null
-          signature_enabled: boolean | null
-          signature_style: string | null
-          signature_position: string | null
+          watermark_size: string | null
+          watermark_text: string | null
+          watermark_type: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -241,17 +241,17 @@ export type Database = {
           id?: string
           name: string
           owner_id: string
+          signature_enabled?: boolean | null
+          signature_position?: string | null
+          signature_style?: string | null
           updated_at?: string
           watermark_enabled?: boolean | null
-          watermark_type?: string | null
-          watermark_text?: string | null
           watermark_image_url?: string | null
-          watermark_size?: string | null
           watermark_opacity?: number | null
           watermark_position?: string | null
-          signature_enabled?: boolean | null
-          signature_style?: string | null
-          signature_position?: string | null
+          watermark_size?: string | null
+          watermark_text?: string | null
+          watermark_type?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -264,17 +264,17 @@ export type Database = {
           id?: string
           name?: string
           owner_id?: string
+          signature_enabled?: boolean | null
+          signature_position?: string | null
+          signature_style?: string | null
           updated_at?: string
           watermark_enabled?: boolean | null
-          watermark_type?: string | null
-          watermark_text?: string | null
           watermark_image_url?: string | null
-          watermark_size?: string | null
           watermark_opacity?: number | null
           watermark_position?: string | null
-          signature_enabled?: boolean | null
-          signature_style?: string | null
-          signature_position?: string | null
+          watermark_size?: string | null
+          watermark_text?: string | null
+          watermark_type?: string | null
         }
         Relationships: []
       }
@@ -678,6 +678,133 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+        }
+        Relationships: []
+      }
+      drop_comments: {
+        Row: {
+          author_username: string
+          content: string
+          created_at: string
+          drop_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          author_username?: string
+          content: string
+          created_at?: string
+          drop_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          author_username?: string
+          content?: string
+          created_at?: string
+          drop_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "drop_comments_drop_id_fkey"
+            columns: ["drop_id"]
+            isOneToOne: false
+            referencedRelation: "drops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      drop_interactions: {
+        Row: {
+          created_at: string
+          drop_id: string
+          id: string
+          interaction_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          drop_id: string
+          id?: string
+          interaction_type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          drop_id?: string
+          id?: string
+          interaction_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "drop_interactions_drop_id_fkey"
+            columns: ["drop_id"]
+            isOneToOne: false
+            referencedRelation: "drops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      drops: {
+        Row: {
+          aspect_ratio: number | null
+          author_username: string
+          comments_count: number
+          content_type: string
+          content_url: string | null
+          created_at: string
+          duration_hours: number
+          expires_at: string
+          id: string
+          likes_count: number
+          music_title: string | null
+          music_url: string | null
+          reposts_count: number
+          shares_count: number
+          text_content: string | null
+          user_id: string
+          views_count: number
+        }
+        Insert: {
+          aspect_ratio?: number | null
+          author_username?: string
+          comments_count?: number
+          content_type: string
+          content_url?: string | null
+          created_at?: string
+          duration_hours?: number
+          expires_at?: string
+          id?: string
+          likes_count?: number
+          music_title?: string | null
+          music_url?: string | null
+          reposts_count?: number
+          shares_count?: number
+          text_content?: string | null
+          user_id: string
+          views_count?: number
+        }
+        Update: {
+          aspect_ratio?: number | null
+          author_username?: string
+          comments_count?: number
+          content_type?: string
+          content_url?: string | null
+          created_at?: string
+          duration_hours?: number
+          expires_at?: string
+          id?: string
+          likes_count?: number
+          music_title?: string | null
+          music_url?: string | null
+          reposts_count?: number
+          shares_count?: number
+          text_content?: string | null
+          user_id?: string
+          views_count?: number
         }
         Relationships: []
       }
@@ -2246,6 +2373,8 @@ export type Database = {
           file_size: number | null
           id: string
           likes_count: number
+          override_signature: boolean | null
+          override_watermark: boolean | null
           owner_id: string
           published_at: string | null
           status: Database["public"]["Enums"]["video_status"]
@@ -2256,8 +2385,6 @@ export type Database = {
           video_path: string | null
           views_count: number
           visibility: Database["public"]["Enums"]["video_visibility"]
-          override_watermark: boolean | null
-          override_signature: boolean | null
         }
         Insert: {
           category?: string | null
@@ -2272,6 +2399,8 @@ export type Database = {
           file_size?: number | null
           id?: string
           likes_count?: number
+          override_signature?: boolean | null
+          override_watermark?: boolean | null
           owner_id: string
           published_at?: string | null
           status?: Database["public"]["Enums"]["video_status"]
@@ -2282,8 +2411,6 @@ export type Database = {
           video_path?: string | null
           views_count?: number
           visibility?: Database["public"]["Enums"]["video_visibility"]
-          override_watermark?: boolean | null
-          override_signature?: boolean | null
         }
         Update: {
           category?: string | null
@@ -2298,6 +2425,8 @@ export type Database = {
           file_size?: number | null
           id?: string
           likes_count?: number
+          override_signature?: boolean | null
+          override_watermark?: boolean | null
           owner_id?: string
           published_at?: string | null
           status?: Database["public"]["Enums"]["video_status"]
@@ -2308,8 +2437,6 @@ export type Database = {
           video_path?: string | null
           views_count?: number
           visibility?: Database["public"]["Enums"]["video_visibility"]
-          override_watermark?: boolean | null
-          override_signature?: boolean | null
         }
         Relationships: [
           {
@@ -2348,6 +2475,7 @@ export type Database = {
       }
     }
     Functions: {
+      cleanup_expired_drops: { Args: never; Returns: undefined }
       cleanup_expired_stories: { Args: never; Returns: undefined }
       create_conversation_with_participants: {
         Args: { p_my_id: string; p_other_id: string }
