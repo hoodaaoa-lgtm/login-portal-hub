@@ -95,9 +95,8 @@ function StatsGrid({ publications, followers, following, onFollowersClick, onFol
   onFollowersClick?: () => void; onFollowingClick?: () => void;
 }) {
   const items = [
-    { n: publications, l: t("profile.publications"), onClick: undefined },
-    { n: followers, l: t("profile.followers"), onClick: onFollowersClick },
     { n: following, l: t("profile.following"), onClick: onFollowingClick },
+    { n: followers, l: t("profile.followers"), onClick: onFollowersClick },
   ];
   return (
     <div className="flex items-center gap-5 px-5 pb-4">
@@ -2507,10 +2506,13 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
       <>
       {/* Header */}
       <header className="sticky top-0 z-30 border-b" style={{ background: "var(--surface-0)", borderColor: "var(--border-subtle)" }}>
-        <div className="px-4 h-14 flex items-center justify-between">
+        <div className="px-4 h-14 flex items-center gap-4">
           <HoodaLogo size="sm" className="lg:hidden" />
-          <span className="hidden lg:block text-sm font-bold" style={{ color: "var(--text-primary)" }}>Perfil</span>
-          <span aria-hidden className="w-9" />
+          <div className="hidden lg:block leading-tight">
+            <p className="text-[15px] font-extrabold" style={{ color: "var(--text-primary)" }}>{name}</p>
+            <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>{fmtNum(posts.length)} {t("profile.publications")}</p>
+          </div>
+          <span aria-hidden className="w-9 lg:hidden" />
         </div>
       </header>
 
@@ -2521,8 +2523,8 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
       <main className="w-full">
         {/* Capa */}
         <div className="relative">
-          <div className="h-44 relative overflow-hidden"
-            style={coverUrl ? undefined : { background: "linear-gradient(135deg,#5B3FCF 0%,#1FAFA6 50%,#FFC93C 100%)" }}>
+          <div className="h-52 relative overflow-hidden"
+            style={coverUrl ? undefined : { background: "linear-gradient(135deg,#5B3FCF 0%,#8B5CF6 55%,#E94B8A 100%)" }}>
             {coverUrl && <img src={coverUrl} alt="capa" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = "none"; }} />}
             {/* Botão câmera da capa */}
             <button onClick={() => pickFile(coverInputRef, setCoverUrl, "cover")}
@@ -2531,31 +2533,26 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
               <Camera className="h-4 w-4 text-white" />
             </button>
           </div>
-          <div className="absolute left-5" style={{ bottom: -48 }}>
+          <div className="absolute left-5" style={{ bottom: -66 }}>
             <div className="relative">
-              {/* Anel gradiente estilo Instagram */}
-              <div className="rounded-full p-[3px]"
-                style={{ background: "linear-gradient(135deg, #5B3FCF 0%, #E94B8A 50%, #FFC93C 100%)" }}>
-                <div className="rounded-full p-[2px] bg-[var(--s2)]">
-                  <div
-                    onClick={() => avatarUrl && setPhotoViewerSrc(avatarUrl)}
-                    style={{
-                      width: 90, height: 90, borderRadius: "50%",
-                      overflow: "hidden", background: avatarUrl ? "transparent" : getColor(name),
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: 32, fontWeight: 700, color: "white",
-                      cursor: avatarUrl ? "pointer" : "default",
-                    }}>
-                    {avatarUrl
-                      ? <img src={avatarUrl} alt={name} style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={(e) => { e.currentTarget.style.display = "none"; }} />
-                      : (name?.[0] ?? "?").toUpperCase()}
-                  </div>
-                </div>
+              <div
+                onClick={() => avatarUrl && setPhotoViewerSrc(avatarUrl)}
+                style={{
+                  width: 132, height: 132, borderRadius: "50%",
+                  border: "4px solid var(--surface-0)",
+                  overflow: "hidden", background: avatarUrl ? "transparent" : getColor(name),
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 40, fontWeight: 700, color: "white",
+                  cursor: avatarUrl ? "pointer" : "default",
+                }}>
+                {avatarUrl
+                  ? <img src={avatarUrl} alt={name} style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={(e) => { e.currentTarget.style.display = "none"; }} />
+                  : (name?.[0] ?? "?").toUpperCase()}
               </div>
               <button onClick={() => pickFile(avatarInputRef, setAvatarUrl, "avatar")}
-                className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full flex items-center justify-center border-2 border-white shadow"
+                className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full flex items-center justify-center border-2 border-white shadow"
                 style={{ background: ACCENT }}>
-                <Camera className="h-3.5 w-3.5 text-white" />
+                <Camera className="h-4 w-4 text-white" />
               </button>
             </div>
           </div>
@@ -2576,13 +2573,15 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
         </div>
 
         {/* Info pessoal */}
-        <div className="px-5 pt-10 pb-4">
-          <p className="text-xl font-extrabold leading-tight" style={{ color: "var(--text-primary)" }}>{name}</p>
+        <div className="px-5 pt-9 pb-3">
+          <div className="flex items-center gap-1">
+            <p className="text-xl font-extrabold leading-tight" style={{ color: "var(--text-primary)" }}>{name}</p>
+          </div>
           <p className="text-sm text-[var(--text-muted)] font-medium mt-0.5">@{profile?.username || "utilizador"}</p>
           {profile?.bio && (
-            <p className="text-sm text-[var(--text-secondary)] mt-2 leading-relaxed">{profile.bio}</p>
+            <p className="text-sm text-[var(--text-secondary)] mt-3 leading-relaxed">{profile.bio}</p>
           )}
-          <div className="flex flex-wrap gap-3 mt-2.5">
+          <div className="flex flex-wrap gap-3 mt-3">
             {location && (
               <span className="flex items-center gap-1 text-xs text-[var(--text-muted)]">
                 <MapPin className="h-3.5 w-3.5" /> {location}
@@ -2614,24 +2613,23 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
           </div>
         )}
 
-        {/* Tabs com sublinhado */}
-        <div className="px-5 flex border-b" style={{ borderColor: "var(--border-subtle)" }}>
-          {tabs.map((t) => (
-            <button key={t.key}
+        {/* Tabs estilo X — texto, sublinhado fino */}
+        <div className="px-1 flex border-b" style={{ borderColor: "var(--border-subtle)" }}>
+          {tabs.map((tItem) => (
+            <button key={tItem.key}
               onClick={async () => {
-                if (t.key === "monetization") {
+                if (tItem.key === "monetization") {
                   navigate({ to: "/studio" });
                   return;
                 }
-                setTab(t.key);
+                setTab(tItem.key);
               }}
-              className="flex-1 flex flex-col items-center gap-1 py-2.5 text-[11px] font-bold transition-colors"
-              style={{
-                color: tab === t.key ? ACCENT : "var(--text-muted)",
-                borderBottom: tab === t.key ? `2px solid ${ACCENT}` : "2px solid transparent",
-              }}>
-              <t.icon className="h-4 w-4" />
-              {t.label}
+              className="flex-1 relative py-4 text-[14px] font-bold transition-colors hover:bg-[var(--s2)]"
+              style={{ color: tab === tItem.key ? "var(--text-primary)" : "var(--text-muted)" }}>
+              {tItem.label}
+              {tab === tItem.key && (
+                <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[3px] w-14 rounded-full" style={{ background: ACCENT }} />
+              )}
             </button>
           ))}
         </div>
@@ -2895,9 +2893,11 @@ function PublicProfile({ profile, email }: { profile: Profile | null; email: str
         </div>
       </header>
       <main className="w-full">
-        <div className="h-32 relative" style={{ background: "linear-gradient(135deg,#5B3FCF 0%,#1FAFA6 50%,#FFC93C 100%)" }}>
-          <div className="absolute left-5" style={{ bottom: -42 }}>
-            <Avatar name={name} size={84} />
+        <div className="h-52 relative" style={{ background: "linear-gradient(135deg,#5B3FCF 0%,#8B5CF6 55%,#E94B8A 100%)" }}>
+          <div className="absolute left-5" style={{ bottom: -60 }}>
+            <div style={{ border: "4px solid var(--surface-0)", borderRadius: "50%" }}>
+              <Avatar name={name} size={124} />
+            </div>
           </div>
         </div>
         <div className="flex justify-end gap-2 px-4 pt-3">
@@ -2913,7 +2913,7 @@ function PublicProfile({ profile, email }: { profile: Profile | null; email: str
             {following ? t("profile.unfollow") : t("profile.follow")}
           </button>
         </div>
-        <div className="px-5 pt-9 pb-4">
+        <div className="px-5 pt-9 pb-3">
           <p className="text-xl font-extrabold text-black">{name}</p>
           <p className="text-sm text-[var(--text-muted)] mt-0.5">@{profile?.username || "..."}</p>
           {profile?.bio && <p className="text-sm text-[var(--text-secondary)] mt-2 leading-relaxed">{profile.bio}</p>}
