@@ -77,7 +77,7 @@ interface HoodaPlayerProps {
 
 /** Cap de altura responsiva (só faz sentido em modo "auto"). Tamanho
  * "normal" de feed — nada de vídeo dominando o ecrã inteiro. */
-const HEIGHT_CAP_CLASSES = "max-h-[380px] sm:max-h-[460px]";
+const HEIGHT_CAP_CLASSES = "max-h-[280px] sm:max-h-[360px]";
 
 export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(function HoodaPlayer(
   {
@@ -416,67 +416,62 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Gradient */}
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{ background: "linear-gradient(to top, rgba(0,0,0,0.72) 0%, transparent 55%)" }}
-        />
-
-        {/* Bottom bar */}
-        <div className="relative z-10 px-3 pb-3 pt-6 pointer-events-auto">
-          {/* Seek bar */}
-          <div className="mb-2 relative h-1 group/seek" style={{ cursor: "pointer" }}>
-            <div
-              className="absolute inset-0 rounded-full"
-              style={{ background: "rgba(255,255,255,0.25)" }}
-            />
-            <div
-              className="absolute left-0 top-0 h-full rounded-full transition-all"
-              style={{ width: `${progress}%`, background: BRAND }}
-            />
-            <input
-              type="range"
-              min={0}
-              max={duration || 100}
-              step={0.1}
-              value={currentTime}
-              onChange={seek}
-              className="absolute inset-0 w-full opacity-0 cursor-pointer h-full"
-              style={{ height: "100%" }}
-              onClick={(e) => e.stopPropagation()}
-            />
-          </div>
-
-          {/* Buttons row */}
-          <div className="flex items-center gap-2">
+        {/* Bottom pill — pequena, arredondada, estilo X */}
+        <div className="relative z-10 px-2.5 pb-2.5 pointer-events-auto">
+          <div
+            className="flex items-center gap-2 rounded-full px-2.5 py-1.5"
+            style={{ background: "rgba(0,0,0,0.65)" }}
+          >
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                togglePlay();
+                duration > 0 && duration - currentTime < 2 ? restart() : togglePlay();
               }}
-              className="w-8 h-8 flex items-center justify-center rounded-full transition hover:bg-white/15"
+              className="w-[22px] h-[22px] shrink-0 flex items-center justify-center rounded-full transition hover:bg-white/15"
             >
-              {isPlaying ? (
-                <Pause className="w-4 h-4 text-white" />
+              {duration > 0 && duration - currentTime < 2 ? (
+                <RotateCcw className="w-3 h-3 text-white" />
+              ) : isPlaying ? (
+                <Pause className="w-3 h-3 text-white" />
               ) : (
-                <Play className="w-4 h-4 text-white ml-0.5" />
+                <Play className="w-3 h-3 text-white ml-0.5" />
               )}
             </button>
 
-            {duration > 0 && duration - currentTime < 2 && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  restart();
+            <div className="flex-1 relative h-[3px] group/seek" style={{ cursor: "pointer" }}>
+              <div
+                className="absolute inset-0 rounded-full"
+                style={{ background: "rgba(255,255,255,0.3)" }}
+              />
+              <div
+                className="absolute left-0 top-0 h-full rounded-full transition-all"
+                style={{ width: `${progress}%`, background: "#fff" }}
+              />
+              <div
+                className="absolute top-1/2 rounded-full transition-all"
+                style={{
+                  left: `${progress}%`,
+                  width: 9,
+                  height: 9,
+                  transform: "translate(-50%, -50%)",
+                  background: "#fff",
                 }}
-                className="w-8 h-8 flex items-center justify-center rounded-full transition hover:bg-white/15"
-              >
-                <RotateCcw className="w-4 h-4 text-white" />
-              </button>
-            )}
+              />
+              <input
+                type="range"
+                min={0}
+                max={duration || 100}
+                step={0.1}
+                value={currentTime}
+                onChange={seek}
+                className="absolute inset-0 w-full opacity-0 cursor-pointer h-full"
+                style={{ height: "100%" }}
+                onClick={(e) => e.stopPropagation()}
+              />
+            </div>
 
-            <span className="text-white text-[11px] font-mono tabular-nums flex-1 select-none">
-              {fmtTime(currentTime)} / {fmtTime(duration)}
+            <span className="text-white text-[10px] font-mono tabular-nums shrink-0 select-none">
+              {fmtTime(currentTime)}
             </span>
 
             <button
@@ -484,12 +479,12 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
                 e.stopPropagation();
                 toggleMute();
               }}
-              className="w-8 h-8 flex items-center justify-center rounded-full transition hover:bg-white/15"
+              className="w-[22px] h-[22px] shrink-0 flex items-center justify-center rounded-full transition hover:bg-white/15"
             >
               {isMuted ? (
-                <VolumeX className="w-4 h-4 text-white" />
+                <VolumeX className="w-3 h-3 text-white" />
               ) : (
-                <Volume2 className="w-4 h-4 text-white" />
+                <Volume2 className="w-3 h-3 text-white" />
               )}
             </button>
 
@@ -498,12 +493,12 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
                 e.stopPropagation();
                 toggleFullscreen();
               }}
-              className="w-8 h-8 flex items-center justify-center rounded-full transition hover:bg-white/15"
+              className="w-[22px] h-[22px] shrink-0 flex items-center justify-center rounded-full transition hover:bg-white/15"
             >
               {isFullscreen ? (
-                <Minimize className="w-4 h-4 text-white" />
+                <Minimize className="w-3 h-3 text-white" />
               ) : (
-                <Maximize className="w-4 h-4 text-white" />
+                <Maximize className="w-3 h-3 text-white" />
               )}
             </button>
           </div>
