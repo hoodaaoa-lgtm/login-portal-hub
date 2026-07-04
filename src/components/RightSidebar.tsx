@@ -12,7 +12,7 @@ function colorFor(s: string) {
 
 export function RightSidebar() {
   const navigate = useNavigate();
-  const [suggestions, setSuggestions] = useState<{ id: string; username: string; full_name: string; avatar_url?: string }[]>([]);
+  const [suggestions, setSuggestions] = useState<{ id: string; username: string; full_name: string; avatar_url?: string | null }[]>([]);
   const [loading, setLoading] = useState(true);
 
   async function load() {
