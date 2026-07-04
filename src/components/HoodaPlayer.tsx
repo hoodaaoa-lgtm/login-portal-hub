@@ -113,15 +113,12 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
   // Em modo "auto" é isto que reserva o espaço final (sem CLS).
   const [naturalRatio, setNaturalRatio] = useState<string | null>(null);
   const effectiveRatio = isAutoMode ? (naturalRatio ?? "16/9") : aspectRatio;
-  // object-fit: em modo "auto" a caixa tem largura fixa (100%) e altura
-  // limitada por CSS (HEIGHT_CAP_CLASSES) — ou seja, a caixa nunca fica
-  // "mais alta" que a proporção real do vídeo, só "mais larga/achatada".
-  // Por isso, "cover" nunca corta em cima/baixo: só ajusta as laterais
-  // quando necessário, preenchendo 100% sem sobrar espaço preto (igual
-  // ao YouTube/Instagram/X). O modo fixo (usado dentro do ShortFrame,
-  // para vídeos verticais) usa "contain" para nunca cortar o conteúdo
-  // vertical, já que ali o enquadramento é intencionalmente uma moldura.
-  const objectFitClass = isAutoMode ? "object-cover" : "object-contain";
+  // object-fit: "contain" sempre — nunca corta nem estica o vídeo.
+  // A caixa tem largura 100% e altura limitada (HEIGHT_CAP_CLASSES), por
+  // isso vídeos verticais ficam com barras pretas nas laterais (like
+  // X/Twitter/Threads) em vez de ficarem cortados, esticados ou
+  // forçados a um formato quadrado.
+  const objectFitClass = "object-contain";
 
   /* ─── Regista no mediaManager: só um vídeo toca de cada vez ─── */
   useEffect(() => {
