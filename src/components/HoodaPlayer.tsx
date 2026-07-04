@@ -254,22 +254,32 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
       ref={(el) => {
         (wrapperRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
       }}
-      className={`w-full overflow-hidden bg-black select-none ${rounded} ${className}`}
+      className={`w-full overflow-hidden select-none ${rounded} ${className} ${isAutoMode ? "bg-black" : "flex justify-center"}`}
       onMouseMove={resetTimer}
       onTouchStart={resetTimer}
       onClick={togglePlay}
     >
-      {/* Caixa interna: largura sempre 100% do post (nunca "auto" — isso é
-          o que causava o vídeo desaparecer, porque o <video> é absolute
-          e não conta como conteúdo para um "auto" se basear). A altura
-          segue a proporção real do vídeo, presa por MAX_HEIGHT_CSS. */}
+      {/* Caixa interna.
+          — Modo "auto" (vídeo normal/paisagem): largura sempre 100% do
+            post (nunca "auto" — isso é o que causava o vídeo desaparecer,
+            porque o <video> é absolute e não conta como conteúdo para um
+            "auto" se basear). Altura segue a proporção real, presa por
+            MAX_HEIGHT_CSS.
+          — Modo fixo (short 9:16): é a ALTURA que fica presa em
+            MAX_HEIGHT_CSS, e a LARGURA fica "auto" — o browser calcula-a
+            a partir da proporção 9:16 e da altura definida (isto funciona
+            porque agora há uma dimensão definida, ao contrário do bug
+            anterior em que largura E altura eram "auto" ao mesmo tempo).
+            Resultado: a caixa fica só do tamanho do vídeo, centrada, sem
+            sobra de preto à volta — igual ao Instagram/TikTok. O preto
+            fica só nesta caixa (bg-black aqui), não no post inteiro. */}
       <div
-        className="relative w-full"
-        style={{
-          aspectRatio: effectiveRatio,
-          maxHeight: MAX_HEIGHT_CSS,
-          overflow: "hidden",
-        }}
+        className={`bg-black relative ${isAutoMode ? "w-full" : ""}`}
+        style={
+          isAutoMode
+            ? { aspectRatio: effectiveRatio, maxHeight: MAX_HEIGHT_CSS, overflow: "hidden" }
+            : { aspectRatio: effectiveRatio, height: MAX_HEIGHT_CSS, maxWidth: "100%", overflow: "hidden" }
+        }
       >
       {/* Video element — object-fit: contain, sempre. */}
       <video
