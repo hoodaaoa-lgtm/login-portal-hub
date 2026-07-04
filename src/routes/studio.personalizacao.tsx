@@ -36,17 +36,18 @@ function StudioPersonalizacao() {
 
   useEffect(() => {
     if (channel) {
-      setWatermarkEnabled(channel.watermark_enabled ?? false);
-      setWatermarkType(channel.watermark_type ?? "text");
-      setWatermarkText(channel.watermark_text ?? "");
-      setWatermarkImageUrl(channel.watermark_image_url ?? "");
-      setWatermarkSize(channel.watermark_size ?? "medium");
-      setWatermarkOpacity([channel.watermark_opacity ?? 80]);
-      setWatermarkPosition(channel.watermark_position ?? "bottom-right");
+      const c = channel as any;
+      setWatermarkEnabled(c.watermark_enabled ?? false);
+      setWatermarkType(c.watermark_type ?? "text");
+      setWatermarkText(c.watermark_text ?? "");
+      setWatermarkImageUrl(c.watermark_image_url ?? "");
+      setWatermarkSize(c.watermark_size ?? "medium");
+      setWatermarkOpacity([c.watermark_opacity ?? 80]);
+      setWatermarkPosition(c.watermark_position ?? "bottom-right");
 
-      setSignatureEnabled(channel.signature_enabled ?? false);
-      setSignatureStyle(channel.signature_style ?? "medium");
-      setSignaturePosition(channel.signature_position ?? "bottom-left");
+      setSignatureEnabled(c.signature_enabled ?? false);
+      setSignatureStyle(c.signature_style ?? "medium");
+      setSignaturePosition(c.signature_position ?? "bottom-left");
     }
   }, [channel]);
 

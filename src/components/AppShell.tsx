@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { t } from "@/lib/useT";
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useRouterState, useNavigate, useRouter } from "@tanstack/react-router";
 import { HoodaLogo } from "@/components/HoodaLogo";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useAvatar } from "@/contexts/AvatarContext";
@@ -8,7 +8,7 @@ import { useBadges } from "@/contexts/BadgeContext";
 import { UserDrawer } from "@/components/UserDrawer";
 import {
   Home, Compass, MessageSquare, Users, User, Tv, Menu,
-  Moon, Sun, Bell, Droplet,
+  Moon, Sun, Bell, Droplet, Feather, MoreHorizontal, ArrowLeft,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -58,6 +58,7 @@ function NavCountBadge({ count, compact = false }: { count: number; compact?: bo
 
 /* ─── Desktop Sidebar ─── */
 export function SideNav() {
+  const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { theme, toggle } = useTheme();
   const { avatarUrl, name } = useAvatar();
@@ -84,12 +85,12 @@ export function SideNav() {
         borderColor: "var(--border-subtle)",
       }}>
       {/* Logo */}
-      <div className="px-6 pt-6 pb-5 border-b" style={{ borderColor: "var(--border-subtle)" }}>
+      <div className="px-5 pt-5 pb-3">
         <HoodaLogo size="sm" animate={false} />
       </div>
 
       {/* Nav links */}
-      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+      <nav className="flex-1 px-2 py-2 space-y-0.5 overflow-y-auto">
         {NAV_ITEMS.map(({ to, label, Icon, search }) => {
           const isNotif = label === "Notificações";
           const active = isNotif
@@ -100,63 +101,66 @@ export function SideNav() {
           const isPerfil = to === "/perfil";
           return (
             <Link key={label} to={to} search={search}
-              className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-150 group"
+              className="flex items-center gap-4 px-3 py-2.5 rounded-full text-[15px] transition-colors group hover:bg-[color-mix(in_oklab,var(--text-primary)_6%,transparent)]"
               style={{
-                background: active ? "rgba(91,63,207,0.10)" : "transparent",
-                color: active ? "#5B3FCF" : "var(--text-secondary)",
+                color: active ? "var(--text-primary)" : "var(--text-primary)",
+                fontWeight: active ? 800 : 500,
               }}>
               {isPerfil ? (
-                /* Avatar redondo com anel gradiente estilo Instagram */
-                <div className="shrink-0 rounded-full p-[2px]"
-                  style={{
-                    background: active
-                      ? "linear-gradient(135deg, #5B3FCF 0%, #E94B8A 50%, #FFC93C 100%)"
-                      : "transparent",
-                    boxShadow: active ? "0 0 0 1.5px #5B3FCF44" : "none",
-                  }}>
-                  <div className="w-[22px] h-[22px] rounded-full overflow-hidden flex items-center justify-center text-[10px] font-extrabold text-white"
-                    style={{ background: avatarUrl ? "transparent" : "#5B3FCF" }}>
-                    {avatarUrl
-                      ? <img src={avatarUrl} alt={name} className="w-full h-full object-cover" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
-                      : initial}
-                  </div>
+                <div className="shrink-0 h-7 w-7 rounded-full overflow-hidden flex items-center justify-center text-[11px] font-extrabold text-white"
+                  style={{ background: avatarUrl ? "transparent" : "#5B3FCF" }}>
+                  {avatarUrl
+                    ? <img src={avatarUrl} alt={name} className="w-full h-full object-cover" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+                    : initial}
                 </div>
               ) : (
                 <Icon
-                  className="h-5 w-5 shrink-0 transition-transform duration-150 group-hover:scale-110"
-                  strokeWidth={active ? 2.5 : 1.8}
+                  className="h-[26px] w-[26px] shrink-0"
+                  strokeWidth={active ? 2.5 : 1.9}
                 />
               )}
-              <span style={{ fontWeight: active ? 700 : 500 }}>{label}</span>
+              <span className="truncate">{label}</span>
               <span className="ml-auto flex items-center gap-2">
                 <NavCountBadge count={badgeCountFor(to, unreadMessages, unreadCommunities)} />
-                {active && (
-                  <span className="h-1.5 w-1.5 rounded-full shrink-0" style={{ background: "#5B3FCF" }} />
-                )}
               </span>
             </Link>
           );
         })}
+
+        {/* Botão Publicar — estilo X */}
+        <div className="pt-3 px-1">
+          <button
+            onClick={() => { navigate({ to: "/home" }); setTimeout(() => window.dispatchEvent(new CustomEvent("hooda:open-composer")), 60); }}
+            className="w-full h-[52px] rounded-full text-white font-extrabold text-[16px] flex items-center justify-center gap-2 transition active:scale-[0.98]"
+            style={{ background: "#5B3FCF", boxShadow: "0 6px 18px rgba(91,63,207,0.35)" }}>
+            <Feather className="h-5 w-5" />
+            <span>Publicar</span>
+          </button>
+        </div>
       </nav>
 
-      {/* Bottom controls */}
-      <div className="px-3 py-4 border-t space-y-1" style={{ borderColor: "var(--border-subtle)" }}>
-        {/* Botão Menu — abre o UserDrawer */}
+      {/* Bottom user card — X style */}
+      <div className="px-2 py-3">
         <button
           onClick={() => setShowDrawer(true)}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors hover:bg-[rgba(91,63,207,0.08)]"
-          style={{ color: "var(--text-secondary)" }}>
-          <Menu className="h-5 w-5" strokeWidth={1.8} />
-          <span>Menu</span>
-        </button>
-        <button
-          onClick={toggle}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors"
-          style={{ color: "var(--text-secondary)" }}>
-          {theme === "dark"
-            ? <Sun className="h-5 w-5" strokeWidth={1.8} />
-            : <Moon className="h-5 w-5" strokeWidth={1.8} />}
-          <span>{theme === "dark" ? t("settings.light_mode") : t("settings.dark_mode")}</span>
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-full transition hover:bg-[color-mix(in_oklab,var(--text-primary)_6%,transparent)]">
+          <div className="h-10 w-10 rounded-full overflow-hidden flex items-center justify-center text-white text-sm font-bold shrink-0"
+            style={{ background: avatarUrl ? "transparent" : "#5B3FCF" }}>
+            {avatarUrl
+              ? <img src={avatarUrl} alt={name} className="w-full h-full object-cover" />
+              : initial}
+          </div>
+          <div className="flex-1 min-w-0 text-left">
+            <p className="text-sm font-bold truncate" style={{ color: "var(--text-primary)" }}>{name || "Utilizador"}</p>
+            <p className="text-xs truncate" style={{ color: "var(--text-muted)" }}>Menu</p>
+          </div>
+          <button
+            onClick={(e) => { e.stopPropagation(); toggle(); }}
+            aria-label="Alternar tema"
+            className="p-2 rounded-full hover:bg-[color-mix(in_oklab,var(--text-primary)_8%,transparent)]"
+            style={{ color: "var(--text-secondary)" }}>
+            {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </button>
         </button>
       </div>
     </aside>

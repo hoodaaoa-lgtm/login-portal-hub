@@ -12,7 +12,7 @@ function colorFor(s: string) {
 
 export function RightSidebar() {
   const navigate = useNavigate();
-  const [suggestions, setSuggestions] = useState<{ id: string; username: string; full_name: string; avatar_url?: string }[]>([]);
+  const [suggestions, setSuggestions] = useState<{ id: string; username: string; full_name: string; avatar_url?: string | null }[]>([]);
   const [loading, setLoading] = useState(true);
 
   async function load() {
@@ -36,22 +36,25 @@ export function RightSidebar() {
   async function follow(userId: string) {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
-    await supabase.from("follows").insert({ follower_id: session.user.id, following_id: userId });
+    await (supabase as any).from("follows").insert({ follower_id: session.user.id, following_id: userId });
     setSuggestions(p => p.filter(u => u.id !== userId));
   }
 
   return (
-    <aside className="hidden xl:flex flex-col sticky top-0 h-screen flex-1 min-w-[320px] border-l z-40 px-6 py-4 overflow-y-auto"
-      style={{ background: "var(--surface-0)", borderColor: "var(--border-subtle)" }}>
-      <div className="w-full max-w-[360px] space-y-4">
+    <aside className="hidden xl:flex flex-col sticky top-0 h-screen flex-1 min-w-[320px] max-w-[380px] z-30 pl-8 pr-4 py-3 overflow-y-auto"
+      style={{ background: "var(--surface-0)" }}>
+      <div className="w-full space-y-4">
 
-      {/* Pesquisa */}
-      <button onClick={() => navigate({ to: "/explorar" })}
-        className="w-full flex items-center gap-2 px-4 py-2.5 rounded-full text-left transition"
-        style={{ background: "var(--s1)", border: "1px solid var(--border-subtle)" }}>
-        <Search className="h-4 w-4 shrink-0" style={{ color: "var(--text-muted)" }} />
-        <span className="text-sm" style={{ color: "var(--text-muted)" }}>Pesquisar…</span>
-      </button>
+      {/* Pesquisa sticky */}
+      <div className="sticky top-0 -mt-3 pt-3 pb-2 z-10" style={{ background: "var(--surface-0)" }}>
+        <button onClick={() => navigate({ to: "/explorar" })}
+          className="w-full flex items-center gap-3 h-11 pl-11 pr-4 rounded-full text-left transition relative hover:border-[#5B3FCF]"
+          style={{ background: "var(--s1)", border: "1px solid transparent" }}>
+          <Search className="h-4 w-4 absolute left-4" style={{ color: "var(--text-muted)" }} />
+          <span className="text-sm" style={{ color: "var(--text-muted)" }}>Pesquisar no Hooda</span>
+        </button>
+      </div>
+
 
       {/* Sugestões de pessoas a seguir */}
       <div className="rounded-2xl overflow-hidden" style={{ background: "var(--s1)", border: "1px solid var(--border-subtle)" }}>

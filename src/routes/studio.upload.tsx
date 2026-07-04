@@ -4,7 +4,7 @@ import { useState, useRef, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { myChannelQuery } from "@/lib/channel-queries";
 import { supabase } from "@/integrations/supabase/client";
-import {
+import { Bell,
   Upload, Video as VideoIcon, X, Image as ImageIcon,
   Globe, Lock, Link as LinkIcon, Calendar,
   CheckCircle, Info, Palette,
@@ -26,7 +26,7 @@ const MAX_VIDEO_FREE = 100 * 1024 * 1024;  // 100 MB — threshold para upload r
 const MAX_IMG        = 5   * 1024 * 1024;
 
 type Step       = "drop" | "details" | "uploading" | "done";
-type Visibility = "public" | "scheduled" | "announced";
+type Visibility = "public" | "scheduled" | "announced" | "private";
 
 /* ── Detecta duração + dimensões do vídeo ─────────────────── */
 function getVideoMeta(file: File): Promise<{ duration: number | null; isShort: boolean }> {
@@ -558,13 +558,13 @@ function UploadPage() {
           </div>
 
           {/* Personalização (Marca de água e Assinatura) */}
-          {(channel.watermark_enabled || channel.signature_enabled) && (
+          {((channel as any).watermark_enabled || (channel as any).signature_enabled) && (
             <div>
               <label className="block text-[13px] font-bold uppercase tracking-wider mb-3" style={{ color: "var(--text-muted)" }}>
                 Personalização (Definições do Canal)
               </label>
               <div className="space-y-3 p-4 rounded-2xl border bg-[var(--s2)]" style={{ borderColor: "var(--border-subtle)" }}>
-                {channel.watermark_enabled && (
+                {(channel as any).watermark_enabled && (
                   <label className="flex items-center justify-between cursor-pointer">
                     <div className="flex items-center gap-2">
                       <Palette className="w-4 h-4" style={{ color: P }} />
@@ -581,7 +581,7 @@ function UploadPage() {
                   </label>
                 )}
                 
-                {channel.signature_enabled && (
+                {(channel as any).signature_enabled && (
                   <label className="flex items-center justify-between cursor-pointer mt-3">
                     <div className="flex items-center gap-2">
                       <Palette className="w-4 h-4" style={{ color: P }} />
@@ -650,7 +650,7 @@ function UploadPage() {
               <div className="flex justify-between">
                 <span>Visibilidade</span>
                 <span className="font-semibold" style={{ color: visibility === "public" ? "#10b981" : visibility === "scheduled" ? "#F97316" : "var(--text-primary)" }}>
-                  {visibility === "public" ? t("studio.public") : visibility === "unlisted" ? "Com link" : visibility === "scheduled" ? "Agendado" : t("studio.private")}
+                  {visibility === "public" ? t("studio.public") : visibility === "announced" ? "Anunciado" : visibility === "scheduled" ? "Agendado" : t("studio.private")}
                 </span>
               </div>
               {detectedDur && (
