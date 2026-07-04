@@ -77,7 +77,7 @@ interface HoodaPlayerProps {
 /** Limite de altura estilo X: o vídeo ocupa sempre a largura total do
  * post; a altura segue a proporção real dele (horizontal ou vertical),
  * só ficando presa aqui se for um caso extremo — igual ao feed do X. */
-const MAX_HEIGHT_CSS = "min(85vh, 750px)";
+const MAX_HEIGHT_CSS = "min(75vh, 650px)";
 
 export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(function HoodaPlayer(
   {
@@ -108,30 +108,19 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
   const [metadataLoaded, setMetadataLoaded] = useState(false);
-  // Proporção real do vídeo, detectada assim que o metadata carrega.
+  // Proporção real do vídeo, detectada assim que o metadata carrega —
+  // usada SEMPRE (horizontal ou vertical), igual ao X: a caixa segue o
+  // vídeo, nunca o contrário. Antes do metadata carregar, usa a
+  // proporção sugerida por quem chamou (aspectRatio) como palpite inicial
+  // para minimizar qualquer salto de layout.
   const [naturalRatio, setNaturalRatio] = useState<string | null>(null);
-
-  // Igual ao Instagram/X: a proporção da caixa é a proporção real do
-  // vídeo, mas presa entre um limite vertical (4/5) e horizontal (1.91/1)
-  // — os mesmos limites que essas plataformas usam. Isto evita por
-  // completo a barra preta lateral/cima-baixo: em vez de "encolher e
-  // sobrar preto" quando o vídeo é muito vertical ou muito largo, a
-  // caixa fica com uma proporção sã e o vídeo preenche tudo (o excesso,
-  // se houver, é cortado de forma mínima e centrada — não esticado).
-  const MIN_RATIO = 4 / 5;   // mais vertical que isto, corta em vez de sobrar preto
-  const MAX_RATIO = 1.91;    // mais largo que isto, corta em vez de sobrar preto
-  function parseRatio(r: string): number {
-    const [w, h] = r.split("/").map(Number);
-    return w > 0 && h > 0 ? w / h : 16 / 9;
-  }
-  const rawRatio = naturalRatio ?? (aspectRatio !== "auto" ? aspectRatio : "16/9");
-  const rawRatioNum = parseRatio(rawRatio);
-  const clampedRatioNum = Math.min(MAX_RATIO, Math.max(MIN_RATIO, rawRatioNum));
-  const effectiveRatio = String(clampedRatioNum);
-  // A proporção real só é ultrapassada nos casos extremos (ver clamp
-  // acima); por isso usamos "cover" sempre — dentro dos limites normais
-  // a caixa já bate certo com o vídeo e cover não corta nada visível.
-  const objectFitClass = "object-cover";
+  const effectiveRatio = naturalRatio ?? (aspectRatio !== "auto" ? aspectRatio : "16/9");
+  // object-fit: SEMPRE "contain". Nunca cortamos nem deformamos o vídeo —
+  // a caixa segue a proporção real dele (naturalRatio para vídeos normais,
+  // 9/16 fixo para shorts) até ao limite de altura (MAX_HEIGHT_CSS); se
+  // esse limite entrar em ação, o vídeo encolhe mantendo a proporção
+  // (barra preta lateral em vez de cortar).
+  const objectFitClass = "object-contain";
 
   /* ─── Regista no mediaManager: só um vídeo toca de cada vez ─── */
   useEffect(() => {
