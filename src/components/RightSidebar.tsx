@@ -41,7 +41,7 @@ export function RightSidebar() {
   }
 
   return (
-    <aside className="hidden xl:flex flex-col fixed right-0 top-0 bottom-0 w-[360px] z-30 pl-8 pr-6 py-3 overflow-y-auto"
+    <aside className="hidden xl:flex flex-col fixed xl:right-[max(0px,calc((100vw-1460px)/2))] top-0 bottom-0 w-[360px] z-30 pl-8 pr-6 py-3 overflow-y-auto"
       style={{ background: "var(--surface-0)" }}>
       <div className="w-full space-y-4">
 
