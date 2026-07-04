@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import {
-  X, Search, Star, BookOpen, Tv, Settings, LogOut, ChevronRight, ChevronLeft,
+  X, Search, Star, BookOpen, Settings, LogOut, ChevronRight, ChevronLeft,
   MessageCircle, Bell, Shield, HelpCircle, Info, BarChart2, User, Moon, Sun,
   Users as UsersIcon, Eye, Heart, Film,
 } from "lucide-react";
@@ -260,7 +260,6 @@ export function UserDrawer({ userId: _userId, onClose }: UserDrawerProps) {
             setTimeout(() => window.dispatchEvent(new CustomEvent("hooda:open-notifications")), 60);
           } },
         { icon: BookOpen, label: "Livros", color: "#E94B8A", action: () => { onClose(); navigate({ to: "/livros" as any }); } },
-        { icon: Tv, label: "HoodaTV", color: "#1FAFA6", action: () => { onClose(); navigate({ to: "/hoodatv" }); } },
         { icon: BarChart2, label: "Hooda Studio", color: "#F26B3A", action: () => { onClose(); navigate({ to: "/studio" as any }); } },
       ],
     },
