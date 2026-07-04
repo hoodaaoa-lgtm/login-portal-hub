@@ -74,11 +74,11 @@ interface HoodaPlayerProps {
   signature?: SignatureConfig | null;
 }
 
-/** Limite de altura estilo X/Twitter: o vídeo ocupa sempre a largura total
- * do post; se a proporção real fizer a altura ultrapassar este valor
- * (vídeos verticais/shorts), a altura fica presa aqui e o vídeo aparece
- * inteiro, centrado, com barra preta lateral (nunca corta, nunca estica). */
-const MAX_HEIGHT_CSS = "min(70vh, 600px)";
+/** Limite de altura estilo Instagram/X: o vídeo horizontal ocupa a
+ * largura total do post, mas a altura fica presa aqui — compacto,
+ * sem dominar o ecrã. Vídeos verticais (shorts) usam este mesmo valor
+ * como a sua altura fixa (ver isAutoMode mais abaixo). */
+const MAX_HEIGHT_CSS = "min(50vh, 420px)";
 
 export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(function HoodaPlayer(
   {
