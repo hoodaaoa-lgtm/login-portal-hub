@@ -99,6 +99,27 @@ export function SideNav() {
               ? pathname.startsWith(to as string)
               : pathname === to;
           const isPerfil = to === "/perfil";
+          if (isNotif) {
+            return (
+              <button key={label}
+                onClick={() => {
+                  if (pathname === "/home") {
+                    window.dispatchEvent(new CustomEvent("hooda:open-notifications"));
+                  } else {
+                    navigate({ to: "/home" });
+                    setTimeout(() => window.dispatchEvent(new CustomEvent("hooda:open-notifications")), 60);
+                  }
+                }}
+                className="w-full flex items-center gap-4 px-3 py-2.5 rounded-full text-[15px] transition-colors group hover:bg-[color-mix(in_oklab,var(--text-primary)_6%,transparent)]"
+                style={{ color: "var(--text-primary)", fontWeight: 500 }}>
+                <Icon className="h-[26px] w-[26px] shrink-0" strokeWidth={1.9} />
+                <span className="truncate">{label}</span>
+                <span className="ml-auto flex items-center gap-2">
+                  <NavCountBadge count={badgeCountFor(to, unreadMessages, unreadCommunities)} />
+                </span>
+              </button>
+            );
+          }
           return (
             <Link key={label} to={to} search={search}
               className="flex items-center gap-4 px-3 py-2.5 rounded-full text-[15px] transition-colors group hover:bg-[color-mix(in_oklab,var(--text-primary)_6%,transparent)]"

@@ -3040,6 +3040,12 @@ function HomePage() {
       window.history.replaceState({}, "", `/home${qs ? `?${qs}` : ""}`);
     }
   }, []);
+
+  useEffect(() => {
+    function openFromEvent() { setShowNotifCenter(true); setToast(null); }
+    window.addEventListener("hooda:open-notifications", openFromEvent);
+    return () => window.removeEventListener("hooda:open-notifications", openFromEvent);
+  }, []);
   const [toast, setToast] = useState<Notif | null>(null);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
@@ -4019,22 +4025,10 @@ function HomePage() {
         <div className="mx-auto px-4 h-14 flex items-center justify-between max-w-full">
           <HoodaLogo size="sm" className="lg:hidden" />
           <span className="hidden lg:block" />
-          <div className="flex items-center gap-1">
-            <button className="p-2 hover:bg-[var(--s2)] rounded-full text-[var(--text-secondary)]">
-              <Search className="h-5 w-5" />
-            </button>
-            <button
-              onClick={() => { setShowNotifCenter(true); setToast(null); }}
-              className="p-2 hover:bg-[var(--s2)] rounded-full text-[var(--text-secondary)] relative"
-            >
-              <Bell className="h-5 w-5" />
-              {unreadCount > 0 && (
-                <span className="absolute top-1.5 right-1.5 min-w-[16px] h-4 px-0.5 rounded-full flex items-center justify-center text-[10px] font-bold text-white border-2 border-white" style={{ background: "#E94B8A" }}>
-                  {unreadCount > 9 ? "9+" : unreadCount}
-                </span>
-              )}
-            </button>
-          </div>
+          <button className="lg:hidden p-2 hover:bg-[var(--s2)] rounded-full text-[var(--text-secondary)]"
+            onClick={() => navigate({ to: "/explorar" })}>
+            <Search className="h-5 w-5" />
+          </button>
         </div>
       </header>
 

@@ -254,6 +254,11 @@ export function UserDrawer({ userId: _userId, onClose }: UserDrawerProps) {
       title: "O teu espaço",
       items: [
         { icon: User, label: "O meu perfil", color: "#5B3FCF", action: () => { onClose(); navigate({ to: "/perfil" }); } },
+        { icon: Bell, label: "Notificações", color: "#E94B8A", action: () => {
+            onClose();
+            navigate({ to: "/home" });
+            setTimeout(() => window.dispatchEvent(new CustomEvent("hooda:open-notifications")), 60);
+          } },
         { icon: BookOpen, label: "Livros", color: "#E94B8A", action: () => { onClose(); navigate({ to: "/livros" as any }); } },
         { icon: Tv, label: "HoodaTV", color: "#1FAFA6", action: () => { onClose(); navigate({ to: "/hoodatv" }); } },
         { icon: BarChart2, label: "Hooda Studio", color: "#F26B3A", action: () => { onClose(); navigate({ to: "/studio" as any }); } },
