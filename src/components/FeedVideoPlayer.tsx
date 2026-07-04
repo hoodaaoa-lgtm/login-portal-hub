@@ -48,12 +48,15 @@ export function FeedVideoPlayer({ src, poster, postId, kind, isShortHint, rounde
     );
   }
 
+  // Vídeos verticais (shorts) mantêm a moldura 9/16 estilo anúncio.
+  // Vídeos normais usam "auto": o HoodaPlayer ajusta-se ao tamanho real
+  // do vídeo, sem barras pretas em cima/baixo (igual ao X/Twitter).
   const player = (
     <HoodaPlayer
       ref={videoRef}
       src={src}
       poster={poster}
-      aspectRatio={isShort ? "9/16" : "16/9"}
+      aspectRatio={isShort ? "9/16" : "auto"}
       rounded={isShort ? "rounded-2xl" : (rounded ?? "rounded-none")}
       className={isShort ? "w-full h-full" : ""}
     />

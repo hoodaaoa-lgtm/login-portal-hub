@@ -47,7 +47,7 @@ interface HoodaPlayerProps {
   autoPlay?: boolean;
   loop?: boolean;
   className?: string;
-  aspectRatio?: string; // e.g. "16/9", "9/16", "1/1"
+  aspectRatio?: string; // e.g. "16/9", "9/16", "1/1", ou "auto" (usa o tamanho real do vídeo, sem barras pretas)
   rounded?: string;     // e.g. "rounded-2xl"
   watermark?: WatermarkConfig | null;
   signature?: SignatureConfig | null;
@@ -76,9 +76,14 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
   const [showControls, setShowControls] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [hasStarted,  setHasStarted]  = useState(autoPlay);
+  // Proporção real do vídeo, detectada assim que o metadata carrega.
+  // Usada quando aspectRatio="auto", para nunca aparecerem barras pretas.
+  const [naturalRatio, setNaturalRatio] = useState<string | null>(null);
+  const effectiveRatio = aspectRatio === "auto" ? (naturalRatio ?? "16/9") : aspectRatio;
 
   // HLS support
   useEffect(() => {
+    setNaturalRatio(null);
     const vid = videoRef.current;
     if (!vid || !src) return;
 
@@ -161,7 +166,7 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
     <div
       ref={containerRef}
       className={`relative overflow-hidden bg-black select-none ${rounded} ${className}`}
-      style={{ aspectRatio }}
+      style={{ aspectRatio: effectiveRatio }}
       onMouseMove={resetTimer}
       onTouchStart={resetTimer}
       onClick={togglePlay}
@@ -182,6 +187,10 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
         onWaiting={() => setIsBuffering(true)}
         onPlaying={() => { setIsBuffering(false); setIsPlaying(true); setHasStarted(true); }}
         onCanPlay={() => setIsBuffering(false)}
+        onLoadedMetadata={() => {
+          const v = videoRef.current;
+          if (v && v.videoWidth && v.videoHeight) setNaturalRatio(`${v.videoWidth}/${v.videoHeight}`);
+        }}
         onPause={() => setIsPlaying(false)}
         onTimeUpdate={() => {
           const v = videoRef.current;
