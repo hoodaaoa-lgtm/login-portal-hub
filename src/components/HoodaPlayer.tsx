@@ -7,10 +7,9 @@
  *    (600px em mobile, 700px em desktop) quando aspectRatio="auto".
  *  - Detecta a proporção real do vídeo (16:9, 1:1, 4:5, 9:16, 21:9, ...)
  *    a partir do próprio ficheiro — nunca estica nem deforma.
- *  - object-fit: cover no modo "auto" — preenche 100% da caixa, sem
- *    esticar e sem barras pretas; se a proporção não bater exatamente,
- *    ajusta só as laterais (nunca corta em cima/baixo, já que a altura
- *    da caixa nunca excede a proporção real do vídeo).
+ *  - object-fit: contain, sempre. Nunca corta o vídeo (nem laterais nem
+ *    cima/baixo) — mostra o vídeo inteiro na proporção real dele; se o
+ *    cap de altura entrar em ação, aparece barra preta em vez de cortar.
  *  - Reserva o espaço final antes do vídeo carregar (sem CLS): skeleton
  *    escuro com shimmer + miniatura, do tamanho exato do player final.
  *  - Lazy load real via IntersectionObserver: só começa a carregar dados
@@ -113,15 +112,12 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
   // Em modo "auto" é isto que reserva o espaço final (sem CLS).
   const [naturalRatio, setNaturalRatio] = useState<string | null>(null);
   const effectiveRatio = isAutoMode ? (naturalRatio ?? "16/9") : aspectRatio;
-  // object-fit: em modo "auto" a caixa tem largura fixa (100%) e altura
-  // limitada por CSS (HEIGHT_CAP_CLASSES) — ou seja, a caixa nunca fica
-  // "mais alta" que a proporção real do vídeo, só "mais larga/achatada".
-  // Por isso, "cover" nunca corta em cima/baixo: só ajusta as laterais
-  // quando necessário, preenchendo 100% sem sobrar espaço preto (igual
-  // ao YouTube/Instagram/X). O modo fixo (usado dentro do ShortFrame,
-  // para vídeos verticais) usa "contain" para nunca cortar o conteúdo
-  // vertical, já que ali o enquadramento é intencionalmente uma moldura.
-  const objectFitClass = isAutoMode ? "object-cover" : "object-contain";
+  // object-fit: SEMPRE "contain". Nunca cortamos o vídeo — nem nas
+  // laterais nem em cima/baixo. A caixa reserva o espaço pela proporção
+  // real (naturalRatio); se o cap de altura entrar em ação, o vídeo
+  // encolhe mantendo a proporção (deixando barra preta se precisar),
+  // nunca corta o conteúdo.
+  const objectFitClass = "object-contain";
 
   /* ─── Regista no mediaManager: só um vídeo toca de cada vez ─── */
   useEffect(() => {
