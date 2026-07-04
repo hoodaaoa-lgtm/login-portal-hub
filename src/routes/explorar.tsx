@@ -10,6 +10,10 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/explorar")({
   head: () => ({ meta: [{ title: "Hooda" }] }),
+  validateSearch: (search: Record<string, unknown>): { tab?: Tab; q?: string } => ({
+    tab: TABS.some(t => t.key === search.tab) ? (search.tab as Tab) : undefined,
+    q: typeof search.q === "string" ? search.q : undefined,
+  }),
   component: ExplorePage,
 });
 
@@ -134,10 +138,21 @@ function Av({ name, src, size = 40, color }: { name: string; src?: string | null
 function ExplorePage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const [search, setSearch]     = useState("");
-  const [tab, setTab]           = useState<Tab>("trending");
+  const routeSearch = Route.useSearch();
+  const [search, setSearch]     = useState(routeSearch.q ?? "");
+  const [tab, setTab]           = useState<Tab>(routeSearch.tab ?? "trending");
   const [myId, setMyId]         = useState("");
   const [followMap, setFollowMap] = useState<Record<string, boolean>>({});
+  const [channelFollowMap, setChannelFollowMap] = useState<Record<string, boolean>>({});
+
+  // Se a URL trouxer uma aba (?tab=people) ou um texto de busca (?q=algo),
+  // aplica mesmo se o componente já estiver montado (ex: clicar numa hashtag)
+  useEffect(() => {
+    if (routeSearch.tab) setTab(routeSearch.tab);
+  }, [routeSearch.tab]);
+  useEffect(() => {
+    if (routeSearch.q) setSearch(routeSearch.q);
+  }, [routeSearch.q]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -157,6 +172,41 @@ function ExplorePage() {
     staleTime: 10_000,
   });
 
+  /* Carregar quais canais já sigo (following_id = channels.id) */
+  const { data: myChannelFollows } = useQuery({
+    queryKey: ["explore-my-channel-follows", myId],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("follows").select("following_id").eq("follower_id", myId).not("following_id", "is", null);
+      return (data ?? []).map((r: any) => r.following_id).filter(Boolean) as string[];
+    },
+    enabled: !!myId,
+    staleTime: 10_000,
+  });
+  const myChannelFollowsSet = useMemo(() => new Set(myChannelFollows ?? []), [myChannelFollows]);
+
+  async function toggleChannelFollow(channelId: string) {
+    if (!myId) { toast.error("Inicia sessão para seguir."); return; }
+    const isF = channelFollowMap[channelId] ?? myChannelFollowsSet.has(channelId);
+    setChannelFollowMap(prev => ({ ...prev, [channelId]: !isF }));
+    const db = supabase as any;
+    try {
+      if (isF) {
+        const { error } = await db.from("follows").delete().eq("follower_id", myId).eq("following_id", channelId);
+        if (error) throw error;
+        toast.success("Deixaste de seguir o canal");
+      } else {
+        const { error } = await db.from("follows").insert({ follower_id: myId, following_id: channelId });
+        if (error) throw error;
+        toast.success("A seguir o canal!");
+      }
+      qc.invalidateQueries({ queryKey: ["explore-my-channel-follows", myId] });
+    } catch (err: any) {
+      setChannelFollowMap(prev => ({ ...prev, [channelId]: isF }));
+      toast.error(err?.message ?? "Não foi possível atualizar. Tenta novamente.");
+    }
+  }
+
   /* ── Query: pesquisa ── */
   const searchActive = search.trim().length >= 2;
 
@@ -173,17 +223,17 @@ function ExplorePage() {
     staleTime: 30_000,
   });
 
-  /* ── Query: vídeos em destaque ── */
+  /* ── Query: vídeos em destaque (também alimenta a aba Mídia) ── */
   const { data: featuredVideos = [] } = useQuery({
     queryKey: ["explore-videos"],
     queryFn: async () => {
       const { data } = await (supabase as any).from("videos")
         .select("id,title,thumbnail_url,views_count,duration_seconds,channel_id,channels(name,avatar_url,handle)")
         .eq("status","published").eq("visibility","public")
-        .order("views_count", { ascending: false }).limit(6);
+        .order("views_count", { ascending: false }).limit(24);
       return data ?? [];
     },
-    enabled: tab === "trending",
+    enabled: tab === "trending" || tab === "posts",
     staleTime: 60_000,
   });
 
@@ -568,15 +618,34 @@ function ExplorePage() {
             {suggestedPeople.map((p: any) => <PersonCard key={p.id} p={p} />)}
           </div>
 
-        /* ══════════ POSTS ══════════ */
+        /* ══════════ MÍDIA (posts + vídeos de qualquer pessoa/canal) ══════════ */
         ) : tab === "posts" ? (
-          <div className="px-4 py-4">
-            <p className="text-[11px] font-bold uppercase tracking-wider mb-3" style={{ color: "var(--text-muted)" }}>
-              Posts populares
-            </p>
-            <div className="grid grid-cols-2 gap-2">
-              {popularPosts.map((p: any) => <PostThumb key={p.id} p={p} />)}
-            </div>
+          <div className="px-4 py-4 space-y-6">
+            {featuredVideos.length > 0 && (
+              <section>
+                <p className="text-[11px] font-bold uppercase tracking-wider mb-3" style={{ color: "var(--text-muted)" }}>
+                  Vídeos
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {featuredVideos.map((v: any) => <VideoThumb key={v.id} v={v} />)}
+                </div>
+              </section>
+            )}
+            {popularPosts.length > 0 && (
+              <section>
+                <p className="text-[11px] font-bold uppercase tracking-wider mb-3" style={{ color: "var(--text-muted)" }}>
+                  Posts populares
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  {popularPosts.map((p: any) => <PostThumb key={p.id} p={p} />)}
+                </div>
+              </section>
+            )}
+            {featuredVideos.length === 0 && popularPosts.length === 0 && (
+              <div className="py-20 text-center">
+                <p className="font-bold" style={{ color: "var(--text-primary)" }}>Ainda não há mídia</p>
+              </div>
+            )}
           </div>
 
         /* ══════════ CANAIS ══════════ */
@@ -585,23 +654,30 @@ function ExplorePage() {
             <p className="text-[11px] font-bold uppercase tracking-wider mb-3" style={{ color: "var(--text-muted)" }}>
               Canais HoodaTV
             </p>
-            {channels.map((ch: any) => (
-              <button key={ch.id} onClick={() => navigate({ to: `/hoodatv/canal/${ch.handle}` })}
-                className="w-full flex items-center gap-3 p-3 rounded-2xl border transition hover:bg-[var(--s1)] text-left"
-                style={{ borderColor: "var(--border-subtle)", background: "var(--s0)" }}>
-                <Av name={ch.name} src={ch.avatar_url} size={46} />
-                <div className="flex-1 min-w-0">
-                  <p className="font-bold text-sm truncate" style={{ color: "var(--text-primary)" }}>{ch.name}</p>
-                  <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
-                    @{ch.handle} · {fmtNum(ch.subscriber_count ?? 0)} subscritores
-                  </p>
+            {channels.map((ch: any) => {
+              const isF = channelFollowMap[ch.id] ?? myChannelFollowsSet.has(ch.id);
+              return (
+                <div key={ch.id} className="w-full flex items-center gap-3 p-3 rounded-2xl border transition hover:bg-[var(--s1)]"
+                  style={{ borderColor: "var(--border-subtle)", background: "var(--s0)" }}>
+                  <button onClick={() => navigate({ to: `/hoodatv/canal/${ch.handle}` })} className="shrink-0">
+                    <Av name={ch.name} src={ch.avatar_url} size={46} />
+                  </button>
+                  <div className="flex-1 min-w-0" onClick={() => navigate({ to: `/hoodatv/canal/${ch.handle}` })} style={{ cursor: "pointer" }}>
+                    <p className="font-bold text-sm truncate" style={{ color: "var(--text-primary)" }}>{ch.name}</p>
+                    <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
+                      @{ch.handle} · {fmtNum(ch.subscriber_count ?? 0)} subscritores · {fmtNum(ch.videos_count ?? 0)} vídeos
+                    </p>
+                  </div>
+                  <button onClick={() => toggleChannelFollow(ch.id)}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold transition active:scale-95 shrink-0"
+                    style={isF
+                      ? { background: "var(--s2)", color: "var(--text-secondary)", border: "1px solid var(--border-default)" }
+                      : { background: P, color: "#fff" }}>
+                    {isF ? <><UserCheck className="h-3.5 w-3.5" />A seguir</> : <><UserPlus className="h-3.5 w-3.5" />Seguir</>}
+                  </button>
                 </div>
-                <span className="text-[11px] px-2.5 py-1 rounded-full font-bold shrink-0"
-                  style={{ background: P + "15", color: P }}>
-                  {fmtNum(ch.videos_count ?? 0)} vídeos
-                </span>
-              </button>
-            ))}
+              );
+            })}
           </div>
         ) : tab === "books" ? (
           <BooksSection search={search} navigate={navigate} />

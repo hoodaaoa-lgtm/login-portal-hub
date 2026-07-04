@@ -107,7 +107,8 @@ export function RightSidebar() {
                 </button>
               </div>
             ))}
-            <button onClick={load} className="w-full text-left px-4 py-3 text-sm font-semibold border-t"
+            <button onClick={() => navigate({ to: "/explorar", search: { tab: "people" } })}
+              className="w-full text-left px-4 py-3 text-sm font-semibold border-t"
               style={{ color: ACCENT, borderColor: "var(--border-subtle)" }}>
               Ver mais sugestões
             </button>
