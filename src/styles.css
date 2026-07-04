@@ -1046,3 +1046,63 @@ nav.hooda-bottom-nav {
 .dark .htv-channel-btn:hover {
   background-color: var(--s3) !important;
 }
+
+/* ═══════════════════════════════════════════════════════
+   X-STYLE SHARED PATTERNS
+   Utilities used by the shared shell to give every page a
+   consistent Twitter/X-like layout: sticky headers, dividers,
+   hover rows, and search inputs.
+   ═══════════════════════════════════════════════════════ */
+@utility x-sticky-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: color-mix(in oklab, var(--surface-0) 82%, transparent);
+  backdrop-filter: saturate(180%) blur(12px);
+  -webkit-backdrop-filter: saturate(180%) blur(12px);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+@utility x-divider {
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+@utility x-hover-row {
+  transition: background-color 150ms ease;
+  &:hover { background-color: color-mix(in oklab, var(--text-primary) 4%, transparent); }
+}
+
+@utility x-search-input {
+  width: 100%;
+  height: 44px;
+  padding: 0 16px 0 44px;
+  border-radius: 9999px;
+  background: var(--s1);
+  border: 1px solid transparent;
+  color: var(--text-primary);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 150ms, background-color 150ms;
+  &:focus {
+    background: var(--surface-0);
+    border-color: #5B3FCF;
+  }
+}
+
+@utility x-primary-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 24px;
+  border-radius: 9999px;
+  background: #5B3FCF;
+  color: #fff;
+  font-weight: 700;
+  font-size: 15px;
+  transition: transform 120ms, background-color 150ms, box-shadow 150ms;
+  box-shadow: 0 4px 14px rgba(91,63,207,0.30);
+  &:hover { background: #4a32b5; }
+  &:active { transform: scale(0.97); }
+}
