@@ -179,22 +179,14 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
     const [w, h] = effectiveRatio.split("/").map(Number);
     return w > 0 && h > 0 ? w / h : 16 / 9;
   })();
-  const isVertical = ratioNum < 1;
   // No telemóvel deixamos o vídeo usar quase todo o ecrã (até 92%, teto
   // de 900px) — é isto que faz vídeos verticais (Stories/Reels) parecerem
   // grandes e imersivos em vez de "encolhidos", igual ao Instagram/TikTok.
-  // No desktop mantém-se mais contido (75%, teto de 650px) para vídeos
-  // horizontais não dominarem um ecrã largo. Vídeos VERTICAIS no desktop
-  // são um caso à parte: em vez de encolher a caixa em largura (o que
-  // deixava espaço vazio dos lados dentro da publicação), deixamos a
-  // caixa ocupar sempre 100% da largura da publicação e a altura seguir
-  // a proporção real do vídeo sem teto — preenche a caixa inteira, sem
-  // esticar nem cortar nada, só fica mais alto.
+  // No desktop mantém-se mais contido (75%, teto de 650px) para não
+  // dominar um ecrã largo.
   const maxHeightPx = isMobile
     ? Math.min(viewportHeight * 0.92, 900)
-    : isVertical
-      ? Infinity
-      : Math.min(viewportHeight * 0.75, 650);
+    : Math.min(viewportHeight * 0.75, 650);
   const heightAtFullWidth = containerWidth ? containerWidth / ratioNum : null;
   const isHeightConstrained = !!heightAtFullWidth && heightAtFullWidth > maxHeightPx;
   const boxWidthPx = isHeightConstrained ? maxHeightPx * ratioNum : null;
@@ -203,9 +195,9 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
   // a caixa segue a proporção real dele (naturalRatio para vídeos normais,
   // 9/16 fixo para shorts) até ao limite de altura (MAX_HEIGHT_CSS); se
   // esse limite entrar em ação, a caixa encolhe em largura (isHeightConstrained)
-  // para não sobrar barra preta lateral. (Não se aplica a vídeos verticais
-  // no desktop — ver nota acima.)
+  // para não sobrar barra preta lateral.
   const objectFitClass = "object-contain";
+
 
 
   /* ─── Regista no mediaManager: só um vídeo toca de cada vez ─── */
