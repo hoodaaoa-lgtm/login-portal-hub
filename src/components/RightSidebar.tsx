@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import { createPortal } from "react-dom";
 import { RefreshCw, Users, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "@tanstack/react-router";
@@ -41,13 +40,11 @@ export function RightSidebar() {
     setSuggestions(p => p.filter(u => u.id !== userId));
   }
 
-  return createPortal(
-    <aside className="hidden xl:flex flex-col fixed right-0 top-0 bottom-0 w-[360px] z-30 pl-8 pr-6 py-3 overflow-hidden"
-      style={{ background: "var(--surface-0)" }}>
-      <div className="w-full space-y-4">
+  return (
+    <div className="sticky top-0 py-3 space-y-4 max-h-screen overflow-y-auto">
 
       {/* Pesquisa sticky */}
-      <div className="sticky top-0 -mt-3 pt-3 pb-2 z-10" style={{ background: "var(--surface-0)" }}>
+      <div className="pb-1">
         <button onClick={() => navigate({ to: "/explorar" })}
           className="w-full flex items-center gap-3 h-11 pl-11 pr-4 rounded-full text-left transition relative hover:border-[#5B3FCF]"
           style={{ background: "var(--s1)", border: "1px solid transparent" }}>
@@ -117,8 +114,6 @@ export function RightSidebar() {
       </div>
 
       <p className="text-[11px] text-center" style={{ color: "var(--text-muted)" }}>© 2025 Hooda</p>
-      </div>
-    </aside>,
-    document.body
+    </div>
   );
 }
