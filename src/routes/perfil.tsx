@@ -92,8 +92,8 @@ function Avatar({ name, size = 72, src }: { name: string; size?: number; src?: s
 }
 
 /* ─── Stats ─── */
-function StatsGrid({ publications, followers, following, onFollowersClick, onFollowingClick }: {
-  publications: number; followers: number; following: number;
+function StatsGrid({ publications, followers, following, loading, onFollowersClick, onFollowingClick }: {
+  publications: number; followers: number; following: number; loading?: boolean;
   onFollowersClick?: () => void; onFollowingClick?: () => void;
 }) {
   const items = [
@@ -103,10 +103,16 @@ function StatsGrid({ publications, followers, following, onFollowersClick, onFol
   return (
     <div className="flex items-center gap-5 px-5 pb-4">
       {items.map((s) => (
-        <button key={s.l} onClick={s.onClick} disabled={!s.onClick}
+        <button key={s.l} onClick={s.onClick} disabled={!s.onClick || loading}
           className="flex items-center gap-1.5 text-sm transition active:opacity-70 disabled:active:opacity-100"
-          style={{ cursor: s.onClick ? "pointer" : "default" }}>
-          <span className="font-extrabold text-[var(--text-primary)]">{fmtNum(s.n)}</span>
+          style={{ cursor: s.onClick && !loading ? "pointer" : "default" }}>
+          {loading ? (
+            <span className="relative overflow-hidden inline-block h-4 w-6 rounded" style={{ background: "var(--surface-2,#e9e9e4)" }}>
+              <span className="skeleton-shimmer absolute inset-0" />
+            </span>
+          ) : (
+            <span className="font-extrabold text-[var(--text-primary)]">{fmtNum(s.n)}</span>
+          )}
           <span className="text-[var(--text-muted)]">{s.l}</span>
         </button>
       ))}
@@ -1974,6 +1980,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
   const { setAvatarUrl: setGlobalAvatarUrl } = useAvatar();
   const [followerCount, setFollowerCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
+  const [statsLoading, setStatsLoading] = useState(true);
   const [msgPermission, setMsgPermission] = useState("todos");
   const [followListMode, setFollowListMode] = useState<"followers" | "following" | null>(null);
   const [myUserId, setMyUserId] = useState<string>("");
@@ -2044,6 +2051,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
       ]);
       setFollowerCount(fc ?? 0);
       setFollowingCount(foc ?? 0);
+      setStatsLoading(false);
 
       const { data } = await (supabase as any)
         .from("posts")
@@ -2124,6 +2132,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
       }
       } finally {
         setPostsLoading(false);
+        setStatsLoading(false);
       }
     })();
   }, []);
@@ -2369,7 +2378,13 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
           <HoodaLogo size="sm" className="lg:hidden" />
           <div className="hidden lg:block leading-tight">
             <p className="text-[15px] font-extrabold" style={{ color: "var(--text-primary)" }}>{name}</p>
-            <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>{fmtNum(posts.length)} {t("profile.publications")}</p>
+            <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>
+              {postsLoading
+                ? <span className="relative overflow-hidden inline-block h-2.5 w-14 rounded align-middle" style={{ background: "var(--surface-2,#e9e9e4)" }}>
+                    <span className="skeleton-shimmer absolute inset-0" />
+                  </span>
+                : <>{fmtNum(posts.length)} {t("profile.publications")}</>}
+            </p>
           </div>
           <span aria-hidden className="w-9 lg:hidden" />
         </div>
@@ -2459,7 +2474,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
           </div>
         </div>
 
-        <StatsGrid publications={posts.length} followers={followerCount} following={followingCount} onFollowersClick={() => setFollowListMode("followers")} onFollowingClick={() => setFollowListMode("following")} />
+        <StatsGrid publications={posts.length} followers={followerCount} following={followingCount} loading={statsLoading} onFollowersClick={() => setFollowListMode("followers")} onFollowingClick={() => setFollowListMode("following")} />
 
         {/* Botão flutuante de criar publicação — só ícone, sem caixa duplicada */}
         {tab === "posts" && (
@@ -2707,6 +2722,7 @@ function PublicProfile({ profile, email }: { profile: Profile | null; email: str
   const [following, setFollowing] = useState(false);
   const [followerCount, setFollowerCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
+  const [statsLoading, setStatsLoading] = useState(true);
   const [myUserId, setMyUserId] = useState("");
   const [followListMode, setFollowListMode] = useState<"followers" | "following" | null>(null);
   const navigate = useNavigate();
@@ -2715,20 +2731,24 @@ function PublicProfile({ profile, email }: { profile: Profile | null; email: str
   useEffect(() => {
     if (!profile) return;
     (async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-      setMyUserId(session.user.id);
-      // follows table: follower_id = UUID, target_username = text username
-      const targetUsername = profile.username;
-      const { data: followRow } = await supabase.from("follows")
-        .select("follower_id").eq("follower_id", session.user.id).eq("target_username", targetUsername).maybeSingle();
-      setFollowing(!!followRow);
-      const [{ count: fc }, { count: foc }] = await Promise.all([
-        supabase.from("follows").select("*", { count: "exact", head: true }).eq("target_username", targetUsername),
-        supabase.from("follows").select("*", { count: "exact", head: true }).eq("follower_id", (profile as any).id),
-      ]);
-      setFollowerCount(fc ?? 0);
-      setFollowingCount(foc ?? 0);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+        setMyUserId(session.user.id);
+        // follows table: follower_id = UUID, target_username = text username
+        const targetUsername = profile.username;
+        const { data: followRow } = await supabase.from("follows")
+          .select("follower_id").eq("follower_id", session.user.id).eq("target_username", targetUsername).maybeSingle();
+        setFollowing(!!followRow);
+        const [{ count: fc }, { count: foc }] = await Promise.all([
+          supabase.from("follows").select("*", { count: "exact", head: true }).eq("target_username", targetUsername),
+          supabase.from("follows").select("*", { count: "exact", head: true }).eq("follower_id", (profile as any).id),
+        ]);
+        setFollowerCount(fc ?? 0);
+        setFollowingCount(foc ?? 0);
+      } finally {
+        setStatsLoading(false);
+      }
     })();
   }, [profile]);
 
@@ -2781,7 +2801,7 @@ function PublicProfile({ profile, email }: { profile: Profile | null; email: str
           <p className="text-sm text-[var(--text-muted)] mt-0.5">@{profile?.username || "..."}</p>
           {profile?.bio && <p className="text-sm text-[var(--text-secondary)] mt-2 leading-relaxed">{profile.bio}</p>}
         </div>
-        <StatsGrid publications={0} followers={followerCount} following={followingCount} onFollowersClick={() => setFollowListMode("followers")} onFollowingClick={() => setFollowListMode("following")} />
+        <StatsGrid publications={0} followers={followerCount} following={followingCount} loading={statsLoading} onFollowersClick={() => setFollowListMode("followers")} onFollowingClick={() => setFollowListMode("following")} />
         <div className="px-5 py-12 flex flex-col items-center gap-3 text-center">
           <div className="w-16 h-16 rounded-full bg-[#5B3FCF]/10 flex items-center justify-center">
             <BookOpen className="h-7 w-7 text-[#5B3FCF]" />
