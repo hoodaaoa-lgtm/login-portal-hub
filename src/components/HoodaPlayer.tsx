@@ -187,7 +187,7 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
   // No desktop mantém-se mais contido (75%, teto de 650px) para não
   // dominar um ecrã largo.
   const maxHeightPx = isMobile
-    ? Math.min(viewportHeight * 0.92, 900)
+    ? Math.min(viewportHeight * 0.80, 900)
     : Math.min(viewportHeight * 0.75, 650);
   // No telemóvel, vídeos HORIZONTAIS ficam um pouco mais altos do que a
   // proporção real deles indicaria (menos "achatados"), aproximando-se
