@@ -1477,7 +1477,7 @@ function HomePage() {
       // scoring/relevância acima, cai aqui numa busca simples e directa.
       const { data } = await supabase
         .from("posts")
-        .select("id,author_id,user_id,author_username,author_name,author_color,content,kind,is_ad,created_at,photo_url,photos,video_url,clip_video_id,clip_start,clip_end,clip_title,channel_id,channel_handle,channel_name,channel_avatar,clip_thumb_url,poll,poll_ends_at")
+        .select("id,author_id,author_username,author_name,author_color,content,kind,is_ad,created_at,photo_url,photos,video_url,clip_video_id,clip_start,clip_end,clip_title,channel_id,channel_handle,channel_name,channel_avatar,clip_thumb_url,poll,poll_ends_at")
         .order("created_at", { ascending: false })
         .limit(50);
       return (data ?? []).map((p: any) => {
@@ -1508,7 +1508,7 @@ function HomePage() {
 
   const FEED_CHUNK_SIZE = 30;
   const ACCENT_LOCAL = ["#5B3FCF","#F26B3A","#1FAFA6","#6BA547","#E94B8A","#FFC93C"];
-  const POST_SELECT_FIELDS = "id,author_id,user_id,author_username,author_name,author_color,content,kind,is_ad,created_at,photo_url,photos,video_url,clip_video_id,clip_start,clip_end,clip_title,channel_id,channel_handle,channel_name,channel_avatar,clip_thumb_url,views_count,reposts_count,poll,poll_ends_at";
+  const POST_SELECT_FIELDS = "id,author_id,author_username,author_name,author_color,content,kind,is_ad,created_at,photo_url,photos,video_url,clip_video_id,clip_start,clip_end,clip_title,channel_id,channel_handle,channel_name,channel_avatar,clip_thumb_url,views_count,reposts_count,poll,poll_ends_at";
   const VIDEO_SELECT_FIELDS = "id,title,thumbnail_url,duration_seconds,views_count,likes_count,created_at,owner_id,channel_id,channels(name,avatar_url,handle)";
 
   // ─── FEED SEM ALGORITMO — busca e funde posts + vídeos publicados ──────────

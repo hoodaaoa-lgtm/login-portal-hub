@@ -259,7 +259,7 @@ function ExplorePage() {
     queryKey: ["explore-posts"],
     queryFn: async () => {
       const { data } = await (supabase as any).from("posts")
-        .select("id,content,kind,photo_url,image_url,likes_count,author_username,author_color,author_id,created_at,profiles(avatar_url,full_name)")
+        .select("id,content,kind,photo_url,image_url,likes_count,author_username,author_color,author_id,created_at")
         .in("kind",["photo","post","video"])
         .order("created_at", { ascending: false }).limit(500);
       return data ?? [];
