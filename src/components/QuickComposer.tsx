@@ -23,10 +23,13 @@ function MiniAvatar({ name, src, size = 40 }: { name: string; src?: string | nul
 }
 
 /* ── Modal de criação de publicação (texto / foto / vídeo) ── */
-export function QuickPostModal({ name, username, avatarUrl, onClose, onPublished }: {
+const MAX_POLL_OPTIONS = 4;
+
+export function QuickPostModal({ name, username, avatarUrl, onClose, onPublished, startWithPoll = false }: {
   name: string; username: string; avatarUrl?: string | null;
   onClose: () => void;
   onPublished: () => void;
+  startWithPoll?: boolean;
 }) {
   const MAX_PHOTOS = 10;
   const [text, setText] = useState("");
@@ -40,6 +43,34 @@ export function QuickPostModal({ name, username, avatarUrl, onClose, onPublished
   const [err, setErr] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLInputElement>(null);
+
+  const [pollActive, setPollActive] = useState(startWithPoll);
+  const [pollQuestion, setPollQuestion] = useState("");
+  const [pollOptions, setPollOptions] = useState<string[]>(["", ""]);
+  const [pollDurationDays, setPollDurationDays] = useState<1 | 3 | 7>(3);
+
+  function togglePoll() {
+    setPollActive((prev) => {
+      const next = !prev;
+      if (next) {
+        setPhotos([]); setPhotoFiles([]);
+        setVideoFile(null); setVideoPreview(null);
+      }
+      return next;
+    });
+  }
+
+  function updatePollOption(i: number, value: string) {
+    setPollOptions((prev) => { const next = [...prev]; next[i] = value; return next; });
+  }
+
+  function addPollOption() {
+    setPollOptions((prev) => (prev.length < MAX_POLL_OPTIONS ? [...prev, ""] : prev));
+  }
+
+  function removePollOption(i: number) {
+    setPollOptions((prev) => (prev.length > 2 ? prev.filter((_, idx) => idx !== i) : prev));
+  }
 
   useScrollLock();
 
@@ -72,7 +103,9 @@ export function QuickPostModal({ name, username, avatarUrl, onClose, onPublished
     setVideoPreview(URL.createObjectURL(file));
   }
 
-  const canPublish = (text.trim().length > 0 || photos.length > 0 || !!videoFile) && !publishing && stage !== "done";
+  const canPublish = pollActive
+    ? pollQuestion.trim().length > 0 && pollOptions.filter((o) => o.trim()).length >= 2 && !publishing && stage !== "done"
+    : (text.trim().length > 0 || photos.length > 0 || !!videoFile) && !publishing && stage !== "done";
 
   async function publish() {
     if (!canPublish) return;
@@ -87,7 +120,7 @@ export function QuickPostModal({ name, username, avatarUrl, onClose, onPublished
       let imageUrls: string[] = [];
       let videoUrl: string | null = null;
 
-      if (photoFiles.length > 0) {
+      if (!pollActive && photoFiles.length > 0) {
         setStage("upload");
         const total = photoFiles.length;
         for (let i = 0; i < total; i++) {
@@ -100,7 +133,7 @@ export function QuickPostModal({ name, username, avatarUrl, onClose, onPublished
         }
         setProgress(100);
       }
-      if (videoFile) {
+      if (!pollActive && videoFile) {
         setStage("upload");
         const result = await uploadToCloudinary(
           videoFile,
@@ -114,7 +147,7 @@ export function QuickPostModal({ name, username, avatarUrl, onClose, onPublished
       setStage("saving");
       const { data: prof } = await supabase.from("profiles").select("username, full_name").eq("id", session.user.id).maybeSingle();
 
-      const { error } = await (supabase as any).from("posts").insert({
+      const payload: Record<string, any> = {
         author_id: session.user.id,
         author_username: prof?.username ?? session.user.email?.split("@")[0] ?? "",
         author_name: prof?.full_name ?? session.user.email ?? "",
@@ -125,7 +158,18 @@ export function QuickPostModal({ name, username, avatarUrl, onClose, onPublished
         image_url: imageUrls[0] ?? null,
         photos: imageUrls.length > 0 ? imageUrls : null,
         video_url: videoUrl,
-      });
+      };
+
+      if (pollActive) {
+        payload.poll = {
+          question: pollQuestion.trim(),
+          options: pollOptions.filter((o) => o.trim()).map((o) => o.trim()),
+        };
+        payload.poll_ends_at = new Date(Date.now() + pollDurationDays * 86400000).toISOString();
+        payload.content = text.trim() || pollQuestion.trim();
+      }
+
+      const { error } = await (supabase as any).from("posts").insert(payload);
 
       if (error) {
         setErr(error.message ?? "Não foi possível publicar. Tenta novamente.");
@@ -196,22 +240,78 @@ export function QuickPostModal({ name, username, avatarUrl, onClose, onPublished
             </div>
           )}
           <textarea autoFocus value={text} onChange={(e) => setText(e.target.value)}
-            placeholder="O que queres publicar?" rows={4}
+            placeholder={pollActive ? "Adiciona um comentário (opcional)" : "O que queres publicar?"} rows={pollActive ? 2 : 4}
             className="w-full outline-none resize-none bg-transparent leading-relaxed text-[15px]"
             style={{ color: "var(--text-primary)" }} />
+
+          {pollActive && (
+            <div className="mt-2 mb-3 p-3 rounded-2xl" style={{ background: "var(--s2)", border: "1px solid var(--border-subtle)" }}>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-bold flex items-center gap-1.5" style={{ color: "#F26B3A" }}>
+                  <BarChart3 className="h-3.5 w-3.5" /> Enquete
+                </span>
+                <button onClick={togglePoll} className="p-1 rounded-full hover:bg-black/5">
+                  <X className="h-3.5 w-3.5" style={{ color: "var(--text-muted)" }} />
+                </button>
+              </div>
+              <input value={pollQuestion} onChange={(e) => setPollQuestion(e.target.value)} maxLength={140}
+                placeholder="Escreve a tua pergunta"
+                className="w-full mb-2 px-3 py-2 rounded-xl outline-none text-sm font-medium bg-transparent"
+                style={{ border: "1px solid var(--border-subtle)", color: "var(--text-primary)" }} />
+              <div className="space-y-2 mb-2">
+                {pollOptions.map((opt, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <input value={opt} onChange={(e) => updatePollOption(i, e.target.value)} maxLength={60}
+                      placeholder={`Opção ${i + 1}`}
+                      className="flex-1 px-3 py-2 rounded-xl outline-none text-sm bg-transparent"
+                      style={{ border: "1px solid var(--border-subtle)", color: "var(--text-primary)" }} />
+                    {pollOptions.length > 2 && (
+                      <button onClick={() => removePollOption(i)} className="p-1.5 rounded-full hover:bg-black/5">
+                        <X className="h-3.5 w-3.5" style={{ color: "var(--text-muted)" }} />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+              {pollOptions.length < MAX_POLL_OPTIONS && (
+                <button onClick={addPollOption}
+                  className="text-xs font-semibold flex items-center gap-1 mb-3" style={{ color: "#F26B3A" }}>
+                  <Plus className="h-3.5 w-3.5" /> Adicionar opção
+                </button>
+              )}
+              <div className="flex items-center gap-1.5">
+                {([1, 3, 7] as const).map((d) => (
+                  <button key={d} onClick={() => setPollDurationDays(d)}
+                    className="px-3 py-1.5 rounded-full text-xs font-semibold border transition"
+                    style={{
+                      borderColor: pollDurationDays === d ? "#F26B3A" : "var(--border-subtle)",
+                      background: pollDurationDays === d ? "#F26B3A18" : "transparent",
+                      color: pollDurationDays === d ? "#F26B3A" : "var(--text-secondary)",
+                    }}>
+                    {d} {d === 1 ? "dia" : "dias"}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="px-4 py-3 border-t" style={{ borderColor: "var(--border-subtle)" }}>
           <div className="flex items-center gap-2 mb-3">
-            <button onClick={() => fileRef.current?.click()}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl transition text-sm font-semibold active:scale-95"
+            <button onClick={() => fileRef.current?.click()} disabled={pollActive}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl transition text-sm font-semibold active:scale-95 disabled:opacity-40"
               style={{ background: "var(--s2)", color: "var(--text-secondary)" }}>
               <Image className="h-4 w-4 text-[#6BA547]" /> Foto{photos.length > 0 ? `s (${photos.length})` : "s"}
             </button>
-            <button onClick={() => videoRef.current?.click()}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl transition text-sm font-semibold active:scale-95"
+            <button onClick={() => videoRef.current?.click()} disabled={pollActive}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl transition text-sm font-semibold active:scale-95 disabled:opacity-40"
               style={{ background: "var(--s2)", color: "var(--text-secondary)" }}>
               <Film className="h-4 w-4 text-[#E94B8A]" /> Vídeo
+            </button>
+            <button onClick={togglePoll}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl transition text-sm font-semibold active:scale-95"
+              style={{ background: pollActive ? "#F26B3A18" : "var(--s2)", color: pollActive ? "#F26B3A" : "var(--text-secondary)" }}>
+              <BarChart3 className="h-4 w-4" style={{ color: "#F26B3A" }} /> Enquete
             </button>
           </div>
           <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={pickPhoto} />
@@ -254,13 +354,14 @@ export function ComposeBox({ name, username, avatarUrl, onPublished }: {
   onPublished: () => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [openWithPoll, setOpenWithPoll] = useState(false);
   const navigate = useNavigate();
 
   const quickActions = [
-    { label: "Foto", Icon: Image, color: "#6BA547", onClick: () => setOpen(true) },
-    { label: "Vídeo", Icon: Film, color: "#E94B8A", onClick: () => setOpen(true) },
+    { label: "Foto", Icon: Image, color: "#6BA547", onClick: () => { setOpenWithPoll(false); setOpen(true); } },
+    { label: "Vídeo", Icon: Film, color: "#E94B8A", onClick: () => { setOpenWithPoll(false); setOpen(true); } },
     { label: "Drop", Icon: Droplet, color: "#5B3FCF", onClick: () => navigate({ to: "/drops" }) },
-    { label: "Enquete", Icon: BarChart3, color: "#F26B3A", onClick: () => { window.location.href = "/studio/criar?kind=poll"; } },
+    { label: "Enquete", Icon: BarChart3, color: "#F26B3A", onClick: () => { setOpenWithPoll(true); setOpen(true); } },
   ];
 
   return (
@@ -286,8 +387,9 @@ export function ComposeBox({ name, username, avatarUrl, onPublished }: {
       {open && (
         <QuickPostModal
           name={name} username={username} avatarUrl={avatarUrl}
-          onClose={() => setOpen(false)}
+          onClose={() => { setOpen(false); setOpenWithPoll(false); }}
           onPublished={onPublished}
+          startWithPoll={openWithPoll}
         />
       )}
     </>
