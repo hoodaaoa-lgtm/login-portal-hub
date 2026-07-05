@@ -320,7 +320,7 @@ function CanalPage() {
     // A tabela "follows" exige sempre target_username (coluna obrigatória) —
     // usamos o handle do canal como identificador, sem isto o insert falha
     // silenciosamente e o botão parece não fazer nada.
-    else await (supabase as any).from("follows").insert({ follower_id: myId, following_id: channel.id, target_username: channel.handle });
+    else await (supabase as any).from("follows").upsert({ follower_id: myId, following_id: channel.id, target_username: channel.handle }, { onConflict: "follower_id,target_username", ignoreDuplicates: true });
   }
 
   const isOwner = myId === channel?.owner_id;

@@ -198,7 +198,7 @@ function ExplorePage() {
       } else {
         // A tabela "follows" exige sempre target_username (coluna obrigatória)
         // — usamos o handle do canal, sem isto o insert falha silenciosamente.
-        const { error } = await db.from("follows").insert({ follower_id: myId, following_id: channelId, target_username: channelHandle });
+        const { error } = await db.from("follows").upsert({ follower_id: myId, following_id: channelId, target_username: channelHandle }, { onConflict: "follower_id,target_username", ignoreDuplicates: true });
         if (error) throw error;
         toast.success("A seguir o canal!");
       }
@@ -318,7 +318,7 @@ function ExplorePage() {
         if (error) throw error;
         toast.success(`Deixaste de seguir @${username}`);
       } else {
-        const { error } = await db.from("follows").insert({ follower_id: myId, target_username: username });
+        const { error } = await db.from("follows").upsert({ follower_id: myId, target_username: username }, { onConflict: "follower_id,target_username", ignoreDuplicates: true });
         if (error) throw error;
         toast.success(`Estás a seguir @${username}!`);
       }

@@ -2715,7 +2715,7 @@ function PublicProfile({ profile, email }: { profile: Profile | null; email: str
       setFollowing(false);
       setFollowerCount((n) => Math.max(0, n - 1));
     } else {
-      await supabase.from("follows").insert({ follower_id: myUserId, target_username: targetUsername });
+      await supabase.from("follows").upsert({ follower_id: myUserId, target_username: targetUsername } as any, { onConflict: "follower_id,target_username", ignoreDuplicates: true });
       setFollowing(true);
       setFollowerCount((n) => n + 1);
     }

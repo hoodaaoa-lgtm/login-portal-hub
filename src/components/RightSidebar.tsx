@@ -38,11 +38,11 @@ export function RightSidebar() {
     if (!session) return;
     // A tabela "follows" exige sempre target_username (coluna obrigatória) —
     // sem isto o insert falha silenciosamente e o botão parece não fazer nada.
-    const { error } = await (supabase as any).from("follows").insert({
+    const { error } = await (supabase as any).from("follows").upsert({
       follower_id: session.user.id,
       following_id: userId,
       target_username: username,
-    });
+    }, { onConflict: "follower_id,target_username", ignoreDuplicates: true });
     if (error) { console.error("Erro ao seguir:", error); return; }
     setSuggestions(p => p.filter(u => u.id !== userId));
   }

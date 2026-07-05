@@ -172,7 +172,7 @@ export function GlobalStoryViewer() {
       await supabase.from("follows").delete().eq("follower_id", myId).eq("target_username", target.username);
       setFollowing(false);
     } else {
-      await supabase.from("follows").insert({ follower_id: myId, target_username: target.username } as any);
+      await supabase.from("follows").upsert({ follower_id: myId, target_username: target.username } as any, { onConflict: "follower_id,target_username", ignoreDuplicates: true });
       setFollowing(true);
     }
   }

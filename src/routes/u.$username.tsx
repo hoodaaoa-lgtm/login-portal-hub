@@ -479,7 +479,7 @@ function FollowListModal({ userId, kind, onClose }:
     setFollowing(prev=>{ const s=new Set(prev); isF?s.delete(targetId):s.add(targetId); return s; });
     const db=supabase as any;
     if (isF) await db.from("follows").delete().eq("follower_id",myId).eq("target_username",targetUsername);
-    else await db.from("follows").insert({follower_id:myId,target_username:targetUsername});
+    else await db.from("follows").upsert({follower_id:myId,target_username:targetUsername}, { onConflict: "follower_id,target_username", ignoreDuplicates: true });
   }
 
   return (
@@ -862,7 +862,7 @@ function UserProfilePage() {
     const db=supabase as any;
     try {
       if (!next) await db.from("follows").delete().eq("follower_id",myId).eq("target_username",username);
-      else await db.from("follows").insert({follower_id:myId,target_username:username});
+      else await db.from("follows").upsert({follower_id:myId,target_username:username}, { onConflict: "follower_id,target_username", ignoreDuplicates: true });
       qc.invalidateQueries({queryKey:["profileStats2",username,profileId,myId]});
     } catch(_){ setFollowOverride(!next); setFollowerDelta(d=>d-(next?1:-1)); }
   }

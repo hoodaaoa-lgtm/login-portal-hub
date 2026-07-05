@@ -676,11 +676,11 @@ function WhoToFollowCard({ myUserId, onDismiss, offset = 0 }: { myUserId: string
     } else {
       // A tabela "follows" exige sempre target_username (coluna obrigatória) —
       // sem isto o insert falha silenciosamente e o botão parece não fazer nada.
-      const { error } = await (supabase as any).from("follows").insert({
+      const { error } = await (supabase as any).from("follows").upsert({
         follower_id: myUserId,
         following_id: userId,
         target_username: username,
-      });
+      }, { onConflict: "follower_id,target_username", ignoreDuplicates: true });
       if (error) { console.error("Erro ao seguir:", error); return; }
       setFollowing(prev => new Set([...prev, userId]));
     }
@@ -1131,7 +1131,7 @@ function PostCard({ p }: { p: any }) {
       await supabase.from("follows").delete().eq("follower_id", session.user.id).eq("following_id", p.author_id);
       setFollowing(false);
     } else {
-      await supabase.from("follows").insert({ follower_id: session.user.id, following_id: p.author_id, target_username: p.author_username });
+      await supabase.from("follows").upsert({ follower_id: session.user.id, following_id: p.author_id, target_username: p.author_username } as any, { onConflict: "follower_id,target_username", ignoreDuplicates: true });
       setFollowing(true);
     }
   }
