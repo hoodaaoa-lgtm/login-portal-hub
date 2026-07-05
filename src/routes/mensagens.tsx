@@ -1857,7 +1857,7 @@ function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit
   return (
     <div className={`flex ${isMe ? "justify-end" : "justify-start"} group px-1`}>
       <div
-        className="max-w-[75%] relative"
+        className="max-w-[82%] sm:max-w-[75%] relative"
         onTouchStart={handleBubbleTouchStart}
         onTouchMove={handleBubbleTouchMove}
         onTouchEnd={handleBubbleTouchEnd}
@@ -3384,7 +3384,7 @@ function ChatPanel({ myId, contact, onBack }: {
 
       {/* ── MESSAGES ── */}
       <div className="flex-1 overflow-y-auto scroll-smooth" onScroll={onScroll}>
-        <div className="flex flex-col justify-end min-h-full px-2 py-4 space-y-1">
+        <div className="flex flex-col justify-end min-h-full px-3 py-3 space-y-1.5">
         {msgs.map(m => {
           const merged = { ...m, ...(localOverrides[m.id] ?? {}) } as Message & { deletedForMe?: boolean };
           const isMe = merged.senderId === myId;
@@ -3657,7 +3657,7 @@ function ChatPanel({ myId, contact, onBack }: {
 
       {/* ── TYPING INDICATOR ── */}
       {contactTyping && (
-        <div className="flex items-center gap-2 px-4 py-1.5 shrink-0"
+        <div className="flex items-center gap-2 px-3 py-1.5 shrink-0"
           style={{ background: "var(--s0)" }}>
           <div className="flex items-center gap-1">
             {[0,1,2].map(i => (
@@ -3693,8 +3693,8 @@ function ChatPanel({ myId, contact, onBack }: {
         </div>
       ) : (
 
-      <div className="flex items-end gap-2 px-2 py-2 shrink-0"
-        style={{ background:"var(--s0,#f0ece8)" }}>
+      <div className="flex items-end gap-2 px-3 py-2 shrink-0"
+        style={{ background:"var(--s0,#f0ece8)", paddingBottom: "calc(0.5rem + env(safe-area-inset-bottom, 0px))" }}>
         {/* Botão anexo */}
         <button onClick={() => { setShowAttach(v=>!v); setShowEmoji(false); }}
           className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition active:scale-90 mb-0.5"
