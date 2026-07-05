@@ -60,6 +60,23 @@ type AdminMsg = {
   created_at: string;
 };
 
+/** Nome "Hooda" com as mesmas cores letra-a-letra usadas em todo o site
+ * (ver HoodaLogo.tsx) — versão compacta para caber em cabeçalhos do admin. */
+const HOODA_LETTERS = [
+  { c: "H", col: "#5B3FCF" },
+  { c: "o", col: "#F26B3A" },
+  { c: "o", col: "#1FAFA6" },
+  { c: "d", col: "#6BA547" },
+  { c: "a", col: "#E94B8A" },
+];
+function HoodaWordmark({ size = 18 }: { size?: number }) {
+  return (
+    <span style={{ display: "inline-flex", fontWeight: 900, fontSize: size, lineHeight: 1, fontFamily: '"Nunito","Quicksand",system-ui,sans-serif' }}>
+      {HOODA_LETTERS.map((l, i) => <span key={i} style={{ color: l.col }}>{l.c}</span>)}
+    </span>
+  );
+}
+
 /** Selo azul de verificado — igual ao usado ao lado do nome "Hooda Oficial". */
 function VerifiedBadge({ size = 14 }: { size?: number }) {
   return (
@@ -144,7 +161,7 @@ function AdminPage() {
             <Lock className="h-7 w-7 text-white" />
           </div>
           <div className="text-center">
-            <p className="text-white font-extrabold text-lg">Painel Hooda Oficial</p>
+            <p className="flex items-center justify-center gap-1.5"><HoodaWordmark size={22} /><span className="text-white/70 font-extrabold text-lg">Oficial</span></p>
             <p className="text-white/45 text-xs mt-1">Introduz a palavra-passe de acesso</p>
           </div>
           <input
@@ -635,8 +652,8 @@ function AdminDashboard({ adminId }: { adminId: string }) {
               <img src={LOGO} alt="" className="w-full h-full object-contain p-1" />
             </div>
             <div>
-              <p className="text-white font-extrabold text-sm leading-tight flex items-center gap-1">
-                Hooda Oficial <VerifiedBadge />
+              <p className="font-extrabold text-sm leading-tight flex items-center gap-1.5">
+                <HoodaWordmark size={15} /><span className="text-white/85">Oficial</span> <VerifiedBadge />
               </p>
               <p className="text-white/70 text-[11px] leading-tight">Painel de mensagens</p>
             </div>
@@ -729,8 +746,8 @@ function AdminDashboard({ adminId }: { adminId: string }) {
                   <div key={m.id} className={`flex ${isAdmin ? "justify-end" : "justify-start"}`}>
                     <div className="max-w-[75%]">
                       {isAdmin && (
-                        <p className="flex items-center gap-1 text-[11px] font-bold mb-1 justify-end" style={{ color: "#8f78e8" }}>
-                          Hooda Oficial <VerifiedBadge size={11} />
+                        <p className="flex items-center gap-1 text-[11px] font-bold mb-1 justify-end">
+                          <HoodaWordmark size={11} /><span style={{ color: "#8f78e8" }}>Oficial</span> <VerifiedBadge size={11} />
                         </p>
                       )}
                       <div className="rounded-2xl px-3.5 py-2 text-sm leading-relaxed"
