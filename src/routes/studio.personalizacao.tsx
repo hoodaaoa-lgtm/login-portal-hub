@@ -11,6 +11,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Slider } from "@/components/ui/slider";
 import { toast } from "sonner";
 import { ImagePlus, Loader2, Save } from "lucide-react";
+import { SIGNATURE_FONTS } from "@/components/HoodaPlayer";
+
+const SIGNATURE_FONT_LABELS: Record<string, string> = {
+  padrao: "Padrão",
+  serifada: "Serifada",
+  moderna: "Moderna",
+  manuscrita: "Manuscrita",
+  condensada: "Condensada",
+  maquina: "Máquina de Escrever",
+};
 
 export const Route = createFileRoute("/studio/personalizacao")({
   component: StudioPersonalizacao,
@@ -31,6 +41,7 @@ function StudioPersonalizacao() {
   const [signatureEnabled, setSignatureEnabled] = useState(false);
   const [signatureStyle, setSignatureStyle] = useState("medium");
   const [signaturePosition, setSignaturePosition] = useState("bottom-left");
+  const [signatureFont, setSignatureFont] = useState("padrao");
 
   const [uploadingLogo, setUploadingLogo] = useState(false);
 
@@ -48,6 +59,7 @@ function StudioPersonalizacao() {
       setSignatureEnabled(c.signature_enabled ?? false);
       setSignatureStyle(c.signature_style ?? "medium");
       setSignaturePosition(c.signature_position ?? "bottom-left");
+      setSignatureFont(c.signature_font ?? "padrao");
     }
   }, [channel]);
 
@@ -81,6 +93,7 @@ function StudioPersonalizacao() {
       signature_enabled: signatureEnabled,
       signature_style: signatureStyle,
       signature_position: signaturePosition,
+      signature_font: signatureFont,
     });
   };
 
@@ -246,6 +259,22 @@ function StudioPersonalizacao() {
           {signatureEnabled && (
             <div className="space-y-5 animate-in slide-in-from-top-2">
               
+              <div className="space-y-2">
+                <Label>Tipo de Letra</Label>
+                <Select value={signatureFont} onValueChange={setSignatureFont}>
+                  <SelectTrigger className="rounded-xl">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.keys(SIGNATURE_FONTS).map((key) => (
+                      <SelectItem key={key} value={key} style={{ fontFamily: SIGNATURE_FONTS[key] }}>
+                        {SIGNATURE_FONT_LABELS[key] ?? key}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="space-y-2">
                 <Label>Estilo</Label>
                 <Select value={signatureStyle} onValueChange={setSignatureStyle}>

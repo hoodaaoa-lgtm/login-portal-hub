@@ -221,6 +221,7 @@ export type Database = {
           signature_enabled: boolean | null
           signature_position: string | null
           signature_style: string | null
+          signature_font: string | null
           updated_at: string
           watermark_enabled: boolean | null
           watermark_image_url: string | null
@@ -244,6 +245,7 @@ export type Database = {
           signature_enabled?: boolean | null
           signature_position?: string | null
           signature_style?: string | null
+          signature_font?: string | null
           updated_at?: string
           watermark_enabled?: boolean | null
           watermark_image_url?: string | null
@@ -267,6 +269,7 @@ export type Database = {
           signature_enabled?: boolean | null
           signature_position?: string | null
           signature_style?: string | null
+          signature_font?: string | null
           updated_at?: string
           watermark_enabled?: boolean | null
           watermark_image_url?: string | null

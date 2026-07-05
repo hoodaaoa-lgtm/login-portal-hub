@@ -60,7 +60,19 @@ export interface SignatureConfig {
   position: string;
   channelName: string;
   handle?: string;
+  font?: string;
 }
+
+/** Mapa de fontes disponíveis para a assinatura — todas fontes de sistema,
+ * sem depender de carregar webfonts externas (evita erros/flash de fonte). */
+export const SIGNATURE_FONTS: Record<string, string> = {
+  padrao: "inherit",
+  serifada: "Georgia, 'Times New Roman', serif",
+  moderna: "'Trebuchet MS', 'Segoe UI', sans-serif",
+  manuscrita: "'Brush Script MT', 'Segoe Script', cursive",
+  condensada: "'Arial Narrow', 'Helvetica Condensed', sans-serif",
+  maquina: "'Courier New', Courier, monospace",
+};
 
 interface HoodaPlayerProps {
   src: string;
@@ -609,6 +621,7 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
                 ? "scale-125 origin-left font-extrabold"
                 : "font-bold"
           }`}
+          style={{ fontFamily: SIGNATURE_FONTS[signature.font ?? "padrao"] ?? "inherit" }}
         >
           <span className="text-white drop-shadow-md select-none tracking-tight">
             {signature.channelName}{" "}
