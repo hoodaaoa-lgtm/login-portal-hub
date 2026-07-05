@@ -187,8 +187,8 @@ function SinglePostPage() {
 
               {/* Conteúdo */}
               {post.video_url && (
-                <div className="px-4 pb-3">
-                  <FeedVideoPlayer src={post.video_url} poster={post.photo_url || undefined} postId={post.id} kind="video" rounded="rounded-2xl" />
+                <div className="pb-3">
+                  <FeedVideoPlayer src={post.video_url} poster={post.photo_url || undefined} postId={post.id} kind="video" rounded="rounded-none" />
                 </div>
               )}
               {post.photo_url && !post.video_url && (
@@ -259,8 +259,8 @@ function SinglePostPage() {
           body={
             <>
               {post.video_url && (
-                <div className="px-4 pb-3">
-                  <FeedVideoPlayer src={post.video_url} poster={post.photo_url || undefined} postId={post.id} kind="video" rounded="rounded-2xl" />
+                <div className="pb-3">
+                  <FeedVideoPlayer src={post.video_url} poster={post.photo_url || undefined} postId={post.id} kind="video" rounded="rounded-none" />
                 </div>
               )}
               {post.photo_url && !post.video_url && <img src={post.photo_url} alt="" className="w-full block" />}

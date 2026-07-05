@@ -127,7 +127,7 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
   // horizontais continuam a 100% da largura, como antes. ───
   const [containerWidth, setContainerWidth] = useState<number | null>(null);
   const [viewportHeight, setViewportHeight] = useState<number>(() =>
-    typeof window !== "undefined" ? window.innerHeight : 800,
+    typeof window !== "undefined" ? (window.visualViewport?.height || window.innerHeight) : 800,
   );
   const [isMobile, setIsMobile] = useState<boolean>(() =>
     typeof window !== "undefined" ? window.innerWidth < MOBILE_BREAKPOINT_PX : false,
@@ -161,25 +161,31 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
   }, []);
 
   useEffect(() => {
+    const getHeight = () =>
+      (typeof window !== "undefined" && window.visualViewport?.height) || window.innerHeight;
     const onResize = () => {
-      setViewportHeight(window.innerHeight);
+      setViewportHeight(getHeight());
       setIsMobile(window.innerWidth < MOBILE_BREAKPOINT_PX);
     };
     window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
+    window.visualViewport?.addEventListener("resize", onResize);
+    return () => {
+      window.removeEventListener("resize", onResize);
+      window.visualViewport?.removeEventListener("resize", onResize);
+    };
   }, []);
 
   const ratioNum = (() => {
     const [w, h] = effectiveRatio.split("/").map(Number);
     return w > 0 && h > 0 ? w / h : 16 / 9;
   })();
-  // No telemóvel deixamos o vídeo usar bem mais altura do ecrã (até 85%,
-  // teto de 780px) — importante para vídeos verticais, que no mobile
-  // devem parecer-se com o feed do Instagram/TikTok, quase a altura toda.
+  // No telemóvel deixamos o vídeo usar quase todo o ecrã (até 92%, teto
+  // de 900px) — é isto que faz vídeos verticais (Stories/Reels) parecerem
+  // grandes e imersivos em vez de "encolhidos", igual ao Instagram/TikTok.
   // No desktop mantém-se mais contido (75%, teto de 650px) para não
   // dominar um ecrã largo.
   const maxHeightPx = isMobile
-    ? Math.min(viewportHeight * 0.85, 780)
+    ? Math.min(viewportHeight * 0.92, 900)
     : Math.min(viewportHeight * 0.75, 650);
   const heightAtFullWidth = containerWidth ? containerWidth / ratioNum : null;
   const isHeightConstrained = !!heightAtFullWidth && heightAtFullWidth > maxHeightPx;
@@ -352,7 +358,7 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
       ref={(el) => {
         (wrapperRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
       }}
-      className={`overflow-hidden bg-black select-none ${rounded} ${className} ${isHeightConstrained ? "" : "w-full"}`}
+      className={`overflow-hidden bg-black select-none ${rounded} ${className} ${isHeightConstrained ? "mx-auto" : "w-full"}`}
       style={isHeightConstrained ? { width: `${boxWidthPx}px`, maxWidth: "100%" } : undefined}
       onMouseMove={() => {
         if (!isMobile) resetTimer();

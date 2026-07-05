@@ -1216,8 +1216,8 @@ function PostCard({ p }: { p: any }) {
 
       {/* Vídeo */}
       {p.video && (
-        <div className="px-4 pb-3">
-          <FeedVideoPlayer src={p.video} poster={p.video_thumb || p.photo || undefined} postId={p.id} kind="video" rounded="rounded-2xl" />
+        <div className="pb-3">
+          <FeedVideoPlayer src={p.video} poster={p.video_thumb || p.photo || undefined} postId={p.id} kind="video" rounded="rounded-none" />
         </div>
       )}
 
@@ -1333,8 +1333,8 @@ function PostCard({ p }: { p: any }) {
           body={
             <>
               {p.video && (
-                <div className="px-4 pb-3">
-                  <FeedVideoPlayer src={p.video} poster={p.video_thumb || p.photo || undefined} postId={p.id} kind="video" rounded="rounded-2xl" />
+                <div className="pb-3">
+                  <FeedVideoPlayer src={p.video} poster={p.video_thumb || p.photo || undefined} postId={p.id} kind="video" rounded="rounded-none" />
                 </div>
               )}
               {p.text && !p.video && (p.bg_color
