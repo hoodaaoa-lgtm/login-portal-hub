@@ -4025,7 +4025,7 @@ function MensagensPage() {
         Promise.resolve({ data: null, error: null }),
         // última mensagem de TODAS as conversas de uma só vez
         db.from("messages")
-          .select("conversation_id,content,created_at,sender_id,status,message_type")
+          .select("id,conversation_id,content,created_at,sender_id,status,message_type,deleted_for_all")
           .in("conversation_id", convIds)
           .order("created_at", { ascending: false }),
       ]);
@@ -4043,11 +4043,23 @@ function MensagensPage() {
 
       const allMsgs: any[] = allMsgsResult.data ?? [];
 
-      // Agrupar mensagens por conversa (já vêm ordenadas desc, logo [0] é a última)
+      // Agrupar mensagens por conversa (já vêm ordenadas desc, logo [0] é a última) —
+      // ignora mensagens que eu tenha "eliminado para mim" neste dispositivo,
+      // para a pré-visualização passar para a mensagem anterior, tal como no chat.
       const lastMsgMap: Record<string, any> = {};
       const unreadMap: Record<string, number> = {};
+      const hiddenCache: Record<string, Set<string>> = {};
+      function isHiddenForMe(convId: string, msgId: string): boolean {
+        if (!(convId in hiddenCache)) {
+          try {
+            const raw = localStorage.getItem(`hooda_dm_hidden_${convId}`);
+            hiddenCache[convId] = new Set(raw ? JSON.parse(raw) : []);
+          } catch { hiddenCache[convId] = new Set(); }
+        }
+        return hiddenCache[convId].has(msgId);
+      }
       for (const msg of allMsgs) {
-        if (!lastMsgMap[msg.conversation_id]) {
+        if (!lastMsgMap[msg.conversation_id] && !isHiddenForMe(msg.conversation_id, msg.id)) {
           lastMsgMap[msg.conversation_id] = msg;
         }
         if (msg.sender_id !== uid && msg.status === "sent") {
@@ -4078,6 +4090,7 @@ function MensagensPage() {
           conversationId: convId,
           lastMsg: (() => {
             if (!lastMsg) return "";
+            if (lastMsg.deleted_for_all) return "🚫 Mensagem eliminada";
             const c = lastMsg.content || "";
             if (c.startsWith("e2ee:")) return "🔒 Mensagem";
             const mt = lastMsg.message_type;
@@ -4243,6 +4256,14 @@ function MensagensPage() {
             },
           }
         );
+      })
+      .on("postgres_changes", {
+        event: "UPDATE", schema: "public", table: "messages",
+      }, (_payload: any) => {
+        // Mensagem editada, marcada como lida, ou eliminada para todos —
+        // atualiza a pré-visualização na lista de conversas sem precisar
+        // de dar refresh à página.
+        contactsQuery.refetch();
       })
       .subscribe();
 
