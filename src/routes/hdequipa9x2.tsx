@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { uploadImageToCloudinary } from "@/lib/cloudinary";
 import { toast } from "sonner";
 import {
   Lock, Search, Send, LogOut, Loader,
@@ -85,6 +86,8 @@ type AdminMsg = {
   sender_id: string;
   content: string;
   created_at: string;
+  message_type?: string | null;
+  media_url?: string | null;
 };
 
 /** Nome "Hooda" com as mesmas cores letra-a-letra usadas em todo o site
@@ -232,6 +235,8 @@ function AdminDashboard({ adminId }: { adminId: string }) {
   const [loadingConv, setLoadingConv] = useState(false);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
+  const [uploadingImg, setUploadingImg] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -445,6 +450,21 @@ function AdminDashboard({ adminId }: { adminId: string }) {
     toast.success(next ? `@${u.username} agora está verificado.` : `Selo removido de @${u.username}.`);
   }
 
+  /** Elimina a conta por completo (auth.users + tudo em cascata: perfil,
+   * publicações, canais, mensagens, etc.) — ação irreversível. */
+  async function deleteAccount(u: UserRow) {
+    const confirmText = window.prompt(
+      `Isto elimina a conta @${u.username} PARA SEMPRE (perfil, publicações, canais, mensagens — tudo).\n\nEscreve o username "${u.username}" para confirmar:`
+    );
+    if (confirmText === null) return;
+    if (confirmText.trim() !== u.username) { toast.error("Username não confere. Nada foi eliminado."); return; }
+    const { error } = await db.rpc("admin_delete_account", { target_id: u.id });
+    if (error) { toast.error("Não foi possível eliminar a conta: " + (error.message ?? "erro desconhecido")); return; }
+    setUsers((prev) => prev.filter((x) => x.id !== u.id));
+    if (selected?.id === u.id) { setSelected(null); setConvId(""); setMsgs([]); }
+    toast.success(`Conta @${u.username} eliminada permanentemente.`);
+  }
+
   // ── Lista de utilizadores ──
   useEffect(() => {
     (async () => {
@@ -521,7 +541,7 @@ function AdminDashboard({ adminId }: { adminId: string }) {
       setConvId(foundId);
       const { data: history } = await db
         .from("messages")
-        .select("id,sender_id,content,created_at")
+        .select("id,sender_id,content,created_at,message_type,media_url")
         .eq("conversation_id", foundId)
         .order("created_at", { ascending: true });
       setMsgs((history ?? []).filter((m: AdminMsg) => !m.content?.startsWith("e2ee:")));
@@ -589,6 +609,36 @@ function AdminDashboard({ adminId }: { adminId: string }) {
       setMsgs(prev => prev.filter(m => m.id !== tempId));
     } finally {
       setSending(false);
+    }
+  }
+
+  /** Envia uma foto como "Hooda Oficial" na conversa aberta. */
+  async function sendOfficialImage(file: File) {
+    if (!selected || !convId || uploadingImg) return;
+    if (!file.type.startsWith("image/")) { toast.error("Escolhe um ficheiro de imagem."); return; }
+    setUploadingImg(true);
+    const tempId = `temp-img-${Date.now()}`;
+    const localPreview = URL.createObjectURL(file);
+    setMsgs(prev => [...prev, { id: tempId, sender_id: adminId, content: "", created_at: new Date().toISOString(), message_type: "image", media_url: localPreview }]);
+    try {
+      const { url } = await uploadImageToCloudinary(file, `hooda/messages/images/${adminId}`);
+      const { data, error } = await db.from("messages").insert({
+        conversation_id: convId,
+        sender_id: adminId,
+        receiver_id: selected.id,
+        content: "",
+        status: "sent",
+        message_type: "image",
+        media_url: url,
+      }).select("id").single();
+      if (error) throw error;
+      setMsgs(prev => prev.map(m => m.id === tempId ? { ...m, id: data.id, media_url: url } : m));
+    } catch (err: any) {
+      console.error("[admin] erro ao enviar imagem:", err);
+      toast.error("Erro ao enviar imagem: " + (err?.message ?? "desconhecido"));
+      setMsgs(prev => prev.filter(m => m.id !== tempId));
+    } finally {
+      setUploadingImg(false);
     }
   }
 
@@ -779,6 +829,11 @@ function AdminDashboard({ adminId }: { adminId: string }) {
                         className="p-2 rounded-full transition active:scale-90"
                         style={{ background: u.is_banned ? "rgba(239,68,68,0.22)" : "rgba(255,255,255,0.08)" }}>
                         <Ban className="h-4 w-4" style={{ color: u.is_banned ? "#F87171" : "rgba(255,255,255,0.5)" }} />
+                      </button>
+                      <button onClick={() => deleteAccount(u)} title="Eliminar conta permanentemente"
+                        className="p-2 rounded-full transition active:scale-90"
+                        style={{ background: "rgba(239,68,68,0.10)" }}>
+                        <Trash2 className="h-4 w-4" style={{ color: "#F87171" }} />
                       </button>
                     </div>
                   </div>
@@ -1024,6 +1079,7 @@ function AdminDashboard({ adminId }: { adminId: string }) {
               )}
               {msgs.map(m => {
                 const isAdmin = m.sender_id === adminId;
+                const isImage = m.message_type === "image" && m.media_url;
                 return (
                   <div key={m.id} className={`flex ${isAdmin ? "justify-end" : "justify-start"}`}>
                     <div className="max-w-[75%]">
@@ -1032,15 +1088,25 @@ function AdminDashboard({ adminId }: { adminId: string }) {
                           <HoodaWordmark size={11} /><span style={{ color: "#8f78e8" }}>Oficial</span> <VerifiedBadge size={11} />
                         </p>
                       )}
-                      <div className="rounded-2xl px-3.5 py-2 text-sm leading-relaxed"
-                        style={{
-                          background: isAdmin ? "linear-gradient(135deg,#5B3FCF,#7B5CE8)" : "rgba(255,255,255,0.08)",
-                          color: "white",
-                          borderBottomRightRadius: isAdmin ? 4 : undefined,
-                          borderBottomLeftRadius: !isAdmin ? 4 : undefined,
-                        }}>
-                        {m.content}
-                      </div>
+                      {isImage ? (
+                        <img
+                          src={m.media_url ?? ""}
+                          alt=""
+                          onClick={() => window.open(m.media_url ?? "", "_blank")}
+                          className="rounded-2xl max-w-full max-h-72 object-cover cursor-zoom-in"
+                          style={{ borderBottomRightRadius: isAdmin ? 4 : undefined, borderBottomLeftRadius: !isAdmin ? 4 : undefined }}
+                        />
+                      ) : (
+                        <div className="rounded-2xl px-3.5 py-2 text-sm leading-relaxed"
+                          style={{
+                            background: isAdmin ? "linear-gradient(135deg,#5B3FCF,#7B5CE8)" : "rgba(255,255,255,0.08)",
+                            color: "white",
+                            borderBottomRightRadius: isAdmin ? 4 : undefined,
+                            borderBottomLeftRadius: !isAdmin ? 4 : undefined,
+                          }}>
+                          {m.content}
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
@@ -1049,6 +1115,19 @@ function AdminDashboard({ adminId }: { adminId: string }) {
             </div>
 
             <div className="flex items-end gap-2 px-3 py-3 shrink-0" style={{ background: "#1a1428" }}>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) sendOfficialImage(f); e.target.value = ""; }}
+              />
+              <button onClick={() => fileInputRef.current?.click()} disabled={uploadingImg}
+                title="Enviar foto"
+                className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 transition active:scale-90 disabled:opacity-40"
+                style={{ background: "rgba(255,255,255,0.08)" }}>
+                {uploadingImg ? <Loader className="h-4 w-4 animate-spin text-white/70" /> : <ImageIcon className="h-4 w-4 text-white/70" />}
+              </button>
               <textarea
                 value={input}
                 onChange={e => setInput(e.target.value)}
