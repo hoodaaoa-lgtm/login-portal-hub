@@ -443,7 +443,7 @@ function ForwardModal({ post, myId, onClose }: { post: any; myId: string; onClos
 
 /* ─── VideoPlayer — usa o HoodaPlayer oficial (mesmo player do feed/perfil/drops) ─── */
 function VideoPlayer({ src, poster, postId, kind }: { src:string; poster?:string; postId?:string; kind?:string }) {
-  return <FeedVideoPlayer src={src} poster={poster} postId={postId} kind={kind} rounded="rounded-none" />;
+  return <FeedVideoPlayer src={src} poster={poster} postId={postId} kind={kind} rounded="rounded-2xl" />;
 }
 
 /* ─── Modal de Seguidores/Seguindo ─── */
@@ -1162,7 +1162,7 @@ function UserProfilePage() {
                         onContextMenu={e=>e.preventDefault()}/>
                     )}
                     {post.videoUrl&&!post.photo&&(
-                      <div className="pb-3">
+                      <div className="pb-3 px-4">
                         <VideoPlayer src={post.videoUrl} postId={post.id} kind="video"/>
                       </div>
                     )}

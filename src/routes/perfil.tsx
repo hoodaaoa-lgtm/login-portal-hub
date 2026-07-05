@@ -356,8 +356,8 @@ function PostCard({
 
       {/* Media */}
       {post.videoUrl && (
-        <div className="pb-3">
-          <FeedVideoPlayer src={post.videoUrl} postId={post.id} kind="video" rounded="rounded-none" />
+        <div className="pb-3 px-4">
+          <FeedVideoPlayer src={post.videoUrl} postId={post.id} kind="video" rounded="rounded-2xl" />
         </div>
       )}
       {(post as any).kind === "clip" && (post as any).clipVideoId && (
@@ -453,8 +453,8 @@ function PostCard({
           body={
             <>
               {post.videoUrl && (
-                <div className="w-full pb-3">
-                  <FeedVideoPlayer src={post.videoUrl} postId={post.id} kind="video" rounded="rounded-none" />
+                <div className="w-full pb-3 px-4">
+                  <FeedVideoPlayer src={post.videoUrl} postId={post.id} kind="video" rounded="rounded-2xl" />
                 </div>
               )}
               {post.photo && !post.videoUrl && <img src={post.photo} alt="" className="w-full" style={{ display: "block" }} />}
