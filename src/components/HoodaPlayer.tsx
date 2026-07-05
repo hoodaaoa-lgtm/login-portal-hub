@@ -115,11 +115,47 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
   // para minimizar qualquer salto de layout.
   const [naturalRatio, setNaturalRatio] = useState<string | null>(null);
   const effectiveRatio = naturalRatio ?? (aspectRatio !== "auto" ? aspectRatio : "16/9");
+
+  // ─── Largura real da caixa, igual ao X: quando o vídeo é vertical e a
+  // altura bateria no limite (MAX_HEIGHT_CSS), a CAIXA ENCOLHE EM LARGURA
+  // para manter a proporção exata (sem barra preta lateral) — em vez de
+  // ficar esticada a 100% da largura do post com letterbox. Vídeos
+  // horizontais continuam a 100% da largura, como antes. ───
+  const [containerWidth, setContainerWidth] = useState<number | null>(null);
+  const [viewportHeight, setViewportHeight] = useState<number>(() =>
+    typeof window !== "undefined" ? window.innerHeight : 800,
+  );
+
+  useEffect(() => {
+    const el = wrapperRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const update = () => setContainerWidth(el.clientWidth);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const onResize = () => setViewportHeight(window.innerHeight);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  const ratioNum = (() => {
+    const [w, h] = effectiveRatio.split("/").map(Number);
+    return w > 0 && h > 0 ? w / h : 16 / 9;
+  })();
+  const maxHeightPx = Math.min(viewportHeight * 0.75, 650);
+  const heightAtFullWidth = containerWidth ? containerWidth / ratioNum : null;
+  const isHeightConstrained = !!heightAtFullWidth && heightAtFullWidth > maxHeightPx;
+  const boxWidthPx = isHeightConstrained ? maxHeightPx * ratioNum : null;
+
   // object-fit: SEMPRE "contain". Nunca cortamos nem deformamos o vídeo —
   // a caixa segue a proporção real dele (naturalRatio para vídeos normais,
   // 9/16 fixo para shorts) até ao limite de altura (MAX_HEIGHT_CSS); se
-  // esse limite entrar em ação, o vídeo encolhe mantendo a proporção
-  // (barra preta lateral em vez de cortar).
+  // esse limite entrar em ação, a caixa encolhe em largura (isHeightConstrained)
+  // para não sobrar barra preta lateral.
   const objectFitClass = "object-contain";
 
   /* ─── Regista no mediaManager: só um vídeo toca de cada vez ─── */
@@ -255,21 +291,25 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
       ref={(el) => {
         (wrapperRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
       }}
-      className={`w-full overflow-hidden bg-black select-none ${rounded} ${className}`}
+      className={`overflow-hidden bg-black select-none ${rounded} ${className} ${isHeightConstrained ? "" : "w-full"}`}
+      style={isHeightConstrained ? { width: `${boxWidthPx}px`, maxWidth: "100%" } : undefined}
       onMouseMove={resetTimer}
       onTouchStart={resetTimer}
       onClick={togglePlay}
     >
-      {/* Caixa interna: largura sempre 100% do post (nunca "auto" — o
-          <video> é absolute e não conta como conteúdo para um "auto" se
-          basear, foi isso que causava o vídeo desaparecer). A altura
-          segue a proporção real do vídeo (naturalRatio) — igual ao X:
-          horizontal fica baixinho, vertical fica alto, cada um com o
-          tamanho certo, sem forçar caixa estreita nem barra preta,
-          só presa por MAX_HEIGHT_CSS em casos extremos. */}
+      {/* Caixa interna: largura 100% da caixa externa. Quando o vídeo
+          é vertical e bateria no limite de altura, a caixa externa já
+          encolheu em largura (isHeightConstrained) para bater exatamente
+          com a proporção real do vídeo — sem barra preta lateral, igual
+          ao X. Caso contrário, comporta-se como antes: largura total do
+          post, altura pela proporção real, presa por MAX_HEIGHT_CSS. */}
       <div
         className="relative w-full"
-        style={{ aspectRatio: effectiveRatio, maxHeight: MAX_HEIGHT_CSS, overflow: "hidden" }}
+        style={
+          isHeightConstrained
+            ? { height: `${maxHeightPx}px`, overflow: "hidden" }
+            : { aspectRatio: effectiveRatio, maxHeight: MAX_HEIGHT_CSS, overflow: "hidden" }
+        }
       >
       {/* Video element — object-fit: contain, sempre. */}
       <video
