@@ -315,7 +315,7 @@ export function PageWrapper({ children, className = "" }: { children: React.Reac
    Tudo dentro de um container centrado, sem esticar horizontalmente. */
 export function FeedLayout({ feed, sidebar }: { feed: React.ReactNode; sidebar?: React.ReactNode }) {
   return (
-    <div className="flex justify-start w-full min-h-screen">
+    <div className="flex justify-start lg:justify-center w-full min-h-screen">
       <div className="flex w-full max-w-[990px] xl:max-w-[1010px] min-h-screen">
         <main
           className="flex-1 min-w-0 lg:max-w-[600px] w-full lg:border-x"
