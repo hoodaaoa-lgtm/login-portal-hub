@@ -126,13 +126,23 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
     typeof window !== "undefined" ? window.innerHeight : 800,
   );
 
+  // ─── IMPORTANTE: medimos a largura do elemento PAI, nunca a do próprio
+  // wrapper. Quando o vídeo é vertical e a caixa encolhe (isHeightConstrained),
+  // o wrapper passa a ter uma largura menor que a do post — se observássemos
+  // o próprio wrapper, essa mudança seria detetada pelo ResizeObserver,
+  // recalculando tudo com base na largura já encolhida, o que por sua vez
+  // podia "desconstranger" o vídeo, esticando-o de novo — um ciclo sem fim
+  // que fazia o player oscilar de tamanho (esticar/encolher repetidamente).
+  // O pai mantém sempre a largura real disponível do post, por isso é
+  // seguro e estável observar a partir dele.
   useEffect(() => {
     const el = wrapperRef.current;
-    if (!el || typeof ResizeObserver === "undefined") return;
-    const update = () => setContainerWidth(el.clientWidth);
+    const parent = el?.parentElement;
+    if (!parent || typeof ResizeObserver === "undefined") return;
+    const update = () => setContainerWidth(parent.clientWidth);
     update();
     const ro = new ResizeObserver(update);
-    ro.observe(el);
+    ro.observe(parent);
     return () => ro.disconnect();
   }, []);
 
