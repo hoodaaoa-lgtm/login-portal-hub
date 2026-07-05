@@ -32,6 +32,7 @@ import { useQuery, useQueryClient, keepPreviousData } from "@tanstack/react-quer
 import { QUERY_KEYS, FEED_QUERY_OPTIONS, STATIC_QUERY_OPTIONS, REALTIME_QUERY_OPTIONS } from "@/lib/queryClient";
 import { FeedSkeleton, BackgroundRefreshDot } from "@/components/Skeletons";
 import { FeedVideoPlayer } from "@/components/FeedVideoPlayer";
+import { PollCard } from "@/components/PollCard";
 import { useTranslation } from "react-i18next";
 import i18n from "@/lib/i18n";
 import { useScrollLock } from "@/hooks/useScrollLock";
@@ -1248,6 +1249,13 @@ function PostCard({ p }: { p: any }) {
       {p.photos && p.photos.length > 0 && <PhotoGrid photos={p.photos} />}
       {p.photo && !p.photos && !p.video && <PhotoGrid photos={[p.photo]} />}
 
+      {/* Enquete */}
+      {p.poll && (
+        <div className="px-4 pb-3">
+          <PollCard postId={p.id} question={p.poll.question} options={p.poll.options ?? []} endsAt={p.poll_ends_at} />
+        </div>
+      )}
+
       {isAd && (
         <>
           <div className="mx-4 mb-3 rounded-2xl bg-orange-50 flex items-center justify-center" style={{ height: 120, fontSize: 48 }}>📖</div>
@@ -1350,6 +1358,14 @@ function PostCard({ p }: { p: any }) {
               )}
               {p.photos && p.photos.length > 0 && <PhotoGrid photos={p.photos} />}
               {p.photo && !p.photos && !p.video && <PhotoGrid photos={[p.photo]} />}
+
+              {/* Enquete */}
+              {p.poll && (
+                <div className="px-4 pb-3">
+                  <PollCard postId={p.id} question={p.poll.question} options={p.poll.options ?? []} endsAt={p.poll_ends_at} />
+                </div>
+              )}
+
               <div className="flex items-center gap-3 px-4 pt-2">
                 {viewCount > 0 && (
                   <p className="text-[12px] font-semibold" style={{ color: "var(--text-muted)" }}>
@@ -1454,7 +1470,7 @@ function HomePage() {
       // scoring/relevância acima, cai aqui numa busca simples e directa.
       const { data } = await supabase
         .from("posts")
-        .select("id,author_id,user_id,author_username,author_name,author_color,content,kind,is_ad,created_at,photo_url,photos,video_url,clip_video_id,clip_start,clip_end,clip_title,channel_id,channel_handle,channel_name,channel_avatar,clip_thumb_url")
+        .select("id,author_id,user_id,author_username,author_name,author_color,content,kind,is_ad,created_at,photo_url,photos,video_url,clip_video_id,clip_start,clip_end,clip_title,channel_id,channel_handle,channel_name,channel_avatar,clip_thumb_url,poll,poll_ends_at")
         .order("created_at", { ascending: false })
         .limit(50);
       return (data ?? []).map((p: any) => {
@@ -1477,6 +1493,7 @@ function HomePage() {
           clip_title: p.clip_title, clip_thumb_url: p.clip_thumb_url,
           channel_id: p.channel_id, channel_handle: p.channel_handle,
           channel_name: p.channel_name, channel_avatar: p.channel_avatar,
+          poll: p.poll ?? null, poll_ends_at: p.poll_ends_at ?? null,
         };
       });
     }
@@ -1484,7 +1501,7 @@ function HomePage() {
 
   const FEED_CHUNK_SIZE = 30;
   const ACCENT_LOCAL = ["#5B3FCF","#F26B3A","#1FAFA6","#6BA547","#E94B8A","#FFC93C"];
-  const POST_SELECT_FIELDS = "id,author_id,user_id,author_username,author_name,author_color,content,kind,is_ad,created_at,photo_url,photos,video_url,clip_video_id,clip_start,clip_end,clip_title,channel_id,channel_handle,channel_name,channel_avatar,clip_thumb_url,views_count,reposts_count";
+  const POST_SELECT_FIELDS = "id,author_id,user_id,author_username,author_name,author_color,content,kind,is_ad,created_at,photo_url,photos,video_url,clip_video_id,clip_start,clip_end,clip_title,channel_id,channel_handle,channel_name,channel_avatar,clip_thumb_url,views_count,reposts_count,poll,poll_ends_at";
   const VIDEO_SELECT_FIELDS = "id,title,thumbnail_url,duration_seconds,views_count,likes_count,created_at,owner_id,channel_id,channels(name,avatar_url,handle)";
 
   // ─── FEED SEM ALGORITMO — busca e funde posts + vídeos publicados ──────────
@@ -1598,6 +1615,7 @@ function HomePage() {
         clip_title: p.clip_title, clip_thumb_url: p.clip_thumb_url,
         channel_id: p.channel_id, channel_handle: p.channel_handle,
         channel_name: p.channel_name, channel_avatar: p.channel_avatar,
+        poll: p.poll ?? null, poll_ends_at: p.poll_ends_at ?? null,
       };
     });
 

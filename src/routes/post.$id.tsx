@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { BottomNav, SideNav, PageWrapper } from "@/components/AppShell";
 import { PostCommentsModal } from "@/components/PostCommentsModal";
 import { FeedVideoPlayer } from "@/components/FeedVideoPlayer";
+import { PollCard } from "@/components/PollCard";
 import {
   ChevronLeft, Heart, MessageCircle, Share2, Bookmark,
   Loader, X,
@@ -47,7 +48,7 @@ function SinglePostPage() {
 
       const { data, error } = await supabase
         .from("posts")
-        .select("id,author_id,author_username,author_name,author_color,content,kind,created_at,photo_url,photos,video_url")
+        .select("id,author_id,author_username,author_name,author_color,content,kind,created_at,photo_url,photos,video_url,poll,poll_ends_at")
         .eq("id", id)
         .maybeSingle();
 
@@ -202,6 +203,13 @@ function SinglePostPage() {
                 ) : (
                   <p className="px-3 pb-3 text-[15px] leading-relaxed" style={{ color: "var(--text-primary)" }}>{text}</p>
                 )
+              )}
+
+              {/* Enquete */}
+              {post.poll && (
+                <div className="px-3 pb-3">
+                  <PollCard postId={post.id} question={post.poll.question} options={post.poll.options ?? []} endsAt={post.poll_ends_at} />
+                </div>
               )}
 
               {/* Acções */}

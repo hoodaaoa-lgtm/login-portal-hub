@@ -30,6 +30,7 @@ import { deletePostForEveryone, fetchMyShareableCommunities, sharePostToCommunit
 import { toast } from "sonner";
 import { PhotoViewer } from "@/components/PhotoViewer";
 import { FeedVideoPlayer } from "@/components/FeedVideoPlayer";
+import { PollCard } from "@/components/PollCard";
 
 export const Route = createFileRoute("/perfil")({
   head: () => ({ meta: [{ title: "Hooda" }] }),
@@ -42,6 +43,8 @@ type Post = {
   likes: number; likedByMe: boolean; comments: number; bookmarked: boolean;
   videoUrl?: string;
   views_count?: number;
+  poll?: { question?: string; options?: (string | { text: string })[] } | null;
+  pollEndsAt?: string | null;
 };
 type SavedPost = Post & { authorId: string; authorName: string; authorUsername: string; authorAvatar: string | null };
 
@@ -396,6 +399,13 @@ function PostCard({
         <div className="w-full flex items-center justify-center"
           style={{ background: post.bgColor, minHeight: 260 }}>
           <p className="font-bold text-center leading-snug px-8 py-10 text-white text-[20px]">{post.text}</p>
+        </div>
+      )}
+
+      {/* Enquete */}
+      {post.poll && (
+        <div className="px-3 pt-2">
+          <PollCard postId={post.id} question={post.poll.question} options={post.poll.options ?? []} endsAt={post.pollEndsAt} />
         </div>
       )}
 
@@ -2035,7 +2045,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
 
       const { data } = await (supabase as any)
         .from("posts")
-        .select("id, content, kind, created_at, photo_url, image_url, video_url, photos, clip_title, clip_thumb_url, clip_video_id, clip_start, clip_end")
+        .select("id, content, kind, created_at, photo_url, image_url, video_url, photos, clip_title, clip_thumb_url, clip_video_id, clip_start, clip_end, poll, poll_ends_at")
         .eq("author_id", session.user.id)
         .order("created_at", { ascending: false });
       if (data && data.length > 0) {
@@ -2092,6 +2102,8 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
               clipTitle: clipTitle,
               clipStart: (p as any).clip_start ?? 0,
               clipEnd: (p as any).clip_end ?? 0,
+              poll: (p as any).poll ?? null,
+              pollEndsAt: (p as any).poll_ends_at ?? null,
             };
           });
         // Buscar stream URLs para clips

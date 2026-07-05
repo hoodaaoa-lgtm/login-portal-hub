@@ -260,7 +260,7 @@ export function ComposeBox({ name, username, avatarUrl, onPublished }: {
     { label: "Foto", Icon: Image, color: "#6BA547", onClick: () => setOpen(true) },
     { label: "Vídeo", Icon: Film, color: "#E94B8A", onClick: () => setOpen(true) },
     { label: "Drop", Icon: Droplet, color: "#5B3FCF", onClick: () => navigate({ to: "/drops" }) },
-    { label: "Enquete", Icon: BarChart3, color: "#F26B3A", onClick: () => setOpen(true) },
+    { label: "Enquete", Icon: BarChart3, color: "#F26B3A", onClick: () => { window.location.href = "/studio/criar?kind=poll"; } },
   ];
 
   return (

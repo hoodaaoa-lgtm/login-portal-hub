@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { myChannelQuery } from "@/lib/channel-queries";
 import { supabase } from "@/integrations/supabase/client";
 import { uploadToCloudinary, uploadImageToCloudinary } from "@/lib/cloudinary";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   FileText, Image as ImageIcon, Video as VideoIcon, BarChart3,
   Upload, X, Calendar, Send, Save, Loader2, Hash, Globe,
@@ -52,6 +52,13 @@ function CreatePage() {
   const [thumbFile, setThumbFile] = useState<File | null>(null);
   const [thumbPreview, setThumbPreview] = useState<string>("");
   const [pollOptions, setPollOptions] = useState<string[]>(["", ""]);
+  const [pollQuestion, setPollQuestion] = useState("");
+  const [pollDurationDays, setPollDurationDays] = useState<1 | 3 | 7>(3);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("kind") === "poll") setKind("poll");
+  }, []);
 
   const [scheduleEnabled, setScheduleEnabled] = useState(false);
   const [scheduleDate, setScheduleDate] = useState<string>("");
@@ -118,6 +125,7 @@ function CreatePage() {
     if (kind === "text" && !description.trim() && !title.trim()) { toast.error("Escreve algo."); return; }
     if (kind === "image" && imageFiles.length === 0) { toast.error("Adiciona uma imagem."); return; }
     if (kind === "video" && !videoFile) { toast.error("Adiciona um vídeo."); return; }
+    if (kind === "poll" && !pollQuestion.trim()) { toast.error("Escreve a pergunta da enquete."); return; }
     if (kind === "poll" && pollOptions.filter(o => o.trim()).length < 2) { toast.error("Adiciona pelo menos 2 opções."); return; }
 
     let schedISO: string | null = null;
@@ -176,9 +184,11 @@ function CreatePage() {
       }
       if (kind === "poll") {
         payload.poll = {
-          options: pollOptions.filter(o => o.trim()).map(o => ({ text: o.trim(), votes: 0 })),
-          voters: {},
+          question: pollQuestion.trim(),
+          options: pollOptions.filter(o => o.trim()).map(o => o.trim()),
         };
+        payload.poll_ends_at = new Date(Date.now() + pollDurationDays * 86400000).toISOString();
+        payload.content = description || pollQuestion.trim();
       }
 
       const { data: inserted, error } = await supabase.from("posts").insert(payload).select("id").single();
@@ -341,31 +351,58 @@ function CreatePage() {
         )}
 
         {kind === "poll" && (
-          <div>
-            <label className="text-xs font-semibold" style={{ color: "var(--text-muted)" }}>OPÇÕES DA ENQUETE</label>
-            <div className="mt-2 space-y-2">
-              {pollOptions.map((opt, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <input value={opt} onChange={e => {
-                    const next = [...pollOptions]; next[i] = e.target.value; setPollOptions(next);
-                  }} maxLength={80} placeholder={`Opção ${i + 1}`}
-                    className="flex-1 px-4 py-2.5 rounded-xl text-sm outline-none border"
-                    style={{ background: "var(--s2)", borderColor: "var(--border-default)", color: "var(--text-primary)" }} />
-                  {pollOptions.length > 2 && (
-                    <button onClick={() => setPollOptions(pollOptions.filter((_, j) => j !== i))}
-                      className="h-9 w-9 rounded-full flex items-center justify-center"
-                      style={{ color: "var(--text-muted)" }}>
-                      <X className="h-4 w-4" />
-                    </button>
-                  )}
-                </div>
-              ))}
-              {pollOptions.length < 4 && (
-                <button onClick={() => setPollOptions([...pollOptions, ""])}
-                  className="text-sm font-semibold" style={{ color: P }}>
-                  + Adicionar opção
-                </button>
-              )}
+          <div className="space-y-4">
+            <div>
+              <label className="text-xs font-semibold" style={{ color: "var(--text-muted)" }}>PERGUNTA</label>
+              <input value={pollQuestion} onChange={e => setPollQuestion(e.target.value)} maxLength={140}
+                placeholder="Ex: Qual concerto vais?"
+                className="mt-1 w-full px-4 py-2.5 rounded-xl text-sm outline-none border"
+                style={{ background: "var(--s2)", borderColor: "var(--border-default)", color: "var(--text-primary)" }} />
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold" style={{ color: "var(--text-muted)" }}>OPÇÕES DA ENQUETE</label>
+              <div className="mt-2 space-y-2">
+                {pollOptions.map((opt, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <input value={opt} onChange={e => {
+                      const next = [...pollOptions]; next[i] = e.target.value; setPollOptions(next);
+                    }} maxLength={80} placeholder={`Opção ${i + 1}`}
+                      className="flex-1 px-4 py-2.5 rounded-xl text-sm outline-none border"
+                      style={{ background: "var(--s2)", borderColor: "var(--border-default)", color: "var(--text-primary)" }} />
+                    {pollOptions.length > 2 && (
+                      <button onClick={() => setPollOptions(pollOptions.filter((_, j) => j !== i))}
+                        className="h-9 w-9 rounded-full flex items-center justify-center"
+                        style={{ color: "var(--text-muted)" }}>
+                        <X className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+                {pollOptions.length < 4 && (
+                  <button onClick={() => setPollOptions([...pollOptions, ""])}
+                    className="text-sm font-semibold" style={{ color: P }}>
+                    + Adicionar opção
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold" style={{ color: "var(--text-muted)" }}>DURAÇÃO</label>
+              <div className="mt-2 flex gap-2">
+                {([1, 3, 7] as const).map(d => (
+                  <button key={d} onClick={() => setPollDurationDays(d)}
+                    className="flex-1 px-3 py-2 rounded-xl text-sm font-semibold border transition"
+                    style={{
+                      borderColor: pollDurationDays === d ? P : "var(--border-default)",
+                      background: pollDurationDays === d ? P + "18" : "var(--s2)",
+                      color: pollDurationDays === d ? P : "var(--text-secondary)",
+                    }}>
+                    {d === 1 ? "1 dia" : `${d} dias`}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         )}
