@@ -204,7 +204,6 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
 
   const heightAtFullWidth = containerWidth ? containerWidth / displayRatioNum : null;
   const isHeightConstrained = !!heightAtFullWidth && heightAtFullWidth > maxHeightPx;
-  const boxWidthPx = isHeightConstrained ? maxHeightPx * displayRatioNum : null;
 
   // object-fit: SEMPRE "contain". Nunca cortamos nem deformamos o vídeo —
   // a caixa segue a proporção real dele (naturalRatio para vídeos normais,
@@ -407,8 +406,7 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
       ref={(el) => {
         (wrapperRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
       }}
-      className={`overflow-hidden bg-black select-none ${effectiveRounded} ${className} ${isHeightConstrained ? "mx-auto" : "w-full"}`}
-      style={isHeightConstrained ? { width: `${boxWidthPx}px`, maxWidth: "100%" } : undefined}
+      className={`overflow-hidden bg-black select-none ${effectiveRounded} ${className} w-full`}
       onMouseMove={() => {
         if (!isMobile) resetTimer();
       }}
@@ -417,12 +415,15 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
       }}
       onClick={handleScreenTap}
     >
-      {/* Caixa interna: largura 100% da caixa externa. Quando o vídeo
-          é vertical e bateria no limite de altura, a caixa externa já
-          encolheu em largura (isHeightConstrained) para bater exatamente
-          com a proporção real do vídeo — sem barra preta lateral, igual
-          ao X. Caso contrário, comporta-se como antes: largura total do
-          post, altura pela proporção real, presa por MAX_HEIGHT_CSS. */}
+      {/* Caixa interna: largura 100% da caixa externa, SEMPRE (igual aos
+          vídeos horizontais). Quando o vídeo é vertical e bateria no
+          limite de altura, a altura fica presa em maxHeightPx e o vídeo
+          (object-contain) centra-se no meio, mais estreito que a caixa —
+          o espaço lateral que sobra é preenchido pelo fundo desfocado
+          (poster com blur) logo abaixo, nunca fica em branco/preto liso,
+          igual ao TikTok/Instagram. Caso contrário (vídeo horizontal),
+          comporta-se como antes: altura pela proporção real, presa por
+          MAX_HEIGHT_CSS. */}
       <div
         className="relative w-full"
         style={
