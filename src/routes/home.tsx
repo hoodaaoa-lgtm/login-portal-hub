@@ -501,10 +501,10 @@ function PhotoGrid({ photos }: { photos: string[] }) {
   return (
     <>
       {/* ── Instagram-style: adapts to image ratio ── */}
-      <div className="relative w-full select-none">
+      <div className="relative w-full select-none px-4 pb-3">
 
         {/* Image container: adapts naturally to image — no cropping */}
-        <div className="relative w-full cursor-pointer"
+        <div className="relative w-full cursor-pointer rounded-2xl overflow-hidden"
           style={{ minHeight: 200 }}
           onClick={() => setFullscreen(true)}>
           <img loading="lazy" decoding="async" src={photos[idx]}
@@ -1216,8 +1216,8 @@ function PostCard({ p }: { p: any }) {
 
       {/* Vídeo */}
       {p.video && (
-        <div className="pb-3">
-          <FeedVideoPlayer src={p.video} poster={p.video_thumb || p.photo || undefined} postId={p.id} kind="video" rounded="rounded-none" />
+        <div className="pb-3 px-4">
+          <FeedVideoPlayer src={p.video} poster={p.video_thumb || p.photo || undefined} postId={p.id} kind="video" rounded="rounded-2xl" />
         </div>
       )}
 
@@ -1333,8 +1333,8 @@ function PostCard({ p }: { p: any }) {
           body={
             <>
               {p.video && (
-                <div className="pb-3">
-                  <FeedVideoPlayer src={p.video} poster={p.video_thumb || p.photo || undefined} postId={p.id} kind="video" rounded="rounded-none" />
+                <div className="pb-3 px-4">
+                  <FeedVideoPlayer src={p.video} poster={p.video_thumb || p.photo || undefined} postId={p.id} kind="video" rounded="rounded-2xl" />
                 </div>
               )}
               {p.text && !p.video && (p.bg_color
