@@ -104,7 +104,7 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
   const { ref: wrapperRef, isInView, hasEnteredOnce } = useVideoInView<HTMLDivElement>();
 
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
+  const [isMuted, setIsMuted] = useState(autoPlay);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isBuffering, setIsBuffering] = useState(false);
@@ -243,13 +243,14 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
     const vid = videoRef.current;
     if (!vid || !hasEnteredOnce) return;
     if (isInView) {
+      if (!hasStarted) vid.muted = true; // navegador só permite autoplay se começar mudo
       vid.play()?.catch(() => {
         /* gesto do utilizador pode ser necessário */
       });
     } else {
       vid.pause();
     }
-  }, [autoPlay, isInView, hasEnteredOnce]);
+  }, [autoPlay, isInView, hasEnteredOnce, hasStarted]);
 
   // Pausa qualquer vídeo (mesmo iniciado manualmente) ao sair da tela.
   useEffect(() => {
@@ -392,6 +393,7 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
         }}
         poster={poster}
         playsInline
+        muted={isMuted}
         loop={loop}
         preload={preload}
         className={`absolute inset-0 w-full h-full ${objectFitClass}`}
@@ -400,6 +402,7 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
           setIsBuffering(false);
           setIsPlaying(true);
           setHasStarted(true);
+          notifyVideoPlaying(mediaIdRef.current);
         }}
         onCanPlay={() => setIsBuffering(false)}
         onLoadedMetadata={() => {

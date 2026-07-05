@@ -28,9 +28,11 @@ interface Props {
   /** @deprecated não é mais necessário — o HoodaPlayer detecta a proporção real sozinho. Mantido só para não quebrar chamadas antigas. */
   isShortHint?: boolean | null;
   rounded?: string;
+  /** Toca sozinho (sem som) quando o vídeo entra na tela, pausa ao sair — igual ao Instagram/TikTok. Default: true. */
+  autoPlay?: boolean;
 }
 
-export function FeedVideoPlayer({ src, poster, postId, kind, rounded }: Props) {
+export function FeedVideoPlayer({ src, poster, postId, kind, rounded, autoPlay = true }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   usePostVideoView(postId, kind, videoRef);
@@ -42,6 +44,7 @@ export function FeedVideoPlayer({ src, poster, postId, kind, rounded }: Props) {
       poster={poster}
       aspectRatio="auto"
       rounded={rounded ?? "rounded-none"}
+      autoPlay={autoPlay}
     />
   );
 }
