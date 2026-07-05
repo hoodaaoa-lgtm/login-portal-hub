@@ -37,6 +37,7 @@ import MediaEditor, { MediaEditState, DEFAULT_EDIT, EditedMediaDisplay } from "@
 import { HoodaPlayer } from "@/components/HoodaPlayer";
 import { FeedVideoPlayer } from "@/components/FeedVideoPlayer";
 import { uploadImageToCloudinary } from "@/lib/cloudinary";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 // Upload directo para Cloudinary com progresso (suporta audio/video via resource_type=video)
 function cloudinaryUploadMedia(
@@ -1694,6 +1695,7 @@ function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit
   const [showMenu,    setShowMenu]    = useState(false);
   const [confirmDel,  setConfirmDel]  = useState<"me" | "all" | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     if (!showMenu) return;
@@ -1723,21 +1725,30 @@ function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit
     <div className={`flex ${isMe ? "justify-end" : "justify-start"} group px-1`}>
       <div className="max-w-[75%] relative">
 
-        {/* Hover actions */}
-        <div className={`absolute ${isMe ? "right-full mr-1" : "left-full ml-1"} top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition flex items-center gap-0.5 z-10`}>
+        {/* Ações (responder / menu) — no desktop só aparecem ao passar o
+            rato (hover), flutuando ao lado da bolha. No MOBILE não há
+            hover (é toque), por isso ficavam sempre invisíveis e
+            impossíveis de tocar; agora ficam sempre visíveis, numa
+            fiadinha por cima do canto da bolha (dentro do ecrã, nunca
+            "a fugir" para fora como acontecia ao flutuar ao lado). */}
+        <div className={
+          isMobile
+            ? `absolute -top-9 ${isMe ? "right-0" : "left-0"} flex items-center gap-1.5 z-10`
+            : `absolute ${isMe ? "right-full mr-1" : "left-full ml-1"} top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition flex items-center gap-0.5 z-10`
+        }>
           <button onClick={onReply}
-            className="w-7 h-7 rounded-full flex items-center justify-center"
-            style={{ background: "rgba(0,0,0,0.12)", color: "var(--text-secondary)" }}>
+            className={`shrink-0 rounded-full flex items-center justify-center shadow-sm ${isMobile ? "w-8 h-8" : "w-7 h-7"}`}
+            style={{ background: isMobile ? "var(--s1)" : "rgba(0,0,0,0.12)", color: "var(--text-secondary)" }}>
             <Reply className="h-3.5 w-3.5" />
           </button>
           <div className="relative" ref={menuRef}>
             <button onClick={() => setShowMenu(v => !v)}
-              className="w-7 h-7 rounded-full flex items-center justify-center"
-              style={{ background: "rgba(0,0,0,0.12)", color: "var(--text-secondary)" }}>
+              className={`shrink-0 rounded-full flex items-center justify-center shadow-sm ${isMobile ? "w-8 h-8" : "w-7 h-7"}`}
+              style={{ background: isMobile ? "var(--s1)" : "rgba(0,0,0,0.12)", color: "var(--text-secondary)" }}>
               <MoreVertical className="h-3.5 w-3.5" />
             </button>
             {showMenu && (
-              <div className={`absolute ${isMe ? "right-0" : "left-0"} bottom-full mb-1 rounded-2xl shadow-2xl z-30 overflow-hidden min-w-[190px] border`}
+              <div className={`absolute ${isMe ? "right-0" : "left-0"} ${isMobile ? "top-full mt-1" : "bottom-full mb-1"} rounded-2xl shadow-2xl z-30 overflow-hidden min-w-[190px] max-w-[85vw] border`}
                 style={{ background: "var(--s0)", borderColor: "var(--border-default)" }}>
 
                 {/* Reagir rápido */}
@@ -2699,10 +2710,31 @@ function ChatPanel({ myId, contact, onBack }: {
   }
 
   // ── Eliminar para todos ──
+  // IMPORTANTE: remove localmente primeiro (resposta instantânea), mas só
+  // confirma o sucesso (toast) DEPOIS de o Supabase confirmar a alteração
+  // real na base de dados. Se a chamada falhar (rede, RLS, etc.), a
+  // mensagem volta a aparecer e avisamos — para nunca dar a entender que
+  // foi "eliminada para todos" quando na verdade continua na BD e o
+  // outro utilizador ainda a vê.
   async function deleteForEveryone(id: string) {
+    const removedIdx = msgs.findIndex(x => x.id === id);
+    const removed = removedIdx >= 0 ? msgs[removedIdx] : undefined;
     setMsgs(prev => { const n = prev.filter(x => x.id !== id); saveCache(n); return n; });
+    const { error } = await db.from("messages").update({ deleted_for_all: true }).eq("id", id);
+    if (error) {
+      console.error("[deleteForEveryone] falhou:", error);
+      if (removed) {
+        setMsgs(prev => {
+          const idx = Math.min(removedIdx, prev.length);
+          const n = [...prev.slice(0, idx), removed, ...prev.slice(idx)];
+          saveCache(n);
+          return n;
+        });
+      }
+      toast.error("Não foi possível eliminar para todos. Tenta novamente.");
+      return;
+    }
     toast.success("Mensagem eliminada para todos");
-    await db.from("messages").update({ deleted_for_all: true }).eq("id", id);
   }
 
   // ── Editar mensagem ──
