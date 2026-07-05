@@ -374,94 +374,121 @@ function PostCommentsModalInner({
   }
 
   const displayComments = withLocalState(comments);
+  const hasMedia = !!body;
 
   return createPortal(
     <div
       className="fixed inset-0 z-[100] flex items-end lg:items-center justify-center"
-      style={{ background: "rgba(0,0,0,0.6)" }}
+      style={{ background: hasMedia ? "#000" : "rgba(0,0,0,0.6)" }}
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div
-        className="w-full lg:max-w-sm lg:rounded-3xl rounded-t-3xl flex flex-col overflow-hidden shadow-2xl hooda-modal-sheet"
+        className={`w-full flex flex-col overflow-hidden shadow-2xl hooda-modal-sheet rounded-t-3xl ${
+          hasMedia
+            ? "lg:flex-row lg:rounded-none lg:max-w-[1100px] lg:w-[92vw]"
+            : "lg:max-w-sm lg:rounded-3xl"
+        }`}
         style={{ maxHeight: "92vh", height: "92vh" }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Drag indicator (mobile) */}
-        <div className="flex justify-center pt-2.5 pb-0 shrink-0 lg:hidden">
-          <div className="w-10 h-1 rounded-full" style={{ background: "#E5E7EB" }} />
-        </div>
-
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-100 shrink-0">
-          <span className="text-sm font-extrabold">{title}</span>
-          <button onClick={onClose} className="p-1.5 rounded-full hover:bg-neutral-100">
-            <X className="h-5 w-5 text-neutral-500" />
-          </button>
-        </div>
-
-        {/* Scrollable: post + actions + comments, tudo num scroll só, como o Facebook */}
-        <div ref={listRef} className="overflow-y-auto flex-1">
-          {/* Publicação inteira no topo */}
-          {(header || body) && (
-            <div className="border-b border-neutral-100">
-              {header && <div className="px-4 pt-3">{header}</div>}
-              {body && <div className="pt-2">{body}</div>}
-              {actions && <div className="px-4 pb-1">{actions}</div>}
+        {/* Painel de mídia — só em desktop e só quando há foto/vídeo */}
+        {hasMedia && (
+          <div className="hidden lg:flex lg:flex-1 items-center justify-center relative shrink-0" style={{ background: "#000" }}>
+            <button
+              onClick={onClose}
+              className="absolute top-4 left-4 w-9 h-9 rounded-full flex items-center justify-center z-10 transition active:scale-90"
+              style={{ background: "rgba(255,255,255,0.15)" }}
+            >
+              <X className="h-5 w-5 text-white" />
+            </button>
+            <div className="w-full h-full flex items-center justify-center px-6 py-6">
+              {body}
             </div>
-          )}
+          </div>
+        )}
 
-          {/* Lista de comentários */}
-          <div className="px-4 py-3 space-y-4">
-            {loading ? (
-              <CommentsListSkeleton />
-            ) : displayComments.length === 0 ? (
-              <p className="text-xs text-neutral-400 text-center py-8">Sê o primeiro a comentar!</p>
-            ) : (
-              <div className="hooda-fade-in space-y-4">
-              {displayComments.map((c) => (
-                <CommentRow
-                  key={c.id}
-                  c={c}
-                  accent={accent}
-                  onToggleLike={toggleLike}
-                  onStartReply={setReplyingTo}
-                  replyingTo={replyingTo}
-                  replyInput={replyInput}
-                  setReplyInput={setReplyInput}
-                  onSendReply={handleSendReply}
-                />
-              ))}
+        {/* Coluna direita (desktop) / coluna única (mobile) */}
+        <div
+          className={`flex flex-col shrink-0 ${hasMedia ? "lg:w-[420px] lg:h-full bg-white" : "w-full"}`}
+          style={!hasMedia ? { height: "100%" } : undefined}
+        >
+          {/* Drag indicator (mobile) */}
+          <div className="flex justify-center pt-2.5 pb-0 shrink-0 lg:hidden">
+            <div className="w-10 h-1 rounded-full" style={{ background: "#E5E7EB" }} />
+          </div>
+
+          {/* Header */}
+          <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-100 shrink-0">
+            <span className="text-sm font-extrabold">{title}</span>
+            <button onClick={onClose} className="p-1.5 rounded-full hover:bg-neutral-100 lg:hidden">
+              <X className="h-5 w-5 text-neutral-500" />
+            </button>
+          </div>
+
+          {/* Scrollable: post + actions + comments, tudo num scroll só, como o Facebook */}
+          <div ref={listRef} className="overflow-y-auto flex-1">
+            {/* Publicação inteira no topo — em desktop com mídia, a mídia já está no painel esquerdo, então só mostra header/actions aqui */}
+            {(header || (body && !hasMedia)) && (
+              <div className="border-b border-neutral-100">
+                {header && <div className="px-4 pt-3">{header}</div>}
+                {body && <div className={hasMedia ? "pt-2 lg:hidden" : "pt-2"}>{body}</div>}
+                {actions && <div className="px-4 pb-1">{actions}</div>}
               </div>
             )}
-          </div>
-        </div>
 
-        {/* Caixa de comentar — sempre fixa no fundo */}
-        <div className="px-4 py-3 border-t border-neutral-100 flex items-center gap-2 pb-[max(env(safe-area-inset-bottom),0.75rem)] shrink-0 hooda-modal-sheet">
-          <button className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-neutral-400 hover:text-neutral-600 transition">
-            <Smile className="h-[18px] w-[18px]" />
-          </button>
-          <input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSend()}
-            placeholder={inputPlaceholder}
-            ref={inputRef}
-            className="flex-1 h-10 px-4 rounded-full bg-neutral-100 text-sm outline-none focus:ring-2 transition"
-            style={{ "--tw-ring-color": accent + "33" } as React.CSSProperties}
-          />
-          <button
-            onClick={handleSend}
-            disabled={!input.trim() || sending}
-            className="w-10 h-10 rounded-full flex items-center justify-center disabled:opacity-30 transition active:scale-90 shrink-0"
-            style={{ background: accent }}
-          >
-            {sending ? (
-              <Loader className="h-4 w-4 text-white animate-spin" />
-            ) : (
-              <Send className="h-4 w-4 text-white" />
-            )}
-          </button>
+            {/* Lista de comentários */}
+            <div className="px-4 py-3 space-y-4">
+              {loading ? (
+                <CommentsListSkeleton />
+              ) : displayComments.length === 0 ? (
+                <p className="text-xs text-neutral-400 text-center py-8">Sê o primeiro a comentar!</p>
+              ) : (
+                <div className="hooda-fade-in space-y-4">
+                {displayComments.map((c) => (
+                  <CommentRow
+                    key={c.id}
+                    c={c}
+                    accent={accent}
+                    onToggleLike={toggleLike}
+                    onStartReply={setReplyingTo}
+                    replyingTo={replyingTo}
+                    replyInput={replyInput}
+                    setReplyInput={setReplyInput}
+                    onSendReply={handleSendReply}
+                  />
+                ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Caixa de comentar — sempre fixa no fundo */}
+          <div className="px-4 py-3 border-t border-neutral-100 flex items-center gap-2 pb-[max(env(safe-area-inset-bottom),0.75rem)] shrink-0 hooda-modal-sheet">
+            <button className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-neutral-400 hover:text-neutral-600 transition">
+              <Smile className="h-[18px] w-[18px]" />
+            </button>
+            <input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSend()}
+              placeholder={inputPlaceholder}
+              ref={inputRef}
+              className="flex-1 h-10 px-4 rounded-full bg-neutral-100 text-sm outline-none focus:ring-2 transition"
+              style={{ "--tw-ring-color": accent + "33" } as React.CSSProperties}
+            />
+            <button
+              onClick={handleSend}
+              disabled={!input.trim() || sending}
+              className="w-10 h-10 rounded-full flex items-center justify-center disabled:opacity-30 transition active:scale-90 shrink-0"
+              style={{ background: accent }}
+            >
+              {sending ? (
+                <Loader className="h-4 w-4 text-white animate-spin" />
+              ) : (
+                <Send className="h-4 w-4 text-white" />
+              )}
+            </button>
+          </div>
         </div>
       </div>
     </div>,
