@@ -983,9 +983,11 @@ function UserProfilePage() {
               <p className="font-bold text-sm truncate" style={{color:"var(--text-primary)"}}>{name}</p>
               <p className="text-[11px]" style={{color:"var(--text-muted)"}}>{postCount} publicações</p>
             </div>
-            <button onClick={()=>setShowMenu(m=>!m)}
-              className="p-2 rounded-full hover:bg-[var(--s2)] transition relative">
-              <MoreHorizontal className="h-5 w-5" style={{color:"var(--text-primary)"}} />
+            <div className="relative">
+              <button onClick={()=>setShowMenu(m=>!m)}
+                className="p-2 rounded-full hover:bg-[var(--s2)] transition">
+                <MoreHorizontal className="h-5 w-5" style={{color:"var(--text-primary)"}} />
+              </button>
               {showMenu && (
                 <div className="absolute right-0 top-10 w-48 rounded-2xl shadow-2xl py-1 z-50"
                   style={{background:"var(--s0)",border:"1px solid var(--border-subtle)"}}>
@@ -1001,7 +1003,7 @@ function UserProfilePage() {
                   ))}
                 </div>
               )}
-            </button>
+            </div>
           </div>
         </header>
 
