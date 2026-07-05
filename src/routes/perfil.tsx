@@ -160,9 +160,9 @@ function FollowListModal({ mode, targetUsername, targetUserId, onClose }: {
   useScrollLock();
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center overflow-hidden" style={{ background: "rgba(0,0,0,0.5)" }}
+    <div className="fixed inset-0 z-[70] flex items-center justify-center overflow-hidden" style={{ background: "rgba(0,0,0,0.5)" }}
       onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="w-full sm:max-w-sm sm:rounded-2xl hooda-modal-sheet rounded-t-3xl overflow-hidden flex flex-col" style={{ maxHeight: "75vh" }}>
+      <div className="w-full sm:max-w-sm rounded-2xl hooda-modal-sheet overflow-hidden flex flex-col" style={{ maxHeight: "75vh" }}>
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-[var(--border-subtle)] shrink-0">
           <p className="font-extrabold text-base text-black">{mode === "followers" ? t("profile.followers") : t("profile.following")}</p>
           <button onClick={onClose} className="p-1.5 rounded-full hover:bg-[var(--s2)]">

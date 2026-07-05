@@ -118,9 +118,9 @@ function RepostModal({ post, me, onClose, onReposted }: {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+    <div className="fixed inset-0 z-50 flex items-center justify-center"
       style={{ background: "rgba(0,0,0,0.45)" }} onClick={onClose}>
-      <div className="w-full max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col"
+      <div className="w-full max-w-md rounded-3xl shadow-2xl overflow-hidden flex flex-col"
         style={{ background: "var(--s0)", maxHeight: "90vh" }}
         onClick={e => e.stopPropagation()}>
 

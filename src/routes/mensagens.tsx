@@ -470,22 +470,22 @@ function AddContactModal({ myId, onClose, onAdd, existingContacts }: {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
       onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
 
       {/* Modal de escrever mensagem do pedido */}
       {requestTarget && (
-        <div className="relative w-full max-w-sm mx-4 mb-4 sm:mb-0 rounded-3xl overflow-hidden shadow-2xl z-10"
-          style={{ background: "var(--bg-card,white)" }}>
-          <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: "var(--border,#f0f0f0)" }}>
+        <div className="relative w-full max-w-sm rounded-3xl shadow-2xl z-10 flex flex-col"
+          style={{ background: "var(--bg-card,white)", maxHeight: "85vh" }}>
+          <div className="flex items-center justify-between px-5 py-4 border-b shrink-0" style={{ borderColor: "var(--border,#f0f0f0)" }}>
             <button onClick={() => setRequestTarget(null)} className="p-1.5 rounded-full hover:bg-[var(--s2)]">
               <ChevronLeft className="h-5 w-5" />
             </button>
             <p className="font-extrabold text-base">Enviar pedido</p>
             <button onClick={onClose} className="p-1.5 rounded-full hover:bg-[var(--s2)]"><X className="h-5 w-5" /></button>
           </div>
-          <div className="px-5 py-4 space-y-4">
+          <div className="px-5 py-4 space-y-4 overflow-y-auto">
             <div className="flex items-center gap-3 p-3 rounded-2xl" style={{ background: "var(--s2,#f5f5f5)" }}>
               <AvatarRing name={requestTarget.username} color={requestTarget.color} size={40} src={requestTarget.avatar_url} />
               <div>
@@ -523,13 +523,13 @@ function AddContactModal({ myId, onClose, onAdd, existingContacts }: {
         </div>
       )}
 
-      {!requestTarget && <div className="relative w-full max-w-sm mx-4 mb-4 sm:mb-0 rounded-3xl overflow-hidden shadow-2xl"
-        style={{ background: "var(--bg-card,white)" }}>
-        <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: "var(--border,#f0f0f0)" }}>
+      {!requestTarget && <div className="relative w-full max-w-sm rounded-3xl shadow-2xl flex flex-col"
+        style={{ background: "var(--bg-card,white)", maxHeight: "85vh" }}>
+        <div className="flex items-center justify-between px-5 py-4 border-b shrink-0" style={{ borderColor: "var(--border,#f0f0f0)" }}>
           <p className="font-extrabold text-base">Adicionar contacto</p>
           <button onClick={onClose} className="p-1.5 rounded-full hover:bg-[var(--s2)] dark:hover:bg-[var(--s3)]"><X className="h-5 w-5" /></button>
         </div>
-        <div className="px-5 py-4 space-y-4">
+        <div className="px-5 py-4 space-y-4 overflow-y-auto">
           <div className="relative">
             <AtSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-muted)]" />
             <input
@@ -691,10 +691,10 @@ function RequestsPanel({ myId, onApprove, onClose }: {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
       onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative w-full max-w-sm mx-4 mb-4 sm:mb-0 rounded-3xl overflow-hidden shadow-2xl"
+      <div className="relative w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl"
         style={{ background: "var(--bg-card,white)", maxHeight: "80vh", display: "flex", flexDirection: "column" }}>
         <div className="flex items-center justify-between px-5 py-4 border-b shrink-0" style={{ borderColor: "var(--border,#f0f0f0)" }}>
           <div className="flex items-center gap-2">
@@ -1962,12 +1962,12 @@ function BgPickerModal({ current, onPick, onClose }: {
   onClose: () => void;
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
       onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative w-full max-w-sm mx-4 mb-4 sm:mb-0 rounded-3xl overflow-hidden shadow-2xl"
-        style={{ background: "var(--bg-card,white)" }}>
-        <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: "var(--border,#f0f0f0)" }}>
+      <div className="relative w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl flex flex-col"
+        style={{ background: "var(--bg-card,white)", maxHeight: "85vh" }}>
+        <div className="flex items-center justify-between px-5 py-4 border-b shrink-0" style={{ borderColor: "var(--border,#f0f0f0)" }}>
           <p className="font-extrabold text-base">Fundo do chat</p>
           <button onClick={onClose} className="p-1.5 rounded-full hover:bg-[var(--s2)] dark:hover:bg-[var(--s3)]">
             <X className="h-5 w-5" />

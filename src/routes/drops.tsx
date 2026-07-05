@@ -395,9 +395,9 @@ function DropCommentsModal({ dropId, userId, onClose, onCountChange }: {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center" style={{ background: "rgba(0,0,0,.5)" }}
+    <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,.5)" }}
       onClick={onClose}>
-      <div className="w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl flex flex-col overflow-hidden shadow-2xl"
+      <div className="w-full sm:max-w-md rounded-3xl flex flex-col overflow-hidden shadow-2xl"
         style={{ background: "var(--s0)", maxHeight: "85vh", height: "70vh" }} onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: "var(--border-subtle)" }}>
           <h3 className="font-extrabold" style={{ color: "var(--text-primary)" }}>{t("drops.comments", "Comentários")}</h3>

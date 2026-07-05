@@ -136,9 +136,9 @@ function ShareProfileModal({ username, name, onClose }: { username: string; name
     setTimeout(() => setCopied(false), 2000);
   }
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+    <div className="fixed inset-0 z-50 flex items-center justify-center"
       style={{ background: "rgba(0,0,0,0.5)" }} onClick={onClose}>
-      <div className="w-full max-w-sm rounded-t-3xl sm:rounded-3xl shadow-2xl p-5"
+      <div className="w-full max-w-sm rounded-3xl shadow-2xl p-5"
         style={{ background: "var(--s0)" }} onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-extrabold text-base" style={{ color: "var(--text-primary)" }}>Partilhar perfil</h3>
@@ -194,9 +194,9 @@ function RepostModal({ post, myId, myUsername, onClose, onReposted }: {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+    <div className="fixed inset-0 z-50 flex items-center justify-center"
       style={{ background: "rgba(0,0,0,0.45)" }} onClick={onClose}>
-      <div className="w-full max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col"
+      <div className="w-full max-w-md rounded-3xl shadow-2xl overflow-hidden flex flex-col"
         style={{ background: "var(--s0)", maxHeight: "90vh" }} onClick={e => e.stopPropagation()}>
 
         {mode === "menu" && (
@@ -483,10 +483,10 @@ function FollowListModal({ userId, kind, onClose }:
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4"
       style={{background:"rgba(0,0,0,0.6)",backdropFilter:"blur(4px)"}}
       onClick={e=>e.target===e.currentTarget&&onClose()}>
-      <div className="w-full sm:max-w-sm rounded-t-3xl sm:rounded-3xl flex flex-col shadow-2xl"
+      <div className="w-full sm:max-w-sm rounded-3xl flex flex-col shadow-2xl"
         style={{background:"var(--s0)",maxHeight:"80vh"}}>
         <div className="flex items-center justify-between px-5 py-4 border-b shrink-0"
           style={{borderColor:"var(--border-subtle)"}}>
@@ -614,10 +614,10 @@ function ReportModal({ username, userId, onClose }:{ username:string; userId:str
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4"
       style={{background:"rgba(0,0,0,0.6)",backdropFilter:"blur(4px)"}}
       onClick={e=>e.target===e.currentTarget&&onClose()}>
-      <div className="w-full sm:max-w-sm rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl"
+      <div className="w-full sm:max-w-sm rounded-3xl overflow-hidden shadow-2xl"
         style={{background:"var(--s0)"}}>
         <div className="flex items-center justify-between px-5 py-4 border-b"
           style={{borderColor:"var(--border-subtle)"}}>

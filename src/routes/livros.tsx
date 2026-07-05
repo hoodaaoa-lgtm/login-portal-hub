@@ -204,10 +204,10 @@ function CreateBookModal({ onClose, onCreated }: { onClose: () => void; onCreate
   }
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center"
+    <div className="fixed inset-0 z-[200] flex items-center justify-center"
       style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(8px)" }}
       onClick={e => e.target === e.currentTarget && !saving && onClose()}>
-      <div className="w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl overflow-hidden"
+      <div className="w-full sm:max-w-lg rounded-3xl overflow-hidden"
         style={{ background: "var(--s0)", maxHeight: "90vh", overflowY: "auto" }}>
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: "var(--border-subtle)" }}>
@@ -311,10 +311,10 @@ function BookDetailModal({ book, onClose, onSave, onDownload }: {
   }, []);
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center"
+    <div className="fixed inset-0 z-[200] flex items-center justify-center"
       style={{ background: "rgba(0,0,0,0.7)", backdropFilter: "blur(10px)" }}
       onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl overflow-hidden"
+      <div className="w-full sm:max-w-md rounded-3xl overflow-hidden"
         style={{ background: "var(--s0)", maxHeight: "88vh", overflowY: "auto" }}>
         {/* Top bar */}
         <div className="flex justify-end p-3">
