@@ -7,6 +7,7 @@ import {
   MessageSquare, ChevronLeft, ShieldAlert, Unlock as UnlockIcon,
   LayoutDashboard, Flag, Users as UsersIcon, Ban, ShieldCheck,
   UsersRound, FileText, Radio, TrendingUp, CheckCircle2, XCircle,
+  Trash2, Image as ImageIcon, Video as VideoIcon, ExternalLink,
 } from "lucide-react";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -41,6 +42,32 @@ type ReportRow = {
   created_at: string;
   reporter?: { username: string; full_name: string | null } | null;
   reported?: { username: string; full_name: string | null } | null;
+};
+
+type PostRow = {
+  id: string;
+  author_id: string;
+  author_username: string | null;
+  author_name: string | null;
+  author_color: string | null;
+  content: string | null;
+  kind: string | null;
+  created_at: string;
+  photo_url: string | null;
+  video_url: string | null;
+  clip_video_id: string | null;
+  channel_name: string | null;
+};
+
+type ChannelRow = {
+  id: string;
+  owner_id: string;
+  name: string;
+  handle: string;
+  avatar_url: string | null;
+  category: string | null;
+  created_at: string;
+  owner_username?: string | null;
 };
 
 type DashboardStats = {
@@ -194,7 +221,7 @@ function AdminPage() {
 
 function AdminDashboard({ adminId }: { adminId: string }) {
   const navigate = useNavigate();
-  const [section, setSection] = useState<"dashboard" | "reports" | "users" | "messages">("dashboard");
+  const [section, setSection] = useState<"dashboard" | "reports" | "users" | "messages" | "posts" | "channels">("dashboard");
   const [search, setSearch] = useState("");
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
@@ -212,6 +239,16 @@ function AdminDashboard({ adminId }: { adminId: string }) {
   const [reports, setReports] = useState<ReportRow[]>([]);
   const [reportsLoading, setReportsLoading] = useState(true);
   const [reportFilter, setReportFilter] = useState<"pending" | "reviewed" | "dismissed">("pending");
+
+  // ── Publicações (moderação) ──
+  const [postsList, setPostsList] = useState<PostRow[]>([]);
+  const [postsLoading, setPostsLoading] = useState(true);
+  const [postsSearch, setPostsSearch] = useState("");
+
+  // ── Canais ──
+  const [channelsList, setChannelsList] = useState<ChannelRow[]>([]);
+  const [channelsLoading, setChannelsLoading] = useState(true);
+  const [channelsSearch, setChannelsSearch] = useState("");
 
   // ── Dashboard: números reais ──
   useEffect(() => {
@@ -280,6 +317,115 @@ function AdminDashboard({ adminId }: { adminId: string }) {
     if (error) { toast.error("Não foi possível atualizar a denúncia."); return; }
     setReports((prev) => prev.filter((r) => r.id !== id));
     toast.success(status === "reviewed" ? "Denúncia marcada como resolvida." : "Denúncia ignorada.");
+  }
+
+  /**
+   * Envia uma mensagem oficial (conta "Hooda Oficial") a um utilizador —
+   * usado para avisar quando uma publicação/canal dele é removido.
+   * Encontra ou cria a conversa oficial, igual à lógica de openUser().
+   */
+  const notifyUserOfficial = useCallback(async (userId: string, text: string) => {
+    try {
+      const { data: myConvs } = await db
+        .from("conversation_participants").select("conversation_id").eq("user_id", adminId);
+      const myConvIds = (myConvs ?? []).map((c: any) => c.conversation_id);
+      let foundId = "";
+      if (myConvIds.length > 0) {
+        const { data: shared } = await db
+          .from("conversation_participants").select("conversation_id")
+          .eq("user_id", userId).in("conversation_id", myConvIds);
+        const sharedIds = (shared ?? []).map((c: any) => c.conversation_id);
+        if (sharedIds.length > 0) {
+          const { data: officialConv } = await db
+            .from("conversations").select("id").in("id", sharedIds).eq("is_official", true).maybeSingle();
+          if (officialConv?.id) foundId = officialConv.id;
+        }
+      }
+      if (!foundId) {
+        const { data: newConv, error: convErr } = await db
+          .from("conversations").insert({ is_official: true, reply_allowed: true }).select("id").single();
+        if (convErr) throw convErr;
+        foundId = newConv.id;
+        const { error: partErr } = await db.from("conversation_participants").insert([
+          { conversation_id: foundId, user_id: adminId },
+          { conversation_id: foundId, user_id: userId },
+        ]);
+        if (partErr) throw partErr;
+      }
+      const { error: msgErr } = await db.from("messages").insert({
+        conversation_id: foundId, sender_id: adminId, receiver_id: userId,
+        content: text, status: "sent", message_type: "text",
+      });
+      if (msgErr) throw msgErr;
+    } catch (err) {
+      console.error("[admin] erro ao notificar utilizador:", err);
+    }
+  }, [adminId]);
+
+  // ── Publicações: lista real + eliminar com aviso ao autor ──
+  const loadPosts = useCallback(async () => {
+    setPostsLoading(true);
+    const { data, error } = await db
+      .from("posts")
+      .select("id,author_id,author_username,author_name,author_color,content,kind,created_at,photo_url,video_url,clip_video_id,channel_name")
+      .order("created_at", { ascending: false })
+      .limit(200);
+    if (error) { console.error("[admin] erro a carregar publicações:", error); setPostsList([]); setPostsLoading(false); return; }
+    setPostsList(data ?? []);
+    setPostsLoading(false);
+  }, []);
+
+  useEffect(() => { if (section === "posts") loadPosts(); }, [section, loadPosts]);
+
+  async function deletePost(p: PostRow) {
+    const reason = window.prompt(
+      "Motivo da remoção (fica registado e é enviado ao autor):",
+      "A tua publicação foi removida por violar os nossos termos de utilização."
+    );
+    if (reason === null) return; // admin cancelou
+    const { error } = await db.from("posts").delete().eq("id", p.id);
+    if (error) { toast.error("Não foi possível eliminar a publicação."); return; }
+    setPostsList((prev) => prev.filter((x) => x.id !== p.id));
+    toast.success("Publicação eliminada.");
+    if (p.author_id) {
+      notifyUserOfficial(p.author_id, reason.trim() || "A tua publicação foi removida por violar os nossos termos de utilização.");
+    }
+  }
+
+  // ── Canais: lista real + eliminar com aviso ao dono ──
+  const loadChannels = useCallback(async () => {
+    setChannelsLoading(true);
+    const { data, error } = await db
+      .from("channels")
+      .select("id,owner_id,name,handle,avatar_url,category,created_at")
+      .order("created_at", { ascending: false })
+      .limit(200);
+    if (error) { console.error("[admin] erro a carregar canais:", error); setChannelsList([]); setChannelsLoading(false); return; }
+    const ownerIds = Array.from(new Set((data ?? []).map((c: any) => c.owner_id)));
+    const ownerMap: Record<string, string> = {};
+    if (ownerIds.length > 0) {
+      const { data: profs } = await db.from("profiles").select("id,username").in("id", ownerIds);
+      (profs ?? []).forEach((p: any) => { ownerMap[p.id] = p.username; });
+    }
+    setChannelsList((data ?? []).map((c: any) => ({ ...c, owner_username: ownerMap[c.owner_id] ?? null })));
+    setChannelsLoading(false);
+  }, []);
+
+  useEffect(() => { if (section === "channels") loadChannels(); }, [section, loadChannels]);
+
+  async function deleteChannel(c: ChannelRow) {
+    const reason = window.prompt(
+      "Motivo da remoção (fica registado e é enviado ao dono do canal):",
+      "O teu canal foi removido por violar os nossos termos de utilização."
+    );
+    if (reason === null) return;
+    const { error } = await db.from("channels").delete().eq("id", c.id);
+    if (error) { toast.error("Não foi possível eliminar o canal."); return; }
+    setChannelsList((prev) => prev.filter((x) => x.id !== c.id));
+    toast.success("Canal eliminado.");
+    if (c.owner_id) {
+      notifyUserOfficial(c.owner_id, reason.trim() || "O teu canal foi removido por violar os nossos termos de utilização.");
+    }
   }
 
   async function toggleBan(u: UserRow) {
@@ -457,6 +603,8 @@ function AdminDashboard({ adminId }: { adminId: string }) {
         {([
           { key: "dashboard" as const, Icon: LayoutDashboard, label: "Dashboard" },
           { key: "reports" as const, Icon: Flag, label: "Denúncias", badge: stats?.pendingReports },
+          { key: "posts" as const, Icon: FileText, label: "Publicações" },
+          { key: "channels" as const, Icon: Radio, label: "Canais" },
           { key: "users" as const, Icon: UsersIcon, label: "Utilizadores" },
           { key: "messages" as const, Icon: MessageSquare, label: "Mensagens" },
         ]).map(({ key, Icon, label, badge }) => (
@@ -631,6 +779,140 @@ function AdminDashboard({ adminId }: { adminId: string }) {
                         className="p-2 rounded-full transition active:scale-90"
                         style={{ background: u.is_banned ? "rgba(239,68,68,0.22)" : "rgba(255,255,255,0.08)" }}>
                         <Ban className="h-4 w-4" style={{ color: u.is_banned ? "#F87171" : "rgba(255,255,255,0.5)" }} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Publicações (moderação) ── */}
+      {section === "posts" && (
+        <div className="flex-1 overflow-y-auto p-6 md:p-10">
+          <h1 className="text-2xl font-extrabold text-white mb-1">Publicações</h1>
+          <p className="text-white/45 text-sm mb-6">Todas as publicações da plataforma. Eliminar avisa automaticamente o autor.</p>
+          <div className="flex items-center gap-2 rounded-2xl px-3 py-2 mb-6 max-w-sm"
+            style={{ background: "rgba(255,255,255,0.06)" }}>
+            <Search className="h-4 w-4 text-white/40 shrink-0" />
+            <input value={postsSearch} onChange={(e) => setPostsSearch(e.target.value)}
+              placeholder="Pesquisar por autor..."
+              className="flex-1 bg-transparent text-sm text-white outline-none placeholder:text-white/35" />
+          </div>
+          {postsLoading ? (
+            <div className="flex items-center justify-center py-16"><Loader className="h-5 w-5 animate-spin text-white/40" /></div>
+          ) : (
+            <div className="space-y-2">
+              {postsList
+                .filter((p) => {
+                  const q = postsSearch.trim().toLowerCase();
+                  if (!q) return true;
+                  return p.author_username?.toLowerCase().includes(q) || p.author_name?.toLowerCase().includes(q);
+                })
+                .length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 gap-2">
+                  <FileText className="h-8 w-8 text-white/20" />
+                  <p className="text-white/40 text-sm">Nenhuma publicação encontrada.</p>
+                </div>
+              ) : postsList
+                .filter((p) => {
+                  const q = postsSearch.trim().toLowerCase();
+                  if (!q) return true;
+                  return p.author_username?.toLowerCase().includes(q) || p.author_name?.toLowerCase().includes(q);
+                })
+                .map((p) => {
+                  let preview = p.content ?? "";
+                  if (p.kind === "bg") { try { preview = JSON.parse(preview).text ?? ""; } catch { /* mantém texto bruto */ } }
+                  const mediaLabel = p.video_url ? "Vídeo" : p.clip_video_id ? "Clipe de canal" : p.photo_url ? "Foto" : "Texto";
+                  const MediaIcon = p.video_url || p.clip_video_id ? VideoIcon : p.photo_url ? ImageIcon : FileText;
+                  return (
+                    <div key={p.id} className="rounded-2xl p-4 flex items-start gap-3"
+                      style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                      <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold shrink-0"
+                        style={{ background: p.author_color || "#5B3FCF" }}>
+                        {(p.author_name?.[0] ?? p.author_username?.[0] ?? "?").toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-white">
+                          <span className="font-bold">{p.author_name || p.author_username || "?"}</span>
+                          <span className="text-white/40"> @{p.author_username ?? "?"}</span>
+                        </p>
+                        {preview && <p className="text-white/70 text-sm mt-1 line-clamp-3 whitespace-pre-wrap break-words">{preview}</p>}
+                        <div className="flex items-center gap-3 mt-2">
+                          <span className="flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full" style={{ background: "rgba(91,63,207,0.18)", color: "#8f78e8" }}>
+                            <MediaIcon className="h-3 w-3" /> {mediaLabel}
+                          </span>
+                          {p.channel_name && <span className="text-[11px] text-white/40">Canal: {p.channel_name}</span>}
+                          <span className="text-[11px] text-white/30">{new Date(p.created_at).toLocaleString("pt-PT")}</span>
+                        </div>
+                      </div>
+                      <button onClick={() => deletePost(p)} title="Eliminar publicação e avisar autor"
+                        className="p-2 rounded-full transition active:scale-90 shrink-0" style={{ background: "rgba(239,68,68,0.15)" }}>
+                        <Trash2 className="h-4 w-4" style={{ color: "#F87171" }} />
+                      </button>
+                    </div>
+                  );
+                })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Canais ── */}
+      {section === "channels" && (
+        <div className="flex-1 overflow-y-auto p-6 md:p-10">
+          <h1 className="text-2xl font-extrabold text-white mb-1">Canais</h1>
+          <p className="text-white/45 text-sm mb-6">Todos os canais criados no Hooda Studio. Eliminar avisa automaticamente o dono.</p>
+          <div className="flex items-center gap-2 rounded-2xl px-3 py-2 mb-6 max-w-sm"
+            style={{ background: "rgba(255,255,255,0.06)" }}>
+            <Search className="h-4 w-4 text-white/40 shrink-0" />
+            <input value={channelsSearch} onChange={(e) => setChannelsSearch(e.target.value)}
+              placeholder="Pesquisar canal ou dono..."
+              className="flex-1 bg-transparent text-sm text-white outline-none placeholder:text-white/35" />
+          </div>
+          {channelsLoading ? (
+            <div className="flex items-center justify-center py-16"><Loader className="h-5 w-5 animate-spin text-white/40" /></div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {channelsList
+                .filter((c) => {
+                  const q = channelsSearch.trim().toLowerCase();
+                  if (!q) return true;
+                  return c.name?.toLowerCase().includes(q) || c.handle?.toLowerCase().includes(q) || c.owner_username?.toLowerCase().includes(q);
+                })
+                .length === 0 ? (
+                <div className="col-span-full flex flex-col items-center justify-center py-16 gap-2">
+                  <Radio className="h-8 w-8 text-white/20" />
+                  <p className="text-white/40 text-sm">Nenhum canal encontrado.</p>
+                </div>
+              ) : channelsList
+                .filter((c) => {
+                  const q = channelsSearch.trim().toLowerCase();
+                  if (!q) return true;
+                  return c.name?.toLowerCase().includes(q) || c.handle?.toLowerCase().includes(q) || c.owner_username?.toLowerCase().includes(q);
+                })
+                .map((c) => (
+                  <div key={c.id} className="rounded-2xl p-4 flex items-start gap-3"
+                    style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                    <div className="w-11 h-11 rounded-2xl overflow-hidden flex items-center justify-center text-white font-bold shrink-0"
+                      style={{ background: "#5B3FCF" }}>
+                      {c.avatar_url ? <img src={c.avatar_url} alt="" className="w-full h-full object-cover" /> : c.name?.[0]?.toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-white truncate">{c.name}</p>
+                      <p className="text-[12px] text-white/45 truncate">@{c.handle}</p>
+                      <p className="text-[11px] text-white/35 truncate mt-0.5">Dono: @{c.owner_username ?? "?"}</p>
+                      {c.category && <span className="inline-block mt-1.5 text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: "rgba(91,63,207,0.18)", color: "#8f78e8" }}>{c.category}</span>}
+                    </div>
+                    <div className="flex flex-col items-center gap-1.5 shrink-0">
+                      <a href={`/canal/${c.handle}`} target="_blank" rel="noreferrer" title="Ver canal"
+                        className="p-2 rounded-full transition active:scale-90" style={{ background: "rgba(255,255,255,0.08)" }}>
+                        <ExternalLink className="h-4 w-4 text-white/60" />
+                      </a>
+                      <button onClick={() => deleteChannel(c)} title="Eliminar canal e avisar dono"
+                        className="p-2 rounded-full transition active:scale-90" style={{ background: "rgba(239,68,68,0.15)" }}>
+                        <Trash2 className="h-4 w-4" style={{ color: "#F87171" }} />
                       </button>
                     </div>
                   </div>
