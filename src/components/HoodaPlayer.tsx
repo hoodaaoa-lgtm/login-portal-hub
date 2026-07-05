@@ -385,6 +385,20 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
             : { aspectRatio: effectiveRatio, maxHeight: isFinite(maxHeightPx) ? `${maxHeightPx}px` : "none", overflow: "hidden" }
         }
       >
+      {/* Fundo desfocado: preenche qualquer espaço que sobre à volta do
+          vídeo (em vez de barra preta lisa), usando a própria imagem do
+          vídeo esticada e desfocada — igual ao TikTok/Instagram. Só fica
+          visível nesse espaço sobrante, porque o vídeo em cima cobre o
+          resto. */}
+      {poster && (
+        <img
+          src={poster}
+          alt=""
+          aria-hidden
+          className="absolute inset-0 w-full h-full object-cover scale-110"
+          style={{ filter: "blur(30px) brightness(0.55)" }}
+        />
+      )}
       {/* Video element — object-fit: contain, sempre. */}
       <video
         ref={(el) => {
