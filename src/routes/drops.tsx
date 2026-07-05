@@ -20,13 +20,12 @@ function t(key: string, fallback: string) {
 }
 
 export const Route = createFileRoute("/drops")({
-  head: () => ({ meta: [{ title: "Hooda — Drops" }] }),
+  head: () => ({ meta: [{ title: "Hooda" }] }),
   component: DropsPage,
 });
 
 const ACCENT = "#5B3FCF";
 const PINK = "#E94B8A";
-const TEAL = "#1FAFA6";
 const PAGE = 10;
 
 type ContentType = "photo" | "video" | "text" | "music";
@@ -159,14 +158,7 @@ function DropsPage() {
                 style={{ background: `linear-gradient(135deg, ${ACCENT}, ${PINK})`, boxShadow: "0 4px 14px rgba(91,63,207,.4)" }}>
                 <Droplet className="w-[18px] h-[18px] text-white fill-white" />
               </span>
-              <h1 className="text-2xl font-black" style={{ color: "var(--text-primary)" }}>Drops</h1>
-              <span className="flex items-center gap-1.5 ml-1 text-[11px] font-extrabold" style={{ color: TEAL }}>
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-70" style={{ background: TEAL }} />
-                  <span className="relative inline-flex rounded-full h-2 w-2" style={{ background: TEAL }} />
-                </span>
-                {t("drops.live", "AO VIVO")}
-              </span>
+              <h1 className="text-2xl font-black" style={{ color: "var(--text-primary)" }}>Gotas</h1>
             </div>
             <button onClick={() => setShowCreate(true)}
               className="flex items-center gap-1.5 px-3.5 h-9 rounded-full text-sm font-bold text-white transition active:scale-95"
@@ -479,10 +471,10 @@ function EmptyState() {
         <Droplet className="w-7 h-7 text-white fill-white" />
       </span>
       <p className="font-extrabold text-lg mb-1" style={{ color: "var(--text-primary)" }}>
-        {t("drops.empty_title", "Ainda não há Drops")}
+        {t("drops.empty_title", "Ainda não há Gotas")}
       </p>
       <p className="text-sm" style={{ color: "var(--text-muted)" }}>
-        {t("drops.empty_sub", "Segue mais pessoas ou cria o teu primeiro Drop 💧")}
+        {t("drops.empty_sub", "Segue mais pessoas ou cria a tua primeira Gota 💧")}
       </p>
     </div>
   );
