@@ -45,7 +45,7 @@ function BooksSection({ search, navigate }: { search: string; navigate: any }) {
   const { data: books = [], isLoading } = useQuery({
     queryKey: ["books", "explorar", search],
     queryFn: async () => {
-      let q = (supabase as any).from("books").select("*").order("downloads", { ascending: false }).limit(50);
+      let q = (supabase as any).from("books").select("*").order("created_at", { ascending: false }).limit(500);
       if (search) q = q.or(`title.ilike.%${search}%,author_name.ilike.%${search}%,category.ilike.%${search}%`);
       const { data } = await q;
       return data ?? [];
@@ -232,7 +232,7 @@ function ExplorePage() {
       const { data } = await (supabase as any).from("videos")
         .select("id,title,thumbnail_url,views_count,duration_seconds,channel_id,channels(name,avatar_url,handle),created_at")
         .eq("status","published").eq("visibility","public")
-        .order("created_at", { ascending: false }).limit(200);
+        .order("created_at", { ascending: false }).limit(500);
       return data ?? [];
     },
     enabled: tab === "trending" || tab === "posts",
@@ -246,7 +246,8 @@ function ExplorePage() {
       const { data } = await (supabase as any).from("profiles")
         .select("id,username,full_name,avatar_url,bio")
         .neq("id", myId || "00000000-0000-0000-0000-000000000000")
-        .limit(10);
+        .order("created_at", { ascending: false })
+        .limit(200);
       return data ?? [];
     },
     enabled: tab === "trending" || tab === "people",
@@ -260,20 +261,20 @@ function ExplorePage() {
       const { data } = await (supabase as any).from("posts")
         .select("id,content,kind,photo_url,image_url,likes_count,author_username,author_color,author_id,created_at,profiles(avatar_url,full_name)")
         .in("kind",["photo","post","video"])
-        .order("created_at", { ascending: false }).limit(100);
+        .order("created_at", { ascending: false }).limit(500);
       return data ?? [];
     },
     enabled: tab === "trending" || tab === "posts",
     staleTime: 60_000,
   });
 
-  /* ── Query: canais ── */
+  /* ── Query: canais — todos, por ordem cronológica, sem ranking por popularidade ── */
   const { data: channels = [] } = useQuery({
     queryKey: ["explore-channels"],
     queryFn: async () => {
       const { data } = await (supabase as any).from("channels")
-        .select("id,name,handle,avatar_url,subscriber_count,videos_count")
-        .order("subscriber_count", { ascending: false }).limit(10);
+        .select("id,name,handle,avatar_url,subscriber_count,videos_count,created_at")
+        .order("created_at", { ascending: false }).limit(500);
       return data ?? [];
     },
     enabled: tab === "trending" || tab === "channels",
