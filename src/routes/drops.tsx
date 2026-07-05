@@ -7,7 +7,7 @@ import { BottomNav, SideNav, PageWrapper, FeedLayout } from "@/components/AppShe
 import { RightSidebar } from "@/components/RightSidebar";
 import { DropsCreator } from "@/components/DropsCreator";
 import {
-  Heart, MessageCircle, Repeat2, Share2, Eye, Plus, Clock,
+  Heart, MessageCircle, Eye, Plus, Clock,
   X, Image as ImageIcon, Music, Video, Type as TypeIcon, Play, Send, Droplet,
 } from "lucide-react";
 import { timeAgo } from "@/hooks/useTimeAgo";
@@ -229,9 +229,6 @@ function DropsPage() {
 function DropCard({ drop, userId }: { drop: Drop; userId: string | null }) {
   const [liked, setLiked] = useState(drop.is_liked);
   const [likes, setLikes] = useState(drop.likes_count);
-  const [reposted, setReposted] = useState(drop.is_reposted);
-  const [reposts, setReposts] = useState(drop.reposts_count);
-  const [shares, setShares] = useState(drop.shares_count);
   const [views, setViews] = useState(drop.views_count);
   const [showComments, setShowComments] = useState(false);
   const [comments, setComments] = useState(drop.comments_count);
@@ -254,14 +251,11 @@ function DropCard({ drop, userId }: { drop: Drop; userId: string | null }) {
     return () => obs.disconnect();
   }, [userId, drop.id]);
 
-  const toggle = useCallback(async (type: "like" | "repost") => {
+  const toggle = useCallback(async (type: "like") => {
     if (!userId) return;
-    const isLike = type === "like";
-    const active = isLike ? liked : reposted;
-    const setActive = isLike ? setLiked : setReposted;
-    const setCount = isLike ? setLikes : setReposts;
-    setActive(!active);
-    setCount((c) => Math.max(0, c + (active ? -1 : 1)));
+    const active = liked;
+    setLiked(!active);
+    setLikes((c) => Math.max(0, c + (active ? -1 : 1)));
     if (active) {
       await (supabase as any).from("drop_interactions").delete()
         .match({ drop_id: drop.id, user_id: userId, interaction_type: type });
@@ -269,19 +263,7 @@ function DropCard({ drop, userId }: { drop: Drop; userId: string | null }) {
       await (supabase as any).from("drop_interactions")
         .insert({ drop_id: drop.id, user_id: userId, interaction_type: type });
     }
-  }, [userId, liked, reposted, drop.id]);
-
-  const share = useCallback(async () => {
-    if (!userId) return;
-    const url = `${window.location.origin}/drops`;
-    try {
-      if (navigator.share) await navigator.share({ title: "Hooda Drops", url });
-      else await navigator.clipboard.writeText(url);
-    } catch { /* utilizador cancelou */ }
-    const { error } = await (supabase as any).from("drop_interactions")
-      .insert({ drop_id: drop.id, user_id: userId, interaction_type: "share" });
-    if (!error) setShares((s) => s + 1);
-  }, [userId, drop.id]);
+  }, [userId, liked, drop.id]);
 
   const initial = (drop.username?.[0] ?? "?").toUpperCase();
 
@@ -356,10 +338,6 @@ function DropCard({ drop, userId }: { drop: Drop; userId: string | null }) {
           icon={<Heart className={`w-[19px] h-[19px] ${liked ? "fill-current" : ""}`} />} label={likes} />
         <ActionBtn onClick={() => setShowComments(true)}
           icon={<MessageCircle className="w-[19px] h-[19px]" />} label={comments} />
-        <ActionBtn active={reposted} activeColor={TEAL} onClick={() => toggle("repost")}
-          icon={<Repeat2 className="w-[19px] h-[19px]" />} label={reposts} />
-        <ActionBtn onClick={share}
-          icon={<Share2 className="w-[19px] h-[19px]" />} label={shares} />
         <span className="flex items-center gap-1.5 text-[13px] font-semibold" style={{ color: "var(--text-muted)" }}>
           <Eye className="w-[19px] h-[19px]" /> {views > 999 ? `${(views / 1000).toFixed(1)}k` : views}
         </span>
