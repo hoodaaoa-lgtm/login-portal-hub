@@ -8,7 +8,7 @@ import { Camera, Loader2, Save, Trash2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/studio/definicoes")({
-  head: () => ({ meta: [{ title: "Configurações — Hooda Studio" }] }),
+  head: () => ({ meta: [{ title: "Hooda" }] }),
   component: SettingsPage,
 });
 

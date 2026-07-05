@@ -11,7 +11,7 @@ import {
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/studio/criar")({
-  head: () => ({ meta: [{ title: "Criar Publicação — Hooda Studio" }] }),
+  head: () => ({ meta: [{ title: "Hooda" }] }),
   component: CreatePage,
 });
 

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Loader2, Users, MessageSquare } from "lucide-react";
 
 export const Route = createFileRoute("/studio/comunidade")({
-  head: () => ({ meta: [{ title: "Comunidade — Hooda Studio" }] }),
+  head: () => ({ meta: [{ title: "Hooda" }] }),
   component: CommunityPage,
 });
 

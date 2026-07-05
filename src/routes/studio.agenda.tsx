@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 
 export const Route = createFileRoute("/studio/agenda")({
-  head: () => ({ meta: [{ title: "Agenda — Hooda Studio" }] }),
+  head: () => ({ meta: [{ title: "Hooda" }] }),
   component: AgendaPage,
 });
 

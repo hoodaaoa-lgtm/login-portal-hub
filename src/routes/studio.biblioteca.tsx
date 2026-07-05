@@ -8,7 +8,7 @@ import {
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/studio/biblioteca")({
-  head: () => ({ meta: [{ title: "Biblioteca — Hooda Studio" }] }),
+  head: () => ({ meta: [{ title: "Hooda" }] }),
   component: LibraryPage,
 });
 

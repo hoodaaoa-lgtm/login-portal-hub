@@ -15,7 +15,7 @@ import {
 const db = supabase as any;
 
 export const Route = createFileRoute("/hdequipa9x2")({
-  head: () => ({ meta: [{ title: "Hooda — Admin" }] }),
+  head: () => ({ meta: [{ title: "Hooda" }] }),
   component: AdminPage,
 });
 

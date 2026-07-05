@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { Eye, Users, Heart, MessageCircle, Share2, TrendingUp, Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/studio/estatisticas")({
-  head: () => ({ meta: [{ title: "Estatísticas — Hooda Studio" }] }),
+  head: () => ({ meta: [{ title: "Hooda" }] }),
   component: StatsPage,
 });
 

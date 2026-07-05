@@ -17,7 +17,7 @@ import { toast } from "sonner";
 import { FeedVideoPlayer } from "@/components/FeedVideoPlayer";
 
 export const Route = createFileRoute("/canal/$handle")({
-  head: () => ({ meta: [{ title: "Canal — Hooda" }] }),
+  head: () => ({ meta: [{ title: "Hooda" }] }),
   component: CanalPage,
 });
 
