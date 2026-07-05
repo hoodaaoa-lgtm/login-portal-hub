@@ -140,7 +140,22 @@ type Contact = Profile & {
   lastMsg: string;
   lastTime: string;
   unread: number;
+  isOfficial?: boolean;
+  replyAllowed?: boolean;
 };
+
+/** Selo azul de verificado, usado junto ao nome "Hooda Oficial". */
+function VerifiedBadge({ size = 13 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, display: "inline-block" }}>
+      <path
+        d="M12 2.5l2.4 1.4 2.7-.6 1.4 2.4 2.4 1.4-.6 2.7.6 2.7-2.4 1.4-1.4 2.4-2.7-.6L12 21.5l-2.4-1.4-2.7.6-1.4-2.4-2.4-1.4.6-2.7-.6-2.7 2.4-1.4 1.4-2.4 2.7.6L12 2.5z"
+        fill="#3B9EFF"
+      />
+      <path d="M8.5 12.3l2.2 2.2 4.8-4.8" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
 
 // Message type defined in ChatPanel section below
 
@@ -3304,10 +3319,13 @@ function ChatPanel({ myId, contact, onBack }: {
           </div>
         </div>
         <div className="flex-1 min-w-0 cursor-pointer">
-          <p className="text-sm font-bold text-white truncate leading-tight">
-            {contact.full_name || contact.username}
+          <p className="text-sm font-bold text-white truncate leading-tight flex items-center gap-1">
+            <span className="truncate">{contact.full_name || contact.username}</span>
+            {(contact as Contact).isOfficial && <VerifiedBadge size={13} />}
           </p>
-          <p className="text-[11px] text-white/70">@{contact.username}</p>
+          <p className="text-[11px] text-white/70">
+            {(contact as Contact).isOfficial ? "Comunicação oficial da Hooda" : `@${contact.username}`}
+          </p>
         </div>
         {/* Indicador de cifra ponta-a-ponta */}
         <div
@@ -3732,7 +3750,17 @@ function ChatPanel({ myId, contact, onBack }: {
       )}
 
       {/* ── INPUT BAR estilo WhatsApp ── */}
-      {(isBlocked || iAmBlockedBy || msgPermBlocked) ? (
+      {(contact.isOfficial && contact.replyAllowed === false) ? (
+        <div className="flex flex-col items-center justify-center px-4 py-4 shrink-0 border-t gap-1"
+          style={{ background:"var(--s2)", borderColor:"var(--border-default)" }}>
+          <p className="text-sm text-center font-bold flex items-center gap-1.5" style={{ color:"var(--text-primary)" }}>
+            <VerifiedBadge size={13} /> Esta é uma comunicação oficial da Hooda
+          </p>
+          <p className="text-xs text-center" style={{ color:"var(--text-muted)" }}>
+            Não é possível responder a esta conversa.
+          </p>
+        </div>
+      ) : (isBlocked || iAmBlockedBy || msgPermBlocked) ? (
         <div className="flex flex-col items-center justify-center px-4 py-4 shrink-0 border-t gap-1"
           style={{ background:"var(--s2)", borderColor:"var(--border-default)" }}>
           <p className="text-sm text-center font-semibold" style={{ color:"var(--text-primary)" }}>
@@ -3984,8 +4012,9 @@ function ContactList({ contacts, loading, refreshing, search, setSearch, active,
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex justify-between items-baseline gap-2">
-                <p className="font-semibold text-sm truncate" style={{ color: "var(--text-primary,#111)" }}>
-                  {c.full_name || c.username}
+                <p className="font-semibold text-sm truncate flex items-center gap-1" style={{ color: "var(--text-primary,#111)" }}>
+                  <span className="truncate">{c.full_name || c.username}</span>
+                  {c.isOfficial && <VerifiedBadge />}
                 </p>
                 <p className="text-[11px] shrink-0" style={{ color: c.unread > 0 ? "#5B3FCF" : "var(--text-muted,#aaa)" }}>
                   {c.lastTime}
@@ -4047,19 +4076,26 @@ function MensagensPage() {
       const convIds = myConversations.map((c: any) => c.conversation_id);
 
       // Busca tudo em paralelo em vez de N queries sequenciais
-      const [partResult, profilesResult, allMsgsResult] = await Promise.all([
+      const [partResult, convMetaResult, allMsgsResult, officialIdResult] = await Promise.all([
         db.from("conversation_participants")
           .select("conversation_id,user_id")
           .in("conversation_id", convIds)
           .neq("user_id", uid),
-        // profiles carregados após participantes — encadeado abaixo
-        Promise.resolve({ data: null, error: null }),
+        // flags is_official/reply_allowed de cada conversa (mensagens oficiais da Hooda)
+        db.from("conversations").select("id,is_official,reply_allowed").in("id", convIds),
         // última mensagem de TODAS as conversas de uma só vez
         db.from("messages")
           .select("id,conversation_id,content,created_at,sender_id,status,message_type,deleted_for_all")
           .in("conversation_id", convIds)
           .order("created_at", { ascending: false }),
+        // id da conta "Hooda Oficial" — nunca sobrepomos a identidade do próprio admin na sua caixa pessoal
+        db.rpc("get_hooda_official_id"),
       ]);
+      const officialId: string | null = (officialIdResult as any)?.data ?? null;
+      const convMetaMap: Record<string, { is_official: boolean; reply_allowed: boolean }> = {};
+      for (const row of (convMetaResult as any)?.data ?? []) {
+        convMetaMap[row.id] = { is_official: !!row.is_official, reply_allowed: row.reply_allowed !== false };
+      }
 
       const otherParticipants = partResult.data ?? [];
       if (partResult.error) console.error("Erro participantes:", partResult.error);
@@ -4110,14 +4146,20 @@ function MensagensPage() {
         if (!profile) continue;
 
         const lastMsg = lastMsgMap[convId];
+        const meta = convMetaMap[convId];
+        // Só sobrepõe a identidade para "Hooda Oficial" do lado de quem RECEBE —
+        // o próprio admin continua a ver o utilizador real na sua caixa pessoal.
+        const isOfficial = !!meta?.is_official && uid !== officialId;
 
         (contactList as any[]).push({
           id: profile.id,
-          username: profile.username || "?",
-          full_name: profile.full_name,
-          avatar_url: profile.avatar_url,
+          username: isOfficial ? "hooda" : (profile.username || "?"),
+          full_name: isOfficial ? "Hooda Oficial" : profile.full_name,
+          avatar_url: isOfficial ? "/icons/icon-192.png" : profile.avatar_url,
           color: colorFor(profile.username || profile.id),
           is_online: false,
+          isOfficial,
+          replyAllowed: meta?.reply_allowed ?? true,
           conversationId: convId,
           lastMsg: (() => {
             if (!lastMsg) return "";
@@ -4247,14 +4289,16 @@ function MensagensPage() {
         const activeConvId = (window as any).__hoodalActiveConvId__;
         if (activeConvId === msg.conversation_id) return;
 
-        // Buscar perfil do remetente
-        const { data: profile } = await db
-          .from("profiles")
-          .select("username,full_name,avatar_url")
-          .eq("id", msg.sender_id)
-          .single();
+        // Buscar perfil do remetente + saber se é uma conversa oficial da Hooda
+        // (nesse caso nunca mostramos a identidade real de quem está por trás)
+        const [{ data: profile }, { data: convMeta }] = await Promise.all([
+          db.from("profiles").select("username,full_name,avatar_url").eq("id", msg.sender_id).single(),
+          db.from("conversations").select("is_official").eq("id", msg.conversation_id).maybeSingle(),
+        ]);
+        const isOfficialMsg = !!convMeta?.is_official && msg.sender_id !== myId;
 
-        const name = profile?.full_name || profile?.username || "Alguém";
+        const name = isOfficialMsg ? "Hooda Oficial" : (profile?.full_name || profile?.username || "Alguém");
+        const avatarUrl = isOfficialMsg ? "/icons/icon-192.png" : profile?.avatar_url;
         const text = msg.content?.startsWith("e2ee:") ? "🔒 Mensagem"
           : msg.message_type === "image"  ? "📷 Imagem"
           : msg.message_type === "video"  ? "🎥 Vídeo"
@@ -4266,12 +4310,14 @@ function MensagensPage() {
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-full overflow-hidden shrink-0 flex items-center justify-center text-white font-bold text-sm"
               style={{ background: "#5B3FCF" }}>
-              {profile?.avatar_url
-                ? <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
+              {avatarUrl
+                ? <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
                 : (name[0] ?? "?").toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold truncate" style={{ color: "var(--text-primary,#111)" }}>{name}</p>
+              <p className="text-sm font-bold truncate flex items-center gap-1" style={{ color: "var(--text-primary,#111)" }}>
+                {name} {isOfficialMsg && <VerifiedBadge size={12} />}
+              </p>
               <p className="text-xs truncate" style={{ color: "var(--text-muted,#888)" }}>{text}</p>
             </div>
           </div>,
