@@ -28,9 +28,10 @@ export function QuickPostModal({ name, username, avatarUrl, onClose, onPublished
   onClose: () => void;
   onPublished: () => void;
 }) {
+  const MAX_PHOTOS = 10;
   const [text, setText] = useState("");
-  const [photo, setPhoto] = useState<string | null>(null);
-  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photos, setPhotos] = useState<string[]>([]);
+  const [photoFiles, setPhotoFiles] = useState<File[]>([]);
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [videoPreview, setVideoPreview] = useState<string | null>(null);
   const [publishing, setPublishing] = useState(false);
@@ -43,24 +44,35 @@ export function QuickPostModal({ name, username, avatarUrl, onClose, onPublished
   useScrollLock();
 
   function pickPhoto(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setPhotoFile(file);
+    const picked = Array.from(e.target.files ?? []);
+    if (picked.length === 0) return;
+    const room = MAX_PHOTOS - photoFiles.length;
+    const accepted = picked.slice(0, room);
     setVideoFile(null); setVideoPreview(null);
-    const reader = new FileReader();
-    reader.onload = (ev) => setPhoto(ev.target?.result as string);
-    reader.readAsDataURL(file);
+    setPhotoFiles((prev) => [...prev, ...accepted]);
+    accepted.forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = (ev) => setPhotos((prev) => [...prev, ev.target?.result as string]);
+      reader.readAsDataURL(file);
+    });
+    // permite escolher o mesmo ficheiro outra vez depois de remover
+    e.target.value = "";
+  }
+
+  function removePhotoAt(i: number) {
+    setPhotos((prev) => prev.filter((_, idx) => idx !== i));
+    setPhotoFiles((prev) => prev.filter((_, idx) => idx !== i));
   }
 
   function pickVideo(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     setVideoFile(file);
-    setPhoto(null); setPhotoFile(null);
+    setPhotos([]); setPhotoFiles([]);
     setVideoPreview(URL.createObjectURL(file));
   }
 
-  const canPublish = (text.trim().length > 0 || !!photo || !!videoFile) && !publishing && stage !== "done";
+  const canPublish = (text.trim().length > 0 || photos.length > 0 || !!videoFile) && !publishing && stage !== "done";
 
   async function publish() {
     if (!canPublish) return;
@@ -72,13 +84,20 @@ export function QuickPostModal({ name, username, avatarUrl, onClose, onPublished
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { setErr("É preciso iniciar sessão para publicar."); return; }
 
-      let imageUrl: string | null = photo;
+      let imageUrls: string[] = [];
       let videoUrl: string | null = null;
 
-      if (photoFile) {
+      if (photoFiles.length > 0) {
         setStage("upload");
-        const { url } = await uploadImageToCloudinary(photoFile, `hooda/posts/${session.user.id}`, setProgress);
-        imageUrl = url;
+        const total = photoFiles.length;
+        for (let i = 0; i < total; i++) {
+          const { url } = await uploadImageToCloudinary(
+            photoFiles[i],
+            `hooda/posts/${session.user.id}`,
+            (pct) => setProgress(Math.round(((i + pct / 100) / total) * 100)),
+          );
+          imageUrls.push(url);
+        }
         setProgress(100);
       }
       if (videoFile) {
@@ -101,9 +120,10 @@ export function QuickPostModal({ name, username, avatarUrl, onClose, onPublished
         author_name: prof?.full_name ?? session.user.email ?? "",
         author_color: ACCENT,
         content: text,
-        kind: videoUrl ? "video" : imageUrl ? "photo" : "post",
-        photo_url: imageUrl,
-        image_url: imageUrl,
+        kind: videoUrl ? "video" : imageUrls.length > 0 ? "photo" : "post",
+        photo_url: imageUrls[0] ?? null,
+        image_url: imageUrls[0] ?? null,
+        photos: imageUrls.length > 0 ? imageUrls : null,
         video_url: videoUrl,
       });
 
@@ -146,13 +166,24 @@ export function QuickPostModal({ name, username, avatarUrl, onClose, onPublished
         </div>
 
         <div className="flex-1 overflow-y-auto px-4 pb-2">
-          {photo && (
-            <div className="relative mb-3 rounded-xl overflow-hidden">
-              <img src={photo} alt="foto" className="w-full rounded-xl" style={{ display: "block" }} />
-              <button onClick={() => { setPhoto(null); setPhotoFile(null); }}
-                className="absolute top-2 right-2 bg-black/60 text-white rounded-full p-1">
-                <X className="h-4 w-4" />
-              </button>
+          {photos.length > 0 && (
+            <div className="grid grid-cols-3 gap-2 mb-3">
+              {photos.map((p, i) => (
+                <div key={i} className="relative rounded-xl overflow-hidden" style={{ aspectRatio: "1/1" }}>
+                  <img src={p} alt={`foto ${i + 1}`} className="w-full h-full object-cover" style={{ display: "block" }} />
+                  <button onClick={() => removePhotoAt(i)}
+                    className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-1">
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              ))}
+              {photos.length < MAX_PHOTOS && (
+                <button onClick={() => fileRef.current?.click()}
+                  className="flex items-center justify-center rounded-xl transition active:scale-95"
+                  style={{ aspectRatio: "1/1", background: "var(--s2)", border: "1.5px dashed var(--border-subtle)" }}>
+                  <Plus className="h-6 w-6" style={{ color: "var(--text-muted)" }} />
+                </button>
+              )}
             </div>
           )}
           {videoPreview && (
@@ -175,7 +206,7 @@ export function QuickPostModal({ name, username, avatarUrl, onClose, onPublished
             <button onClick={() => fileRef.current?.click()}
               className="flex items-center gap-1.5 px-3 py-2 rounded-xl transition text-sm font-semibold active:scale-95"
               style={{ background: "var(--s2)", color: "var(--text-secondary)" }}>
-              <Image className="h-4 w-4 text-[#6BA547]" /> Foto
+              <Image className="h-4 w-4 text-[#6BA547]" /> Foto{photos.length > 0 ? `s (${photos.length})` : "s"}
             </button>
             <button onClick={() => videoRef.current?.click()}
               className="flex items-center gap-1.5 px-3 py-2 rounded-xl transition text-sm font-semibold active:scale-95"
@@ -183,7 +214,7 @@ export function QuickPostModal({ name, username, avatarUrl, onClose, onPublished
               <Film className="h-4 w-4 text-[#E94B8A]" /> Vídeo
             </button>
           </div>
-          <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={pickPhoto} />
+          <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={pickPhoto} />
           <input ref={videoRef} type="file" accept="video/*" className="hidden" onChange={pickVideo} />
 
           {err && <p className="mb-2 text-sm text-red-500">{err}</p>}

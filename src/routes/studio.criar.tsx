@@ -44,8 +44,9 @@ function CreatePage() {
   const [hashtags, setHashtags] = useState<string[]>([]);
   const [visibility, setVisibility] = useState<Visibility>("public");
 
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string>("");
+  const MAX_PHOTOS = 10;
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [videoPreview, setVideoPreview] = useState<string>("");
   const [thumbFile, setThumbFile] = useState<File | null>(null);
@@ -70,10 +71,21 @@ function CreatePage() {
     setHashtagInput("");
   }
 
-  async function onImage(f: File) {
-    if (f.size > 10 * 1024 * 1024) { toast.error("Imagem tem de ser inferior a 10 MB."); return; }
-    setImageFile(f);
-    setImagePreview(URL.createObjectURL(f));
+  async function onImages(files: File[]) {
+    const room = MAX_PHOTOS - imageFiles.length;
+    const accepted: File[] = [];
+    for (const f of files.slice(0, room)) {
+      if (f.size > 10 * 1024 * 1024) { toast.error(`"${f.name}" é maior que 10 MB — ignorada.`); continue; }
+      accepted.push(f);
+    }
+    if (accepted.length === 0) return;
+    setImageFiles(prev => [...prev, ...accepted]);
+    setImagePreviews(prev => [...prev, ...accepted.map(f => URL.createObjectURL(f))]);
+  }
+
+  function removeImageAt(i: number) {
+    setImageFiles(prev => prev.filter((_, idx) => idx !== i));
+    setImagePreviews(prev => prev.filter((_, idx) => idx !== i));
   }
 
   async function onVideo(f: File) {
@@ -104,7 +116,7 @@ function CreatePage() {
     if (!prof) { toast.error("Perfil não encontrado."); return; }
 
     if (kind === "text" && !description.trim() && !title.trim()) { toast.error("Escreve algo."); return; }
-    if (kind === "image" && !imageFile) { toast.error("Adiciona uma imagem."); return; }
+    if (kind === "image" && imageFiles.length === 0) { toast.error("Adiciona uma imagem."); return; }
     if (kind === "video" && !videoFile) { toast.error("Adiciona um vídeo."); return; }
     if (kind === "poll" && pollOptions.filter(o => o.trim()).length < 2) { toast.error("Adiciona pelo menos 2 opções."); return; }
 
@@ -136,10 +148,19 @@ function CreatePage() {
         channel_avatar: channel?.avatar_url ?? null,
       };
 
-      if (kind === "image" && imageFile) {
-        const { url } = await uploadImageToCloudinary(imageFile, `hooda/posts/${uid}`, p => setProgress(p));
-        payload.photo_url = url;
-        payload.photos = [url];
+      if (kind === "image" && imageFiles.length > 0) {
+        const urls: string[] = [];
+        const total = imageFiles.length;
+        for (let i = 0; i < total; i++) {
+          const { url } = await uploadImageToCloudinary(
+            imageFiles[i],
+            `hooda/posts/${uid}`,
+            p => setProgress(Math.round(((i + p / 100) / total) * 100)),
+          );
+          urls.push(url);
+        }
+        payload.photo_url = urls[0];
+        payload.photos = urls;
       }
       if (kind === "video" && videoFile) {
         const res = await uploadToCloudinary(videoFile, {
@@ -236,25 +257,39 @@ function CreatePage() {
         {/* Media area */}
         {kind === "image" && (
           <div>
-            <label className="text-xs font-semibold" style={{ color: "var(--text-muted)" }}>IMAGEM</label>
-            <input ref={imgRef} type="file" accept="image/*" className="hidden"
-              onChange={e => { const f = e.target.files?.[0]; if (f) onImage(f); e.currentTarget.value = ""; }} />
-            {imagePreview ? (
-              <div className="relative mt-1 rounded-2xl overflow-hidden" style={{ background: "var(--s2)" }}>
-                <img src={imagePreview} className="w-full max-h-96 object-contain" alt="" />
-                <button onClick={() => { setImageFile(null); setImagePreview(""); }}
-                  className="absolute top-3 right-3 h-9 w-9 rounded-full flex items-center justify-center"
-                  style={{ background: "rgba(0,0,0,0.7)", color: "#fff" }}>
-                  <X className="h-4 w-4" />
-                </button>
+            <label className="text-xs font-semibold" style={{ color: "var(--text-muted)" }}>
+              IMAGENS {imagePreviews.length > 0 ? `(${imagePreviews.length}/${MAX_PHOTOS})` : ""}
+            </label>
+            <input ref={imgRef} type="file" accept="image/*" multiple className="hidden"
+              onChange={e => { const files = Array.from(e.target.files ?? []); if (files.length) onImages(files); e.currentTarget.value = ""; }} />
+            {imagePreviews.length > 0 ? (
+              <div className="mt-1 grid grid-cols-3 gap-2">
+                {imagePreviews.map((src, i) => (
+                  <div key={i} className="relative rounded-2xl overflow-hidden" style={{ aspectRatio: "1/1", background: "var(--s2)" }}>
+                    <img src={src} className="w-full h-full object-cover" alt="" />
+                    <button onClick={() => removeImageAt(i)}
+                      className="absolute top-2 right-2 h-7 w-7 rounded-full flex items-center justify-center"
+                      style={{ background: "rgba(0,0,0,0.7)", color: "#fff" }}>
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))}
+                {imagePreviews.length < MAX_PHOTOS && (
+                  <button onClick={() => imgRef.current?.click()}
+                    className="flex flex-col items-center justify-center gap-1 rounded-2xl border-2 border-dashed transition hover:opacity-80"
+                    style={{ aspectRatio: "1/1", borderColor: "var(--border-default)", color: "var(--text-muted)" }}>
+                    <Upload className="h-5 w-5" />
+                    <span className="text-xs font-semibold">Adicionar</span>
+                  </button>
+                )}
               </div>
             ) : (
               <button onClick={() => imgRef.current?.click()}
                 className="mt-1 w-full py-10 rounded-2xl border-2 border-dashed flex flex-col items-center gap-2 transition hover:opacity-80"
                 style={{ borderColor: "var(--border-default)", color: "var(--text-muted)" }}>
                 <Upload className="h-6 w-6" />
-                <span className="text-sm font-semibold">Adicionar imagem</span>
-                <span className="text-xs">Máx. 10 MB</span>
+                <span className="text-sm font-semibold">Adicionar imagens</span>
+                <span className="text-xs">Máx. 10 MB cada · até {MAX_PHOTOS} fotos</span>
               </button>
             )}
           </div>
