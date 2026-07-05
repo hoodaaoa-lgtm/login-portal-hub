@@ -316,15 +316,15 @@ export function PageWrapper({ children, className = "" }: { children: React.Reac
 export function FeedLayout({ feed, sidebar }: { feed: React.ReactNode; sidebar?: React.ReactNode }) {
   return (
     <div className="flex justify-start lg:justify-center w-full min-h-screen">
-      <div className="flex w-full max-w-[990px] xl:max-w-[1010px] min-h-screen">
+      <div className="flex w-full max-w-[1120px] xl:max-w-[1180px] min-h-screen">
         <main
-          className="flex-1 min-w-0 lg:max-w-[600px] w-full lg:border-x"
+          className="flex-1 min-w-0 lg:max-w-[700px] w-full lg:border-x"
           style={{ borderColor: "var(--border-subtle)" }}
         >
           {feed}
         </main>
         {sidebar && (
-          <aside className="hidden xl:block w-[350px] shrink-0 pl-6">
+          <aside className="hidden xl:block w-[400px] shrink-0 pl-6">
             {sidebar}
           </aside>
         )}
