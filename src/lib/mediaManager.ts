@@ -26,6 +26,21 @@ export function registerVideo(id: string, el: HTMLVideoElement): () => void {
 }
 
 /**
+ * Silencia todos os outros vídeos registados, SEM os pausar — usado
+ * quando o utilizador liga o som de um vídeo através do botão de mute.
+ * Ao contrário de notifyVideoPlaying(), não interrompe vídeos que
+ * estejam a reproduzir em autoplay mudo no feed (ex: Instagram-style);
+ * só garante que nunca há dois vídeos com som ativo ao mesmo tempo.
+ */
+export function muteAllExcept(id: string) {
+  registry.forEach((el, rid) => {
+    if (rid !== id && !el.muted) {
+      el.muted = true;
+    }
+  });
+}
+
+/**
  * Chamar no onPlay do <video>.
  * Pausa automaticamente todos os outros vídeos registados.
  */

@@ -31,7 +31,7 @@
 import { useRef, useState, useEffect, useCallback, forwardRef } from "react";
 import { Play, Pause, Volume2, VolumeX, Maximize, Minimize, RotateCcw } from "lucide-react";
 import { useVideoInView } from "@/hooks/useVideoInView";
-import { registerVideo, notifyVideoPlaying } from "@/lib/mediaManager";
+import { registerVideo, notifyVideoPlaying, muteAllExcept } from "@/lib/mediaManager";
 
 const BRAND = "#5B3FCF";
 const CONTROLS_HIDE_DELAY_MS = 2800;
@@ -350,8 +350,14 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
   function toggleMute() {
     const v = videoRef.current;
     if (!v) return;
+    const willUnmute = v.muted; // vai passar de mudo -> com som
     v.muted = !v.muted;
     setIsMuted(v.muted);
+    // Só um vídeo pode ter som ativo de cada vez em toda a app — ao
+    // ativar o som deste, avisa o mediaManager para silenciar
+    // imediatamente todos os outros (mesmo que já estivessem a tocar
+    // antes deste, ex: vários vídeos autoplay mudos no feed).
+    if (willUnmute) muteAllExcept(mediaIdRef.current);
   }
 
   function toggleFullscreen() {
