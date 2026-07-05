@@ -586,27 +586,26 @@
   }
 }
 
-/* ── hooda-card: universal card class ── */
+/* ── hooda-card: X-style post card (sem borda, separado apenas por border-b) ── */
 .hooda-card {
-  background: var(--s0);
-  border: 1px solid var(--border-subtle);
-  border-radius: 16px;
-  transition: background 0.15s ease, box-shadow 0.15s ease;
-  margin-bottom: 6px;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--border-subtle);
+  border-radius: 0;
+  transition: background 0.15s ease;
+  margin-bottom: 0;
 }
 .hooda-card:hover {
-  background: var(--s2);
-  box-shadow: 0 2px 12px rgba(91,63,207,0.06);
+  background: color-mix(in oklab, var(--text-primary) 3%, transparent);
 }
 
-/* In dark mode */
 .dark .hooda-card {
-  background: var(--s1);
-  border-color: var(--border-subtle);
+  background: transparent;
+  border-bottom: 1px solid var(--border-subtle);
   box-shadow: none;
 }
 .dark .hooda-card:hover {
-  background: var(--s2);
+  background: color-mix(in oklab, var(--text-primary) 4%, transparent);
 }
 
 /* ── Scrollbar: custom thin scrollbar in light/dark ── */
