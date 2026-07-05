@@ -298,9 +298,9 @@ function DropCard({ drop, userId }: { drop: Drop; userId: string | null }) {
         </div>
       )}
       {drop.content_type === "video" && drop.content_url && (
-        <div className="rounded-2xl overflow-hidden mb-3">
+        <div className="mb-3">
           <FeedVideoPlayer src={drop.content_url} postId={drop.id} kind="video"
-            isShortHint={drop.aspect_ratio != null ? drop.aspect_ratio < 1 : null} rounded="rounded-none" />
+            isShortHint={drop.aspect_ratio != null ? drop.aspect_ratio < 1 : null} rounded="rounded-2xl" />
         </div>
       )}
       {drop.content_type === "music" && drop.music_url && (
