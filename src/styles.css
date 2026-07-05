@@ -787,6 +787,19 @@ img:not(.hooda-media), video:not(.hooda-media), canvas, svg,
 .hooda-slide-up  { animation: hoodaSlideUp var(--dur-slow) var(--ease-out) both; }
 .hooda-slide-down{ animation: hoodaSlideDown var(--dur-fast) var(--ease-out) both; }
 
+/* Feedback de toque no vídeo (mobile) — igual ao Instagram/TikTok: um
+   ícone redondo aparece por cima com um "pop" suave e desaparece
+   sozinho, dando confirmação clara do play/pause sem precisar de
+   abrir a barra de controlos inteira a cada toque. */
+@keyframes hoodaTapPulse {
+  0%   { opacity: 0;   transform: scale(0.7); }
+  18%  { opacity: 1;   transform: scale(1.08); }
+  30%  { opacity: 1;   transform: scale(1); }
+  75%  { opacity: 1;   transform: scale(1); }
+  100% { opacity: 0;   transform: scale(1); }
+}
+.hooda-tap-pulse { animation: hoodaTapPulse 550ms ease-out both; }
+
 /* Stagger helper for lists (feed posts, comments, notifications, search results) */
 .hooda-stagger > * {
   animation: hoodaSlideUp var(--dur-slow) var(--ease-out) both;

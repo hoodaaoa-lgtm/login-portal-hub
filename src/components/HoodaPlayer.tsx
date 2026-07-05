@@ -76,8 +76,12 @@ interface HoodaPlayerProps {
 
 /** Limite de altura estilo X: o vídeo ocupa sempre a largura total do
  * post; a altura segue a proporção real dele (horizontal ou vertical),
- * só ficando presa aqui se for um caso extremo — igual ao feed do X. */
-const MAX_HEIGHT_CSS = "min(75vh, 650px)";
+ * só ficando presa aqui se for um caso extremo — igual ao feed do X.
+ * No telemóvel o ecrã é mais alto e estreito, por isso deixamos o vídeo
+ * (sobretudo os verticais) ocupar bem mais altura, tal como no
+ * X/Instagram mobile; no desktop o limite é mais conservador para não
+ * dominar o ecrã largo. */
+const MOBILE_BREAKPOINT_PX = 768;
 
 export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(function HoodaPlayer(
   {
@@ -125,6 +129,16 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
   const [viewportHeight, setViewportHeight] = useState<number>(() =>
     typeof window !== "undefined" ? window.innerHeight : 800,
   );
+  const [isMobile, setIsMobile] = useState<boolean>(() =>
+    typeof window !== "undefined" ? window.innerWidth < MOBILE_BREAKPOINT_PX : false,
+  );
+  // Feedback de toque no mobile: ícone central que aparece e desaparece
+  // sozinho a cada tap, em vez de abrir logo a barra de controlos toda
+  // (replay, som, ecrã inteiro) — sensação mais limpa, igual ao
+  // Instagram/TikTok. `key` força o React a reiniciar a animação CSS
+  // mesmo que o utilizador toque repetidamente antes dela terminar.
+  const [tapPulse, setTapPulse] = useState<{ icon: "play" | "pause"; key: number } | null>(null);
+  const tapPulseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ─── IMPORTANTE: medimos a largura do elemento PAI, nunca a do próprio
   // wrapper. Quando o vídeo é vertical e a caixa encolhe (isHeightConstrained),
@@ -147,7 +161,10 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
   }, []);
 
   useEffect(() => {
-    const onResize = () => setViewportHeight(window.innerHeight);
+    const onResize = () => {
+      setViewportHeight(window.innerHeight);
+      setIsMobile(window.innerWidth < MOBILE_BREAKPOINT_PX);
+    };
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, []);
@@ -156,7 +173,14 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
     const [w, h] = effectiveRatio.split("/").map(Number);
     return w > 0 && h > 0 ? w / h : 16 / 9;
   })();
-  const maxHeightPx = Math.min(viewportHeight * 0.75, 650);
+  // No telemóvel deixamos o vídeo usar bem mais altura do ecrã (até 85%,
+  // teto de 780px) — importante para vídeos verticais, que no mobile
+  // devem parecer-se com o feed do Instagram/TikTok, quase a altura toda.
+  // No desktop mantém-se mais contido (75%, teto de 650px) para não
+  // dominar um ecrã largo.
+  const maxHeightPx = isMobile
+    ? Math.min(viewportHeight * 0.85, 780)
+    : Math.min(viewportHeight * 0.75, 650);
   const heightAtFullWidth = containerWidth ? containerWidth / ratioNum : null;
   const isHeightConstrained = !!heightAtFullWidth && heightAtFullWidth > maxHeightPx;
   const boxWidthPx = isHeightConstrained ? maxHeightPx * ratioNum : null;
@@ -228,6 +252,12 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
     if (vid && !vid.paused) vid.pause();
   }, [isInView]);
 
+  useEffect(() => {
+    return () => {
+      if (tapPulseTimer.current) clearTimeout(tapPulseTimer.current);
+    };
+  }, []);
+
   const resetTimer = useCallback(() => {
     setShowControls(true);
     if (hideTimer.current) clearTimeout(hideTimer.current);
@@ -252,7 +282,8 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
     const v = videoRef.current;
     if (!v) return;
     if (!hasStarted) setHasStarted(true);
-    if (v.paused) {
+    const willPlay = v.paused;
+    if (willPlay) {
       notifyVideoPlaying(mediaIdRef.current);
       v.play()?.catch(() => {
         /* autoplay/gesto bloqueado — ignora, utilizador pode tentar de novo */
@@ -260,7 +291,27 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
     } else {
       v.pause();
     }
+    if (isMobile) {
+      // Pequeno ícone central a aparecer/desaparecer, só como feedback
+      // visual de que o botão de play/pause foi mesmo premido.
+      setTapPulse({ icon: willPlay ? "play" : "pause", key: Date.now() });
+      if (tapPulseTimer.current) clearTimeout(tapPulseTimer.current);
+      tapPulseTimer.current = setTimeout(() => setTapPulse(null), 550);
+    }
     resetTimer();
+  }
+
+  // No mobile, tocar no ECRÃ do vídeo (fora dos botões) NUNCA pausa —
+  // só mostra/renova a barra de controlos, igual à maioria dos players
+  // de vídeo. Só o botão de play/pause (na barra ou o botão central
+  // inicial) é que efetivamente pausa/reproduz. No desktop mantém-se o
+  // comportamento clássico: clicar no vídeo alterna play/pause.
+  function handleScreenTap() {
+    if (isMobile) {
+      resetTimer();
+      return;
+    }
+    togglePlay();
   }
 
   function toggleMute() {
@@ -303,9 +354,13 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
       }}
       className={`overflow-hidden bg-black select-none ${rounded} ${className} ${isHeightConstrained ? "" : "w-full"}`}
       style={isHeightConstrained ? { width: `${boxWidthPx}px`, maxWidth: "100%" } : undefined}
-      onMouseMove={resetTimer}
-      onTouchStart={resetTimer}
-      onClick={togglePlay}
+      onMouseMove={() => {
+        if (!isMobile) resetTimer();
+      }}
+      onTouchStart={() => {
+        if (!isMobile) resetTimer();
+      }}
+      onClick={handleScreenTap}
     >
       {/* Caixa interna: largura 100% da caixa externa. Quando o vídeo
           é vertical e bateria no limite de altura, a caixa externa já
@@ -318,7 +373,7 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
         style={
           isHeightConstrained
             ? { height: `${maxHeightPx}px`, overflow: "hidden" }
-            : { aspectRatio: effectiveRatio, maxHeight: MAX_HEIGHT_CSS, overflow: "hidden" }
+            : { aspectRatio: effectiveRatio, maxHeight: `${maxHeightPx}px`, overflow: "hidden" }
         }
       >
       {/* Video element — object-fit: contain, sempre. */}
@@ -391,12 +446,17 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
               className={`absolute inset-0 w-full h-full ${objectFitClass}`}
             />
           )}
-          <div
-            className="relative z-10 w-16 h-16 rounded-full flex items-center justify-center shadow-2xl"
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              togglePlay();
+            }}
+            aria-label="Reproduzir"
+            className={`relative z-10 rounded-full flex items-center justify-center shadow-2xl ${isMobile ? "w-20 h-20" : "w-16 h-16"}`}
             style={{ background: "rgba(255,255,255,0.92)" }}
           >
-            <Play className="w-7 h-7 ml-1" style={{ color: BRAND }} />
-          </div>
+            <Play className={isMobile ? "w-9 h-9 ml-1" : "w-7 h-7 ml-1"} style={{ color: BRAND }} />
+          </button>
         </div>
       )}
 
@@ -404,6 +464,27 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
       {isBuffering && hasStarted && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="w-11 h-11 rounded-full border-4 border-white/20 border-t-white animate-spin" />
+        </div>
+      )}
+
+      {/* Feedback central de play/pause (mobile) — aparece e desaparece
+          sozinho a confirmar a ação do botão, sem interferir no toque
+          no ecrã (que só abre a barra de controlos). */}
+      {tapPulse && (
+        <div
+          key={tapPulse.key}
+          className="absolute inset-0 flex items-center justify-center pointer-events-none"
+        >
+          <div
+            className="hooda-tap-pulse w-16 h-16 rounded-full flex items-center justify-center"
+            style={{ background: "rgba(0,0,0,0.55)" }}
+          >
+            {tapPulse.icon === "play" ? (
+              <Play className="w-7 h-7 text-white ml-1" />
+            ) : (
+              <Pause className="w-7 h-7 text-white" />
+            )}
+          </div>
         </div>
       )}
 
@@ -473,10 +554,13 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Bottom pill — pequena, arredondada, estilo X */}
-        <div className="relative z-10 px-2.5 pb-2.5 pointer-events-auto">
+        {/* Bottom pill — pequena, arredondada, estilo X. No mobile os
+            alvos de toque crescem (botões, bolinha do seek, texto) para
+            serem confortáveis com o dedo; no desktop mantém-se compacto
+            porque o rato é mais preciso. */}
+        <div className={`relative z-10 pointer-events-auto ${isMobile ? "px-3 pb-3" : "px-2.5 pb-2.5"}`}>
           <div
-            className="flex items-center gap-2 rounded-full px-2.5 py-1.5"
+            className={`flex items-center rounded-full ${isMobile ? "gap-3 px-3.5 py-2.5" : "gap-2 px-2.5 py-1.5"}`}
             style={{ background: "rgba(0,0,0,0.65)" }}
           >
             <button
@@ -484,32 +568,35 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
                 e.stopPropagation();
                 duration > 0 && duration - currentTime < 2 ? restart() : togglePlay();
               }}
-              className="w-[22px] h-[22px] shrink-0 flex items-center justify-center rounded-full transition hover:bg-white/15"
+              className={`shrink-0 flex items-center justify-center rounded-full transition hover:bg-white/15 ${isMobile ? "w-9 h-9" : "w-[22px] h-[22px]"}`}
             >
               {duration > 0 && duration - currentTime < 2 ? (
-                <RotateCcw className="w-3 h-3 text-white" />
+                <RotateCcw className={isMobile ? "w-[18px] h-[18px] text-white" : "w-3 h-3 text-white"} />
               ) : isPlaying ? (
-                <Pause className="w-3 h-3 text-white" />
+                <Pause className={isMobile ? "w-[18px] h-[18px] text-white" : "w-3 h-3 text-white"} />
               ) : (
-                <Play className="w-3 h-3 text-white ml-0.5" />
+                <Play className={isMobile ? "w-[18px] h-[18px] text-white ml-0.5" : "w-3 h-3 text-white ml-0.5"} />
               )}
             </button>
 
-            <div className="flex-1 relative h-[3px] group/seek" style={{ cursor: "pointer" }}>
+            <div
+              className={`flex-1 relative group/seek flex items-center ${isMobile ? "h-6" : "h-[3px]"}`}
+              style={{ cursor: "pointer" }}
+            >
               <div
-                className="absolute inset-0 rounded-full"
+                className={`absolute left-0 right-0 rounded-full ${isMobile ? "h-[4px]" : "inset-0"}`}
                 style={{ background: "rgba(255,255,255,0.3)" }}
               />
               <div
-                className="absolute left-0 top-0 h-full rounded-full transition-all"
+                className={`absolute left-0 rounded-full transition-all ${isMobile ? "h-[4px]" : "top-0 h-full"}`}
                 style={{ width: `${progress}%`, background: "#fff" }}
               />
               <div
                 className="absolute top-1/2 rounded-full transition-all"
                 style={{
                   left: `${progress}%`,
-                  width: 9,
-                  height: 9,
+                  width: isMobile ? 13 : 9,
+                  height: isMobile ? 13 : 9,
                   transform: "translate(-50%, -50%)",
                   background: "#fff",
                 }}
@@ -527,7 +614,9 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
               />
             </div>
 
-            <span className="text-white text-[10px] font-mono tabular-nums shrink-0 select-none">
+            <span
+              className={`text-white font-mono tabular-nums shrink-0 select-none ${isMobile ? "text-[12px]" : "text-[10px]"}`}
+            >
               {fmtTime(currentTime)}
             </span>
 
@@ -536,12 +625,12 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
                 e.stopPropagation();
                 toggleMute();
               }}
-              className="w-[22px] h-[22px] shrink-0 flex items-center justify-center rounded-full transition hover:bg-white/15"
+              className={`shrink-0 flex items-center justify-center rounded-full transition hover:bg-white/15 ${isMobile ? "w-9 h-9" : "w-[22px] h-[22px]"}`}
             >
               {isMuted ? (
-                <VolumeX className="w-3 h-3 text-white" />
+                <VolumeX className={isMobile ? "w-[18px] h-[18px] text-white" : "w-3 h-3 text-white"} />
               ) : (
-                <Volume2 className="w-3 h-3 text-white" />
+                <Volume2 className={isMobile ? "w-[18px] h-[18px] text-white" : "w-3 h-3 text-white"} />
               )}
             </button>
 
@@ -550,12 +639,12 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
                 e.stopPropagation();
                 toggleFullscreen();
               }}
-              className="w-[22px] h-[22px] shrink-0 flex items-center justify-center rounded-full transition hover:bg-white/15"
+              className={`shrink-0 flex items-center justify-center rounded-full transition hover:bg-white/15 ${isMobile ? "w-9 h-9" : "w-[22px] h-[22px]"}`}
             >
               {isFullscreen ? (
-                <Minimize className="w-3 h-3 text-white" />
+                <Minimize className={isMobile ? "w-[18px] h-[18px] text-white" : "w-3 h-3 text-white"} />
               ) : (
-                <Maximize className="w-3 h-3 text-white" />
+                <Maximize className={isMobile ? "w-[18px] h-[18px] text-white" : "w-3 h-3 text-white"} />
               )}
             </button>
           </div>
