@@ -2176,6 +2176,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
               authorName: originalsMap[r.post_id].author_name,
               authorColor: originalsMap[r.post_id].author_color,
               image: originalsMap[r.post_id].image_url,
+              videoUrl: originalsMap[r.post_id].video_url || null,
             } : null,
           })),
           ...reposts.map((r: any) => ({
@@ -2188,6 +2189,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
               authorName: originalsMap[r.post_id].author_name,
               authorColor: originalsMap[r.post_id].author_color,
               image: originalsMap[r.post_id].image_url,
+              videoUrl: originalsMap[r.post_id].video_url || null,
             } : null,
           })),
           ...quotes.map((q: any) => ({
@@ -2200,6 +2202,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
               authorName: originalsMap[q.original_post_id].author_name,
               authorColor: originalsMap[q.original_post_id].author_color,
               image: originalsMap[q.original_post_id].image_url,
+              videoUrl: originalsMap[q.original_post_id].video_url || null,
             } : null,
           })),
         ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -2225,7 +2228,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
 
       const { data: postsData } = await supabase
         .from("posts")
-        .select("id, content, kind, created_at, photo_url, photos, author_id, author_username, author_name")
+        .select("id, content, kind, created_at, photo_url, image_url, video_url, photos, author_id, author_username, author_name")
         .in("id", postIds);
       const rows = postsData ?? [];
 
@@ -2254,12 +2257,14 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
         if (p.kind === "bg") {
           try { const j = JSON.parse(p.content); text = j.text; bgColor = j.bgColor; } catch (_) {}
         }
-        const photo = (p as any).photo_url || ((p as any).photos && (p as any).photos[0]) || null;
+        const photo = (p as any).photo_url || (p as any).image_url || ((p as any).photos && (p as any).photos[0]) || null;
+        const videoUrl = (p as any).video_url || undefined;
         const likeIds = likesByPost[p.id] ?? [];
         return {
           id: p.id, text, photo, bgColor, createdAt: new Date(p.created_at ?? Date.now()),
           likes: likeIds.length, likedByMe: likeIds.includes(myUserId), views_count: (p as any).views_count ?? 0,
           comments: commentsByPost[p.id] ?? 0, bookmarked: true,
+          videoUrl,
           authorId: p.author_id, authorName: p.author_name || p.author_username || "hooda",
           authorUsername: p.author_username || "utilizador",
           authorAvatar: p.author_id ? avatarByAuthor[p.author_id] ?? null : null,
@@ -2527,7 +2532,11 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
                       {a.original.text && (
                         <p className="text-sm leading-snug line-clamp-3" style={{ color: "var(--text-secondary)" }}>{a.original.text}</p>
                       )}
-                      {a.original.image && (
+                      {a.original.videoUrl ? (
+                        <div className="mt-2">
+                          <FeedVideoPlayer src={a.original.videoUrl} postId={a.original.id} kind="video" rounded="rounded-xl" autoPlay={false} />
+                        </div>
+                      ) : a.original.image && (
                         <img src={a.original.image} alt="" className="w-full rounded-xl mt-2 max-h-56 object-cover" />
                       )}
                     </div>
