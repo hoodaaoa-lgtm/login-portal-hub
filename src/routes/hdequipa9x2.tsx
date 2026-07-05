@@ -55,9 +55,16 @@ type PostRow = {
   kind: string | null;
   created_at: string;
   photo_url: string | null;
+  photos: string[] | null;
   video_url: string | null;
+  video_stream_url: string | null;
   clip_video_id: string | null;
+  clip_thumb_url: string | null;
   channel_name: string | null;
+  views_count: number | null;
+  likes_count: number | null;
+  replies_count: number | null;
+  reposts_count: number | null;
 };
 
 type ChannelRow = {
@@ -120,6 +127,49 @@ function VerifiedBadge({ size = 14 }: { size?: number }) {
   );
 }
 
+function fmtCount(n?: number | null) {
+  const v = n ?? 0;
+  if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M`;
+  if (v >= 1_000) return `${(v / 1_000).toFixed(1)}k`;
+  return String(v);
+}
+
+/** Mídia de uma publicação no admin: foto (grelha) ou vídeo reprodutível
+ * (incluindo clipes de canal, que buscam o stream real na tabela videos). */
+function AdminPostMedia({ p }: { p: PostRow }) {
+  const [clipSrc, setClipSrc] = useState<string | null>(null);
+  useEffect(() => {
+    if (p.kind !== "clip" || !p.clip_video_id) return;
+    db.from("videos").select("cf_stream_url,video_path").eq("id", p.clip_video_id).maybeSingle()
+      .then(({ data }: any) => { if (data) setClipSrc(data.cf_stream_url || data.video_path || null); });
+  }, [p.kind, p.clip_video_id]);
+
+  const videoSrc = p.kind === "clip" ? clipSrc : (p.video_stream_url || p.video_url || null);
+  const photos = p.photos && p.photos.length > 0 ? p.photos : (p.photo_url ? [p.photo_url] : []);
+
+  if (videoSrc) {
+    return (
+      <video
+        src={videoSrc}
+        poster={p.clip_thumb_url || undefined}
+        controls
+        playsInline
+        className="w-full max-h-72 rounded-xl bg-black mt-2 object-contain"
+      />
+    );
+  }
+  if (photos.length > 0) {
+    return (
+      <div className={`grid gap-1 mt-2 ${photos.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}>
+        {photos.slice(0, 4).map((url, i) => (
+          <img key={i} src={url} alt="" className="w-full max-h-56 object-cover rounded-xl" />
+        ))}
+      </div>
+    );
+  }
+  return null;
+}
+
 type Stage = "checking" | "denied" | "password" | "unlocked";
 
 function AdminPage() {
@@ -163,8 +213,8 @@ function AdminPage() {
 
   if (stage === "checking") {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "#0f0d17" }}>
-        <Loader className="h-6 w-6 animate-spin text-white/60" />
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "#f7f7f9" }}>
+        <Loader className="h-6 w-6 animate-spin text-neutral-400" />
       </div>
     );
   }
@@ -172,10 +222,10 @@ function AdminPage() {
   if (stage === "denied") {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-3 px-6 text-center"
-        style={{ background: "#0f0d17" }}>
+        style={{ background: "#f7f7f9" }}>
         <ShieldAlert className="h-10 w-10" style={{ color: "#F26B3A" }} />
-        <p className="text-white font-bold text-lg">Acesso restrito</p>
-        <p className="text-white/50 text-sm">Esta área é apenas para a equipa Hooda.</p>
+        <p className="text-neutral-900 font-bold text-lg">Acesso restrito</p>
+        <p className="text-neutral-400 text-sm">Esta área é apenas para a equipa Hooda.</p>
       </div>
     );
   }
@@ -183,16 +233,16 @@ function AdminPage() {
   if (stage === "password") {
     return (
       <div className="min-h-screen flex items-center justify-center px-6"
-        style={{ background: "radial-gradient(circle at 50% 0%, #241b3d 0%, #0f0d17 65%)" }}>
-        <form onSubmit={tryUnlock} className="w-full max-w-sm rounded-3xl p-8 flex flex-col items-center gap-5"
-          style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", backdropFilter: "blur(12px)" }}>
+        style={{ background: "radial-gradient(circle at 50% 0%, #ede9fe 0%, #f7f7f9 65%)" }}>
+        <form onSubmit={tryUnlock} className="w-full max-w-sm rounded-3xl p-8 flex flex-col items-center gap-5 shadow-xl"
+          style={{ background: "#ffffff", border: "1px solid #ececf1" }}>
           <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
             style={{ background: "linear-gradient(135deg,#5B3FCF,#E94B8A)", boxShadow: "0 8px 30px rgba(91,63,207,0.45)" }}>
             <Lock className="h-7 w-7 text-white" />
           </div>
           <div className="text-center">
-            <p className="flex items-center justify-center gap-1.5"><HoodaWordmark size={22} /><span className="text-white/70 font-extrabold text-lg">Oficial</span></p>
-            <p className="text-white/45 text-xs mt-1">Introduz a palavra-passe de acesso</p>
+            <p className="flex items-center justify-center gap-1.5"><HoodaWordmark size={22} /><span className="text-neutral-500 font-extrabold text-lg">Oficial</span></p>
+            <p className="text-neutral-400 text-xs mt-1">Introduz a palavra-passe de acesso</p>
           </div>
           <input
             type="password"
@@ -200,10 +250,10 @@ function AdminPage() {
             value={pwd}
             onChange={e => { setPwd(e.target.value); setPwdError(false); }}
             placeholder="Palavra-passe"
-            className="w-full text-center tracking-[0.3em] text-lg font-bold rounded-2xl px-4 py-3 outline-none text-white"
+            className="w-full text-center tracking-[0.3em] text-lg font-bold rounded-2xl px-4 py-3 outline-none text-neutral-900"
             style={{
-              background: "rgba(255,255,255,0.06)",
-              border: pwdError ? "1px solid #EF4444" : "1px solid rgba(255,255,255,0.12)",
+              background: "#f5f5f7",
+              border: pwdError ? "1px solid #EF4444" : "1px solid #e2e2e8",
             }}
           />
           {pwdError && <p className="text-xs -mt-3" style={{ color: "#EF4444" }}>Palavra-passe incorreta.</p>}
@@ -298,7 +348,7 @@ function AdminDashboard({ adminId }: { adminId: string }) {
       .eq("status", status)
       .order("created_at", { ascending: false })
       .limit(200);
-    if (error) { console.error("[admin] erro a carregar denúncias:", error); setReports([]); setReportsLoading(false); return; }
+    if (error) { console.error("[admin] erro a carregar denúncias:", error); toast.error("Erro ao carregar denúncias: " + error.message); setReports([]); setReportsLoading(false); return; }
     const ids = Array.from(new Set((data ?? []).flatMap((r: any) => [r.reporter_id, r.reported_user_id])));
     const profileMap: Record<string, { username: string; full_name: string | null }> = {};
     if (ids.length > 0) {
@@ -372,10 +422,10 @@ function AdminDashboard({ adminId }: { adminId: string }) {
     setPostsLoading(true);
     const { data, error } = await db
       .from("posts")
-      .select("id,author_id,author_username,author_name,author_color,content,kind,created_at,photo_url,video_url,clip_video_id,channel_name")
+      .select("id,author_id,author_username,author_name,author_color,content,kind,created_at,photo_url,photos,video_url,video_stream_url,clip_video_id,clip_thumb_url,channel_name,views_count,likes_count,replies_count,reposts_count")
       .order("created_at", { ascending: false })
       .limit(200);
-    if (error) { console.error("[admin] erro a carregar publicações:", error); setPostsList([]); setPostsLoading(false); return; }
+    if (error) { console.error("[admin] erro a carregar publicações:", error); toast.error("Erro ao carregar publicações: " + error.message); setPostsList([]); setPostsLoading(false); return; }
     setPostsList(data ?? []);
     setPostsLoading(false);
   }, []);
@@ -405,7 +455,7 @@ function AdminDashboard({ adminId }: { adminId: string }) {
       .select("id,owner_id,name,handle,avatar_url,category,created_at")
       .order("created_at", { ascending: false })
       .limit(200);
-    if (error) { console.error("[admin] erro a carregar canais:", error); setChannelsList([]); setChannelsLoading(false); return; }
+    if (error) { console.error("[admin] erro a carregar canais:", error); toast.error("Erro ao carregar canais: " + error.message); setChannelsList([]); setChannelsLoading(false); return; }
     const ownerIds = Array.from(new Set((data ?? []).map((c: any) => c.owner_id)));
     const ownerMap: Record<string, string> = {};
     if (ownerIds.length > 0) {
@@ -469,14 +519,37 @@ function AdminDashboard({ adminId }: { adminId: string }) {
   useEffect(() => {
     (async () => {
       setLoadingUsers(true);
-      const { data, error } = await db
+      // 1) Campos base — sempre existem, garantem que a lista aparece toda.
+      const { data: base, error: baseError } = await db
         .from("profiles")
-        .select("id,username,full_name,avatar_url,is_banned,is_verified,ban_reason,created_at")
+        .select("id,username,full_name,avatar_url,created_at")
         .neq("id", adminId)
         .order("username", { ascending: true })
-        .limit(500);
-      if (error) console.error("[admin] erro a carregar utilizadores:", error);
-      setUsers(data ?? []);
+        .limit(1000);
+      if (baseError) {
+        console.error("[admin] erro a carregar utilizadores:", baseError);
+        toast.error("Erro ao carregar utilizadores: " + baseError.message);
+        setUsers([]);
+        setLoadingUsers(false);
+        return;
+      }
+      let merged: UserRow[] = base ?? [];
+      // 2) Campos de moderação — tenta à parte; se as colunas ainda não
+      //    existirem na base de dados (migration por correr), a lista de
+      //    utilizadores continua a aparecer na mesma, só sem banir/verificar.
+      const { data: mod, error: modError } = await db
+        .from("profiles")
+        .select("id,is_banned,is_verified,ban_reason")
+        .neq("id", adminId);
+      if (modError) {
+        console.error("[admin] colunas de moderação indisponíveis:", modError);
+        toast.error("Banir/verificar indisponível: falta correr a migration de moderação no Supabase.");
+      } else if (mod) {
+        const modMap: Record<string, any> = {};
+        mod.forEach((m: any) => { modMap[m.id] = m; });
+        merged = merged.map((u) => ({ ...u, ...(modMap[u.id] ?? {}) }));
+      }
+      setUsers(merged);
       setLoadingUsers(false);
     })();
   }, [adminId]);
@@ -643,11 +716,11 @@ function AdminDashboard({ adminId }: { adminId: string }) {
   }
 
   return (
-    <div className="h-screen flex" style={{ background: "#0f0d17" }}>
+    <div className="h-screen flex" style={{ background: "#f7f7f9" }}>
       {/* ── Barra de navegação por ícones ── */}
       <div className="w-16 md:w-20 flex flex-col items-center py-4 gap-2 shrink-0 border-r"
-        style={{ borderColor: "rgba(255,255,255,0.08)" }}>
-        <div className="w-9 h-9 rounded-xl overflow-hidden flex items-center justify-center mb-3 shrink-0" style={{ background: "white" }}>
+        style={{ borderColor: "#ececf1", background: "#ffffff" }}>
+        <div className="w-9 h-9 rounded-xl overflow-hidden flex items-center justify-center mb-3 shrink-0" style={{ background: "white", border: "1px solid #ececf1" }}>
           <img src={LOGO} alt="" className="w-full h-full object-contain p-1" />
         </div>
         {([
@@ -660,8 +733,8 @@ function AdminDashboard({ adminId }: { adminId: string }) {
         ]).map(({ key, Icon, label, badge }) => (
           <button key={key} onClick={() => setSection(key)} title={label}
             className="relative w-12 h-12 rounded-2xl flex items-center justify-center transition active:scale-90"
-            style={{ background: section === key ? "linear-gradient(135deg,#5B3FCF,#7B5CE8)" : "rgba(255,255,255,0.05)" }}>
-            <Icon className="h-5 w-5" style={{ color: section === key ? "white" : "rgba(255,255,255,0.55)" }} />
+            style={{ background: section === key ? "linear-gradient(135deg,#5B3FCF,#7B5CE8)" : "#f5f5f7" }}>
+            <Icon className="h-5 w-5" style={{ color: section === key ? "white" : "#6b6b76" }} />
             {!!badge && (
               <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
                 style={{ background: "#E94B8A" }}>{badge > 99 ? "99+" : badge}</span>
@@ -679,12 +752,12 @@ function AdminDashboard({ adminId }: { adminId: string }) {
       {/* ── Dashboard ── */}
       {section === "dashboard" && (
         <div className="flex-1 overflow-y-auto p-6 md:p-10">
-          <h1 className="text-2xl font-extrabold text-white mb-1">Visão geral</h1>
-          <p className="text-white/45 text-sm mb-8">Números reais da plataforma, em tempo real.</p>
+          <h1 className="text-2xl font-extrabold text-neutral-900 mb-1">Visão geral</h1>
+          <p className="text-neutral-400 text-sm mb-8">Números reais da plataforma, em tempo real.</p>
           {statsLoading || !stats ? (
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               {Array.from({ length: 8 }).map((_, i) => (
-                <div key={i} className="h-28 rounded-2xl relative overflow-hidden" style={{ background: "rgba(255,255,255,0.05)" }}>
+                <div key={i} className="h-28 rounded-2xl relative overflow-hidden" style={{ background: "rgba(0,0,0,0.05)" }}>
                   <div className="skeleton-shimmer absolute inset-0" style={{ opacity: 0.15 }} />
                 </div>
               ))}
@@ -701,13 +774,13 @@ function AdminDashboard({ adminId }: { adminId: string }) {
                 { label: "Denúncias pendentes", value: stats.pendingReports, Icon: Flag, color: "#F87171" },
               ].map((c) => (
                 <div key={c.label} className="rounded-2xl p-5 flex flex-col gap-3"
-                  style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                  style={{ background: "#ffffff", border: "1px solid #ececf1" }}>
                   <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: `${c.color}22` }}>
                     <c.Icon className="h-4.5 w-4.5" style={{ color: c.color }} />
                   </div>
                   <div>
-                    <p className="text-2xl font-extrabold text-white leading-tight">{c.value.toLocaleString("pt-PT")}</p>
-                    <p className="text-white/45 text-xs mt-0.5">{c.label}</p>
+                    <p className="text-2xl font-extrabold text-neutral-900 leading-tight">{c.value.toLocaleString("pt-PT")}</p>
+                    <p className="text-neutral-400 text-xs mt-0.5">{c.label}</p>
                   </div>
                 </div>
               ))}
@@ -719,8 +792,8 @@ function AdminDashboard({ adminId }: { adminId: string }) {
       {/* ── Denúncias ── */}
       {section === "reports" && (
         <div className="flex-1 overflow-y-auto p-6 md:p-10">
-          <h1 className="text-2xl font-extrabold text-white mb-1">Denúncias</h1>
-          <p className="text-white/45 text-sm mb-6">Utilizadores denunciados por outros utilizadores.</p>
+          <h1 className="text-2xl font-extrabold text-neutral-900 mb-1">Denúncias</h1>
+          <p className="text-neutral-400 text-sm mb-6">Utilizadores denunciados por outros utilizadores.</p>
           <div className="flex items-center gap-2 mb-6">
             {([
               { key: "pending" as const, label: "Pendentes" },
@@ -730,33 +803,33 @@ function AdminDashboard({ adminId }: { adminId: string }) {
               <button key={f.key} onClick={() => setReportFilter(f.key)}
                 className="px-4 py-2 rounded-full text-xs font-bold transition"
                 style={{
-                  background: reportFilter === f.key ? "linear-gradient(135deg,#5B3FCF,#7B5CE8)" : "rgba(255,255,255,0.06)",
-                  color: reportFilter === f.key ? "white" : "rgba(255,255,255,0.55)",
+                  background: reportFilter === f.key ? "linear-gradient(135deg,#5B3FCF,#7B5CE8)" : "#f5f5f7",
+                  color: reportFilter === f.key ? "white" : "#6b6b76",
                 }}>
                 {f.label}
               </button>
             ))}
           </div>
           {reportsLoading ? (
-            <div className="flex items-center justify-center py-16"><Loader className="h-5 w-5 animate-spin text-white/40" /></div>
+            <div className="flex items-center justify-center py-16"><Loader className="h-5 w-5 animate-spin text-neutral-400" /></div>
           ) : reports.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 gap-2">
-              <Flag className="h-8 w-8 text-white/20" />
-              <p className="text-white/40 text-sm">Nenhuma denúncia {reportFilter === "pending" ? "pendente" : reportFilter === "reviewed" ? "resolvida" : "ignorada"}.</p>
+              <Flag className="h-8 w-8 text-neutral-300" />
+              <p className="text-neutral-400 text-sm">Nenhuma denúncia {reportFilter === "pending" ? "pendente" : reportFilter === "reviewed" ? "resolvida" : "ignorada"}.</p>
             </div>
           ) : (
             <div className="space-y-3">
               {reports.map((r) => (
                 <div key={r.id} className="rounded-2xl p-4 flex items-start gap-4"
-                  style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                  style={{ background: "#ffffff", border: "1px solid #ececf1" }}>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-white">
+                    <p className="text-sm text-neutral-900">
                       <span className="font-bold">@{r.reported?.username ?? "?"}</span>
-                      <span className="text-white/40"> denunciado por </span>
+                      <span className="text-neutral-400"> denunciado por </span>
                       <span className="font-semibold">@{r.reporter?.username ?? "?"}</span>
                     </p>
-                    <p className="text-white/60 text-sm mt-1">{r.reason}</p>
-                    <p className="text-white/30 text-[11px] mt-2">{new Date(r.created_at).toLocaleString("pt-PT")}</p>
+                    <p className="text-neutral-500 text-sm mt-1">{r.reason}</p>
+                    <p className="text-neutral-300 text-[11px] mt-2">{new Date(r.created_at).toLocaleString("pt-PT")}</p>
                   </div>
                   {reportFilter === "pending" && (
                     <div className="flex items-center gap-2 shrink-0">
@@ -765,8 +838,8 @@ function AdminDashboard({ adminId }: { adminId: string }) {
                         <CheckCircle2 className="h-4.5 w-4.5" style={{ color: "#6BA547" }} />
                       </button>
                       <button onClick={() => resolveReport(r.id, "dismissed")} title="Ignorar denúncia"
-                        className="p-2 rounded-full transition active:scale-90" style={{ background: "rgba(255,255,255,0.08)" }}>
-                        <XCircle className="h-4.5 w-4.5 text-white/50" />
+                        className="p-2 rounded-full transition active:scale-90" style={{ background: "rgba(0,0,0,0.05)" }}>
+                        <XCircle className="h-4.5 w-4.5 text-neutral-400" />
                       </button>
                     </div>
                   )}
@@ -780,17 +853,17 @@ function AdminDashboard({ adminId }: { adminId: string }) {
       {/* ── Utilizadores ── */}
       {section === "users" && (
         <div className="flex-1 overflow-y-auto p-6 md:p-10">
-          <h1 className="text-2xl font-extrabold text-white mb-1">Utilizadores</h1>
-          <p className="text-white/45 text-sm mb-6">Verificar contas ou banir utilizadores que violem as regras.</p>
+          <h1 className="text-2xl font-extrabold text-neutral-900 mb-1">Utilizadores</h1>
+          <p className="text-neutral-400 text-sm mb-6">Verificar contas ou banir utilizadores que violem as regras.</p>
           <div className="flex items-center gap-2 rounded-2xl px-3 py-2 mb-6 max-w-sm"
-            style={{ background: "rgba(255,255,255,0.06)" }}>
-            <Search className="h-4 w-4 text-white/40 shrink-0" />
+            style={{ background: "#f5f5f7" }}>
+            <Search className="h-4 w-4 text-neutral-400 shrink-0" />
             <input value={search} onChange={(e) => setSearch(e.target.value)}
               placeholder="Pesquisar utilizador..."
-              className="flex-1 bg-transparent text-sm text-white outline-none placeholder:text-white/35" />
+              className="flex-1 bg-transparent text-sm text-neutral-900 outline-none placeholder:text-neutral-400" />
           </div>
           {loadingUsers ? (
-            <div className="flex items-center justify-center py-16"><Loader className="h-5 w-5 animate-spin text-white/40" /></div>
+            <div className="flex items-center justify-center py-16"><Loader className="h-5 w-5 animate-spin text-neutral-400" /></div>
           ) : (
             <div className="space-y-2">
               {users
@@ -801,14 +874,14 @@ function AdminDashboard({ adminId }: { adminId: string }) {
                 })
                 .map((u) => (
                   <div key={u.id} className="rounded-2xl p-3 flex items-center gap-3"
-                    style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                    style={{ background: "#ffffff", border: "1px solid #ececf1" }}>
                     <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center text-white font-bold shrink-0"
                       style={{ background: "#5B3FCF" }}>
                       {u.avatar_url ? <img src={u.avatar_url} alt="" className="w-full h-full object-cover" />
                         : (u.full_name?.[0] ?? u.username?.[0] ?? "?").toUpperCase()}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold text-white truncate flex items-center gap-1.5">
+                      <p className="text-sm font-semibold text-neutral-900 truncate flex items-center gap-1.5">
                         {u.full_name || u.username}
                         {u.is_verified && <VerifiedBadge size={13} />}
                         {u.is_banned && (
@@ -817,18 +890,18 @@ function AdminDashboard({ adminId }: { adminId: string }) {
                           </span>
                         )}
                       </p>
-                      <p className="text-[12px] text-white/45 truncate">@{u.username}{u.is_banned && u.ban_reason ? ` · ${u.ban_reason}` : ""}</p>
+                      <p className="text-[12px] text-neutral-400 truncate">@{u.username}{u.is_banned && u.ban_reason ? ` · ${u.ban_reason}` : ""}</p>
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">
                       <button onClick={() => toggleVerified(u)} title={u.is_verified ? "Remover selo" : "Verificar conta"}
                         className="p-2 rounded-full transition active:scale-90"
-                        style={{ background: u.is_verified ? "rgba(59,158,255,0.18)" : "rgba(255,255,255,0.08)" }}>
-                        <ShieldCheck className="h-4 w-4" style={{ color: u.is_verified ? "#3B9EFF" : "rgba(255,255,255,0.5)" }} />
+                        style={{ background: u.is_verified ? "rgba(59,158,255,0.18)" : "rgba(0,0,0,0.05)" }}>
+                        <ShieldCheck className="h-4 w-4" style={{ color: u.is_verified ? "#3B9EFF" : "#9a9aa5" }} />
                       </button>
                       <button onClick={() => toggleBan(u)} title={u.is_banned ? "Desbanir" : "Banir utilizador"}
                         className="p-2 rounded-full transition active:scale-90"
-                        style={{ background: u.is_banned ? "rgba(239,68,68,0.22)" : "rgba(255,255,255,0.08)" }}>
-                        <Ban className="h-4 w-4" style={{ color: u.is_banned ? "#F87171" : "rgba(255,255,255,0.5)" }} />
+                        style={{ background: u.is_banned ? "rgba(239,68,68,0.22)" : "rgba(0,0,0,0.05)" }}>
+                        <Ban className="h-4 w-4" style={{ color: u.is_banned ? "#F87171" : "#9a9aa5" }} />
                       </button>
                       <button onClick={() => deleteAccount(u)} title="Eliminar conta permanentemente"
                         className="p-2 rounded-full transition active:scale-90"
@@ -846,17 +919,17 @@ function AdminDashboard({ adminId }: { adminId: string }) {
       {/* ── Publicações (moderação) ── */}
       {section === "posts" && (
         <div className="flex-1 overflow-y-auto p-6 md:p-10">
-          <h1 className="text-2xl font-extrabold text-white mb-1">Publicações</h1>
-          <p className="text-white/45 text-sm mb-6">Todas as publicações da plataforma. Eliminar avisa automaticamente o autor.</p>
+          <h1 className="text-2xl font-extrabold text-neutral-900 mb-1">Publicações</h1>
+          <p className="text-neutral-400 text-sm mb-6">Todas as publicações da plataforma. Eliminar avisa automaticamente o autor.</p>
           <div className="flex items-center gap-2 rounded-2xl px-3 py-2 mb-6 max-w-sm"
-            style={{ background: "rgba(255,255,255,0.06)" }}>
-            <Search className="h-4 w-4 text-white/40 shrink-0" />
+            style={{ background: "#f5f5f7" }}>
+            <Search className="h-4 w-4 text-neutral-400 shrink-0" />
             <input value={postsSearch} onChange={(e) => setPostsSearch(e.target.value)}
               placeholder="Pesquisar por autor..."
-              className="flex-1 bg-transparent text-sm text-white outline-none placeholder:text-white/35" />
+              className="flex-1 bg-transparent text-sm text-neutral-900 outline-none placeholder:text-neutral-400" />
           </div>
           {postsLoading ? (
-            <div className="flex items-center justify-center py-16"><Loader className="h-5 w-5 animate-spin text-white/40" /></div>
+            <div className="flex items-center justify-center py-16"><Loader className="h-5 w-5 animate-spin text-neutral-400" /></div>
           ) : (
             <div className="space-y-2">
               {postsList
@@ -867,8 +940,8 @@ function AdminDashboard({ adminId }: { adminId: string }) {
                 })
                 .length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 gap-2">
-                  <FileText className="h-8 w-8 text-white/20" />
-                  <p className="text-white/40 text-sm">Nenhuma publicação encontrada.</p>
+                  <FileText className="h-8 w-8 text-neutral-300" />
+                  <p className="text-neutral-400 text-sm">Nenhuma publicação encontrada.</p>
                 </div>
               ) : postsList
                 .filter((p) => {
@@ -883,23 +956,28 @@ function AdminDashboard({ adminId }: { adminId: string }) {
                   const MediaIcon = p.video_url || p.clip_video_id ? VideoIcon : p.photo_url ? ImageIcon : FileText;
                   return (
                     <div key={p.id} className="rounded-2xl p-4 flex items-start gap-3"
-                      style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                      style={{ background: "#ffffff", border: "1px solid #ececf1" }}>
                       <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold shrink-0"
                         style={{ background: p.author_color || "#5B3FCF" }}>
                         {(p.author_name?.[0] ?? p.author_username?.[0] ?? "?").toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm text-white">
+                        <p className="text-sm text-neutral-900">
                           <span className="font-bold">{p.author_name || p.author_username || "?"}</span>
-                          <span className="text-white/40"> @{p.author_username ?? "?"}</span>
+                          <span className="text-neutral-400"> @{p.author_username ?? "?"}</span>
                         </p>
-                        {preview && <p className="text-white/70 text-sm mt-1 line-clamp-3 whitespace-pre-wrap break-words">{preview}</p>}
-                        <div className="flex items-center gap-3 mt-2">
-                          <span className="flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full" style={{ background: "rgba(91,63,207,0.18)", color: "#8f78e8" }}>
+                        {preview && <p className="text-neutral-500 text-sm mt-1 line-clamp-3 whitespace-pre-wrap break-words">{preview}</p>}
+                        <AdminPostMedia p={p} />
+                        <div className="flex items-center gap-3 mt-2 flex-wrap">
+                          <span className="flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full" style={{ background: "rgba(91,63,207,0.18)", color: "#5B3FCF" }}>
                             <MediaIcon className="h-3 w-3" /> {mediaLabel}
                           </span>
-                          {p.channel_name && <span className="text-[11px] text-white/40">Canal: {p.channel_name}</span>}
-                          <span className="text-[11px] text-white/30">{new Date(p.created_at).toLocaleString("pt-PT")}</span>
+                          <span className="text-[11px] text-neutral-400">👁 {fmtCount(p.views_count)}</span>
+                          <span className="text-[11px] text-neutral-400">❤ {fmtCount(p.likes_count)}</span>
+                          <span className="text-[11px] text-neutral-400">💬 {fmtCount(p.replies_count)}</span>
+                          <span className="text-[11px] text-neutral-400">🔁 {fmtCount(p.reposts_count)}</span>
+                          {p.channel_name && <span className="text-[11px] text-neutral-400">Canal: {p.channel_name}</span>}
+                          <span className="text-[11px] text-neutral-300">{new Date(p.created_at).toLocaleString("pt-PT")}</span>
                         </div>
                       </div>
                       <button onClick={() => deletePost(p)} title="Eliminar publicação e avisar autor"
@@ -917,17 +995,17 @@ function AdminDashboard({ adminId }: { adminId: string }) {
       {/* ── Canais ── */}
       {section === "channels" && (
         <div className="flex-1 overflow-y-auto p-6 md:p-10">
-          <h1 className="text-2xl font-extrabold text-white mb-1">Canais</h1>
-          <p className="text-white/45 text-sm mb-6">Todos os canais criados no Hooda Studio. Eliminar avisa automaticamente o dono.</p>
+          <h1 className="text-2xl font-extrabold text-neutral-900 mb-1">Canais</h1>
+          <p className="text-neutral-400 text-sm mb-6">Todos os canais criados no Hooda Studio. Eliminar avisa automaticamente o dono.</p>
           <div className="flex items-center gap-2 rounded-2xl px-3 py-2 mb-6 max-w-sm"
-            style={{ background: "rgba(255,255,255,0.06)" }}>
-            <Search className="h-4 w-4 text-white/40 shrink-0" />
+            style={{ background: "#f5f5f7" }}>
+            <Search className="h-4 w-4 text-neutral-400 shrink-0" />
             <input value={channelsSearch} onChange={(e) => setChannelsSearch(e.target.value)}
               placeholder="Pesquisar canal ou dono..."
-              className="flex-1 bg-transparent text-sm text-white outline-none placeholder:text-white/35" />
+              className="flex-1 bg-transparent text-sm text-neutral-900 outline-none placeholder:text-neutral-400" />
           </div>
           {channelsLoading ? (
-            <div className="flex items-center justify-center py-16"><Loader className="h-5 w-5 animate-spin text-white/40" /></div>
+            <div className="flex items-center justify-center py-16"><Loader className="h-5 w-5 animate-spin text-neutral-400" /></div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {channelsList
@@ -938,8 +1016,8 @@ function AdminDashboard({ adminId }: { adminId: string }) {
                 })
                 .length === 0 ? (
                 <div className="col-span-full flex flex-col items-center justify-center py-16 gap-2">
-                  <Radio className="h-8 w-8 text-white/20" />
-                  <p className="text-white/40 text-sm">Nenhum canal encontrado.</p>
+                  <Radio className="h-8 w-8 text-neutral-300" />
+                  <p className="text-neutral-400 text-sm">Nenhum canal encontrado.</p>
                 </div>
               ) : channelsList
                 .filter((c) => {
@@ -949,21 +1027,21 @@ function AdminDashboard({ adminId }: { adminId: string }) {
                 })
                 .map((c) => (
                   <div key={c.id} className="rounded-2xl p-4 flex items-start gap-3"
-                    style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                    style={{ background: "#ffffff", border: "1px solid #ececf1" }}>
                     <div className="w-11 h-11 rounded-2xl overflow-hidden flex items-center justify-center text-white font-bold shrink-0"
                       style={{ background: "#5B3FCF" }}>
                       {c.avatar_url ? <img src={c.avatar_url} alt="" className="w-full h-full object-cover" /> : c.name?.[0]?.toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-white truncate">{c.name}</p>
-                      <p className="text-[12px] text-white/45 truncate">@{c.handle}</p>
-                      <p className="text-[11px] text-white/35 truncate mt-0.5">Dono: @{c.owner_username ?? "?"}</p>
-                      {c.category && <span className="inline-block mt-1.5 text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: "rgba(91,63,207,0.18)", color: "#8f78e8" }}>{c.category}</span>}
+                      <p className="text-sm font-bold text-neutral-900 truncate">{c.name}</p>
+                      <p className="text-[12px] text-neutral-400 truncate">@{c.handle}</p>
+                      <p className="text-[11px] text-neutral-400 truncate mt-0.5">Dono: @{c.owner_username ?? "?"}</p>
+                      {c.category && <span className="inline-block mt-1.5 text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: "rgba(91,63,207,0.18)", color: "#5B3FCF" }}>{c.category}</span>}
                     </div>
                     <div className="flex flex-col items-center gap-1.5 shrink-0">
                       <a href={`/canal/${c.handle}`} target="_blank" rel="noreferrer" title="Ver canal"
-                        className="p-2 rounded-full transition active:scale-90" style={{ background: "rgba(255,255,255,0.08)" }}>
-                        <ExternalLink className="h-4 w-4 text-white/60" />
+                        className="p-2 rounded-full transition active:scale-90" style={{ background: "rgba(0,0,0,0.05)" }}>
+                        <ExternalLink className="h-4 w-4 text-neutral-500" />
                       </a>
                       <button onClick={() => deleteChannel(c)} title="Eliminar canal e avisar dono"
                         className="p-2 rounded-full transition active:scale-90" style={{ background: "rgba(239,68,68,0.15)" }}>
@@ -981,7 +1059,7 @@ function AdminDashboard({ adminId }: { adminId: string }) {
       {section === "messages" && (
       <>
       <div className={`${selected ? "hidden md:flex" : "flex"} w-full md:w-[340px] flex-col shrink-0 border-r`}
-        style={{ borderColor: "rgba(255,255,255,0.08)" }}>
+        style={{ borderColor: "#ececf1" }}>
         <div className="px-4 py-4 flex items-center justify-between gap-2 shrink-0"
           style={{ background: "linear-gradient(135deg,#5B3FCF 0%,#7B5CE8 100%)" }}>
           <div className="flex items-center gap-2">
@@ -999,22 +1077,22 @@ function AdminDashboard({ adminId }: { adminId: string }) {
 
         <div className="px-3 py-3 shrink-0">
           <div className="flex items-center gap-2 rounded-2xl px-3 py-2"
-            style={{ background: "rgba(255,255,255,0.06)" }}>
-            <Search className="h-4 w-4 text-white/40 shrink-0" />
+            style={{ background: "#f5f5f7" }}>
+            <Search className="h-4 w-4 text-neutral-400 shrink-0" />
             <input value={search} onChange={e => setSearch(e.target.value)}
               placeholder="Pesquisar utilizador..."
-              className="flex-1 bg-transparent text-sm text-white outline-none placeholder:text-white/35" />
+              className="flex-1 bg-transparent text-sm text-neutral-900 outline-none placeholder:text-neutral-400" />
           </div>
         </div>
 
         <div className="flex-1 overflow-y-auto">
           {loadingUsers && (
             <div className="flex items-center justify-center py-10">
-              <Loader className="h-5 w-5 animate-spin text-white/40" />
+              <Loader className="h-5 w-5 animate-spin text-neutral-400" />
             </div>
           )}
           {!loadingUsers && filtered.length === 0 && (
-            <p className="text-center text-white/35 text-sm py-10">Nenhum utilizador encontrado.</p>
+            <p className="text-center text-neutral-400 text-sm py-10">Nenhum utilizador encontrado.</p>
           )}
           {filtered.map(u => (
             <button key={u.id} onClick={() => openUser(u)}
@@ -1027,8 +1105,8 @@ function AdminDashboard({ adminId }: { adminId: string }) {
                   : (u.full_name?.[0] ?? u.username?.[0] ?? "?").toUpperCase()}
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-white truncate">{u.full_name || u.username}</p>
-                <p className="text-[12px] text-white/45 truncate">@{u.username}</p>
+                <p className="text-sm font-semibold text-neutral-900 truncate">{u.full_name || u.username}</p>
+                <p className="text-[12px] text-neutral-400 truncate">@{u.username}</p>
               </div>
             </button>
           ))}
@@ -1039,8 +1117,8 @@ function AdminDashboard({ adminId }: { adminId: string }) {
       <div className={`${selected ? "flex" : "hidden md:flex"} flex-1 flex-col min-w-0`}>
         {!selected ? (
           <div className="flex-1 flex flex-col items-center justify-center gap-2 text-center px-6">
-            <MessageSquare className="h-10 w-10 text-white/20" />
-            <p className="text-white/40 text-sm">Escolhe um utilizador para enviar uma mensagem oficial.</p>
+            <MessageSquare className="h-10 w-10 text-neutral-300" />
+            <p className="text-neutral-400 text-sm">Escolhe um utilizador para enviar uma mensagem oficial.</p>
           </div>
         ) : (
           <>
@@ -1068,14 +1146,14 @@ function AdminDashboard({ adminId }: { adminId: string }) {
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-2" style={{ background: "#151021" }}>
+            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-2" style={{ background: "#f3f3f6" }}>
               {loadingConv && (
                 <div className="flex items-center justify-center py-10">
-                  <Loader className="h-5 w-5 animate-spin text-white/40" />
+                  <Loader className="h-5 w-5 animate-spin text-neutral-400" />
                 </div>
               )}
               {!loadingConv && msgs.length === 0 && (
-                <p className="text-center text-white/30 text-sm py-8">Ainda sem mensagens nesta conversa.</p>
+                <p className="text-center text-neutral-300 text-sm py-8">Ainda sem mensagens nesta conversa.</p>
               )}
               {msgs.map(m => {
                 const isAdmin = m.sender_id === adminId;
@@ -1085,7 +1163,7 @@ function AdminDashboard({ adminId }: { adminId: string }) {
                     <div className="max-w-[75%]">
                       {isAdmin && (
                         <p className="flex items-center gap-1 text-[11px] font-bold mb-1 justify-end">
-                          <HoodaWordmark size={11} /><span style={{ color: "#8f78e8" }}>Oficial</span> <VerifiedBadge size={11} />
+                          <HoodaWordmark size={11} /><span style={{ color: "#5B3FCF" }}>Oficial</span> <VerifiedBadge size={11} />
                         </p>
                       )}
                       {isImage ? (
@@ -1099,8 +1177,8 @@ function AdminDashboard({ adminId }: { adminId: string }) {
                       ) : (
                         <div className="rounded-2xl px-3.5 py-2 text-sm leading-relaxed"
                           style={{
-                            background: isAdmin ? "linear-gradient(135deg,#5B3FCF,#7B5CE8)" : "rgba(255,255,255,0.08)",
-                            color: "white",
+                            background: isAdmin ? "linear-gradient(135deg,#5B3FCF,#7B5CE8)" : "#eceef2",
+                            color: isAdmin ? "white" : "#1a1a1f",
                             borderBottomRightRadius: isAdmin ? 4 : undefined,
                             borderBottomLeftRadius: !isAdmin ? 4 : undefined,
                           }}>
@@ -1114,7 +1192,7 @@ function AdminDashboard({ adminId }: { adminId: string }) {
               <div ref={bottomRef} />
             </div>
 
-            <div className="flex items-end gap-2 px-3 py-3 shrink-0" style={{ background: "#1a1428" }}>
+            <div className="flex items-end gap-2 px-3 py-3 shrink-0" style={{ background: "#ffffff" }}>
               <input
                 ref={fileInputRef}
                 type="file"
@@ -1125,8 +1203,8 @@ function AdminDashboard({ adminId }: { adminId: string }) {
               <button onClick={() => fileInputRef.current?.click()} disabled={uploadingImg}
                 title="Enviar foto"
                 className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 transition active:scale-90 disabled:opacity-40"
-                style={{ background: "rgba(255,255,255,0.08)" }}>
-                {uploadingImg ? <Loader className="h-4 w-4 animate-spin text-white/70" /> : <ImageIcon className="h-4 w-4 text-white/70" />}
+                style={{ background: "#f5f5f7" }}>
+                {uploadingImg ? <Loader className="h-4 w-4 animate-spin text-neutral-500" /> : <ImageIcon className="h-4 w-4 text-neutral-500" />}
               </button>
               <textarea
                 value={input}
@@ -1134,8 +1212,8 @@ function AdminDashboard({ adminId }: { adminId: string }) {
                 onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendOfficial(); } }}
                 rows={1}
                 placeholder="Escrever como Hooda Oficial..."
-                className="flex-1 rounded-2xl px-4 py-3 text-sm outline-none resize-none text-white placeholder:text-white/30 max-h-28"
-                style={{ background: "rgba(255,255,255,0.06)" }}
+                className="flex-1 rounded-2xl px-4 py-3 text-sm outline-none resize-none text-neutral-900 placeholder:text-neutral-400 max-h-28"
+                style={{ background: "#f5f5f7" }}
               />
               <button onClick={sendOfficial} disabled={sending || !input.trim()}
                 className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 transition active:scale-90 disabled:opacity-40"
