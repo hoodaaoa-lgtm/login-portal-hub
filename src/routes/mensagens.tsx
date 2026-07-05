@@ -914,6 +914,8 @@ type Message = {
   viewOnceOpened?: boolean;
   /** Eliminada apenas para mim */
   deletedForMe?: boolean;
+  /** Eliminada para todos (visível como placeholder para ambos) */
+  deletedForAll?: boolean;
   /** Mensagem foi editada */
   edited?: boolean;
   /** Estado de entrega */
@@ -1721,120 +1723,196 @@ function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit
     );
   }
 
+  // ── Mobile: pressionar e segurar a bolha abre o menu de ações num
+  // bottom sheet (estilo WhatsApp/Instagram) em vez do pequeno dropdown
+  // ancorado, que em ecrãs pequenos podia ficar cortado/fora do ecrã.
+  // Um toque curto continua a funcionar normalmente (abrir imagem/vídeo).
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressFired = useRef(false);
+  const touchStartPos = useRef<{ x: number; y: number } | null>(null);
+  const LONG_PRESS_MS = 420;
+  const MOVE_CANCEL_PX = 10;
+
+  function handleBubbleTouchStart(e: React.TouchEvent) {
+    if (!isMobile) return;
+    longPressFired.current = false;
+    const t = e.touches[0];
+    touchStartPos.current = { x: t.clientX, y: t.clientY };
+    longPressTimer.current = setTimeout(() => {
+      longPressFired.current = true;
+      setShowMenu(true);
+      if (navigator.vibrate) navigator.vibrate(15);
+    }, LONG_PRESS_MS);
+  }
+  function handleBubbleTouchMove(e: React.TouchEvent) {
+    if (!touchStartPos.current || !longPressTimer.current) return;
+    const t = e.touches[0];
+    const dx = Math.abs(t.clientX - touchStartPos.current.x);
+    const dy = Math.abs(t.clientY - touchStartPos.current.y);
+    if (dx > MOVE_CANCEL_PX || dy > MOVE_CANCEL_PX) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  }
+  function handleBubbleTouchEnd(e: React.TouchEvent) {
+    if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; }
+    if (longPressFired.current) {
+      // Evita que o toque que terminou o long-press também dispare o
+      // clique normal da bolha (ex: abrir imagem em lightbox).
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  }
+  useEffect(() => () => { if (longPressTimer.current) clearTimeout(longPressTimer.current); }, []);
+
+  function closeMenu() { setShowMenu(false); }
+
+  // Conteúdo das ações — partilhado entre o dropdown ancorado (desktop)
+  // e o bottom sheet (mobile), para nunca desalinhar os dois.
+  const menuActions = (
+    <>
+      {/* Reagir rápido */}
+      <div className="flex items-center justify-center gap-2.5 px-3 py-3 border-b" style={{ borderColor: "var(--border-subtle)" }}>
+        {["❤️","🔥","😂","👍","😮","😢"].map(emoji => (
+          <button key={emoji} onClick={() => { onReact?.(m.id, emoji); closeMenu(); }}
+            className="text-2xl transition active:scale-90 hover:scale-125 px-0.5">
+            {emoji}
+          </button>
+        ))}
+      </div>
+
+      {/* Responder */}
+      <button onClick={() => { onReply(); closeMenu(); }}
+        className="w-full flex items-center gap-2.5 px-4 py-3.5 text-sm transition active:opacity-70"
+        onMouseOver={e => e.currentTarget.style.background = "var(--s2)"}
+        onMouseOut={e => e.currentTarget.style.background = "transparent"}>
+        <Reply className="h-4 w-4" style={{ color: "#5B3FCF" }} />
+        <span style={{ color: "var(--text-primary)" }}>Responder</span>
+      </button>
+
+      {/* Copiar texto */}
+      {m.type === "text" && m.text && (
+        <button onClick={() => { navigator.clipboard?.writeText(m.text ?? ""); toast.success("Copiado!"); closeMenu(); }}
+          className="w-full flex items-center gap-2.5 px-4 py-3.5 text-sm transition border-t active:opacity-70"
+          style={{ borderColor: "var(--border-subtle)" }}
+          onMouseOver={e => e.currentTarget.style.background = "var(--s2)"}
+          onMouseOut={e => e.currentTarget.style.background = "transparent"}>
+          <Copy className="h-4 w-4" style={{ color: "#1FAFA6" }} />
+          <span style={{ color: "var(--text-primary)" }}>Copiar</span>
+        </button>
+      )}
+
+      {/* Encaminhar */}
+      {m.mediaUrl && (
+        <button onClick={() => {
+          if (navigator.share && m.mediaUrl) {
+            navigator.share({ url: m.mediaUrl }).catch(() => {});
+          } else if (m.mediaUrl) {
+            navigator.clipboard?.writeText(m.mediaUrl).then(() => toast.success("Link copiado!"));
+          }
+          closeMenu();
+        }}
+          className="w-full flex items-center gap-2.5 px-4 py-3.5 text-sm transition border-t active:opacity-70"
+          style={{ borderColor: "var(--border-subtle)" }}
+          onMouseOver={e => e.currentTarget.style.background = "var(--s2)"}
+          onMouseOut={e => e.currentTarget.style.background = "transparent"}>
+          <Forward className="h-4 w-4" style={{ color: "#F26B3A" }} />
+          <span style={{ color: "var(--text-primary)" }}>Encaminhar</span>
+        </button>
+      )}
+
+      {/* Editar */}
+      {isMe && m.type === "text" && (
+        <button onClick={() => { onEdit(); closeMenu(); }}
+          className="w-full flex items-center gap-2.5 px-4 py-3.5 text-sm transition border-t active:opacity-70"
+          style={{ borderColor: "var(--border-subtle)" }}
+          onMouseOver={e => e.currentTarget.style.background = "var(--s2)"}
+          onMouseOut={e => e.currentTarget.style.background = "transparent"}>
+          <Pencil className="h-4 w-4" style={{ color: "#5B3FCF" }} />
+          <span style={{ color: "var(--text-primary)" }}>Editar</span>
+        </button>
+      )}
+
+      {/* Eliminar */}
+      <button onClick={() => { setConfirmDel("me"); closeMenu(); }}
+        className="w-full flex items-center gap-2.5 px-4 py-3.5 text-sm transition border-t active:opacity-70"
+        style={{ borderColor: "var(--border-subtle)" }}
+        onMouseOver={e => e.currentTarget.style.background = "var(--s2)"}
+        onMouseOut={e => e.currentTarget.style.background = "transparent"}>
+        <Trash2 className="h-4 w-4" style={{ color: "#F97316" }} />
+        <span style={{ color: "var(--text-primary)" }}>Eliminar para mim</span>
+      </button>
+      {isMe && (
+        <button onClick={() => { setConfirmDel("all"); closeMenu(); }}
+          className="w-full flex items-center gap-2.5 px-4 py-3.5 text-sm transition border-t active:opacity-70"
+          style={{ borderColor: "var(--border-subtle)" }}
+          onMouseOver={e => e.currentTarget.style.background = "#fee2e2"}>
+          <Trash2 className="h-4 w-4" style={{ color: "#EF4444" }} />
+          <span style={{ color: "#EF4444" }}>Eliminar para todos</span>
+        </button>
+      )}
+    </>
+  );
+
   return (
     <div className={`flex ${isMe ? "justify-end" : "justify-start"} group px-1`}>
-      <div className="max-w-[75%] relative">
+      <div
+        className="max-w-[75%] relative"
+        onTouchStart={handleBubbleTouchStart}
+        onTouchMove={handleBubbleTouchMove}
+        onTouchEnd={handleBubbleTouchEnd}
+      >
 
         {/* Ações (responder / menu) — no desktop só aparecem ao passar o
-            rato (hover), flutuando ao lado da bolha. No MOBILE não há
-            hover (é toque), por isso ficavam sempre invisíveis e
-            impossíveis de tocar; agora ficam sempre visíveis, numa
-            fiadinha por cima do canto da bolha (dentro do ecrã, nunca
-            "a fugir" para fora como acontecia ao flutuar ao lado). */}
+            rato (hover), flutuando ao lado da bolha. No MOBILE, a bolha
+            inteira responde a pressionar-e-segurar (long-press) para
+            abrir o menu completo num bottom sheet — igual ao
+            WhatsApp/Instagram; mantém-se aqui só um botão pequeno de
+            "..." como atalho visível para quem preferir tocar. */}
         <div className={
           isMobile
             ? `absolute -top-9 ${isMe ? "right-0" : "left-0"} flex items-center gap-1.5 z-10`
             : `absolute ${isMe ? "right-full mr-1" : "left-full ml-1"} top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition flex items-center gap-0.5 z-10`
         }>
-          <button onClick={onReply}
-            className={`shrink-0 rounded-full flex items-center justify-center shadow-sm ${isMobile ? "w-8 h-8" : "w-7 h-7"}`}
-            style={{ background: isMobile ? "var(--s1)" : "rgba(0,0,0,0.12)", color: "var(--text-secondary)" }}>
-            <Reply className="h-3.5 w-3.5" />
-          </button>
+          {!isMobile && (
+            <button onClick={onReply}
+              className="shrink-0 rounded-full flex items-center justify-center shadow-sm w-7 h-7"
+              style={{ background: "rgba(0,0,0,0.12)", color: "var(--text-secondary)" }}>
+              <Reply className="h-3.5 w-3.5" />
+            </button>
+          )}
           <div className="relative" ref={menuRef}>
             <button onClick={() => setShowMenu(v => !v)}
               className={`shrink-0 rounded-full flex items-center justify-center shadow-sm ${isMobile ? "w-8 h-8" : "w-7 h-7"}`}
               style={{ background: isMobile ? "var(--s1)" : "rgba(0,0,0,0.12)", color: "var(--text-secondary)" }}>
               <MoreVertical className="h-3.5 w-3.5" />
             </button>
-            {showMenu && (
-              <div className={`absolute ${isMe ? "right-0" : "left-0"} ${isMobile ? "top-full mt-1" : "bottom-full mb-1"} rounded-2xl shadow-2xl z-30 overflow-hidden min-w-[190px] max-w-[85vw] border`}
+            {/* Desktop: dropdown ancorado ao lado da bolha */}
+            {showMenu && !isMobile && (
+              <div className={`absolute ${isMe ? "right-0" : "left-0"} bottom-full mb-1 rounded-2xl shadow-2xl z-30 overflow-hidden min-w-[190px] max-w-[85vw] border`}
                 style={{ background: "var(--s0)", borderColor: "var(--border-default)" }}>
-
-                {/* Reagir rápido */}
-                <div className="flex items-center gap-1 px-3 py-2.5 border-b" style={{ borderColor: "var(--border-subtle)" }}>
-                  {["❤️","🔥","😂","👍","😮","😢"].map(emoji => (
-                    <button key={emoji} onClick={() => { onReact?.(m.id, emoji); setShowMenu(false); }}
-                      className="text-xl transition active:scale-90 hover:scale-125 px-0.5">
-                      {emoji}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Responder */}
-                <button onClick={() => { onReply(); setShowMenu(false); }}
-                  className="w-full flex items-center gap-2.5 px-4 py-3 text-sm transition"
-                  onMouseOver={e => e.currentTarget.style.background = "var(--s2)"}
-                  onMouseOut={e => e.currentTarget.style.background = "transparent"}>
-                  <Reply className="h-4 w-4" style={{ color: "#5B3FCF" }} />
-                  <span style={{ color: "var(--text-primary)" }}>Responder</span>
-                </button>
-
-                {/* Copiar texto */}
-                {m.type === "text" && m.text && (
-                  <button onClick={() => { navigator.clipboard?.writeText(m.text ?? ""); toast.success("Copiado!"); setShowMenu(false); }}
-                    className="w-full flex items-center gap-2.5 px-4 py-3 text-sm transition border-t"
-                    style={{ borderColor: "var(--border-subtle)" }}
-                    onMouseOver={e => e.currentTarget.style.background = "var(--s2)"}
-                    onMouseOut={e => e.currentTarget.style.background = "transparent"}>
-                    <Copy className="h-4 w-4" style={{ color: "#1FAFA6" }} />
-                    <span style={{ color: "var(--text-primary)" }}>Copiar</span>
-                  </button>
-                )}
-
-                {/* Encaminhar */}
-                {m.mediaUrl && (
-                  <button onClick={() => {
-                    if (navigator.share && m.mediaUrl) {
-                      navigator.share({ url: m.mediaUrl }).catch(() => {});
-                    } else if (m.mediaUrl) {
-                      navigator.clipboard?.writeText(m.mediaUrl).then(() => toast.success("Link copiado!"));
-                    }
-                    setShowMenu(false);
-                  }}
-                    className="w-full flex items-center gap-2.5 px-4 py-3 text-sm transition border-t"
-                    style={{ borderColor: "var(--border-subtle)" }}
-                    onMouseOver={e => e.currentTarget.style.background = "var(--s2)"}
-                    onMouseOut={e => e.currentTarget.style.background = "transparent"}>
-                    <Forward className="h-4 w-4" style={{ color: "#F26B3A" }} />
-                    <span style={{ color: "var(--text-primary)" }}>Encaminhar</span>
-                  </button>
-                )}
-
-                {/* Editar */}
-                {isMe && m.type === "text" && (
-                  <button onClick={() => { onEdit(); setShowMenu(false); }}
-                    className="w-full flex items-center gap-2.5 px-4 py-3 text-sm transition border-t"
-                    style={{ borderColor: "var(--border-subtle)" }}
-                    onMouseOver={e => e.currentTarget.style.background = "var(--s2)"}
-                    onMouseOut={e => e.currentTarget.style.background = "transparent"}>
-                    <Pencil className="h-4 w-4" style={{ color: "#5B3FCF" }} />
-                    <span style={{ color: "var(--text-primary)" }}>Editar</span>
-                  </button>
-                )}
-
-                {/* Eliminar */}
-                <button onClick={() => { setConfirmDel("me"); setShowMenu(false); }}
-                  className="w-full flex items-center gap-2.5 px-4 py-3 text-sm transition border-t"
-                  style={{ borderColor: "var(--border-subtle)" }}
-                  onMouseOver={e => e.currentTarget.style.background = "var(--s2)"}
-                  onMouseOut={e => e.currentTarget.style.background = "transparent"}>
-                  <Trash2 className="h-4 w-4" style={{ color: "#F97316" }} />
-                  <span style={{ color: "var(--text-primary)" }}>Eliminar para mim</span>
-                </button>
-                {isMe && (
-                  <button onClick={() => { setConfirmDel("all"); setShowMenu(false); }}
-                    className="w-full flex items-center gap-2.5 px-4 py-3 text-sm transition border-t"
-                    style={{ borderColor: "var(--border-subtle)" }}
-                    onMouseOver={e => e.currentTarget.style.background = "#fee2e2"}>
-                    <Trash2 className="h-4 w-4" style={{ color: "#EF4444" }} />
-                    <span style={{ color: "#EF4444" }}>Eliminar para todos</span>
-                  </button>
-                )}
+                {menuActions}
               </div>
             )}
           </div>
         </div>
+
+        {/* Mobile: bottom sheet fixo (nunca fica cortado fora do ecrã) —
+            aberto por long-press na bolha ou tocando no "...". */}
+        {showMenu && isMobile && createPortal(
+          <div className="fixed inset-0 z-[9999] flex items-end" style={{ background: "rgba(0,0,0,0.5)" }} onClick={closeMenu}>
+            <div className="w-full rounded-t-3xl overflow-hidden shadow-2xl animate-in slide-in-from-bottom duration-200"
+              style={{ background: "var(--s0)", maxHeight: "80vh", overflowY: "auto" }}
+              onClick={e => e.stopPropagation()}>
+              <div className="flex justify-center pt-2.5 pb-1">
+                <div className="w-10 h-1 rounded-full" style={{ background: "var(--border-default)" }} />
+              </div>
+              {menuActions}
+              <div style={{ height: "env(safe-area-inset-bottom, 12px)" }} />
+            </div>
+          </div>,
+          document.body
+        )}
 
         {/* Bubble */}
         <div className="rounded-2xl overflow-hidden shadow-sm"
@@ -2468,6 +2546,7 @@ function ChatPanel({ myId, contact, onBack }: {
       mediaUrl:       r.media_url ?? undefined,
       replyTo:        r.reply_to ?? r.reply_to_id ?? undefined,
       edited:         !!r.edited_at,
+      deletedForAll:  !!r.deleted_for_all,
       viewOnce:       !!r.view_once,
       viewOnceOpened: (() => {
         if (r.view_once_opened_by?.includes(myId)) return true;
@@ -2537,10 +2616,8 @@ function ChatPanel({ myId, contact, onBack }: {
       return { ...r, reactions: counts, myReaction: myRx?.emoji };
     });
     const parsed = await Promise.all(enriched.map(parseRow));
-    // Filtrar localmente as apagadas para todos (caso a RLS ainda não esteja actualizada)
-    const visible = parsed.filter((m: any) => !m.deletedForAll);
-    setMsgs(visible);
-    saveCache(visible);
+    setMsgs(parsed);
+    saveCache(parsed);
     // marcar como lido
     await db.from("messages")
       .update({ status: "read" })
@@ -2597,7 +2674,10 @@ function ChatPanel({ myId, contact, onBack }: {
         .on("postgres_changes", { event: "UPDATE", schema: "public", table: "messages", filter: `conversation_id=eq.${contact.conversationId}` },
           async (payload: any) => {
             if (payload.new.deleted_for_all) {
-              setMsgs(prev => { const n = prev.filter(x => x.id !== payload.new.id); saveCache(n); return n; });
+              setMsgs(prev => {
+                const n = prev.map(x => x.id === payload.new.id ? { ...x, deletedForAll: true } : x);
+                saveCache(n); return n;
+              });
               return;
             }
             const newStatus = payload.new.status as string;
@@ -2710,27 +2790,20 @@ function ChatPanel({ myId, contact, onBack }: {
   }
 
   // ── Eliminar para todos ──
-  // IMPORTANTE: remove localmente primeiro (resposta instantânea), mas só
-  // confirma o sucesso (toast) DEPOIS de o Supabase confirmar a alteração
-  // real na base de dados. Se a chamada falhar (rede, RLS, etc.), a
-  // mensagem volta a aparecer e avisamos — para nunca dar a entender que
-  // foi "eliminada para todos" quando na verdade continua na BD e o
-  // outro utilizador ainda a vê.
+  // IMPORTANTE: marca a mensagem como "eliminada para todos" localmente
+  // primeiro (resposta instantânea) — a bolha fica com o placeholder
+  // "Esta mensagem foi eliminada" em vez de desaparecer, tal como
+  // WhatsApp/Instagram/Messenger — só confirma o sucesso (toast) DEPOIS
+  // de o Supabase confirmar a alteração real na base de dados. Se a
+  // chamada falhar (rede, RLS, etc.), a mensagem volta ao estado normal
+  // e avisamos — para nunca dar a entender que foi "eliminada para
+  // todos" quando na verdade continua na BD e o outro utilizador ainda a vê.
   async function deleteForEveryone(id: string) {
-    const removedIdx = msgs.findIndex(x => x.id === id);
-    const removed = removedIdx >= 0 ? msgs[removedIdx] : undefined;
-    setMsgs(prev => { const n = prev.filter(x => x.id !== id); saveCache(n); return n; });
+    patchMsg(id, { deletedForAll: true });
     const { error } = await db.from("messages").update({ deleted_for_all: true }).eq("id", id);
     if (error) {
       console.error("[deleteForEveryone] falhou:", error);
-      if (removed) {
-        setMsgs(prev => {
-          const idx = Math.min(removedIdx, prev.length);
-          const n = [...prev.slice(0, idx), removed, ...prev.slice(idx)];
-          saveCache(n);
-          return n;
-        });
-      }
+      patchMsg(id, { deletedForAll: false });
       toast.error("Não foi possível eliminar para todos. Tenta novamente.");
       return;
     }
@@ -3314,9 +3387,22 @@ function ChatPanel({ myId, contact, onBack }: {
         <div className="flex flex-col justify-end min-h-full px-2 py-4 space-y-1">
         {msgs.map(m => {
           const merged = { ...m, ...(localOverrides[m.id] ?? {}) } as Message & { deletedForMe?: boolean };
-          if (merged.deletedForMe) return null;
-          if ((merged as any).deleted_for_all) return null;
           const isMe = merged.senderId === myId;
+          // Eliminada para mim: some só do meu lado (o outro continua a ver normalmente).
+          if (merged.deletedForMe) return null;
+          // Eliminada para todos: fica visível para ambos como placeholder,
+          // igual ao WhatsApp — nunca desaparece da conversa em silêncio.
+          if (merged.deletedForAll) {
+            return (
+              <div key={merged.id} className={`flex ${isMe ? "justify-end" : "justify-start"} px-1`}>
+                <div className="flex items-center gap-1.5 px-3 py-2 rounded-2xl text-xs italic"
+                  style={{ background: isMe ? "#5B3FCF15" : "var(--s2)", color: "var(--text-muted)" }}>
+                  <Trash2 className="h-3.5 w-3.5" />
+                  <span>Esta mensagem foi eliminada</span>
+                </div>
+              </div>
+            );
+          }
           const replied = merged.replyTo ? msgRef(merged) ?? null : null;
           return (
             <MsgBubble key={merged.id} m={merged as any} isMe={isMe} replied={replied}
