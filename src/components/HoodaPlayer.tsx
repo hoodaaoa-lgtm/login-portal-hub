@@ -271,6 +271,11 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
       // Instagram/TikTok). Só força mudo se a preferência global for
       // mudo — necessário para o autoplay ser permitido pelo browser.
       if (!hasStarted) vid.muted = getGlobalMuted();
+      // Avisa o gestor global ANTES de tocar: garante que qualquer outro
+      // vídeo a tocar (autoplay ou manual) é pausado imediatamente. Sem
+      // isto, dois vídeos podiam ficar "isInView" ao mesmo tempo (zona de
+      // transição do threshold) e tocar ambos em simultâneo.
+      notifyVideoPlaying(mediaIdRef.current);
       vid.play()?.catch(() => {
         // Se o browser bloquear o autoplay com som (sem gesto ainda),
         // tenta de novo mudo para não perder o autoplay do vídeo.

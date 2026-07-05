@@ -38,7 +38,7 @@ export function useVideoInView<T extends HTMLElement>(
   const ref = useRef<T | null>(null);
   const [isInView, setIsInView] = useState(false);
   const [hasEnteredOnce, setHasEnteredOnce] = useState(false);
-  const { rootMargin = "200px 0px", threshold = 0.25 } = opts;
+  const { rootMargin = "200px 0px", threshold = 0.6 } = opts;
 
   useEffect(() => {
     const el = ref.current;
