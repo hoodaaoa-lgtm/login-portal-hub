@@ -33,10 +33,17 @@ export function RightSidebar() {
 
   useEffect(() => { load(); }, []);
 
-  async function follow(userId: string) {
+  async function follow(userId: string, username: string) {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
-    await (supabase as any).from("follows").insert({ follower_id: session.user.id, following_id: userId });
+    // A tabela "follows" exige sempre target_username (coluna obrigatória) —
+    // sem isto o insert falha silenciosamente e o botão parece não fazer nada.
+    const { error } = await (supabase as any).from("follows").insert({
+      follower_id: session.user.id,
+      following_id: userId,
+      target_username: username,
+    });
+    if (error) { console.error("Erro ao seguir:", error); return; }
     setSuggestions(p => p.filter(u => u.id !== userId));
   }
 
@@ -97,7 +104,7 @@ export function RightSidebar() {
                     <p className="text-xs truncate" style={{ color: "var(--text-muted)" }}>@{u.username}</p>
                   </div>
                 </button>
-                <button onClick={() => follow(u.id)}
+                <button onClick={() => follow(u.id, u.username)}
                   className="shrink-0 px-3 py-1.5 rounded-full text-xs font-bold text-white transition active:scale-90"
                   style={{ background: ACCENT }}>
                   Seguir

@@ -668,13 +668,20 @@ function WhoToFollowCard({ myUserId, onDismiss, offset = 0 }: { myUserId: string
     load();
   }, [myUserId, offset]);
 
-  async function handleFollow(userId: string) {
+  async function handleFollow(userId: string, username: string) {
     if (following.has(userId)) {
       await (supabase as any).from("follows").delete()
         .eq("follower_id", myUserId).eq("following_id", userId);
       setFollowing(prev => { const s = new Set(prev); s.delete(userId); return s; });
     } else {
-      await (supabase as any).from("follows").insert({ follower_id: myUserId, following_id: userId });
+      // A tabela "follows" exige sempre target_username (coluna obrigatória) —
+      // sem isto o insert falha silenciosamente e o botão parece não fazer nada.
+      const { error } = await (supabase as any).from("follows").insert({
+        follower_id: myUserId,
+        following_id: userId,
+        target_username: username,
+      });
+      if (error) { console.error("Erro ao seguir:", error); return; }
       setFollowing(prev => new Set([...prev, userId]));
     }
   }
@@ -746,7 +753,7 @@ function WhoToFollowCard({ myUserId, onDismiss, offset = 0 }: { myUserId: string
               )}
 
               {/* Botão seguir */}
-              <button onClick={() => handleFollow(user.id)}
+              <button onClick={() => handleFollow(user.id, user.username)}
                 className="w-full h-8 rounded-full text-[12px] font-bold transition active:scale-95 mt-auto"
                 style={isFollowing
                   ? { background: "var(--s3)", color: "var(--text-secondary)", border: "1.5px solid var(--border-default)" }

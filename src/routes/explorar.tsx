@@ -185,7 +185,7 @@ function ExplorePage() {
   });
   const myChannelFollowsSet = useMemo(() => new Set(myChannelFollows ?? []), [myChannelFollows]);
 
-  async function toggleChannelFollow(channelId: string) {
+  async function toggleChannelFollow(channelId: string, channelHandle: string) {
     if (!myId) { toast.error("Inicia sessão para seguir."); return; }
     const isF = channelFollowMap[channelId] ?? myChannelFollowsSet.has(channelId);
     setChannelFollowMap(prev => ({ ...prev, [channelId]: !isF }));
@@ -196,7 +196,9 @@ function ExplorePage() {
         if (error) throw error;
         toast.success("Deixaste de seguir o canal");
       } else {
-        const { error } = await db.from("follows").insert({ follower_id: myId, following_id: channelId });
+        // A tabela "follows" exige sempre target_username (coluna obrigatória)
+        // — usamos o handle do canal, sem isto o insert falha silenciosamente.
+        const { error } = await db.from("follows").insert({ follower_id: myId, following_id: channelId, target_username: channelHandle });
         if (error) throw error;
         toast.success("A seguir o canal!");
       }
@@ -668,7 +670,7 @@ function ExplorePage() {
                       @{ch.handle} · {fmtNum(ch.subscriber_count ?? 0)} subscritores · {fmtNum(ch.videos_count ?? 0)} vídeos
                     </p>
                   </div>
-                  <button onClick={() => toggleChannelFollow(ch.id)}
+                  <button onClick={() => toggleChannelFollow(ch.id, ch.handle)}
                     className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold transition active:scale-95 shrink-0"
                     style={isF
                       ? { background: "var(--s2)", color: "var(--text-secondary)", border: "1px solid var(--border-default)" }

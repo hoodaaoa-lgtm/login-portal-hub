@@ -317,7 +317,10 @@ function CanalPage() {
     setFollowing(f => !f);
     setFollowCount(c => following ? c - 1 : c + 1);
     if (following) await (supabase as any).from("follows").delete().eq("follower_id", myId).eq("following_id", channel.id);
-    else await (supabase as any).from("follows").insert({ follower_id: myId, following_id: channel.id });
+    // A tabela "follows" exige sempre target_username (coluna obrigatória) —
+    // usamos o handle do canal como identificador, sem isto o insert falha
+    // silenciosamente e o botão parece não fazer nada.
+    else await (supabase as any).from("follows").insert({ follower_id: myId, following_id: channel.id, target_username: channel.handle });
   }
 
   const isOwner = myId === channel?.owner_id;
