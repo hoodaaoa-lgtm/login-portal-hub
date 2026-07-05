@@ -1732,15 +1732,21 @@ function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit
   const touchStartPos = useRef<{ x: number; y: number } | null>(null);
   const LONG_PRESS_MS = 420;
   const MOVE_CANCEL_PX = 10;
+  // Feedback visual: a bolha "aperta" levemente enquanto o dedo está
+  // pressionado, para confirmar ao utilizador que a ação está a ser
+  // reconhecida (igual ao WhatsApp/Instagram).
+  const [isPressing, setIsPressing] = useState(false);
 
   function handleBubbleTouchStart(e: React.TouchEvent) {
     if (!isMobile) return;
     longPressFired.current = false;
     const t = e.touches[0];
     touchStartPos.current = { x: t.clientX, y: t.clientY };
+    setIsPressing(true);
     longPressTimer.current = setTimeout(() => {
       longPressFired.current = true;
       setShowMenu(true);
+      setIsPressing(false);
       if (navigator.vibrate) navigator.vibrate(15);
     }, LONG_PRESS_MS);
   }
@@ -1752,10 +1758,12 @@ function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit
     if (dx > MOVE_CANCEL_PX || dy > MOVE_CANCEL_PX) {
       clearTimeout(longPressTimer.current);
       longPressTimer.current = null;
+      setIsPressing(false);
     }
   }
   function handleBubbleTouchEnd(e: React.TouchEvent) {
     if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; }
+    setIsPressing(false);
     if (longPressFired.current) {
       // Evita que o toque que terminou o long-press também dispare o
       // clique normal da bolha (ex: abrir imagem em lightbox).
@@ -1863,42 +1871,36 @@ function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit
         onTouchEnd={handleBubbleTouchEnd}
       >
 
-        {/* Ações (responder / menu) — no desktop só aparecem ao passar o
-            rato (hover), flutuando ao lado da bolha. No MOBILE, a bolha
-            inteira responde a pressionar-e-segurar (long-press) para
-            abrir o menu completo num bottom sheet — igual ao
-            WhatsApp/Instagram; mantém-se aqui só um botão pequeno de
-            "..." como atalho visível para quem preferir tocar. */}
-        <div className={
-          isMobile
-            ? `absolute -top-9 ${isMe ? "right-0" : "left-0"} flex items-center gap-1.5 z-10`
-            : `absolute ${isMe ? "right-full mr-1" : "left-full ml-1"} top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition flex items-center gap-0.5 z-10`
-        }>
-          {!isMobile && (
+        {/* Ações (responder / menu) — no DESKTOP aparecem ao passar o
+            rato (hover), flutuando ao lado da bolha, com botão "...".
+            No MOBILE não há nenhum botão flutuante: a bolha inteira
+            responde a pressionar-e-segurar (long-press), igual ao
+            WhatsApp, para abrir o menu completo num bottom sheet. */}
+        {!isMobile && (
+          <div className={`absolute ${isMe ? "right-full mr-1" : "left-full ml-1"} top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition flex items-center gap-0.5 z-10`}>
             <button onClick={onReply}
               className="shrink-0 rounded-full flex items-center justify-center shadow-sm w-7 h-7"
               style={{ background: "rgba(0,0,0,0.12)", color: "var(--text-secondary)" }}>
               <Reply className="h-3.5 w-3.5" />
             </button>
-          )}
-          <div className="relative" ref={menuRef}>
-            <button onClick={() => setShowMenu(v => !v)}
-              className={`shrink-0 rounded-full flex items-center justify-center shadow-sm ${isMobile ? "w-8 h-8" : "w-7 h-7"}`}
-              style={{ background: isMobile ? "var(--s1)" : "rgba(0,0,0,0.12)", color: "var(--text-secondary)" }}>
-              <MoreVertical className="h-3.5 w-3.5" />
-            </button>
-            {/* Desktop: dropdown ancorado ao lado da bolha */}
-            {showMenu && !isMobile && (
-              <div className={`absolute ${isMe ? "right-0" : "left-0"} bottom-full mb-1 rounded-2xl shadow-2xl z-30 overflow-hidden min-w-[190px] max-w-[85vw] border`}
-                style={{ background: "var(--s0)", borderColor: "var(--border-default)" }}>
-                {menuActions}
-              </div>
-            )}
+            <div className="relative" ref={menuRef}>
+              <button onClick={() => setShowMenu(v => !v)}
+                className="shrink-0 rounded-full flex items-center justify-center shadow-sm w-7 h-7"
+                style={{ background: "rgba(0,0,0,0.12)", color: "var(--text-secondary)" }}>
+                <MoreVertical className="h-3.5 w-3.5" />
+              </button>
+              {showMenu && (
+                <div className={`absolute ${isMe ? "right-0" : "left-0"} bottom-full mb-1 rounded-2xl shadow-2xl z-30 overflow-hidden min-w-[190px] max-w-[85vw] border`}
+                  style={{ background: "var(--s0)", borderColor: "var(--border-default)" }}>
+                  {menuActions}
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Mobile: bottom sheet fixo (nunca fica cortado fora do ecrã) —
-            aberto por long-press na bolha ou tocando no "...". */}
+            aberto só por pressionar-e-segurar (long-press) na bolha. */}
         {showMenu && isMobile && createPortal(
           <div className="fixed inset-0 z-[9999] flex items-end" style={{ background: "rgba(0,0,0,0.5)" }} onClick={closeMenu}>
             <div className="w-full rounded-t-3xl overflow-hidden shadow-2xl animate-in slide-in-from-bottom duration-200"
@@ -1915,8 +1917,8 @@ function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit
         )}
 
         {/* Bubble */}
-        <div className="rounded-2xl overflow-hidden shadow-sm"
-          style={{ background: bubbleBg, color: bubbleText, borderRadius: br }}>
+        <div className="rounded-2xl overflow-hidden shadow-sm transition-transform duration-150"
+          style={{ background: bubbleBg, color: bubbleText, borderRadius: br, transform: isPressing ? "scale(0.97)" : "scale(1)" }}>
 
           {/* Reply strip */}
           {replied && (
@@ -2434,7 +2436,21 @@ function ChatPanel({ myId, contact, onBack }: {
   // ── Edit / Delete / ViewOnce ──
   const [editingMsgId,   setEditingMsgId]   = useState<string|null>(null);
   const [editingText,    setEditingText]    = useState("");
-  const [localOverrides, setLocalOverrides] = useState<Record<string,Partial<Message>>>({});
+  // "Eliminar para mim" é guardado por conversa neste dispositivo, para
+  // a mensagem não voltar a aparecer depois de sair e voltar à conversa
+  // (antes só vivia em memória e reaparecia ao dar refresh).
+  const HIDDEN_KEY = `hooda_dm_hidden_${contact.conversationId}`;
+  const [localOverrides, setLocalOverrides] = useState<Record<string,Partial<Message>>>(() => {
+    try {
+      if (typeof window === "undefined") return {};
+      const raw = localStorage.getItem(HIDDEN_KEY);
+      if (!raw) return {};
+      const ids: string[] = JSON.parse(raw);
+      const initial: Record<string, Partial<Message>> = {};
+      ids.forEach(id => { initial[id] = { deletedForMe: true }; });
+      return initial;
+    } catch { return {}; }
+  });
 
   // ── E2EE ──
 
@@ -2784,8 +2800,18 @@ function ChatPanel({ myId, contact, onBack }: {
   }
 
   // ── Eliminar para mim ──
+  // Guarda o id no localStorage (por conversa) para a mensagem continuar
+  // escondida mesmo depois de sair e voltar à conversa ou dar refresh.
   function deleteForMe(id: string) {
     patchMsg(id, { deletedForMe: true });
+    try {
+      const raw = localStorage.getItem(HIDDEN_KEY);
+      const ids: string[] = raw ? JSON.parse(raw) : [];
+      if (!ids.includes(id)) {
+        ids.push(id);
+        localStorage.setItem(HIDDEN_KEY, JSON.stringify(ids));
+      }
+    } catch {}
     toast.success("Mensagem eliminada para ti");
   }
 
