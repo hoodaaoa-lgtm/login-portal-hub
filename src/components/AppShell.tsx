@@ -309,17 +309,61 @@ export function PageWrapper({ children, className = "" }: { children: React.Reac
   );
 }
 
-/* ─── Layout de 3 colunas (feed largo + sidebar direita) ───
-   Sidebar esquerda: 280px (fixa). Sidebar direita: 320px (fixa, à direita) —
-   ambas fora do fluxo, nunca acompanham o scroll da página.
-   O feed reserva espaço à direita (xl:pr) para não ficar por baixo da sidebar. */
+/* ─── Layout de 3 colunas estilo X ───
+   Sidebar esquerda: 280px (fixa, fora do fluxo). Coluna central: máx 600px
+   com border-l/border-r subtis. Sidebar direita: 350px a partir de xl.
+   Tudo dentro de um container centrado, sem esticar horizontalmente. */
 export function FeedLayout({ feed, sidebar }: { feed: React.ReactNode; sidebar?: React.ReactNode }) {
   return (
-    <div className="flex w-full min-h-screen">
-      <div className="flex-1 min-w-0 xl:mr-[360px]">
-        {feed}
+    <div className="flex justify-center w-full min-h-screen">
+      <div className="flex w-full max-w-[990px] xl:max-w-[1010px] min-h-screen">
+        <main
+          className="flex-1 min-w-0 lg:max-w-[600px] w-full lg:border-x"
+          style={{ borderColor: "var(--border-subtle)" }}
+        >
+          {feed}
+        </main>
+        {sidebar && (
+          <aside className="hidden xl:block w-[350px] shrink-0 pl-6">
+            {sidebar}
+          </aside>
+        )}
       </div>
-      {sidebar}
+    </div>
+  );
+}
+
+/* Header sticky estilo X para o topo da coluna central */
+export function PageHeader({
+  title,
+  actions,
+  onBack,
+}: {
+  title: React.ReactNode;
+  actions?: React.ReactNode;
+  onBack?: () => void;
+}) {
+  return (
+    <div
+      className="sticky top-0 z-30 flex items-center gap-4 px-4 h-[53px] border-b backdrop-blur-md"
+      style={{
+        background: "color-mix(in oklab, var(--surface-0) 80%, transparent)",
+        borderColor: "var(--border-subtle)",
+      }}
+    >
+      {onBack && (
+        <button
+          onClick={onBack}
+          aria-label="Voltar"
+          className="p-2 -ml-2 rounded-full hover:bg-[color-mix(in_oklab,var(--text-primary)_8%,transparent)]"
+        >
+          <ArrowLeft className="h-5 w-5" style={{ color: "var(--text-primary)" }} />
+        </button>
+      )}
+      <h1 className="text-[20px] font-extrabold truncate flex-1" style={{ color: "var(--text-primary)" }}>
+        {title}
+      </h1>
+      {actions}
     </div>
   );
 }
