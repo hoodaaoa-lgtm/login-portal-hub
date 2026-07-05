@@ -186,7 +186,11 @@ function SinglePostPage() {
               </button>
 
               {/* Conteúdo */}
-              {post.video_url && <FeedVideoPlayer src={post.video_url} poster={post.photo_url || undefined} postId={post.id} kind="video" rounded="rounded-none" />}
+              {post.video_url && (
+                <div className="px-4 pb-3">
+                  <FeedVideoPlayer src={post.video_url} poster={post.photo_url || undefined} postId={post.id} kind="video" rounded="rounded-2xl" />
+                </div>
+              )}
               {post.photo_url && !post.video_url && (
                 <img src={post.photo_url} alt="" className="w-full block" style={{ maxHeight: 600, objectFit: "cover" }} />
               )}
@@ -254,7 +258,11 @@ function SinglePostPage() {
           }
           body={
             <>
-              {post.video_url && <FeedVideoPlayer src={post.video_url} poster={post.photo_url || undefined} postId={post.id} kind="video" rounded="rounded-none" />}
+              {post.video_url && (
+                <div className="px-4 pb-3">
+                  <FeedVideoPlayer src={post.video_url} poster={post.photo_url || undefined} postId={post.id} kind="video" rounded="rounded-2xl" />
+                </div>
+              )}
               {post.photo_url && !post.video_url && <img src={post.photo_url} alt="" className="w-full block" />}
               {text && !post.video_url && (
                 bgColor ? (

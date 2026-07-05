@@ -354,9 +354,11 @@ function PostCard({
         </div>
       </div>
 
-      {/* Media — ocupa largura total, sem padding lateral */}
+      {/* Media */}
       {post.videoUrl && (
-        <FeedVideoPlayer src={post.videoUrl} postId={post.id} kind="video" />
+        <div className="px-3 pb-3">
+          <FeedVideoPlayer src={post.videoUrl} postId={post.id} kind="video" rounded="rounded-2xl" />
+        </div>
       )}
       {(post as any).kind === "clip" && (post as any).clipVideoId && (
         <div className="mx-3 mb-3 rounded-2xl overflow-hidden border" style={{ borderColor: "var(--border-subtle)" }}>
@@ -451,8 +453,8 @@ function PostCard({
           body={
             <>
               {post.videoUrl && (
-                <div className="w-full">
-                  <FeedVideoPlayer src={post.videoUrl} postId={post.id} kind="video" />
+                <div className="w-full px-4 pb-3">
+                  <FeedVideoPlayer src={post.videoUrl} postId={post.id} kind="video" rounded="rounded-2xl" />
                 </div>
               )}
               {post.photo && !post.videoUrl && <img src={post.photo} alt="" className="w-full" style={{ display: "block" }} />}
