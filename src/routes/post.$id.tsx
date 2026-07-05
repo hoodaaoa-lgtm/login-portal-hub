@@ -187,7 +187,7 @@ function SinglePostPage() {
 
               {/* Conteúdo */}
               {post.video_url && (
-                <div className="pb-3 px-3">
+                <div className="pb-3 md:px-3">
                   <FeedVideoPlayer src={post.video_url} poster={post.photo_url || undefined} postId={post.id} kind="video" rounded="rounded-2xl" />
                 </div>
               )}
@@ -259,7 +259,7 @@ function SinglePostPage() {
           body={
             <>
               {post.video_url && (
-                <div className="pb-3 px-4">
+                <div className="pb-3 md:px-4">
                   <FeedVideoPlayer src={post.video_url} poster={post.photo_url || undefined} postId={post.id} kind="video" rounded="rounded-2xl" />
                 </div>
               )}

@@ -356,7 +356,7 @@ function PostCard({
 
       {/* Media */}
       {post.videoUrl && (
-        <div className="pb-3 px-4">
+        <div className="pb-3 md:px-4">
           <FeedVideoPlayer src={post.videoUrl} postId={post.id} kind="video" rounded="rounded-2xl" />
         </div>
       )}
@@ -453,7 +453,7 @@ function PostCard({
           body={
             <>
               {post.videoUrl && (
-                <div className="w-full pb-3 px-4">
+                <div className="w-full pb-3 md:px-4">
                   <FeedVideoPlayer src={post.videoUrl} postId={post.id} kind="video" rounded="rounded-2xl" />
                 </div>
               )}

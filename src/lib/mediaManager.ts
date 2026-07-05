@@ -34,6 +34,12 @@ export function notifyVideoPlaying(id: string) {
     if (rid !== id && !el.paused) {
       el.pause();
     }
+    // Só um vídeo pode ter som ativo de cada vez em toda a app — ao tocar
+    // este, todos os outros silenciam automaticamente (o "volumechange"
+    // no HoodaPlayer sincroniza o ícone de som de cada um).
+    if (rid !== id && !el.muted) {
+      el.muted = true;
+    }
   });
   activeVideoId = id;
 }

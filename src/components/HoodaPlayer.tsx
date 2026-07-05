@@ -198,6 +198,12 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
   // para não sobrar barra preta lateral.
   const objectFitClass = "object-contain";
 
+  // No telemóvel, o vídeo fica sempre de ponta a ponta (sem cantos
+  // arredondados, sem margem lateral) — igual ao feed do Facebook. No
+  // desktop mantém-se o estilo com cantos arredondados pedido antes.
+  const effectiveRounded = isMobile ? "rounded-none" : rounded;
+
+
 
 
   /* ─── Regista no mediaManager: só um vídeo toca de cada vez ─── */
@@ -361,7 +367,7 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
       ref={(el) => {
         (wrapperRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
       }}
-      className={`overflow-hidden bg-black select-none ${rounded} ${className} ${isHeightConstrained ? "mx-auto" : "w-full"}`}
+      className={`overflow-hidden bg-black select-none ${effectiveRounded} ${className} ${isHeightConstrained ? "mx-auto" : "w-full"}`}
       style={isHeightConstrained ? { width: `${boxWidthPx}px`, maxWidth: "100%" } : undefined}
       onMouseMove={() => {
         if (!isMobile) resetTimer();
@@ -428,6 +434,7 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
           setMetadataLoaded(true);
         }}
         onPause={() => setIsPlaying(false)}
+        onVolumeChange={(e) => setIsMuted(e.currentTarget.muted)}
         onTimeUpdate={() => {
           const v = videoRef.current;
           if (v) {

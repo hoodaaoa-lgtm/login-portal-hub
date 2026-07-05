@@ -1162,7 +1162,7 @@ function UserProfilePage() {
                         onContextMenu={e=>e.preventDefault()}/>
                     )}
                     {post.videoUrl&&!post.photo&&(
-                      <div className="pb-3 px-4">
+                      <div className="pb-3 md:px-4">
                         <VideoPlayer src={post.videoUrl} postId={post.id} kind="video"/>
                       </div>
                     )}
