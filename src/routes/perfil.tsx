@@ -424,10 +424,12 @@ function PostCard({
           <Eye className="h-5 w-5" />{viewCount > 0 ? fmtNum(viewCount) : 0}
         </span>
         <div className="flex items-center gap-0.5">
-          <button onClick={() => onBookmark(post.id)} className="p-1.5 rounded-full transition active:scale-90">
-            <Bookmark className={`h-5 w-5 transition ${post.bookmarked ? "fill-[#5B3FCF] text-[#5B3FCF]" : ""}`}
-              style={{ color: post.bookmarked ? undefined : "var(--text-primary)" }} />
-          </button>
+          {!isOwner && (
+            <button onClick={() => onBookmark(post.id)} className="p-1.5 rounded-full transition active:scale-90">
+              <Bookmark className={`h-5 w-5 transition ${post.bookmarked ? "fill-[#5B3FCF] text-[#5B3FCF]" : ""}`}
+                style={{ color: post.bookmarked ? undefined : "var(--text-primary)" }} />
+            </button>
+          )}
           <button onClick={openShareSheet} className="p-1.5 rounded-full transition active:scale-90">
             <Share2 className="h-5 w-5" style={{ color: "var(--text-primary)" }} />
           </button>

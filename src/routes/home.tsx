@@ -995,10 +995,12 @@ function PostCard({ p }: { p: any }) {
   // meRef garante que o valor de "me" está sempre disponível nos handlers
   // mesmo que o componente ainda não tenha re-renderizado após o useEffect
   const meRef = useRef<{ id: string; username: string } | null>(null);
+  const [myUserId, setMyUserId] = useState<string | null>(null);
   const [liked, setLiked] = useState(p.liked_by_me ?? false);
   const [likeCount, setLikeCount] = useState(p.likes ?? 0);
   const [viewCount, setViewCount] = useState(Number(p.views_count ?? 0));
   const isAd = !!p.ad;
+  const isOwnPost = !!myUserId && myUserId === p.author_id;
   const navigate = useNavigate();
   const cardVideoRef = useRef<HTMLVideoElement>(null);
   const modalVideoRef = useRef<HTMLVideoElement>(null);
@@ -1013,6 +1015,7 @@ function PostCard({ p }: { p: any }) {
       if (!session) return;
       const { data: prof } = await supabase.from("profiles").select("username").eq("id", session.user.id).maybeSingle();
       meRef.current = { id: session.user.id, username: (prof as any)?.username || "eu" };
+      setMyUserId(session.user.id);
     })();
   }, []);
 
@@ -1284,14 +1287,16 @@ function PostCard({ p }: { p: any }) {
             <MessageCircle className="h-5 w-5 text-[var(--text-muted)]" />
             <span className="text-xs font-semibold text-[var(--text-muted)]">{p.comments ?? 0}</span>
           </button>
-          {/* Repost */}
-          <button onClick={() => setShowRepost(true)}
-            className="flex items-center gap-1.5 px-2 py-1.5 rounded-full transition-all active:scale-95 hover:bg-[var(--s1)]">
-            <Repeat2 className="h-5 w-5" style={{ color: didRepost ? "#1FAFA6" : "var(--text-muted)" }} />
-            {repostCount > 0 && (
-              <span className="text-xs font-semibold" style={{ color: didRepost ? "#1FAFA6" : "var(--text-muted)" }}>{repostCount}</span>
-            )}
-          </button>
+          {/* Repost — escondido no próprio post: não faz sentido repostar o que já é teu */}
+          {!isOwnPost && (
+            <button onClick={() => setShowRepost(true)}
+              className="flex items-center gap-1.5 px-2 py-1.5 rounded-full transition-all active:scale-95 hover:bg-[var(--s1)]">
+              <Repeat2 className="h-5 w-5" style={{ color: didRepost ? "#1FAFA6" : "var(--text-muted)" }} />
+              {repostCount > 0 && (
+                <span className="text-xs font-semibold" style={{ color: didRepost ? "#1FAFA6" : "var(--text-muted)" }}>{repostCount}</span>
+              )}
+            </button>
+          )}
           {/* Gosto */}
           <button onClick={toggleLike}
             className={`flex items-center gap-1.5 px-2 py-1.5 rounded-full transition-all active:scale-95 ${liked ? "text-red-500" : "hover:bg-[var(--s1)]"}`}>
@@ -1303,7 +1308,7 @@ function PostCard({ p }: { p: any }) {
             <Eye className="h-5 w-5" />{viewCount > 0 ? viewCount.toLocaleString("pt-PT") : 0}
           </span>
           <div className="flex items-center gap-0.5">
-            <BookmarkButton />
+            {!isOwnPost && <BookmarkButton />}
             <button onClick={() => setShowForward(true)} className="p-2 rounded-full hover:bg-[var(--s1)] transition">
               <Share2 className="h-5 w-5 text-[var(--text-muted)]" />
             </button>
@@ -1382,10 +1387,12 @@ function PostCard({ p }: { p: any }) {
           }
           actions={
             <div className="flex items-center justify-between pt-2 pb-1">
-              <button onClick={() => setShowRepost(true)}
-                className="flex items-center gap-1.5 px-2 py-1.5 rounded-full transition-all active:scale-95 hover:bg-[var(--s1)]">
-                <Repeat2 className="h-5 w-5" style={{ color: didRepost ? "#1FAFA6" : "var(--text-muted)" }} />
-              </button>
+              {!isOwnPost && (
+                <button onClick={() => setShowRepost(true)}
+                  className="flex items-center gap-1.5 px-2 py-1.5 rounded-full transition-all active:scale-95 hover:bg-[var(--s1)]">
+                  <Repeat2 className="h-5 w-5" style={{ color: didRepost ? "#1FAFA6" : "var(--text-muted)" }} />
+                </button>
+              )}
               <button onClick={toggleLike}
                 className={`flex items-center gap-1.5 px-2 py-1.5 rounded-full transition-all active:scale-95 ${liked ? "text-red-500" : "hover:bg-[var(--s1)]"}`}>
                 <Heart className={`h-5 w-5 ${liked ? "fill-red-500 text-red-500" : "text-[var(--text-muted)]"}`} />
