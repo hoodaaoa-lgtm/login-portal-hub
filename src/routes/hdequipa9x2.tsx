@@ -5,12 +5,14 @@ import { toast } from "sonner";
 import {
   Lock, Search, Send, LogOut, Loader,
   MessageSquare, ChevronLeft, ShieldAlert, Unlock as UnlockIcon,
+  LayoutDashboard, Flag, Users as UsersIcon, Ban, ShieldCheck,
+  UsersRound, FileText, Radio, TrendingUp, CheckCircle2, XCircle,
 } from "lucide-react";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabase as any;
 
-export const Route = createFileRoute("/admin")({
+export const Route = createFileRoute("/hdequipa9x2")({
   head: () => ({ meta: [{ title: "Hooda — Admin" }] }),
   component: AdminPage,
 });
@@ -24,6 +26,31 @@ type UserRow = {
   username: string;
   full_name: string | null;
   avatar_url: string | null;
+  is_banned?: boolean;
+  is_verified?: boolean;
+  ban_reason?: string | null;
+  created_at?: string;
+};
+
+type ReportRow = {
+  id: string;
+  reporter_id: string;
+  reported_user_id: string;
+  reason: string;
+  status: string;
+  created_at: string;
+  reporter?: { username: string; full_name: string | null } | null;
+  reported?: { username: string; full_name: string | null } | null;
+};
+
+type DashboardStats = {
+  totalUsers: number;
+  newToday: number;
+  newWeek: number;
+  totalPosts: number;
+  postsToday: number;
+  totalChannels: number;
+  pendingReports: number;
 };
 
 type AdminMsg = {
@@ -150,6 +177,7 @@ function AdminPage() {
 
 function AdminDashboard({ adminId }: { adminId: string }) {
   const navigate = useNavigate();
+  const [section, setSection] = useState<"dashboard" | "reports" | "users" | "messages">("dashboard");
   const [search, setSearch] = useState("");
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
@@ -162,13 +190,105 @@ function AdminDashboard({ adminId }: { adminId: string }) {
   const [sending, setSending] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [reports, setReports] = useState<ReportRow[]>([]);
+  const [reportsLoading, setReportsLoading] = useState(true);
+  const [reportFilter, setReportFilter] = useState<"pending" | "reviewed" | "dismissed">("pending");
+
+  // ── Dashboard: números reais ──
+  useEffect(() => {
+    if (section !== "dashboard" || stats) return;
+    (async () => {
+      setStatsLoading(true);
+      const now = new Date();
+      const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+      const startWeek = new Date(now.getTime() - 7 * 86400000).toISOString();
+      const [
+        { count: totalUsers },
+        { count: newToday },
+        { count: newWeek },
+        { count: totalPosts },
+        { count: postsToday },
+        { count: totalChannels },
+        { count: pendingReports },
+      ] = await Promise.all([
+        db.from("profiles").select("*", { count: "exact", head: true }),
+        db.from("profiles").select("*", { count: "exact", head: true }).gte("created_at", startToday),
+        db.from("profiles").select("*", { count: "exact", head: true }).gte("created_at", startWeek),
+        db.from("posts").select("*", { count: "exact", head: true }),
+        db.from("posts").select("*", { count: "exact", head: true }).gte("created_at", startToday),
+        db.from("channels").select("*", { count: "exact", head: true }),
+        db.from("user_reports").select("*", { count: "exact", head: true }).eq("status", "pending"),
+      ]);
+      setStats({
+        totalUsers: totalUsers ?? 0, newToday: newToday ?? 0, newWeek: newWeek ?? 0,
+        totalPosts: totalPosts ?? 0, postsToday: postsToday ?? 0, totalChannels: totalChannels ?? 0,
+        pendingReports: pendingReports ?? 0,
+      });
+      setStatsLoading(false);
+    })();
+  }, [section, stats]);
+
+  // ── Denúncias: lista com dados do denunciante/denunciado ──
+  const loadReports = useCallback(async (status: string) => {
+    setReportsLoading(true);
+    const { data, error } = await db
+      .from("user_reports")
+      .select("id,reporter_id,reported_user_id,reason,status,created_at")
+      .eq("status", status)
+      .order("created_at", { ascending: false })
+      .limit(200);
+    if (error) { console.error("[admin] erro a carregar denúncias:", error); setReports([]); setReportsLoading(false); return; }
+    const ids = Array.from(new Set((data ?? []).flatMap((r: any) => [r.reporter_id, r.reported_user_id])));
+    const profileMap: Record<string, { username: string; full_name: string | null }> = {};
+    if (ids.length > 0) {
+      const { data: profs } = await db.from("profiles").select("id,username,full_name").in("id", ids);
+      (profs ?? []).forEach((p: any) => { profileMap[p.id] = { username: p.username, full_name: p.full_name }; });
+    }
+    setReports((data ?? []).map((r: any) => ({
+      ...r, reporter: profileMap[r.reporter_id] ?? null, reported: profileMap[r.reported_user_id] ?? null,
+    })));
+    setReportsLoading(false);
+  }, []);
+
+  useEffect(() => {
+    if (section !== "reports") return;
+    loadReports(reportFilter);
+  }, [section, reportFilter, loadReports]);
+
+  async function resolveReport(id: string, status: "reviewed" | "dismissed") {
+    const { error } = await db.from("user_reports")
+      .update({ status, reviewed_at: new Date().toISOString() }).eq("id", id);
+    if (error) { toast.error("Não foi possível atualizar a denúncia."); return; }
+    setReports((prev) => prev.filter((r) => r.id !== id));
+    toast.success(status === "reviewed" ? "Denúncia marcada como resolvida." : "Denúncia ignorada.");
+  }
+
+  async function toggleBan(u: UserRow) {
+    const next = !u.is_banned;
+    const reason = next ? window.prompt("Motivo do banimento (opcional):") ?? "" : "";
+    const { error } = await db.from("profiles").update({ is_banned: next, ban_reason: next ? reason : null }).eq("id", u.id);
+    if (error) { toast.error("Não foi possível atualizar o utilizador."); return; }
+    setUsers((prev) => prev.map((x) => (x.id === u.id ? { ...x, is_banned: next, ban_reason: next ? reason : null } : x)));
+    toast.success(next ? `@${u.username} foi banido.` : `@${u.username} foi desbanido.`);
+  }
+
+  async function toggleVerified(u: UserRow) {
+    const next = !u.is_verified;
+    const { error } = await db.from("profiles").update({ is_verified: next }).eq("id", u.id);
+    if (error) { toast.error("Não foi possível atualizar o selo de verificado."); return; }
+    setUsers((prev) => prev.map((x) => (x.id === u.id ? { ...x, is_verified: next } : x)));
+    toast.success(next ? `@${u.username} agora está verificado.` : `Selo removido de @${u.username}.`);
+  }
+
   // ── Lista de utilizadores ──
   useEffect(() => {
     (async () => {
       setLoadingUsers(true);
       const { data, error } = await db
         .from("profiles")
-        .select("id,username,full_name,avatar_url")
+        .select("id,username,full_name,avatar_url,is_banned,is_verified,ban_reason,created_at")
         .neq("id", adminId)
         .order("username", { ascending: true })
         .limit(500);
@@ -311,7 +431,201 @@ function AdminDashboard({ adminId }: { adminId: string }) {
 
   return (
     <div className="h-screen flex" style={{ background: "#0f0d17" }}>
-      {/* ── Sidebar utilizadores ── */}
+      {/* ── Barra de navegação por ícones ── */}
+      <div className="w-16 md:w-20 flex flex-col items-center py-4 gap-2 shrink-0 border-r"
+        style={{ borderColor: "rgba(255,255,255,0.08)" }}>
+        <div className="w-9 h-9 rounded-xl overflow-hidden flex items-center justify-center mb-3 shrink-0" style={{ background: "white" }}>
+          <img src={LOGO} alt="" className="w-full h-full object-contain p-1" />
+        </div>
+        {([
+          { key: "dashboard" as const, Icon: LayoutDashboard, label: "Dashboard" },
+          { key: "reports" as const, Icon: Flag, label: "Denúncias", badge: stats?.pendingReports },
+          { key: "users" as const, Icon: UsersIcon, label: "Utilizadores" },
+          { key: "messages" as const, Icon: MessageSquare, label: "Mensagens" },
+        ]).map(({ key, Icon, label, badge }) => (
+          <button key={key} onClick={() => setSection(key)} title={label}
+            className="relative w-12 h-12 rounded-2xl flex items-center justify-center transition active:scale-90"
+            style={{ background: section === key ? "linear-gradient(135deg,#5B3FCF,#7B5CE8)" : "rgba(255,255,255,0.05)" }}>
+            <Icon className="h-5 w-5" style={{ color: section === key ? "white" : "rgba(255,255,255,0.55)" }} />
+            {!!badge && (
+              <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
+                style={{ background: "#E94B8A" }}>{badge > 99 ? "99+" : badge}</span>
+            )}
+          </button>
+        ))}
+        <div className="flex-1" />
+        <button onClick={() => { sessionStorage.removeItem(UNLOCK_KEY); navigate({ to: "/home" }); }}
+          title="Sair do painel" className="w-12 h-12 rounded-2xl flex items-center justify-center transition active:scale-90"
+          style={{ background: "rgba(239,68,68,0.12)" }}>
+          <LogOut className="h-5 w-5" style={{ color: "#F87171" }} />
+        </button>
+      </div>
+
+      {/* ── Dashboard ── */}
+      {section === "dashboard" && (
+        <div className="flex-1 overflow-y-auto p-6 md:p-10">
+          <h1 className="text-2xl font-extrabold text-white mb-1">Visão geral</h1>
+          <p className="text-white/45 text-sm mb-8">Números reais da plataforma, em tempo real.</p>
+          {statsLoading || !stats ? (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="h-28 rounded-2xl relative overflow-hidden" style={{ background: "rgba(255,255,255,0.05)" }}>
+                  <div className="skeleton-shimmer absolute inset-0" style={{ opacity: 0.15 }} />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              {[
+                { label: "Utilizadores totais", value: stats.totalUsers, Icon: UsersRound, color: "#5B3FCF" },
+                { label: "Novos hoje", value: stats.newToday, Icon: TrendingUp, color: "#6BA547" },
+                { label: "Novos esta semana", value: stats.newWeek, Icon: TrendingUp, color: "#1FAFA6" },
+                { label: "Publicações totais", value: stats.totalPosts, Icon: FileText, color: "#F26B3A" },
+                { label: "Publicações hoje", value: stats.postsToday, Icon: FileText, color: "#FFC93C" },
+                { label: "Canais no Studio", value: stats.totalChannels, Icon: Radio, color: "#E94B8A" },
+                { label: "Denúncias pendentes", value: stats.pendingReports, Icon: Flag, color: "#F87171" },
+              ].map((c) => (
+                <div key={c.label} className="rounded-2xl p-5 flex flex-col gap-3"
+                  style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: `${c.color}22` }}>
+                    <c.Icon className="h-4.5 w-4.5" style={{ color: c.color }} />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-extrabold text-white leading-tight">{c.value.toLocaleString("pt-PT")}</p>
+                    <p className="text-white/45 text-xs mt-0.5">{c.label}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Denúncias ── */}
+      {section === "reports" && (
+        <div className="flex-1 overflow-y-auto p-6 md:p-10">
+          <h1 className="text-2xl font-extrabold text-white mb-1">Denúncias</h1>
+          <p className="text-white/45 text-sm mb-6">Utilizadores denunciados por outros utilizadores.</p>
+          <div className="flex items-center gap-2 mb-6">
+            {([
+              { key: "pending" as const, label: "Pendentes" },
+              { key: "reviewed" as const, label: "Resolvidas" },
+              { key: "dismissed" as const, label: "Ignoradas" },
+            ]).map((f) => (
+              <button key={f.key} onClick={() => setReportFilter(f.key)}
+                className="px-4 py-2 rounded-full text-xs font-bold transition"
+                style={{
+                  background: reportFilter === f.key ? "linear-gradient(135deg,#5B3FCF,#7B5CE8)" : "rgba(255,255,255,0.06)",
+                  color: reportFilter === f.key ? "white" : "rgba(255,255,255,0.55)",
+                }}>
+                {f.label}
+              </button>
+            ))}
+          </div>
+          {reportsLoading ? (
+            <div className="flex items-center justify-center py-16"><Loader className="h-5 w-5 animate-spin text-white/40" /></div>
+          ) : reports.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 gap-2">
+              <Flag className="h-8 w-8 text-white/20" />
+              <p className="text-white/40 text-sm">Nenhuma denúncia {reportFilter === "pending" ? "pendente" : reportFilter === "reviewed" ? "resolvida" : "ignorada"}.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {reports.map((r) => (
+                <div key={r.id} className="rounded-2xl p-4 flex items-start gap-4"
+                  style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-white">
+                      <span className="font-bold">@{r.reported?.username ?? "?"}</span>
+                      <span className="text-white/40"> denunciado por </span>
+                      <span className="font-semibold">@{r.reporter?.username ?? "?"}</span>
+                    </p>
+                    <p className="text-white/60 text-sm mt-1">{r.reason}</p>
+                    <p className="text-white/30 text-[11px] mt-2">{new Date(r.created_at).toLocaleString("pt-PT")}</p>
+                  </div>
+                  {reportFilter === "pending" && (
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button onClick={() => resolveReport(r.id, "reviewed")} title="Marcar como resolvida"
+                        className="p-2 rounded-full transition active:scale-90" style={{ background: "rgba(107,165,71,0.15)" }}>
+                        <CheckCircle2 className="h-4.5 w-4.5" style={{ color: "#6BA547" }} />
+                      </button>
+                      <button onClick={() => resolveReport(r.id, "dismissed")} title="Ignorar denúncia"
+                        className="p-2 rounded-full transition active:scale-90" style={{ background: "rgba(255,255,255,0.08)" }}>
+                        <XCircle className="h-4.5 w-4.5 text-white/50" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Utilizadores ── */}
+      {section === "users" && (
+        <div className="flex-1 overflow-y-auto p-6 md:p-10">
+          <h1 className="text-2xl font-extrabold text-white mb-1">Utilizadores</h1>
+          <p className="text-white/45 text-sm mb-6">Verificar contas ou banir utilizadores que violem as regras.</p>
+          <div className="flex items-center gap-2 rounded-2xl px-3 py-2 mb-6 max-w-sm"
+            style={{ background: "rgba(255,255,255,0.06)" }}>
+            <Search className="h-4 w-4 text-white/40 shrink-0" />
+            <input value={search} onChange={(e) => setSearch(e.target.value)}
+              placeholder="Pesquisar utilizador..."
+              className="flex-1 bg-transparent text-sm text-white outline-none placeholder:text-white/35" />
+          </div>
+          {loadingUsers ? (
+            <div className="flex items-center justify-center py-16"><Loader className="h-5 w-5 animate-spin text-white/40" /></div>
+          ) : (
+            <div className="space-y-2">
+              {users
+                .filter((u) => {
+                  const q = search.trim().toLowerCase();
+                  if (!q) return true;
+                  return u.username?.toLowerCase().includes(q) || u.full_name?.toLowerCase().includes(q);
+                })
+                .map((u) => (
+                  <div key={u.id} className="rounded-2xl p-3 flex items-center gap-3"
+                    style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                    <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center text-white font-bold shrink-0"
+                      style={{ background: "#5B3FCF" }}>
+                      {u.avatar_url ? <img src={u.avatar_url} alt="" className="w-full h-full object-cover" />
+                        : (u.full_name?.[0] ?? u.username?.[0] ?? "?").toUpperCase()}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold text-white truncate flex items-center gap-1.5">
+                        {u.full_name || u.username}
+                        {u.is_verified && <VerifiedBadge size={13} />}
+                        {u.is_banned && (
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: "rgba(239,68,68,0.2)", color: "#F87171" }}>
+                            BANIDO
+                          </span>
+                        )}
+                      </p>
+                      <p className="text-[12px] text-white/45 truncate">@{u.username}{u.is_banned && u.ban_reason ? ` · ${u.ban_reason}` : ""}</p>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button onClick={() => toggleVerified(u)} title={u.is_verified ? "Remover selo" : "Verificar conta"}
+                        className="p-2 rounded-full transition active:scale-90"
+                        style={{ background: u.is_verified ? "rgba(59,158,255,0.18)" : "rgba(255,255,255,0.08)" }}>
+                        <ShieldCheck className="h-4 w-4" style={{ color: u.is_verified ? "#3B9EFF" : "rgba(255,255,255,0.5)" }} />
+                      </button>
+                      <button onClick={() => toggleBan(u)} title={u.is_banned ? "Desbanir" : "Banir utilizador"}
+                        className="p-2 rounded-full transition active:scale-90"
+                        style={{ background: u.is_banned ? "rgba(239,68,68,0.22)" : "rgba(255,255,255,0.08)" }}>
+                        <Ban className="h-4 w-4" style={{ color: u.is_banned ? "#F87171" : "rgba(255,255,255,0.5)" }} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Mensagens ── */}
+      {section === "messages" && (
+      <>
       <div className={`${selected ? "hidden md:flex" : "flex"} w-full md:w-[340px] flex-col shrink-0 border-r`}
         style={{ borderColor: "rgba(255,255,255,0.08)" }}>
         <div className="px-4 py-4 flex items-center justify-between gap-2 shrink-0"
@@ -327,12 +641,6 @@ function AdminDashboard({ adminId }: { adminId: string }) {
               <p className="text-white/70 text-[11px] leading-tight">Painel de mensagens</p>
             </div>
           </div>
-          <button
-            onClick={() => { sessionStorage.removeItem(UNLOCK_KEY); navigate({ to: "/home" }); }}
-            title="Sair do painel"
-            className="p-2 rounded-full transition active:scale-90" style={{ background: "rgba(255,255,255,0.15)" }}>
-            <LogOut className="h-4 w-4 text-white" />
-          </button>
         </div>
 
         <div className="px-3 py-3 shrink-0">
@@ -460,6 +768,8 @@ function AdminDashboard({ adminId }: { adminId: string }) {
           </>
         )}
       </div>
+      </>
+      )}
     </div>
   );
 }

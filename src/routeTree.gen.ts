@@ -18,10 +18,10 @@ import { Route as PerfilRouteImport } from './routes/perfil'
 import { Route as MensagensRouteImport } from './routes/mensagens'
 import { Route as LivrosRouteImport } from './routes/livros'
 import { Route as HomeRouteImport } from './routes/home'
+import { Route as Hdequipa9x2RouteImport } from './routes/hdequipa9x2'
 import { Route as ExplorarRouteImport } from './routes/explorar'
 import { Route as DropsRouteImport } from './routes/drops'
 import { Route as DefinicoesRouteImport } from './routes/definicoes'
-import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as StudioIndexRouteImport } from './routes/studio.index'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
@@ -86,6 +86,11 @@ const HomeRoute = HomeRouteImport.update({
   path: '/home',
   getParentRoute: () => rootRouteImport,
 } as any)
+const Hdequipa9x2Route = Hdequipa9x2RouteImport.update({
+  id: '/hdequipa9x2',
+  path: '/hdequipa9x2',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ExplorarRoute = ExplorarRouteImport.update({
   id: '/explorar',
   path: '/explorar',
@@ -99,11 +104,6 @@ const DropsRoute = DropsRouteImport.update({
 const DefinicoesRoute = DefinicoesRouteImport.update({
   id: '/definicoes',
   path: '/definicoes',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminRoute = AdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -199,10 +199,10 @@ const AuthBridgeRoute = AuthBridgeRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
   '/definicoes': typeof DefinicoesRoute
   '/drops': typeof DropsRoute
   '/explorar': typeof ExplorarRoute
+  '/hdequipa9x2': typeof Hdequipa9x2Route
   '/home': typeof HomeRoute
   '/livros': typeof LivrosRoute
   '/mensagens': typeof MensagensRoute
@@ -232,10 +232,10 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
   '/definicoes': typeof DefinicoesRoute
   '/drops': typeof DropsRoute
   '/explorar': typeof ExplorarRoute
+  '/hdequipa9x2': typeof Hdequipa9x2Route
   '/home': typeof HomeRoute
   '/livros': typeof LivrosRoute
   '/mensagens': typeof MensagensRoute
@@ -265,10 +265,10 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
   '/definicoes': typeof DefinicoesRoute
   '/drops': typeof DropsRoute
   '/explorar': typeof ExplorarRoute
+  '/hdequipa9x2': typeof Hdequipa9x2Route
   '/home': typeof HomeRoute
   '/livros': typeof LivrosRoute
   '/mensagens': typeof MensagensRoute
@@ -300,10 +300,10 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/admin'
     | '/definicoes'
     | '/drops'
     | '/explorar'
+    | '/hdequipa9x2'
     | '/home'
     | '/livros'
     | '/mensagens'
@@ -333,10 +333,10 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/admin'
     | '/definicoes'
     | '/drops'
     | '/explorar'
+    | '/hdequipa9x2'
     | '/home'
     | '/livros'
     | '/mensagens'
@@ -365,10 +365,10 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
-    | '/admin'
     | '/definicoes'
     | '/drops'
     | '/explorar'
+    | '/hdequipa9x2'
     | '/home'
     | '/livros'
     | '/mensagens'
@@ -399,10 +399,10 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AdminRoute: typeof AdminRoute
   DefinicoesRoute: typeof DefinicoesRoute
   DropsRoute: typeof DropsRoute
   ExplorarRoute: typeof ExplorarRoute
+  Hdequipa9x2Route: typeof Hdequipa9x2Route
   HomeRoute: typeof HomeRoute
   LivrosRoute: typeof LivrosRoute
   MensagensRoute: typeof MensagensRoute
@@ -483,6 +483,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof HomeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/hdequipa9x2': {
+      id: '/hdequipa9x2'
+      path: '/hdequipa9x2'
+      fullPath: '/hdequipa9x2'
+      preLoaderRoute: typeof Hdequipa9x2RouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/explorar': {
       id: '/explorar'
       path: '/explorar'
@@ -502,13 +509,6 @@ declare module '@tanstack/react-router' {
       path: '/definicoes'
       fullPath: '/definicoes'
       preLoaderRoute: typeof DefinicoesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin': {
-      id: '/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -677,10 +677,10 @@ const StudioRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AdminRoute: AdminRoute,
   DefinicoesRoute: DefinicoesRoute,
   DropsRoute: DropsRoute,
   ExplorarRoute: ExplorarRoute,
+  Hdequipa9x2Route: Hdequipa9x2Route,
   HomeRoute: HomeRoute,
   LivrosRoute: LivrosRoute,
   MensagensRoute: MensagensRoute,
