@@ -187,9 +187,22 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
   const maxHeightPx = isMobile
     ? Math.min(viewportHeight * 0.92, 900)
     : Math.min(viewportHeight * 0.75, 650);
-  const heightAtFullWidth = containerWidth ? containerWidth / ratioNum : null;
+  // No telemóvel, vídeos HORIZONTAIS ficam um pouco mais altos do que a
+  // proporção real deles indicaria (menos "achatados"), aproximando-se
+  // do estilo Instagram/TikTok — a CAIXA usa uma proporção ligeiramente
+  // mais alta, mas o <video> continua com object-fit: contain lá dentro
+  // (nunca estica), e o espaço extra que sobra em cima/baixo é
+  // preenchido pelo fundo desfocado (poster blur), tal como já acontece
+  // com os vídeos verticais. Verticais e desktop não são afetados.
+  const MOBILE_HORIZONTAL_HEIGHT_BOOST = 0.85;
+  const isHorizontal = ratioNum >= 1;
+  const displayRatioNum =
+    isMobile && isHorizontal ? ratioNum * MOBILE_HORIZONTAL_HEIGHT_BOOST : ratioNum;
+  const displayRatio = `${displayRatioNum}/1`;
+
+  const heightAtFullWidth = containerWidth ? containerWidth / displayRatioNum : null;
   const isHeightConstrained = !!heightAtFullWidth && heightAtFullWidth > maxHeightPx;
-  const boxWidthPx = isHeightConstrained ? maxHeightPx * ratioNum : null;
+  const boxWidthPx = isHeightConstrained ? maxHeightPx * displayRatioNum : null;
 
   // object-fit: SEMPRE "contain". Nunca cortamos nem deformamos o vídeo —
   // a caixa segue a proporção real dele (naturalRatio para vídeos normais,
@@ -198,10 +211,10 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
   // para não sobrar barra preta lateral.
   const objectFitClass = "object-contain";
 
-  // No telemóvel, o vídeo fica sempre de ponta a ponta (sem cantos
-  // arredondados, sem margem lateral) — igual ao feed do Facebook. No
-  // desktop mantém-se o estilo com cantos arredondados pedido antes.
-  const effectiveRounded = isMobile ? "rounded-none" : rounded;
+  // Cantos arredondados iguais no mobile e no desktop — usa sempre o
+  // valor pedido por quem chamou o player (antes o mobile forçava
+  // "rounded-none" para ficar de ponta a ponta, estilo Facebook).
+  const effectiveRounded = rounded;
 
 
 
@@ -316,14 +329,19 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
     resetTimer();
   }
 
-  // No mobile, tocar no ECRÃ do vídeo (fora dos botões) NUNCA pausa —
-  // só mostra/renova a barra de controlos, igual à maioria dos players
-  // de vídeo. Só o botão de play/pause (na barra ou o botão central
-  // inicial) é que efetivamente pausa/reproduz. No desktop mantém-se o
-  // comportamento clássico: clicar no vídeo alterna play/pause.
+  // No mobile: o 1º toque no ECRÃ (fora dos botões), com os controlos
+  // escondidos, só abre/mostra a barra de controlos — não pausa. Se os
+  // controlos já estiverem visíveis, o 2º toque no ecrã alterna
+  // play/pause (igual ao botão), e a barra continua visível/renovada.
+  // No desktop mantém-se o comportamento clássico: clicar no vídeo
+  // sempre alterna play/pause.
   function handleScreenTap() {
     if (isMobile) {
-      resetTimer();
+      if (showControls) {
+        togglePlay();
+      } else {
+        resetTimer();
+      }
       return;
     }
     togglePlay();
@@ -388,7 +406,7 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
         style={
           isHeightConstrained
             ? { height: `${maxHeightPx}px`, overflow: "hidden" }
-            : { aspectRatio: effectiveRatio, maxHeight: isFinite(maxHeightPx) ? `${maxHeightPx}px` : "none", overflow: "hidden" }
+            : { aspectRatio: displayRatio, maxHeight: isFinite(maxHeightPx) ? `${maxHeightPx}px` : "none", overflow: "hidden" }
         }
       >
       {/* Fundo desfocado: preenche qualquer espaço que sobre à volta do
