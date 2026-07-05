@@ -1723,50 +1723,78 @@ function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit
     );
   }
 
-  // ── Mobile: pressionar e segurar a bolha abre o menu de ações num
-  // bottom sheet (estilo WhatsApp/Instagram) em vez do pequeno dropdown
-  // ancorado, que em ecrãs pequenos podia ficar cortado/fora do ecrã.
-  // Um toque curto continua a funcionar normalmente (abrir imagem/vídeo).
+  // ── Mobile: pressionar e segurar OU deslizar o dedo para o lado na
+  // bolha abre o menu de ações num bottom sheet (estilo WhatsApp/
+  // Instagram) em vez do pequeno dropdown ancorado, que em ecrãs
+  // pequenos podia ficar cortado/fora do ecrã. Um toque curto continua
+  // a funcionar normalmente (abrir imagem/vídeo).
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const longPressFired = useRef(false);
+  const actionFired = useRef(false); // long-press OU swipe já abriram o menu
   const touchStartPos = useRef<{ x: number; y: number } | null>(null);
   const LONG_PRESS_MS = 420;
   const MOVE_CANCEL_PX = 10;
-  // Feedback visual: a bolha "aperta" levemente enquanto o dedo está
-  // pressionado, para confirmar ao utilizador que a ação está a ser
-  // reconhecida (igual ao WhatsApp/Instagram).
+  const SWIPE_OPEN_PX = 40;   // distância horizontal para abrir o menu ao deslizar
+  const SWIPE_MAX_DY  = 30;   // tolerância vertical (evita confundir com scroll da lista)
+  // Feedback visual: a bolha "aperta" ou desliza levemente enquanto o
+  // dedo está pressionado/a arrastar, para confirmar ao utilizador que
+  // a ação está a ser reconhecida (igual ao WhatsApp/Instagram).
   const [isPressing, setIsPressing] = useState(false);
+  const [swipeDx, setSwipeDx] = useState(0);
 
   function handleBubbleTouchStart(e: React.TouchEvent) {
     if (!isMobile) return;
-    longPressFired.current = false;
+    actionFired.current = false;
     const t = e.touches[0];
     touchStartPos.current = { x: t.clientX, y: t.clientY };
     setIsPressing(true);
     longPressTimer.current = setTimeout(() => {
-      longPressFired.current = true;
+      actionFired.current = true;
       setShowMenu(true);
       setIsPressing(false);
+      setSwipeDx(0);
       if (navigator.vibrate) navigator.vibrate(15);
     }, LONG_PRESS_MS);
   }
   function handleBubbleTouchMove(e: React.TouchEvent) {
-    if (!touchStartPos.current || !longPressTimer.current) return;
+    if (!touchStartPos.current || actionFired.current) return;
     const t = e.touches[0];
-    const dx = Math.abs(t.clientX - touchStartPos.current.x);
-    const dy = Math.abs(t.clientY - touchStartPos.current.y);
-    if (dx > MOVE_CANCEL_PX || dy > MOVE_CANCEL_PX) {
-      clearTimeout(longPressTimer.current);
-      longPressTimer.current = null;
+    const dx = t.clientX - touchStartPos.current.x;
+    const dy = t.clientY - touchStartPos.current.y;
+    const adx = Math.abs(dx);
+    const ady = Math.abs(dy);
+
+    // Movimento vertical (a pessoa está a fazer scroll) cancela tudo.
+    if (ady > SWIPE_MAX_DY && ady > adx) {
+      if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; }
       setIsPressing(false);
+      setSwipeDx(0);
+      touchStartPos.current = null;
+      return;
+    }
+
+    // Movimento horizontal cancela o long-press (não é mais "parado")
+    // e vai desenhando o arrasto até abrir o menu.
+    if (adx > MOVE_CANCEL_PX) {
+      if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; }
+      setIsPressing(false);
+      const clamped = Math.max(-SWIPE_OPEN_PX, Math.min(SWIPE_OPEN_PX, dx));
+      setSwipeDx(clamped);
+      if (adx >= SWIPE_OPEN_PX) {
+        actionFired.current = true;
+        setShowMenu(true);
+        setSwipeDx(0);
+        if (navigator.vibrate) navigator.vibrate(15);
+      }
     }
   }
   function handleBubbleTouchEnd(e: React.TouchEvent) {
     if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; }
     setIsPressing(false);
-    if (longPressFired.current) {
-      // Evita que o toque que terminou o long-press também dispare o
-      // clique normal da bolha (ex: abrir imagem em lightbox).
+    setSwipeDx(0);
+    touchStartPos.current = null;
+    if (actionFired.current) {
+      // Evita que o toque que terminou o long-press/swipe também dispare
+      // o clique normal da bolha (ex: abrir imagem em lightbox).
       e.preventDefault();
       e.stopPropagation();
     }
@@ -1918,7 +1946,10 @@ function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit
 
         {/* Bubble */}
         <div className="rounded-2xl overflow-hidden shadow-sm transition-transform duration-150"
-          style={{ background: bubbleBg, color: bubbleText, borderRadius: br, transform: isPressing ? "scale(0.97)" : "scale(1)" }}>
+          style={{
+            background: bubbleBg, color: bubbleText, borderRadius: br,
+            transform: isPressing ? "scale(0.97)" : `translateX(${swipeDx}px)`,
+          }}>
 
           {/* Reply strip */}
           {replied && (
