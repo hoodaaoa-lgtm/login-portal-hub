@@ -1008,8 +1008,8 @@ function AudioMsg({ url, isMe, knownDur }: { url: string; isMe: boolean; knownDu
 
   // cores WhatsApp-style
   const bg          = isMe ? "#005C4B" : "#ffffff";
-  const playBg      = isMe ? "rgba(255,255,255,0.2)" : "#25D366";
-  const barFilled   = isMe ? "#25D366" : "#25D366";
+  const playBg      = isMe ? "rgba(255,255,255,0.2)" : "#5B3FCF";
+  const barFilled   = isMe ? "#5B3FCF" : "#5B3FCF";
   const barEmpty    = isMe ? "rgba(255,255,255,0.25)" : "#CBCBCB";
   const textColor   = isMe ? "rgba(255,255,255,0.75)" : "#8696A0";
   const speedBg     = isMe ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.06)";
@@ -1283,7 +1283,7 @@ function ChatMediaSendPreview({ item, onCancel, onSend, sending }: {
           </button>
           <button onClick={() => !sending && onSend(caption, edit)} disabled={sending}
             className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 transition-all active:scale-90 disabled:opacity-50"
-            style={{ background: "#25D366" }}>
+            style={{ background: "#5B3FCF" }}>
             {sending
               ? <Loader className="h-5 w-5 animate-spin text-white" />
               : <Send className="h-5 w-5 text-white" style={{ marginLeft: 2 }} />}
@@ -1536,7 +1536,7 @@ function ChatMediaLightbox({ items, index, onIndexChange, onClose, onReact, cont
               className="relative shrink-0 rounded-lg overflow-hidden transition-all"
               style={{
                 width: 56, height: 56,
-                outline: i === index ? "2px solid #25D366" : "2px solid transparent",
+                outline: i === index ? "2px solid #5B3FCF" : "2px solid transparent",
                 outlineOffset: 2,
                 opacity: i === index ? 1 : 0.6,
               }}>
@@ -3417,7 +3417,7 @@ function ChatPanel({ myId, contact, onBack }: {
           {/* Parar e ir para preview */}
           <button onClick={stopRecording}
             className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition active:scale-90"
-            style={{ background:"#25D366", color:"white", boxShadow:"0 2px 8px #25D36644" }}>
+            style={{ background:"#5B3FCF", color:"white", boxShadow:"0 2px 8px #5B3FCF44" }}>
             <Check className="h-5 w-5" />
           </button>
         </div>
@@ -3463,7 +3463,7 @@ function ChatPanel({ myId, contact, onBack }: {
                       <div key={i} className="flex-1 rounded-full transition-colors duration-75"
                         style={{
                           height:`${h}%`,
-                          background: !inTrim ? "rgba(255,255,255,0.12)" : played ? "#25D366" : "rgba(255,255,255,0.28)",
+                          background: !inTrim ? "rgba(255,255,255,0.12)" : played ? "#5B3FCF" : "rgba(255,255,255,0.28)",
                         }} />
                     );
                   })}
@@ -3481,13 +3481,13 @@ function ChatPanel({ myId, contact, onBack }: {
             {/* Enviar */}
             <button onClick={sendAudioPreview}
               className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition active:scale-90"
-              style={{ background:"#25D366", color:"white", boxShadow:"0 2px 8px #25D36655" }}>
+              style={{ background:"#5B3FCF", color:"white", boxShadow:"0 2px 8px #5B3FCF55" }}>
               <Send className="h-5 w-5" style={{ marginLeft:1 }} />
             </button>
           </div>
           {/* Linha de corte — compacta, abaixo da bolha */}
           <div className="flex items-center gap-2 mt-2.5 px-1">
-            <span className="text-[9px] shrink-0" style={{ color:"#25D366", minWidth:28, textAlign:"right" }}>
+            <span className="text-[9px] shrink-0" style={{ color:"#5B3FCF", minWidth:28, textAlign:"right" }}>
               ✂️ {fmtSecs(Math.round(audioPreview.dur * trimStart / 100))}
             </span>
             <div className="flex-1 flex flex-col gap-1">
@@ -3612,7 +3612,7 @@ function ChatPanel({ myId, contact, onBack }: {
             <button
               onClick={() => { recording ? stopRecording() : startRecording(); }}
               className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 transition active:scale-90 mb-0.5"
-              style={{ background: recording ? "#EF4444" : "#25D366", color:"white", boxShadow: recording ? "0 4px 14px #EF444455" : "0 4px 14px #25D36655" }}>
+              style={{ background: recording ? "#EF4444" : "#5B3FCF", color:"white", boxShadow: recording ? "0 4px 14px #EF444455" : "0 4px 14px #5B3FCF55" }}>
               {recording ? <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="2" y="2" width="4" height="10" rx="1" fill="white"/><rect x="8" y="2" width="4" height="10" rx="1" fill="white"/></svg> : <Mic className="h-5 w-5" />}
             </button>
           )
