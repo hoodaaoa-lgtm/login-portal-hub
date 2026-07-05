@@ -301,7 +301,7 @@ export function PageWrapper({ children, className = "" }: { children: React.Reac
   return (
     <div
       key={pathname}
-      className={`lg:ml-[320px] min-h-screen hooda-page-enter overflow-x-hidden ${className}`}
+      className={`lg:ml-[320px] min-h-dvh hooda-page-enter overflow-x-hidden ${className}`}
       style={{ background: "var(--s1)" }}
     >
       {children}
