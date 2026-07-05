@@ -86,7 +86,7 @@ export function SideNav() {
       {showDrawer && (
         <UserDrawer userId={currentUserId} onClose={() => setShowDrawer(false)} />
       )}
-      <aside className="hooda-sidenav hidden lg:flex flex-col fixed left-0 top-0 bottom-0 w-[280px] border-r z-40"
+      <aside className="hooda-sidenav hidden lg:flex flex-col fixed left-0 top-0 bottom-0 w-[320px] border-r z-40"
         style={{
           background: "var(--surface-0)",
         borderColor: "var(--border-subtle)",
@@ -301,7 +301,7 @@ export function PageWrapper({ children, className = "" }: { children: React.Reac
   return (
     <div
       key={pathname}
-      className={`lg:ml-[280px] min-h-screen hooda-page-enter overflow-x-hidden ${className}`}
+      className={`lg:ml-[320px] min-h-screen hooda-page-enter overflow-x-hidden ${className}`}
       style={{ background: "var(--s1)" }}
     >
       {children}
