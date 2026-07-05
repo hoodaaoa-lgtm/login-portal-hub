@@ -31,7 +31,7 @@
 import { useRef, useState, useEffect, useCallback, forwardRef } from "react";
 import { Play, Pause, Volume2, VolumeX, Maximize, Minimize, RotateCcw } from "lucide-react";
 import { useVideoInView } from "@/hooks/useVideoInView";
-import { registerVideo, notifyVideoPlaying, muteAllExcept } from "@/lib/mediaManager";
+import { registerVideo, notifyVideoPlaying, getGlobalMuted, setGlobalMuted } from "@/lib/mediaManager";
 
 const BRAND = "#5B3FCF";
 const CONTROLS_HIDE_DELAY_MS = 2800;
@@ -104,7 +104,9 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
   const { ref: wrapperRef, isInView, hasEnteredOnce } = useVideoInView<HTMLDivElement>();
 
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isMuted, setIsMuted] = useState(autoPlay);
+  // Nasce com o som que estiver ativo globalmente (Instagram-style): se o
+  // utilizador já tinha ativado o som noutro vídeo, este já entra com som.
+  const [isMuted, setIsMuted] = useState(() => getGlobalMuted());
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isBuffering, setIsBuffering] = useState(false);
@@ -264,9 +266,18 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
     const vid = videoRef.current;
     if (!vid || !hasEnteredOnce) return;
     if (isInView) {
-      if (!hasStarted) vid.muted = true; // navegador só permite autoplay se começar mudo
+      // Segue a preferência global de som: se o utilizador já ativou o
+      // som noutro vídeo, este entra a tocar já com som (igual ao
+      // Instagram/TikTok). Só força mudo se a preferência global for
+      // mudo — necessário para o autoplay ser permitido pelo browser.
+      if (!hasStarted) vid.muted = getGlobalMuted();
       vid.play()?.catch(() => {
-        /* gesto do utilizador pode ser necessário */
+        // Se o browser bloquear o autoplay com som (sem gesto ainda),
+        // tenta de novo mudo para não perder o autoplay do vídeo.
+        if (!vid.muted) {
+          vid.muted = true;
+          vid.play()?.catch(() => {});
+        }
       });
     } else {
       vid.pause();
@@ -350,14 +361,14 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
   function toggleMute() {
     const v = videoRef.current;
     if (!v) return;
-    const willUnmute = v.muted; // vai passar de mudo -> com som
-    v.muted = !v.muted;
-    setIsMuted(v.muted);
-    // Só um vídeo pode ter som ativo de cada vez em toda a app — ao
-    // ativar o som deste, avisa o mediaManager para silenciar
-    // imediatamente todos os outros (mesmo que já estivessem a tocar
-    // antes deste, ex: vários vídeos autoplay mudos no feed).
-    if (willUnmute) muteAllExcept(mediaIdRef.current);
+    const newMuted = !v.muted;
+    v.muted = newMuted;
+    setIsMuted(newMuted);
+    // Preferência de som é GLOBAL: ligar/desligar o som aqui aplica-se a
+    // todos os outros vídeos da app, atuais e futuros — igual ao
+    // Instagram/TikTok (não é "só este vídeo com som", é "som ligado/
+    // desligado para todos").
+    setGlobalMuted(newMuted, mediaIdRef.current);
   }
 
   function toggleFullscreen() {

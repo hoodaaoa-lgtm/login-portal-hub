@@ -16,6 +16,34 @@
 const registry = new Map<string, HTMLVideoElement>();
 let activeVideoId: string | null = null;
 
+/**
+ * Preferência de som GLOBAL da app — igual ao Instagram/TikTok: assim
+ * que o utilizador ativa o som de UM vídeo, todos os outros (os que já
+ * estão no ecrã e os que ainda vão aparecer) passam a tocar com som
+ * também. Se ele voltar a silenciar, todos voltam a ficar mudos.
+ * Começa mudo (true) porque o autoplay do feed exige começar sem som.
+ */
+let globalSoundMuted = true;
+
+/** Devolve a preferência de som atual (true = mudo). Usado por novos
+ * players para saberem com que estado de som devem nascer. */
+export function getGlobalMuted(): boolean {
+  return globalSoundMuted;
+}
+
+/**
+ * Aplica um novo estado de som a TODOS os vídeos registados (incluindo
+ * os que ainda nem entraram na tela — ao registarem-se, herdam este
+ * valor via getGlobalMuted()). Chamar sempre que o utilizador
+ * liga/desliga o som de qualquer vídeo, em qualquer parte da app.
+ */
+export function setGlobalMuted(muted: boolean, sourceId?: string) {
+  globalSoundMuted = muted;
+  registry.forEach((el, rid) => {
+    if (rid !== sourceId) el.muted = muted;
+  });
+}
+
 /** Regista um <video> no manager. Devolve cleanup para usar no return do useEffect. */
 export function registerVideo(id: string, el: HTMLVideoElement): () => void {
   registry.set(id, el);
@@ -25,35 +53,21 @@ export function registerVideo(id: string, el: HTMLVideoElement): () => void {
   };
 }
 
-/**
- * Silencia todos os outros vídeos registados, SEM os pausar — usado
- * quando o utilizador liga o som de um vídeo através do botão de mute.
- * Ao contrário de notifyVideoPlaying(), não interrompe vídeos que
- * estejam a reproduzir em autoplay mudo no feed (ex: Instagram-style);
- * só garante que nunca há dois vídeos com som ativo ao mesmo tempo.
- */
+/** @deprecated usar setGlobalMuted — mantido só para não quebrar chamadas antigas. */
 export function muteAllExcept(id: string) {
-  registry.forEach((el, rid) => {
-    if (rid !== id && !el.muted) {
-      el.muted = true;
-    }
-  });
+  setGlobalMuted(true, id);
 }
 
 /**
  * Chamar no onPlay do <video>.
- * Pausa automaticamente todos os outros vídeos registados.
+ * Pausa automaticamente todos os outros vídeos registados — troca de
+ * vídeo: o anterior para, o novo toca. O som de cada um segue sempre a
+ * preferência global (setGlobalMuted), nunca é alterado aqui.
  */
 export function notifyVideoPlaying(id: string) {
   registry.forEach((el, rid) => {
     if (rid !== id && !el.paused) {
       el.pause();
-    }
-    // Só um vídeo pode ter som ativo de cada vez em toda a app — ao tocar
-    // este, todos os outros silenciam automaticamente (o "volumechange"
-    // no HoodaPlayer sincroniza o ícone de som de cada um).
-    if (rid !== id && !el.muted) {
-      el.muted = true;
     }
   });
   activeVideoId = id;
