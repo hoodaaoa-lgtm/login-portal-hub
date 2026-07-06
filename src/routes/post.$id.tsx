@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate, useParams } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { BottomNav, SideNav, PageWrapper } from "@/components/AppShell";
+import { BottomNav, SideNav, PageWrapper, PageHeader } from "@/components/AppShell";
 import { PostCommentsModal } from "@/components/PostCommentsModal";
 import { FeedVideoPlayer } from "@/components/FeedVideoPlayer";
 import { PollCard } from "@/components/PollCard";
