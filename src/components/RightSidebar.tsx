@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { RefreshCw, Users, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "@tanstack/react-router";
+import { getHoodaOfficialId } from "@/lib/hoodaOfficial";
 
 const ACCENT = "#5B3FCF";
 
@@ -22,7 +23,9 @@ export function RightSidebar() {
     const { data: follows } = await supabase.from("follows")
       .select("following_id").eq("follower_id", session.user.id);
     const followingIds = (follows ?? []).map((f: any) => f.following_id);
-    const excludeIds = [session.user.id, ...followingIds];
+    const officialId = await getHoodaOfficialId();
+    // A conta "Hooda Oficial" nunca aparece como sugestão de "seguir".
+    const excludeIds = [session.user.id, ...followingIds, ...(officialId ? [officialId] : [])];
     const { data } = await supabase.from("profiles")
       .select("id, username, full_name, avatar_url")
       .not("id", "in", `(${excludeIds.join(",")})`)
