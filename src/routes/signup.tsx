@@ -11,7 +11,7 @@ import {
 export const Route = createFileRoute("/signup")({
   head: () => ({
     meta: [
-      { title: "Criar Conta — Hooda" },
+      { title: "Hooda" },
       { name: "description", content: "Cria a tua conta Hooda grátis e começa a partilhar vídeos, fotos e Gotas, e a conversar com amigos." },
     ],
   }),

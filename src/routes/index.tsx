@@ -10,7 +10,7 @@ import {
 export const Route = createFileRoute("/")(({
   head: () => ({
     meta: [
-      { title: "Hooda — Partilha Vídeos, Fotos e Conversa com Amigos" },
+      { title: "Hooda" },
       { name: "description", content: "Hooda é a rede social para partilhares vídeos, fotos e Gotas, conversares com amigos e descobrires conteúdo novo todos os dias. Cria a tua conta grátis." },
     ],
   }),

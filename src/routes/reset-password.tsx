@@ -7,7 +7,7 @@ import { HoodaLogo } from "@/components/HoodaLogo";
 export const Route = createFileRoute("/reset-password")({
   head: () => ({
     meta: [
-      { title: "Repor Palavra-passe — Hooda" },
+      { title: "Hooda" },
       { name: "description", content: "Define uma nova palavra-passe para a tua conta Hooda." },
       { name: "robots", content: "noindex, nofollow" },
     ],

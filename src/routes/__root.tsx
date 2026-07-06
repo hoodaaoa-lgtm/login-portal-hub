@@ -94,7 +94,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=5" },
-      { title: "Hooda — Partilha Vídeos, Fotos e Conversa com Amigos" },
+      { title: "Hooda" },
       { name: "description", content: "Hooda é a rede social para partilhares vídeos, fotos e Gotas, conversares com amigos e descobrires conteúdo novo todos os dias. Cria a tua conta grátis." },
       { name: "keywords", content: "Hooda, rede social, partilhar vídeos, Gotas, Hooda TV, Hooda Studio" },
       { name: "author", content: "Hooda" },
