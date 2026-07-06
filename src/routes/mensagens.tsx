@@ -290,6 +290,39 @@ function VerifiedBadge({ size = 13 }: { size?: number }) {
   );
 }
 
+// Cores da identidade visual da Hooda — usadas para colorir a palavra
+// "Hooda" letra a letra, igual ao logótipo (ver HoodaLogo.tsx).
+const HOODA_BRAND_LETTERS = [
+  { char: "H", color: "#5B3FCF" },
+  { char: "o", color: "#F26B3A" },
+  { char: "o", color: "#1FAFA6" },
+  { char: "d", color: "#6BA547" },
+  { char: "a", color: "#E94B8A" },
+];
+
+/**
+ * Nome do remetente exibido ACIMA da bolha para mensagens da conta
+ * oficial ("Hooda Oficial"): "Hooda" colorido letra a letra (identidade
+ * visual da marca), "Oficial" a roxo com peso forte, e o selo azul de
+ * verificado ao lado. Nunca deve ser renderizado dentro da bolha.
+ */
+function OfficialSenderName({ size = 13 }: { size?: number }) {
+  return (
+    <div
+      className="flex items-center gap-1 px-1 mb-1 select-none"
+      style={{ fontFamily: '"Nunito","Quicksand",system-ui,sans-serif' }}
+    >
+      <span className="flex items-baseline" style={{ fontSize: size, fontWeight: 800, letterSpacing: "-0.01em" }}>
+        {HOODA_BRAND_LETTERS.map((l, i) => (
+          <span key={i} style={{ color: l.color }}>{l.char}</span>
+        ))}
+      </span>
+      <span style={{ fontSize: size, fontWeight: 700, color: "#5B3FCF" }}>Oficial</span>
+      <VerifiedBadge size={Math.round(size * 0.95)} />
+    </div>
+  );
+}
+
 // Message type defined in ChatPanel section below
 
 type MessageRequest = {
@@ -2096,6 +2129,11 @@ function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit
           </div>,
           document.body
         )}
+
+        {/* Nome do remetente — SEMPRE acima da bolha, nunca dentro dela.
+            Só aparece para mensagens recebidas (não minhas) da conta
+            oficial da Hooda, com destaque de cor e selo de verificado. */}
+        {!isMe && contact.isOfficial && <OfficialSenderName />}
 
         {/* Bubble */}
         <div className="rounded-2xl overflow-hidden shadow-sm transition-transform duration-150"
