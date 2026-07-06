@@ -47,7 +47,9 @@ export function uploadToCloudinary(
           const data = JSON.parse(xhr.responseText);
           resolve({
             publicId:     data.public_id,
-            playbackUrl:  data.secure_url,
+            // Usa a URL transformada (vc_h264/SDR), não o secure_url em
+            // bruto — corrige vídeos HDR (iPhone) que tocavam escuros.
+            playbackUrl:  getVideoPlaybackUrl(data.public_id),
             thumbnailUrl: getVideoThumbnail(data.public_id),
             duration:     data.duration ? Math.round(data.duration) : null,
             format:       data.format,
@@ -92,9 +94,15 @@ export function getVideoStreamUrl(publicId: string): string {
   return `https://res.cloudinary.com/${CLOUD_NAME}/video/upload/sp_hd/${publicId}.m3u8`;
 }
 
-/** URL de reprodução directa (mp4 optimizado) */
+/** URL de reprodução directa (mp4 optimizado).
+ *  vc_h264 força um recodifica para H.264/SDR — sem isto, vídeos HDR
+ *  (comuns em iPhones — Dolby Vision/HDR10) tocavam com o URL original
+ *  (secure_url em bruto) e apareciam escuros/lavados no browser, porque
+ *  o <video> não faz tone-mapping de HDR para SDR sozinho (o som tocava
+ *  normalmente, só a imagem ficava errada). A miniatura (.jpg) já não
+ *  tinha este problema porque o Cloudinary já a gera sempre em SDR. */
 export function getVideoPlaybackUrl(publicId: string): string {
-  return `https://res.cloudinary.com/${CLOUD_NAME}/video/upload/q_auto,f_auto/${publicId}`;
+  return `https://res.cloudinary.com/${CLOUD_NAME}/video/upload/q_auto,f_auto,vc_h264/${publicId}`;
 }
 
 /**
