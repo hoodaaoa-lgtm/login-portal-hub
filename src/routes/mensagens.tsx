@@ -73,6 +73,138 @@ function cloudinaryUploadMedia(
   });
 }
 
+// ── Link Preview inteligente ──────────────────────────────────────────────────
+// Detecta o primeiro URL numa mensagem de texto e mostra uma prévia rica:
+// título, imagem, descrição e domínio — igual ao WhatsApp/Telegram.
+// Se for YouTube/Vimeo/vídeo direto, embeds um player mesmo na mensagem.
+
+const URL_REGEX = /https?:\/\/[^\s<>"']+/gi;
+
+function extractUrl(text: string): string | null {
+  const m = text.match(URL_REGEX);
+  return m ? m[0] : null;
+}
+
+function getYouTubeId(url: string): string | null {
+  const m = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+  return m ? m[1] : null;
+}
+
+function isDirectVideo(url: string): boolean {
+  return /\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(url);
+}
+
+interface OgData {
+  title?: string;
+  description?: string;
+  image?: string;
+  url?: string;
+  siteName?: string;
+}
+
+const ogCache = new Map<string, OgData | null>();
+
+async function fetchOgData(url: string): Promise<OgData | null> {
+  if (ogCache.has(url)) return ogCache.get(url)!;
+  try {
+    // Usa microlink.io — API gratuita, sem key, suporta YouTube/Twitter/etc.
+    const res = await fetch(`https://api.microlink.io?url=${encodeURIComponent(url)}&screenshot=false`);
+    if (!res.ok) throw new Error("microlink fail");
+    const json = await res.json();
+    if (json.status !== "success") throw new Error("no data");
+    const d = json.data;
+    const data: OgData = {
+      title: d.title ?? undefined,
+      description: d.description ?? undefined,
+      image: d.image?.url ?? d.logo?.url ?? undefined,
+      url: d.url ?? url,
+      siteName: d.publisher ?? new URL(url).hostname.replace("www.", ""),
+    };
+    ogCache.set(url, data);
+    return data;
+  } catch {
+    ogCache.set(url, null);
+    return null;
+  }
+}
+
+function LinkPreview({ url, isMe }: { url: string; isMe: boolean }) {
+  const ytId = getYouTubeId(url);
+  const isDirect = isDirectVideo(url);
+  const [og, setOg] = useState<OgData | null | "loading">("loading");
+
+  useEffect(() => {
+    if (ytId || isDirect) { setOg(null); return; }
+    fetchOgData(url).then(setOg);
+  }, [url, ytId, isDirect]);
+
+  const border = isMe ? "rgba(255,255,255,0.15)" : "var(--border-subtle)";
+  const bg = isMe ? "rgba(0,0,0,0.2)" : "var(--s2)";
+  const textColor = isMe ? "white" : "var(--text-primary)";
+  const mutedColor = isMe ? "rgba(255,255,255,0.6)" : "var(--text-muted)";
+
+  // YouTube embed
+  if (ytId) {
+    return (
+      <div className="mt-2 rounded-xl overflow-hidden" style={{ border: `1px solid ${border}` }}>
+        <div style={{ position: "relative", paddingBottom: "56.25%", height: 0 }}>
+          <iframe
+            src={`https://www.youtube.com/embed/${ytId}?autoplay=0&rel=0`}
+            title="YouTube video"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none" }}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // Vídeo direto (.mp4, .webm, etc.)
+  if (isDirect) {
+    return (
+      <div className="mt-2 rounded-xl overflow-hidden" style={{ border: `1px solid ${border}` }}>
+        <video src={url} controls preload="metadata" className="w-full max-h-64 bg-black" />
+      </div>
+    );
+  }
+
+  // A carregar
+  if (og === "loading") {
+    return (
+      <div className="mt-2 rounded-xl overflow-hidden animate-pulse" style={{ background: bg, border: `1px solid ${border}`, height: 72 }} />
+    );
+  }
+
+  // Sem dados OG
+  if (!og) return null;
+
+  return (
+    <a href={url} target="_blank" rel="noopener noreferrer"
+      className="mt-2 rounded-xl overflow-hidden flex gap-0 block transition hover:opacity-90"
+      style={{ background: bg, border: `1px solid ${border}`, textDecoration: "none" }}>
+      {og.image && (
+        <img src={og.image} alt="" className="w-20 h-full object-cover shrink-0 self-stretch"
+          style={{ minHeight: 64, maxHeight: 100 }}
+          onError={e => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+      )}
+      <div className="p-2.5 min-w-0 flex-1">
+        {og.siteName && (
+          <p className="text-[10px] font-semibold uppercase tracking-wide truncate" style={{ color: mutedColor }}>{og.siteName}</p>
+        )}
+        {og.title && (
+          <p className="text-xs font-bold leading-snug line-clamp-2" style={{ color: textColor }}>{og.title}</p>
+        )}
+        {og.description && (
+          <p className="text-[11px] mt-0.5 line-clamp-2" style={{ color: mutedColor }}>{og.description}</p>
+        )}
+      </div>
+    </a>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 export const Route = createFileRoute("/mensagens")({
   head: () => ({ meta: [{ title: "Hooda" }] }),
   component: MensagensPage,
@@ -2029,10 +2161,15 @@ function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit
 
             {/* Text */}
             {m.type === "text" && m.text && (
-              <p className="break-words text-sm leading-relaxed">
-                {m.text}
-                {m.edited && <span className="text-[10px] ml-1.5 opacity-60">editado</span>}
-              </p>
+              <>
+                <p className="break-words text-sm leading-relaxed">
+                  {m.text}
+                  {m.edited && <span className="text-[10px] ml-1.5 opacity-60">editado</span>}
+                </p>
+                {extractUrl(m.text) && (
+                  <LinkPreview url={extractUrl(m.text)!} isMe={isMe} />
+                )}
+              </>
             )}
 
             {/* Time + ticks */}

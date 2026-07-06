@@ -5,6 +5,7 @@ import { BottomNav, SideNav, PageWrapper } from "@/components/AppShell";
 import {
   ChevronRight, Bell, Lock, Shield, HelpCircle,
   Info, Globe, MessageSquare, Activity, ArrowLeft,
+  Trash2, LogOut, AlertTriangle,
 } from "lucide-react";
 import {
   NotificationsPanel, ActivityPanel, PrivacyPanel,
@@ -28,6 +29,9 @@ function DefinicoesPage() {
   const [email, setEmail]                 = useState("");
   const [msgPermission, setMsgPermission] = useState("todos");
   const [panel, setPanel]                 = useState<string | null>(search?.panel ?? null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteConfirm, setDeleteConfirm]     = useState("");
+  const [deleting, setDeleting]               = useState(false);
 
   useEffect(() => {
     if (search?.panel) setPanel(search.panel);
@@ -52,6 +56,31 @@ function DefinicoesPage() {
   const avatarUrl = profile?.avatar_url;
   const currentLang = LANGUAGES.find(l => l.code === getCurrentLang());
 
+  async function handleDeleteAccount() {
+    if (deleteConfirm !== "ELIMINAR") return;
+    setDeleting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      const uid = session.user.id;
+      // Apagar dados do utilizador (posts, follows, likes, mensagens, perfil)
+      const db = supabase as any;
+      await Promise.allSettled([
+        db.from("posts").delete().eq("user_id", uid),
+        db.from("follows").delete().or(`follower_id.eq.${uid},following_id.eq.${uid}`),
+        db.from("likes").delete().eq("user_id", uid),
+        db.from("messages").delete().eq("sender_id", uid),
+        db.from("comments").delete().eq("user_id", uid),
+        db.from("profiles").delete().eq("id", uid),
+      ]);
+      await supabase.auth.signOut();
+      navigate({ to: "/" });
+    } catch (err) {
+      console.error("[hooda] erro ao eliminar conta:", err);
+      setDeleting(false);
+    }
+  }
+
   const SECTIONS = [
     {
       title: "Conta",
@@ -73,6 +102,19 @@ function DefinicoesPage() {
       items: [
         { icon: <Globe className="w-5 h-5"/>, color: "#F26B3A", label: "Idioma", desc: `${currentLang?.flag ?? "🇵🇹"} ${currentLang?.label ?? "Português"}`, action: () => setPanel("language") },
       ],
+    },
+  ];
+
+  const DANGER_ITEMS = [
+    {
+      icon: <LogOut className="w-5 h-5"/>, color: "#F26B3A",
+      label: "Terminar sessão", desc: "Sair da tua conta neste dispositivo",
+      action: async () => { await supabase.auth.signOut(); navigate({ to: "/" }); },
+    },
+    {
+      icon: <Trash2 className="w-5 h-5"/>, color: "#ef4444",
+      label: "Eliminar conta", desc: "Apaga permanentemente a tua conta e todos os dados",
+      action: () => setShowDeleteModal(true),
     },
   ];
 
@@ -154,6 +196,32 @@ function DefinicoesPage() {
             <p className="text-center text-[11px] pb-2" style={{ color: "var(--text-muted)" }}>
               © 2025 Hooda · v1.0.0
             </p>
+
+            {/* Zona Perigosa */}
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-widest mb-2 px-1" style={{ color: "#ef4444" }}>
+                Zona Perigosa
+              </p>
+              <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "var(--s0)", border: "1px solid #fecaca" }}>
+                {DANGER_ITEMS.map((item, i) => (
+                  <div key={item.label}>
+                    {i > 0 && <div style={{ height: 1, background: "#fecaca" }} />}
+                    <button className="w-full flex items-center gap-3 px-4 py-3.5 text-left transition hover:bg-red-50 active:scale-[0.99]"
+                      onClick={item.action}>
+                      <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                        style={{ background: `${item.color}18`, color: item.color }}>
+                        {item.icon}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold" style={{ color: item.color }}>{item.label}</p>
+                        <p className="text-xs" style={{ color: "var(--text-muted)" }}>{item.desc}</p>
+                      </div>
+                      <ChevronRight className="w-4 h-4 shrink-0" style={{ color: item.color, opacity: 0.5 }} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
         <BottomNav />
@@ -177,6 +245,57 @@ function DefinicoesPage() {
             if (session) await supabase.from("profiles").update({ msg_permission: v } as any).eq("id", session.user.id);
           }}
         />
+      )}
+
+      {/* Modal de confirmação de eliminação de conta */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.6)" }}
+          onClick={() => !deleting && setShowDeleteModal(false)}>
+          <div className="w-full max-w-sm rounded-3xl p-6 shadow-2xl" style={{ background: "var(--s0)" }}
+            onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0" style={{ background: "#fef2f2" }}>
+                <AlertTriangle className="w-6 h-6 text-red-500" />
+              </div>
+              <div>
+                <p className="font-extrabold text-base" style={{ color: "var(--text-primary)" }}>Eliminar conta</p>
+                <p className="text-xs" style={{ color: "var(--text-muted)" }}>Esta ação é permanente e irreversível</p>
+              </div>
+            </div>
+
+            <p className="text-sm mb-4" style={{ color: "var(--text-secondary)" }}>
+              Todos os teus dados serão apagados permanentemente: publicações, seguidores, mensagens e perfil.
+              <strong className="text-red-500"> Não é possível recuperar a conta depois de eliminar.</strong>
+            </p>
+
+            <p className="text-xs font-semibold mb-2" style={{ color: "var(--text-muted)" }}>
+              Para confirmar, escreve <strong style={{ color: "#ef4444" }}>ELIMINAR</strong> abaixo:
+            </p>
+            <input
+              value={deleteConfirm}
+              onChange={e => setDeleteConfirm(e.target.value)}
+              placeholder="ELIMINAR"
+              className="w-full px-4 py-2.5 rounded-xl text-sm outline-none mb-4"
+              style={{ background: "var(--s2)", border: "1.5px solid #fecaca", color: "var(--text-primary)" }}
+              disabled={deleting}
+            />
+
+            <div className="flex gap-3">
+              <button onClick={() => { setShowDeleteModal(false); setDeleteConfirm(""); }}
+                disabled={deleting}
+                className="flex-1 py-2.5 rounded-xl text-sm font-bold transition"
+                style={{ background: "var(--s2)", color: "var(--text-primary)" }}>
+                Cancelar
+              </button>
+              <button onClick={handleDeleteAccount}
+                disabled={deleteConfirm !== "ELIMINAR" || deleting}
+                className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white transition disabled:opacity-40"
+                style={{ background: "#ef4444" }}>
+                {deleting ? "A eliminar…" : "Eliminar conta"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );
