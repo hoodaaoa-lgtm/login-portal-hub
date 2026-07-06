@@ -21,17 +21,17 @@
         "import.meta.env.VITE_SUPABASE_URL": JSON.stringify(
           process.env.VITE_SUPABASE_URL ||
             process.env.SUPABASE_URL ||
-            "https://noespkhtwerarazwozqv.supabase.co",
+            "https://uiqxumshtqcmnjjciuba.supabase.co",
         ),
         "import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY": JSON.stringify(
           process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
             process.env.SUPABASE_PUBLISHABLE_KEY ||
-            "sb_publishable_tHKC88uuQyuPjtEYwG6vPQ_oFxIHxfP",
+            "sb_publishable_MhAthVjgpBekqplH8JFiIg_uV_GJkxL",
         ),
         "import.meta.env.VITE_SUPABASE_PROJECT_ID": JSON.stringify(
           process.env.VITE_SUPABASE_PROJECT_ID ||
             process.env.SUPABASE_PROJECT_ID ||
-            "noespkhtwerarazwozqv",
+            "uiqxumshtqcmnjjciuba",
         ),
       },
       resolve: {
