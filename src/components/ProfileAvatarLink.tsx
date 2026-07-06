@@ -6,8 +6,6 @@ type ProfileAvatarLinkProps = {
   username: string;
   children: React.ReactNode;
   className?: string;
-  disableStoryCheck?: boolean;
-  alwaysShowMenu?: boolean;
 };
 
 export function ProfileAvatarLink({

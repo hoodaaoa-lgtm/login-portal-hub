@@ -16,46 +16,6 @@ function Shimmer({ className = "", style }: { className?: string; style?: CSSPro
   );
 }
 
-/**
- * Skeleton circular para Stories — exatamente 56×56px (h-14 w-14) + label
- * para evitar CLS ao carregar a secção de stories.
- */
-export function StorySkeleton() {
-  return (
-    <li className="flex flex-col items-center gap-1 shrink-0">
-      {/* Anel exterior — mesmo tamanho do story real (h-14 w-14) */}
-      <div
-        className="h-14 w-14 rounded-full relative overflow-hidden flex-shrink-0"
-        style={{ background: "var(--surface-2,#e9e9e4)" }}
-      >
-        <div className="skeleton-shimmer absolute inset-0" />
-      </div>
-      {/* Label — mesmo w-14 do story real */}
-      <Shimmer className="h-2.5 w-10 rounded-full" />
-    </li>
-  );
-}
-
-/** Linha completa de Stories skeletons — mesma altura que a lista real (108px). */
-export function StoriesRowSkeleton({ count = 6 }: { count?: number }) {
-  return (
-    <section
-      className="border-b"
-      style={{
-        background: "var(--surface-0)",
-        borderColor: "var(--border-subtle)",
-        minHeight: 108,
-      }}
-    >
-      <ul className="flex gap-4 overflow-x-auto px-4 py-4 no-scrollbar">
-        {Array.from({ length: count }).map((_, i) => (
-          <StorySkeleton key={i} />
-        ))}
-      </ul>
-    </section>
-  );
-}
-
 /** Um post no feed, no formato do PostCard real (avatar + linhas + corpo). */
 export function PostCardSkeleton() {
   return (

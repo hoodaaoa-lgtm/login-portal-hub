@@ -9,7 +9,6 @@
 //   - Feed / Posts:          60s stale,  10min gcTime
 //   - Conversas:             30s stale,  15min gcTime
 //   - Mensagens:             15s stale,  10min gcTime
-//   - Comunidades:           2min stale, 20min gcTime
 //   - Notificações:          30s stale,  10min gcTime
 //   - Perfis visitados:      5min stale, 30min gcTime
 //   - Avatares / Estáticos: 10min stale, 60min gcTime
@@ -46,14 +45,9 @@ export const QUERY_KEYS = {
   feed: (uid: string) => ["feed", uid],
   profile: (uid: string) => ["profile", uid],
   profileByUsername: (username: string) => ["profile", "username", username],
-  stories: (uid: string) => ["stories", uid],
   conversations: (uid: string) => ["conversations", uid],
   messages: (convId: string) => ["messages", convId],
   notifications: (uid: string) => ["notifications", uid],
-  community: (id: string) => ["community", id],
-  communityMessages: (id: string) => ["communityMessages", id],
-  communityMembers: (id: string) => ["communityMembers", id],
-  communityList: (uid: string) => ["communityList", uid],
   comments: (postId: string) => ["comments", postId],
 } as const;
 
@@ -73,12 +67,6 @@ export const CONVERSATIONS_QUERY_OPTIONS = {
 export const FEED_QUERY_OPTIONS = {
   staleTime: 60_000,      // 1min
   gcTime: 10 * 60_000,    // 10min
-} as const;
-
-/** Opções de cache para comunidades */
-export const COMMUNITY_QUERY_OPTIONS = {
-  staleTime: 2 * 60_000,  // 2min
-  gcTime: 20 * 60_000,    // 20min
 } as const;
 
 /** Opções de cache para notificações */

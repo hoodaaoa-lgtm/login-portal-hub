@@ -33,7 +33,6 @@ import { Route as StudioEstatisticasRouteImport } from './routes/studio.estatist
 import { Route as StudioDefinicoesRouteImport } from './routes/studio.definicoes'
 import { Route as StudioCriarRouteImport } from './routes/studio.criar'
 import { Route as StudioContentRouteImport } from './routes/studio.content'
-import { Route as StudioComunidadeRouteImport } from './routes/studio.comunidade'
 import { Route as StudioBibliotecaRouteImport } from './routes/studio.biblioteca'
 import { Route as StudioAnalyticsRouteImport } from './routes/studio.analytics'
 import { Route as StudioAgendaRouteImport } from './routes/studio.agenda'
@@ -161,11 +160,6 @@ const StudioContentRoute = StudioContentRouteImport.update({
   path: '/content',
   getParentRoute: () => StudioRoute,
 } as any)
-const StudioComunidadeRoute = StudioComunidadeRouteImport.update({
-  id: '/comunidade',
-  path: '/comunidade',
-  getParentRoute: () => StudioRoute,
-} as any)
 const StudioBibliotecaRoute = StudioBibliotecaRouteImport.update({
   id: '/biblioteca',
   path: '/biblioteca',
@@ -218,7 +212,6 @@ export interface FileRoutesByFullPath {
   '/studio/agenda': typeof StudioAgendaRoute
   '/studio/analytics': typeof StudioAnalyticsRoute
   '/studio/biblioteca': typeof StudioBibliotecaRoute
-  '/studio/comunidade': typeof StudioComunidadeRoute
   '/studio/content': typeof StudioContentRoute
   '/studio/criar': typeof StudioCriarRoute
   '/studio/definicoes': typeof StudioDefinicoesRoute
@@ -250,7 +243,6 @@ export interface FileRoutesByTo {
   '/studio/agenda': typeof StudioAgendaRoute
   '/studio/analytics': typeof StudioAnalyticsRoute
   '/studio/biblioteca': typeof StudioBibliotecaRoute
-  '/studio/comunidade': typeof StudioComunidadeRoute
   '/studio/content': typeof StudioContentRoute
   '/studio/criar': typeof StudioCriarRoute
   '/studio/definicoes': typeof StudioDefinicoesRoute
@@ -284,7 +276,6 @@ export interface FileRoutesById {
   '/studio/agenda': typeof StudioAgendaRoute
   '/studio/analytics': typeof StudioAnalyticsRoute
   '/studio/biblioteca': typeof StudioBibliotecaRoute
-  '/studio/comunidade': typeof StudioComunidadeRoute
   '/studio/content': typeof StudioContentRoute
   '/studio/criar': typeof StudioCriarRoute
   '/studio/definicoes': typeof StudioDefinicoesRoute
@@ -319,7 +310,6 @@ export interface FileRouteTypes {
     | '/studio/agenda'
     | '/studio/analytics'
     | '/studio/biblioteca'
-    | '/studio/comunidade'
     | '/studio/content'
     | '/studio/criar'
     | '/studio/definicoes'
@@ -351,7 +341,6 @@ export interface FileRouteTypes {
     | '/studio/agenda'
     | '/studio/analytics'
     | '/studio/biblioteca'
-    | '/studio/comunidade'
     | '/studio/content'
     | '/studio/criar'
     | '/studio/definicoes'
@@ -384,7 +373,6 @@ export interface FileRouteTypes {
     | '/studio/agenda'
     | '/studio/analytics'
     | '/studio/biblioteca'
-    | '/studio/comunidade'
     | '/studio/content'
     | '/studio/criar'
     | '/studio/definicoes'
@@ -588,13 +576,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StudioContentRouteImport
       parentRoute: typeof StudioRoute
     }
-    '/studio/comunidade': {
-      id: '/studio/comunidade'
-      path: '/comunidade'
-      fullPath: '/studio/comunidade'
-      preLoaderRoute: typeof StudioComunidadeRouteImport
-      parentRoute: typeof StudioRoute
-    }
     '/studio/biblioteca': {
       id: '/studio/biblioteca'
       path: '/biblioteca'
@@ -644,7 +625,6 @@ interface StudioRouteChildren {
   StudioAgendaRoute: typeof StudioAgendaRoute
   StudioAnalyticsRoute: typeof StudioAnalyticsRoute
   StudioBibliotecaRoute: typeof StudioBibliotecaRoute
-  StudioComunidadeRoute: typeof StudioComunidadeRoute
   StudioContentRoute: typeof StudioContentRoute
   StudioCriarRoute: typeof StudioCriarRoute
   StudioDefinicoesRoute: typeof StudioDefinicoesRoute
@@ -660,7 +640,6 @@ const StudioRouteChildren: StudioRouteChildren = {
   StudioAgendaRoute: StudioAgendaRoute,
   StudioAnalyticsRoute: StudioAnalyticsRoute,
   StudioBibliotecaRoute: StudioBibliotecaRoute,
-  StudioComunidadeRoute: StudioComunidadeRoute,
   StudioContentRoute: StudioContentRoute,
   StudioCriarRoute: StudioCriarRoute,
   StudioDefinicoesRoute: StudioDefinicoesRoute,

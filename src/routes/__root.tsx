@@ -17,7 +17,6 @@ import { AvatarProvider } from "../contexts/AvatarContext";
 import { BadgeProvider } from "../contexts/BadgeContext";
 import { CountryProvider } from "../contexts/CountryContext";
 import { AuthProvider, useAuth } from "../contexts/AuthContext";
-import { GlobalStoryViewer } from "../components/GlobalStoryViewer";
 import { BottomNav } from "../components/AppShell";
 import { TopProgressBar } from "../components/TopProgressBar";
 import { SplashScreen, SPLASH_EXIT_MS } from "../components/SplashScreen";
@@ -177,7 +176,6 @@ function RootComponent() {
         <AuthGate>
           <TopProgressBar />
           <Outlet />
-          <GlobalStoryViewer />
           <ConditionalBottomNav />
         </AuthGate>
       </AppProviders>
@@ -204,7 +202,6 @@ function RootComponent() {
         <AuthGate>
           <TopProgressBar />
           <Outlet />
-          <GlobalStoryViewer />
           <ConditionalBottomNav />
         </AuthGate>
       </AppProviders>

@@ -1,16 +1,16 @@
 import React, { useState } from "react";
 import {
-  X, Bell, Heart, MessageCircle, UserPlus, Users,
-  Share2, AtSign, BookOpen, Megaphone, CheckCheck,
+  X, Bell, Heart, MessageCircle, UserPlus,
+  Share2, AtSign, Megaphone, CheckCheck,
 } from "lucide-react";
 
 const ACCENT = "#5B3FCF";
 
 export type NotifType =
   | "follow" | "like" | "comment" | "mention"
-  | "message" | "group_invite" | "story_reply"
+  | "message"
   | "share" | "system" | "video_new" | "video_like"
-  | "video_comment" | "community_post";
+  | "video_comment";
 
 export interface Notif {
   id: number;
@@ -34,14 +34,11 @@ function notifIcon(type: NotifType) {
     case "comment":      return <MessageCircle className={cls} />;
     case "mention":      return <AtSign className={cls} />;
     case "message":      return <MessageCircle className={cls} />;
-    case "group_invite": return <Users className={cls} />;
-    case "story_reply":  return <BookOpen className={cls} />;
     case "share":        return <Share2 className={cls} />;
     case "system":       return <Megaphone className={cls} />;
     case "video_new":    return <span className={cls} style={{fontSize:10}}>▶</span>;
     case "video_like":   return <Heart className={cls} />;
     case "video_comment": return <MessageCircle className={cls} />;
-    case "community_post": return <Users className={cls} />;
   }
 }
 
@@ -52,8 +49,6 @@ function notifBg(type: NotifType) {
     case "comment":      return "#F26B3A";
     case "mention":      return "#1FAFA6";
     case "message":      return "#5B3FCF";
-    case "group_invite": return "#6BA547";
-    case "story_reply":  return "#8B5CF6";
     case "share":        return "#F26B3A";
     case "system":       return "#5B3FCF";
   }

@@ -1186,7 +1186,7 @@ function PostCard({ p }: { p: any }) {
 
       <div className="flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-2.5">
-          <ProfileAvatarLink userId={p.author_id || p.user_id} username={p.author_username} disableStoryCheck={isAd || !p.author_username}>
+          <ProfileAvatarLink userId={p.author_id || p.user_id} username={p.author_username}>
             <div className="w-10 h-10 rounded-full overflow-hidden shrink-0 flex items-center justify-center font-bold text-white text-sm"
               style={{ background: p.color || "#5B3FCF" }}>
               {p.avatar_url
@@ -1195,7 +1195,7 @@ function PostCard({ p }: { p: any }) {
             </div>
           </ProfileAvatarLink>
           <div className="min-w-0">
-            <ProfileAvatarLink userId={p.author_id || p.user_id} username={p.author_username} disableStoryCheck={isAd || !p.author_username} className="inline-flex">
+            <ProfileAvatarLink userId={p.author_id || p.user_id} username={p.author_username} className="inline-flex">
               <span className="text-sm font-bold hover:underline" style={{ color: "var(--text-primary)" }}>
                 {p.user}
                 {isAd && <span className="text-[9px] uppercase bg-[var(--s2)] text-[var(--text-muted)] px-1.5 py-0.5 rounded font-semibold ml-1">Patrocinado</span>}
@@ -1327,7 +1327,7 @@ function PostCard({ p }: { p: any }) {
           creatorId={p.author_id}
           header={
             <div className="flex items-center gap-3 pb-2">
-              <ProfileAvatarLink userId={p.author_id} username={p.author_username} disableStoryCheck={isAd || !p.author_username}>
+              <ProfileAvatarLink userId={p.author_id} username={p.author_username}>
                 <div className="h-9 w-9 rounded-full flex-shrink-0 overflow-hidden flex items-center justify-center" style={{ background: p.color }}>
                   {p.avatar_url
                     ? <img loading="lazy" decoding="async" src={p.avatar_url} alt={p.user} className="w-full h-full object-cover" />
@@ -1950,24 +1950,6 @@ function HomePage() {
           const { data: commenter } = await supabase.from("profiles").select("username").eq("id", vc.user_id).maybeSingle();
           const name = commenter?.username || "alguém";
           pushNotif({ type: "video_comment", user: name, name, color: hashColor(name), text: "comentou no teu vídeo", detail: vc.content?.slice(0, 60), time: "agora", read: false });
-        }
-      )
-      // ── Posts em comunidades que faço parte ──
-      .on(
-        "postgres_changes" as any,
-        { event: "INSERT", schema: "public", table: "community_posts" },
-        async (payload: any) => {
-          const cp = payload.new;
-          if (cp.author_id === myUserId) return;
-          // Verificar se sou membro da comunidade
-          const { data: membership } = await (supabase as any)
-            .from("community_members").select("id").eq("community_id", cp.community_id).eq("user_id", myUserId).maybeSingle();
-          if (!membership) return;
-          const { data: community } = await (supabase as any)
-            .from("communities").select("name").eq("id", cp.community_id).maybeSingle();
-          const { data: author } = await supabase.from("profiles").select("username").eq("id", cp.author_id).maybeSingle();
-          const name = author?.username || "alguém";
-          pushNotif({ type: "community_post", user: name, name, color: hashColor(name), text: `publicou em ${community?.name || "comunidade"}`, detail: cp.content?.slice(0, 60), time: "agora", read: false });
         }
       )
       .subscribe();

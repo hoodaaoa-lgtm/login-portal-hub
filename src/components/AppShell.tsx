@@ -31,8 +31,9 @@ const MOBILE_ITEMS = [
 ] as const;
 
 /** Resolve o valor do badge para uma rota de navegação a partir dos contadores já carregados */
-function badgeCountFor(to: string, unreadMessages: number, unreadCommunities: number): number {
-  if (to === "/mensagens") return unreadMessages;  return 0;
+function badgeCountFor(to: string, unreadMessages: number): number {
+  if (to === "/mensagens") return unreadMessages;
+  return 0;
 }
 
 /** Pequeno contador numérico — não altera layout, apenas sobrepõe */
@@ -63,7 +64,7 @@ export function SideNav() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { theme, toggle } = useTheme();
   const { avatarUrl, name } = useAvatar();
-  const { unreadMessages, unreadCommunities } = useBadges();
+  const { unreadMessages } = useBadges();
   const initial = (name?.[0] ?? "?").toUpperCase();
   const isPerfilActive = pathname === "/perfil";
   const [showDrawer, setShowDrawer] = React.useState(false);
@@ -122,7 +123,7 @@ export function SideNav() {
                 <Icon className="h-[26px] w-[26px] shrink-0" strokeWidth={1.9} />
                 <span className="truncate">{label}</span>
                 <span className="ml-auto flex items-center gap-2">
-                  <NavCountBadge count={badgeCountFor(to, unreadMessages, unreadCommunities)} />
+                  <NavCountBadge count={badgeCountFor(to, unreadMessages)} />
                 </span>
               </button>
             );
@@ -149,7 +150,7 @@ export function SideNav() {
               )}
               <span className="truncate">{label}</span>
               <span className="ml-auto flex items-center gap-2">
-                <NavCountBadge count={badgeCountFor(to, unreadMessages, unreadCommunities)} />
+                <NavCountBadge count={badgeCountFor(to, unreadMessages)} />
               </span>
             </Link>
           );
@@ -210,7 +211,7 @@ export function SideNav() {
 export function BottomNav() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { avatarUrl, name } = useAvatar();
-  const { unreadMessages, unreadCommunities } = useBadges();
+  const { unreadMessages } = useBadges();
   const initial = (name?.[0] ?? "?").toUpperCase();
   const [showDrawer, setShowDrawer] = useState(false);
   const [currentUserId, setCurrentUserId] = React.useState("");
@@ -241,7 +242,7 @@ export function BottomNav() {
                 ? pathname.startsWith(to as string)
                 : pathname === to
             );
-            const badgeCount = !isMenu ? badgeCountFor(to as string, unreadMessages, unreadCommunities) : 0;
+            const badgeCount = !isMenu ? badgeCountFor(to as string, unreadMessages) : 0;
 
             return (
               <li key={label}>

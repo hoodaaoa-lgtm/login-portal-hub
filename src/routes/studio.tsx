@@ -4,7 +4,7 @@ import { myChannelQuery } from "@/lib/channel-queries";
 import { supabase } from "@/integrations/supabase/client";
 import {
   LayoutDashboard, PlusCircle, Calendar, FolderOpen, BarChart2,
-  Users, Settings, HelpCircle, LogOut, ArrowLeft, Menu, X, Tv2, Palette,
+  Settings, HelpCircle, LogOut, ArrowLeft, Menu, X, Tv2, Palette,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -21,7 +21,6 @@ const NAV = [
   { to: "/studio/agenda",       label: "Agenda",            icon: Calendar },
   { to: "/studio/biblioteca",   label: "Biblioteca",        icon: FolderOpen },
   { to: "/studio/estatisticas", label: "Estatísticas",      icon: BarChart2 },
-  { to: "/studio/comunidade",   label: "Comunidade",        icon: Users },
   { to: "/studio/personalizacao", label: "Personalização",  icon: Palette },
   { to: "/studio/definicoes",   label: "Definições",        icon: Settings },
 ];
