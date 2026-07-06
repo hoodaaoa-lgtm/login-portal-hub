@@ -221,7 +221,6 @@ export type Database = {
           signature_enabled: boolean | null
           signature_position: string | null
           signature_style: string | null
-          signature_font: string | null
           updated_at: string
           watermark_enabled: boolean | null
           watermark_image_url: string | null
@@ -245,7 +244,6 @@ export type Database = {
           signature_enabled?: boolean | null
           signature_position?: string | null
           signature_style?: string | null
-          signature_font?: string | null
           updated_at?: string
           watermark_enabled?: boolean | null
           watermark_image_url?: string | null
@@ -269,7 +267,6 @@ export type Database = {
           signature_enabled?: boolean | null
           signature_position?: string | null
           signature_style?: string | null
-          signature_font?: string | null
           updated_at?: string
           watermark_enabled?: boolean | null
           watermark_image_url?: string | null
@@ -673,14 +670,20 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          is_official: boolean
+          reply_allowed: boolean
         }
         Insert: {
           created_at?: string
           id?: string
+          is_official?: boolean
+          reply_allowed?: boolean
         }
         Update: {
           created_at?: string
           id?: string
+          is_official?: boolean
+          reply_allowed?: boolean
         }
         Relationships: []
       }
@@ -1215,6 +1218,41 @@ export type Database = {
           },
         ]
       }
+      poll_votes: {
+        Row: {
+          created_at: string
+          id: string
+          option_index: number
+          post_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          option_index: number
+          post_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          option_index?: number
+          post_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "poll_votes_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       post_comment_likes: {
         Row: {
           comment_id: string
@@ -1583,6 +1621,7 @@ export type Database = {
           photo_url: string | null
           photos: string[] | null
           poll: Json | null
+          poll_ends_at: string | null
           quotes_count: number
           replies_count: number
           reposts_count: number
@@ -1629,6 +1668,7 @@ export type Database = {
           photo_url?: string | null
           photos?: string[] | null
           poll?: Json | null
+          poll_ends_at?: string | null
           quotes_count?: number
           replies_count?: number
           reposts_count?: number
@@ -1675,6 +1715,7 @@ export type Database = {
           photo_url?: string | null
           photos?: string[] | null
           poll?: Json | null
+          poll_ends_at?: string | null
           quotes_count?: number
           replies_count?: number
           reposts_count?: number
@@ -1724,6 +1765,7 @@ export type Database = {
           age: number | null
           avatar_color: string | null
           avatar_url: string | null
+          ban_reason: string | null
           bio: string | null
           cover_url: string | null
           created_at: string
@@ -1731,8 +1773,10 @@ export type Database = {
           full_name: string
           hide_last_seen: boolean
           id: string
+          is_banned: boolean
           is_online: boolean
           is_private: boolean
+          is_verified: boolean
           last_seen: string | null
           location: string | null
           msg_permission: string
@@ -1748,6 +1792,7 @@ export type Database = {
           age?: number | null
           avatar_color?: string | null
           avatar_url?: string | null
+          ban_reason?: string | null
           bio?: string | null
           cover_url?: string | null
           created_at?: string
@@ -1755,8 +1800,10 @@ export type Database = {
           full_name: string
           hide_last_seen?: boolean
           id: string
+          is_banned?: boolean
           is_online?: boolean
           is_private?: boolean
+          is_verified?: boolean
           last_seen?: string | null
           location?: string | null
           msg_permission?: string
@@ -1772,6 +1819,7 @@ export type Database = {
           age?: number | null
           avatar_color?: string | null
           avatar_url?: string | null
+          ban_reason?: string | null
           bio?: string | null
           cover_url?: string | null
           created_at?: string
@@ -1779,8 +1827,10 @@ export type Database = {
           full_name?: string
           hide_last_seen?: boolean
           id?: string
+          is_banned?: boolean
           is_online?: boolean
           is_private?: boolean
+          is_verified?: boolean
           last_seen?: string | null
           location?: string | null
           msg_permission?: string
@@ -2478,6 +2528,7 @@ export type Database = {
       }
     }
     Functions: {
+      admin_delete_account: { Args: { target_id: string }; Returns: undefined }
       cleanup_expired_drops: { Args: never; Returns: undefined }
       cleanup_expired_stories: { Args: never; Returns: undefined }
       create_conversation_with_participants: {
@@ -2516,6 +2567,7 @@ export type Database = {
           video_stream_url: string
         }[]
       }
+      get_hooda_official_id: { Args: never; Returns: string }
       get_library_book_file: {
         Args: { p_book_id: string }
         Returns: {
@@ -2557,6 +2609,7 @@ export type Database = {
         Args: { p_conversation_id: string; p_user_id: string }
         Returns: boolean
       }
+      is_hooda_admin: { Args: never; Returns: boolean }
       mark_view_once_opened: {
         Args: { p_msg_id: string; p_user_id: string }
         Returns: undefined
