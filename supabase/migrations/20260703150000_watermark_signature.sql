@@ -25,12 +25,15 @@ CREATE INDEX IF NOT EXISTS cws_channel_idx ON public.channel_watermark_settings(
 GRANT SELECT, INSERT, UPDATE ON public.channel_watermark_settings TO authenticated;
 GRANT ALL ON public.channel_watermark_settings TO service_role;
 ALTER TABLE public.channel_watermark_settings ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "cws read own" ON public.channel_watermark_settings;
 CREATE POLICY "cws read own" ON public.channel_watermark_settings FOR SELECT USING (
   channel_id IN (SELECT id FROM public.channels WHERE owner_id = auth.uid())
 );
+DROP POLICY IF EXISTS "cws insert own" ON public.channel_watermark_settings;
 CREATE POLICY "cws insert own" ON public.channel_watermark_settings FOR INSERT WITH CHECK (
   channel_id IN (SELECT id FROM public.channels WHERE owner_id = auth.uid())
 );
+DROP POLICY IF EXISTS "cws update own" ON public.channel_watermark_settings;
 CREATE POLICY "cws update own" ON public.channel_watermark_settings FOR UPDATE USING (
   channel_id IN (SELECT id FROM public.channels WHERE owner_id = auth.uid())
 ) WITH CHECK (
