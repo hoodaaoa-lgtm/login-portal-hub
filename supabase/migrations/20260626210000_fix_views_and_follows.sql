@@ -11,9 +11,12 @@ CREATE INDEX IF NOT EXISTS vl_user_idx  ON public.video_likes(user_id);
 GRANT SELECT, INSERT, DELETE ON public.video_likes TO authenticated;
 GRANT ALL ON public.video_likes TO service_role;
 ALTER TABLE public.video_likes ENABLE ROW LEVEL SECURITY;
-CREATE POLICY IF NOT EXISTS "vl public read" ON public.video_likes FOR SELECT USING (true);
-CREATE POLICY IF NOT EXISTS "vl self insert" ON public.video_likes FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY IF NOT EXISTS "vl self delete" ON public.video_likes FOR DELETE USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "vl public read" ON public.video_likes;
+CREATE POLICY "vl public read" ON public.video_likes FOR SELECT USING (true);
+DROP POLICY IF EXISTS "vl self insert" ON public.video_likes;
+CREATE POLICY "vl self insert" ON public.video_likes FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "vl self delete" ON public.video_likes;
+CREATE POLICY "vl self delete" ON public.video_likes FOR DELETE USING (auth.uid() = user_id);
 
 -- ── RPC: gravar view e incrementar contador ───────────────────────────────
 CREATE OR REPLACE FUNCTION public.record_video_view(
