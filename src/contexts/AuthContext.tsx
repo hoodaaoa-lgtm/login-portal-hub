@@ -55,6 +55,11 @@ function writeCachedHasSession(hasSession: boolean) {
   }
 }
 
+/** Intervalo entre "pings" de presença, em segundos, enquanto a app está
+ * visível e autenticada. Usado tanto no setInterval como no valor enviado
+ * a heartbeat_ping() para acumular o tempo total no site. */
+const HEARTBEAT_SECONDS = 30;
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [status, setStatus] = useState<AuthStatus>("loading");
@@ -115,6 +120,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       subscription.unsubscribe();
     };
   }, []);
+
+  // ── Heartbeat de presença: enquanto autenticado e com a aba visível,
+  // avisa o servidor a cada HEARTBEAT_SECONDS que o utilizador está online
+  // e soma esse intervalo ao tempo total no site (profiles.total_time_seconds).
+  // Isto alimenta o "Utilizadores Online" no painel de admin.
+  useEffect(() => {
+    if (status !== "authenticated") return;
+
+    const ping = () => {
+      if (document.visibilityState !== "visible") return;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (supabase as any).rpc("heartbeat_ping", { p_interval_seconds: HEARTBEAT_SECONDS }).then(
+        () => {},
+        () => {} // best-effort — falha silenciosa (ex: offline)
+      );
+    };
+
+    ping(); // ping imediato ao autenticar / voltar para a aba
+    const intervalId = setInterval(ping, HEARTBEAT_SECONDS * 1000);
+    const onVisible = () => { if (document.visibilityState === "visible") ping(); };
+    document.addEventListener("visibilitychange", onVisible);
+
+    return () => {
+      clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [status]);
 
   return (
     <AuthContext.Provider value={{ status, session, user: session?.user ?? null, initializing }}>
