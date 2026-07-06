@@ -466,11 +466,29 @@ function LivrosPage() {
 
   async function handleDownload(book: any) {
     if (!book.file_url) { toast.error("Ficheiro não disponível."); return; }
-    // Incrementar contador
     await (supabase as any).from("books").update({ downloads: (book.downloads ?? 0) + 1 }).eq("id", book.id);
     if (uid) await (supabase as any).from("book_downloads").insert({ user_id: uid, book_id: book.id }).catch(() => {});
     qc.invalidateQueries({ queryKey: ["books"] });
-    window.open(book.file_url, "_blank");
+
+    try {
+      const res = await fetch(book.file_url);
+      if (!res.ok) throw new Error("download falhou");
+      const blob = await res.blob();
+      const ext = (book.file_url.split(".").pop() || "pdf").split("?")[0].slice(0, 5);
+      const safeName = (book.title || "livro").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\w\- ]+/g, "").trim() || "livro";
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = `${safeName}.${ext}`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+    } catch {
+      // Fallback: se o download direto falhar (ex: CORS), abre numa nova aba
+      window.open(book.file_url, "_blank");
+      toast.info("Não foi possível baixar diretamente — o ficheiro abriu numa nova aba.");
+    }
   }
 
   const TABS = [
