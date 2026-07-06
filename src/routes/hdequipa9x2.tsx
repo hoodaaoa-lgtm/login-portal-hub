@@ -8,7 +8,7 @@ import {
   MessageSquare, ChevronLeft, ShieldAlert, Unlock as UnlockIcon,
   LayoutDashboard, Flag, Users as UsersIcon, Ban, ShieldCheck,
   UsersRound, FileText, Radio, TrendingUp, CheckCircle2, XCircle,
-  Trash2, Image as ImageIcon, Video as VideoIcon, ExternalLink,
+  Trash2, Image as ImageIcon, Video as VideoIcon, ExternalLink, Activity,
 } from "lucide-react";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -78,6 +78,15 @@ type ChannelRow = {
   owner_username?: string | null;
 };
 
+type PresenceRow = {
+  id: string;
+  username: string;
+  full_name: string | null;
+  avatar_url: string | null;
+  last_seen: string | null;
+  total_time_seconds: number | null;
+};
+
 type DashboardStats = {
   totalUsers: number;
   newToday: number;
@@ -132,6 +141,44 @@ function fmtCount(n?: number | null) {
   if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M`;
   if (v >= 1_000) return `${(v / 1_000).toFixed(1)}k`;
   return String(v);
+}
+
+/** Limiar para considerar um utilizador "online agora": se o último heartbeat
+ * (a cada 30s enquanto a app está visível) foi há menos de 90s, está online.
+ * Não confiamos apenas na flag is_online guardada na BD porque não há forma
+ * fiável de a apagar quando o utilizador fecha a aba/app (beforeunload não é
+ * garantido, especialmente em mobile) — por isso calculamos aqui pela
+ * recência do last_seen. */
+const ONLINE_THRESHOLD_MS = 90_000;
+
+function isOnlineNow(lastSeen: string | null) {
+  if (!lastSeen) return false;
+  return Date.now() - new Date(lastSeen).getTime() < ONLINE_THRESHOLD_MS;
+}
+
+/** "Visto pela última vez": agora / há Xm / há Xh / hoje às HH:MM / data. */
+function fmtLastSeen(lastSeen: string | null) {
+  if (!lastSeen) return "Nunca entrou";
+  const d = new Date(lastSeen);
+  const s = Math.floor((Date.now() - d.getTime()) / 1000);
+  if (s < 90) return "Agora mesmo";
+  if (s < 3600) return `Há ${Math.floor(s / 60)} min`;
+  if (s < 86400) return `Há ${Math.floor(s / 3600)} h`;
+  const isToday = d.toDateString() === new Date().toDateString();
+  if (isToday) return `Hoje às ${d.toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit" })}`;
+  return d.toLocaleDateString("pt-PT", { day: "2-digit", month: "2-digit", year: "numeric" }) +
+    ` às ${d.toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit" })}`;
+}
+
+/** Tempo total acumulado no site: 45min / 3h 20min / 12h. */
+function fmtDuration(totalSeconds: number | null) {
+  const s = totalSeconds ?? 0;
+  if (s < 60) return "menos de 1 min";
+  const mins = Math.floor(s / 60);
+  if (mins < 60) return `${mins} min`;
+  const hours = Math.floor(mins / 60);
+  const remMins = mins % 60;
+  return remMins > 0 ? `${hours} h ${remMins} min` : `${hours} h`;
 }
 
 /** Mídia de uma publicação no admin: foto (grelha) ou vídeo reprodutível
@@ -274,7 +321,7 @@ function AdminPage() {
 
 function AdminDashboard({ adminId }: { adminId: string }) {
   const navigate = useNavigate();
-  const [section, setSection] = useState<"dashboard" | "reports" | "users" | "messages" | "posts" | "channels">("dashboard");
+  const [section, setSection] = useState<"dashboard" | "reports" | "users" | "messages" | "posts" | "channels" | "presence">("dashboard");
   const [search, setSearch] = useState("");
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
@@ -304,6 +351,12 @@ function AdminDashboard({ adminId }: { adminId: string }) {
   const [channelsList, setChannelsList] = useState<ChannelRow[]>([]);
   const [channelsLoading, setChannelsLoading] = useState(true);
   const [channelsSearch, setChannelsSearch] = useState("");
+
+  // ── Presença (utilizadores online / última vez visto / tempo no site) ──
+  const [presenceList, setPresenceList] = useState<PresenceRow[]>([]);
+  const [presenceLoading, setPresenceLoading] = useState(true);
+  const [presenceSearch, setPresenceSearch] = useState("");
+  const [nowTick, setNowTick] = useState(Date.now()); // força recálculo de "há Xm" e do estado online
 
   // ── Dashboard: números reais ──
   useEffect(() => {
@@ -478,6 +531,43 @@ function AdminDashboard({ adminId }: { adminId: string }) {
       notifyUserOfficial(c.owner_id, reason.trim() || "O teu canal foi removido por violar os nossos termos de utilização.");
     }
   }
+
+  // ── Presença: lista real de last_seen/total_time_seconds, com atualização
+  // periódica (poll a cada 20s) para o estado "online agora" refletir a
+  // realidade sem precisar de recarregar a página. ──
+  const loadPresence = useCallback(async () => {
+    const { data, error } = await db
+      .from("profiles")
+      .select("id,username,full_name,avatar_url,last_seen,total_time_seconds")
+      .neq("id", adminId)
+      .order("last_seen", { ascending: false, nullsFirst: false })
+      .limit(500);
+    if (error) {
+      console.error("[admin] erro a carregar presença:", error);
+      toast.error("Erro ao carregar utilizadores online: " + error.message);
+      setPresenceList([]);
+      setPresenceLoading(false);
+      return;
+    }
+    setPresenceList(data ?? []);
+    setPresenceLoading(false);
+  }, [adminId]);
+
+  useEffect(() => {
+    if (section !== "presence") return;
+    setPresenceLoading(true);
+    loadPresence();
+    const pollId = setInterval(loadPresence, 20_000);
+    const tickId = setInterval(() => setNowTick(Date.now()), 5_000);
+    return () => { clearInterval(pollId); clearInterval(tickId); };
+  }, [section, loadPresence]);
+
+  const filteredPresence = presenceList.filter((u) => {
+    const q = presenceSearch.trim().toLowerCase();
+    if (!q) return true;
+    return u.username?.toLowerCase().includes(q) || u.full_name?.toLowerCase().includes(q);
+  });
+  const onlineCount = presenceList.filter((u) => isOnlineNow(u.last_seen)).length;
 
   async function toggleBan(u: UserRow) {
     const next = !u.is_banned;
@@ -717,6 +807,7 @@ function AdminDashboard({ adminId }: { adminId: string }) {
           { key: "reports" as const, Icon: Flag, label: "Denúncias", badge: stats?.pendingReports },
           { key: "posts" as const, Icon: FileText, label: "Publicações" },
           { key: "channels" as const, Icon: Radio, label: "Canais" },
+          { key: "presence" as const, Icon: Activity, label: "Em Linha", badge: onlineCount || undefined },
           { key: "users" as const, Icon: UsersIcon, label: "Utilizadores" },
           { key: "messages" as const, Icon: MessageSquare, label: "Mensagens" },
         ]).map(({ key, Icon, label, badge }) => (
@@ -1039,6 +1130,70 @@ function AdminDashboard({ adminId }: { adminId: string }) {
                     </div>
                   </div>
                 ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Em Linha (presença) ── */}
+      {section === "presence" && (
+        <div className="flex-1 overflow-y-auto p-6 md:p-10">
+          <div className="flex items-center gap-2 mb-1">
+            <h1 className="text-2xl font-extrabold text-neutral-900">Utilizadores em linha</h1>
+            <span className="flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full"
+              style={{ background: "rgba(107,165,71,0.15)", color: "#4d8a32" }}>
+              <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: "#6BA547" }} />
+              {onlineCount} online agora
+            </span>
+          </div>
+          <p className="text-neutral-400 text-sm mb-6">
+            Quem está no Hooda neste momento, quando cada um esteve por último e quanto tempo já passou na app.
+          </p>
+          <div className="flex items-center gap-2 rounded-2xl px-3 py-2 mb-6 max-w-sm"
+            style={{ background: "#f5f5f7" }}>
+            <Search className="h-4 w-4 text-neutral-400 shrink-0" />
+            <input value={presenceSearch} onChange={(e) => setPresenceSearch(e.target.value)}
+              placeholder="Pesquisar utilizador..."
+              className="flex-1 bg-transparent text-sm text-neutral-900 outline-none placeholder:text-neutral-400" />
+          </div>
+          {presenceLoading ? (
+            <div className="flex items-center justify-center py-16"><Loader className="h-5 w-5 animate-spin text-neutral-400" /></div>
+          ) : filteredPresence.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 gap-2">
+              <Activity className="h-8 w-8 text-neutral-300" />
+              <p className="text-neutral-400 text-sm">Nenhum utilizador encontrado.</p>
+            </div>
+          ) : (
+            <div className="rounded-2xl overflow-hidden" style={{ background: "#ffffff", border: "1px solid #ececf1" }}>
+              {filteredPresence.map((u, i) => {
+                const online = isOnlineNow(u.last_seen);
+                return (
+                  <div key={u.id}
+                    className="flex items-center gap-3 px-4 py-3"
+                    style={{ borderTop: i === 0 ? "none" : "1px solid #f0f0f3" }}>
+                    <div className="relative shrink-0">
+                      <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center text-white font-bold"
+                        style={{ background: "#5B3FCF" }}>
+                        {u.avatar_url
+                          ? <img src={u.avatar_url} alt="" className="w-full h-full object-cover" />
+                          : (u.full_name?.[0] ?? u.username?.[0] ?? "?").toUpperCase()}
+                      </div>
+                      <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2"
+                        style={{ background: online ? "#6BA547" : "#c9c9d2", borderColor: "#ffffff" }} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold text-neutral-900 truncate">{u.full_name || u.username}</p>
+                      <p className="text-[12px] text-neutral-400 truncate">@{u.username}</p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-[12px] font-bold" style={{ color: online ? "#6BA547" : "#9a9aa5" }}>
+                        {online ? "Online agora" : fmtLastSeen(u.last_seen)}
+                      </p>
+                      <p className="text-[11px] text-neutral-400">{fmtDuration(u.total_time_seconds)} no total</p>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
