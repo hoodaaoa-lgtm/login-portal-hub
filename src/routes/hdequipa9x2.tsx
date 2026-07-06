@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { uploadImageToCloudinary } from "@/lib/cloudinary";
 import { toast } from "sonner";
 import { FeedVideoPlayer } from "@/components/FeedVideoPlayer";
+import { useAdminPwaShell } from "@/hooks/useAdminPwaShell";
 import {
   Lock, Search, Send, LogOut, Loader,
   MessageSquare, ChevronLeft, ShieldAlert, Unlock as UnlockIcon,
@@ -249,6 +250,11 @@ function AdminPage() {
   const [adminId, setAdminId] = useState("");
   const [pwd, setPwd] = useState("");
   const [pwdError, setPwdError] = useState(false);
+
+  // Ativa a identidade do PWA "Hooda Admin" (manifest, ícones, Service
+  // Worker próprio) assim que sabemos que é mesmo um admin — nunca antes
+  // do gate de is_hooda_admin() responder.
+  useAdminPwaShell(stage !== "checking" && stage !== "denied");
 
   // ── Gate: sessão + is_hooda_admin() ──
   useEffect(() => {

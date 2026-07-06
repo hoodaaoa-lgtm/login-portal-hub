@@ -1,0 +1,27 @@
+{
+  "name": "Hooda Admin",
+  "short_name": "Hooda Admin",
+  "description": "Painel de administração e moderação da Hooda — acesso restrito à equipa.",
+  "id": "/hdequipa9x2",
+  "start_url": "/hdequipa9x2",
+  "scope": "/hdequipa9x2",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#1a162e",
+  "theme_color": "#1a162e",
+  "lang": "pt",
+  "categories": ["business", "utilities"],
+  "icons": [
+    { "src": "/icons/admin/icon-72.png",  "sizes": "72x72",   "type": "image/png", "purpose": "any" },
+    { "src": "/icons/admin/icon-96.png",  "sizes": "96x96",   "type": "image/png", "purpose": "any" },
+    { "src": "/icons/admin/icon-128.png", "sizes": "128x128", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/admin/icon-144.png", "sizes": "144x144", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/admin/icon-152.png", "sizes": "152x152", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/admin/icon-180.png", "sizes": "180x180", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/admin/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/admin/icon-192-maskable.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/icons/admin/icon-384.png", "sizes": "384x384", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/admin/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/admin/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

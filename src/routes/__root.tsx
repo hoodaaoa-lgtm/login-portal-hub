@@ -159,9 +159,11 @@ function RootShell({ children }: { children: ReactNode }) {
 const persister = idbPersister;
 
 function RootComponent() {
-  // Registar Service Worker para PWA
+  // Registar Service Worker para PWA — exceto na rota de administração,
+  // que regista o seu próprio Service Worker isolado (ver useAdminPwaShell).
   if (typeof window !== "undefined" && "serviceWorker" in navigator) {
     window.addEventListener("load", () => {
+      if (window.location.pathname.startsWith("/hdequipa9x2")) return;
       navigator.serviceWorker.register("/sw.js").catch(() => {});
     });
   }
@@ -213,7 +215,9 @@ const PUBLIC_NAV_HIDDEN = new Set(["/", "/signup", "/reset-password"]);
 
 function ConditionalBottomNav() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  if (PUBLIC_NAV_HIDDEN.has(pathname)) return null;
+  // O PWA Admin (/hdequipa9x2) tem a sua própria navegação lateral —
+  // a bottom nav do site principal nunca deve sobrepor-se a ela.
+  if (PUBLIC_NAV_HIDDEN.has(pathname) || pathname.startsWith("/hdequipa9x2")) return null;
   return <BottomNav />;
 }
 
