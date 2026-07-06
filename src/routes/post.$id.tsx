@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate, useParams } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { BottomNav, SideNav, PageWrapper } from "@/components/AppShell";
+import { BottomNav, SideNav, PageWrapper, PageHeader } from "@/components/AppShell";
 import { PostCommentsModal } from "@/components/PostCommentsModal";
 import { FeedVideoPlayer } from "@/components/FeedVideoPlayer";
 import { PollCard } from "@/components/PollCard";
@@ -145,14 +145,8 @@ function SinglePostPage() {
       <SideNav />
       <PageWrapper className="pb-20 lg:pb-0">
         <div className="max-w-xl mx-auto w-full">
-          {/* Header */}
-          <div className="flex items-center gap-3 px-4 py-3 border-b sticky top-0 z-10"
-            style={{ background: "var(--s1)", borderColor: "var(--border-subtle)" }}>
-            <button onClick={() => navigate({ to: "/home" })} className="p-2 rounded-full transition" style={{ background: "var(--s2)" }}>
-              <ChevronLeft className="h-5 w-5" style={{ color: "var(--text-primary)" }} />
-            </button>
-            <span className="font-bold text-base" style={{ color: "var(--text-primary)" }}>Publicação</span>
-          </div>
+          {/* Header unificado */}
+          <PageHeader title="Publicação" onBack={() => navigate({ to: "/home" })} />
 
           {loading ? (
             <div className="flex justify-center py-20">
