@@ -1274,6 +1274,10 @@ type Message = {
   /** Visualização única — media some após ser vista */
   viewOnce?: boolean;
   viewOnceOpened?: boolean;
+  /** 🎁 Caixa Surpresa — conteúdo escondido até se tocar para abrir */
+  isSurprise?: boolean;
+  surpriseTeaser?: string;
+  surpriseOpened?: boolean;
   /** Eliminada apenas para mim */
   deletedForMe?: boolean;
   /** Eliminada para todos (visível como placeholder para ambos) */
@@ -1533,7 +1537,112 @@ function ViewOnceModal({ url, type, onClose }: { url: string; type: "image"|"vid
   );
 }
 
-// ── Prévia de envio de mídia (estilo WhatsApp) ──
+// ── 🎁 Compositor da Caixa Surpresa ──
+// Ecrã cheio simples: escolhe o tipo de conteúdo a esconder na caixa
+// (texto / foto / vídeo), o texto que aparece na caixa fechada, e envia.
+function SurpriseComposerModal({ onClose, onSend }: {
+  onClose: () => void;
+  onSend: (payload: { type: "text" | "image" | "video"; text: string; file?: File; teaser: string }) => void;
+}) {
+  const [type, setType] = useState<"text" | "image" | "video">("text");
+  const [text, setText] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [teaser, setTeaser] = useState("🎁 Tenho uma surpresa para ti");
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  function pickFile(f: File) {
+    setFile(f);
+    setPreview(URL.createObjectURL(f));
+  }
+
+  const canSend = type === "text" ? text.trim().length > 0 : !!file;
+
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex flex-col" style={{ background: "var(--s0)" }}>
+      <div className="flex items-center justify-between px-4 py-4 border-b shrink-0"
+        style={{ borderColor: "var(--border-subtle)" }}>
+        <button onClick={onClose} className="w-9 h-9 rounded-full flex items-center justify-center"
+          style={{ background: "var(--s2)" }}>
+          <X className="h-5 w-5" style={{ color: "var(--text-secondary)" }} />
+        </button>
+        <span className="font-bold" style={{ color: "var(--text-primary)" }}>🎁 Caixa Surpresa</span>
+        <div className="w-9" />
+      </div>
+
+      <div className="flex-1 overflow-y-auto px-4 py-5">
+        <p className="text-xs font-semibold mb-2" style={{ color: "var(--text-muted)" }}>O QUE VAI LÁ DENTRO?</p>
+        <div className="grid grid-cols-3 gap-2 mb-5">
+          {([
+            { key: "text",  label: "Texto",  icon: <MessageSquare className="h-5 w-5" /> },
+            { key: "image", label: "Foto",   icon: <ImageIcon className="h-5 w-5" /> },
+            { key: "video", label: "Vídeo",  icon: <VideoIcon className="h-5 w-5" /> },
+          ] as const).map(o => (
+            <button key={o.key}
+              onClick={() => { setType(o.key); setFile(null); setPreview(null); }}
+              className="flex flex-col items-center gap-1.5 py-3 rounded-2xl border transition"
+              style={{
+                borderColor: type === o.key ? "#F26B3A" : "var(--border-default)",
+                background: type === o.key ? "#F26B3A15" : "var(--s2)",
+                color: type === o.key ? "#F26B3A" : "var(--text-secondary)",
+              }}>
+              {o.icon}
+              <span className="text-xs font-semibold">{o.label}</span>
+            </button>
+          ))}
+        </div>
+
+        {type === "text" ? (
+          <textarea autoFocus value={text} onChange={e => setText(e.target.value)}
+            placeholder="Escreve a mensagem que vai estar escondida na caixa..." rows={5}
+            className="w-full px-3 py-3 rounded-2xl text-sm outline-none border resize-none"
+            style={{ background: "var(--s2)", borderColor: "var(--border-default)", color: "var(--text-primary)" }} />
+        ) : (
+          <div>
+            <input ref={fileRef} type="file" accept={type === "image" ? "image/*" : "video/*"}
+              style={{ display: "none" }}
+              onChange={e => { const f = e.target.files?.[0]; if (f) pickFile(f); e.target.value = ""; }} />
+            {preview ? (
+              <div className="relative rounded-2xl overflow-hidden mb-2" style={{ aspectRatio: "1/1", maxHeight: 260 }}>
+                {type === "image"
+                  ? <img src={preview} alt="" className="w-full h-full object-cover" />
+                  : <video src={preview} className="w-full h-full object-cover" controls />}
+                <button onClick={() => { setFile(null); setPreview(null); }}
+                  className="absolute top-2 right-2 bg-black/60 text-white rounded-full p-1.5">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ) : (
+              <button onClick={() => fileRef.current?.click()}
+                className="w-full py-10 rounded-2xl flex flex-col items-center gap-2 border-2 border-dashed"
+                style={{ borderColor: "var(--border-subtle)", color: "var(--text-muted)" }}>
+                {type === "image" ? <ImageIcon className="h-7 w-7" /> : <VideoIcon className="h-7 w-7" />}
+                <span className="text-sm font-semibold">Escolher {type === "image" ? "foto" : "vídeo"}</span>
+              </button>
+            )}
+          </div>
+        )}
+
+        <p className="text-xs font-semibold mt-5 mb-2" style={{ color: "var(--text-muted)" }}>MENSAGEM NA CAIXA FECHADA</p>
+        <input value={teaser} onChange={e => setTeaser(e.target.value)} maxLength={60}
+          className="w-full px-3 py-2.5 rounded-xl text-sm outline-none border"
+          style={{ background: "var(--s2)", borderColor: "var(--border-default)", color: "var(--text-primary)" }} />
+      </div>
+
+      <div className="px-4 py-4 border-t shrink-0" style={{ borderColor: "var(--border-subtle)" }}>
+        <button disabled={!canSend}
+          onClick={() => canSend && onSend({ type, text, file: file ?? undefined, teaser: teaser.trim() || "🎁 Tenho uma surpresa para ti" })}
+          className="w-full py-3 rounded-2xl font-bold text-white transition active:scale-[0.99] disabled:opacity-40"
+          style={{ background: "linear-gradient(135deg,#F26B3A,#E94B8A)" }}>
+          🎁 Enviar Surpresa
+        </button>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
+
 // Mostra a imagem/vídeo escolhido em ecrã cheio com uma barra de ferramentas em
 // cima (rodar, ajustar, desenhar, texto, recortar, fundo, emoji, sticker — cada
 // uma abre o editor completo já existente, igual ao da comunidade), um campo de
@@ -2047,17 +2156,18 @@ function UploadProgressOverlay({ progress }: { progress?: number }) {
 // ─────────────────────────────────────────
 // MsgBubble — bolha com menu contexto completo
 // ─────────────────────────────────────────
-function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit, onDeleteForMe, onDeleteForEveryone, onOpenViewOnce, onOpenLightbox, onReact, onRetry, uploadPct, readReceipts }: {
+function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit, onDeleteForMe, onDeleteForEveryone, onOpenViewOnce, onOpenSurprise, onOpenLightbox, onReact, onRetry, uploadPct, readReceipts }: {
   m: Message; isMe: boolean; replied: Message | null;
   contact: Contact; myId: string; mediaMsgs: Message[];
   onReply: () => void; onEdit: () => void;
   onDeleteForMe: () => void; onDeleteForEveryone: () => void;
   onReact?: (msgId: string, emoji: string) => void; onRetry?: () => void;
-  onOpenViewOnce: () => void; onOpenLightbox: () => void;
+  onOpenViewOnce: () => void; onOpenSurprise: () => void; onOpenLightbox: () => void;
   uploadPct?: number; readReceipts?: boolean;
 }) {
   const [showMenu,    setShowMenu]    = useState(false);
   const [confirmDel,  setConfirmDel]  = useState<"me" | "all" | null>(null);
+  const [surpriseOpening, setSurpriseOpening] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
 
@@ -2328,13 +2438,65 @@ function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit
                   {replied.senderId === myId ? "Tu" : contact.username}
                 </p>
                 <p className="truncate" style={{ color: isMe ? "rgba(255,255,255,0.75)" : "var(--text-secondary)" }}>
-                  {replied.type === "image" ? "📷 Imagem" : replied.type === "video" ? "🎥 Vídeo" : replied.type === "audio" ? "🎤 Áudio" : replied.text}
+                  {replied.isSurprise ? "🎁 Caixa Surpresa" : replied.type === "image" ? "📷 Imagem" : replied.type === "video" ? "🎥 Vídeo" : replied.type === "audio" ? "🎤 Áudio" : replied.text}
                 </p>
               </div>
             </div>
           )}
 
           <div className="px-3 py-2">
+            {/* 🎁 Caixa Surpresa — fechada: mostra a caixa, toca para abrir com animação.
+                Aberta: mostra uma etiqueta pequena e depois o conteúdo normal. */}
+            {m.isSurprise && !m.surpriseOpened && (
+              <button
+                onClick={() => {
+                  if (surpriseOpening) return;
+                  setSurpriseOpening(true);
+                  if (navigator.vibrate) navigator.vibrate(12);
+                  setTimeout(() => onOpenSurprise(), 650);
+                }}
+                className="relative flex flex-col items-center justify-center gap-2 w-full py-6 px-4 rounded-2xl overflow-hidden transition active:scale-[0.97]"
+                style={{
+                  background: "linear-gradient(135deg,#F26B3A,#E94B8A)",
+                  minWidth: 200,
+                }}>
+                <span
+                  className="text-4xl"
+                  style={{
+                    display: "inline-block",
+                    animation: surpriseOpening ? "hooda-surprise-pop 0.65s cubic-bezier(.34,1.56,.64,1) forwards" : "hooda-surprise-float 2.4s ease-in-out infinite",
+                  }}>
+                  🎁
+                </span>
+                <span className="text-sm font-bold text-white text-center leading-snug">
+                  {surpriseOpening ? "A abrir..." : (m.surpriseTeaser || "Tenho uma surpresa para ti")}
+                </span>
+                {!surpriseOpening && (
+                  <span className="text-[11px] font-semibold text-white/80">Toca para abrir</span>
+                )}
+                <style>{`
+                  @keyframes hooda-surprise-float {
+                    0%, 100% { transform: translateY(0) rotate(-4deg); }
+                    50% { transform: translateY(-5px) rotate(4deg); }
+                  }
+                  @keyframes hooda-surprise-pop {
+                    0% { transform: scale(1) rotate(0deg); }
+                    40% { transform: scale(1.35) rotate(-8deg); }
+                    70% { transform: scale(0.9) rotate(6deg); }
+                    100% { transform: scale(0) rotate(0deg); opacity: 0; }
+                  }
+                `}</style>
+              </button>
+            )}
+
+            {(!m.isSurprise || m.surpriseOpened) && (
+            <>
+            {m.isSurprise && m.surpriseOpened && (
+              <div className="flex items-center gap-1 mb-1.5 text-[11px] font-semibold"
+                style={{ color: isMe ? "rgba(255,255,255,0.85)" : "#F26B3A" }}>
+                🎁 Caixa Surpresa
+              </div>
+            )}
             {/* Sticker */}
             {m.type === "sticker" && <p style={{ fontSize: 48, lineHeight: 1 }}>{m.text}</p>}
 
@@ -2389,6 +2551,8 @@ function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit
                   <LinkPreview url={extractUrl(m.text)!} isMe={isMe} />
                 )}
               </>
+            )}
+            </>
             )}
 
             {/* Time + ticks */}
@@ -2532,6 +2696,7 @@ function ChatPanel({ myId, contact, onBack }: {
   const [gifs,         setGifs]         = useState<{id:string;url:string}[]>([]);
   const [gifLoading,   setGifLoading]   = useState(false);
   const [showAttach,   setShowAttach]   = useState(false);
+  const [showSurpriseComposer, setShowSurpriseComposer] = useState(false);
   const [replyTo,      setReplyTo]      = useState<Message|null>(null);
   const [showBgModal,  setShowBgModal]  = useState(false);
   const [bgId,         setBgId]         = useState<BgId>(() => {
@@ -2990,6 +3155,16 @@ function ChatPanel({ myId, contact, onBack }: {
           return local.includes(r.id);
         } catch { return false; }
       })(),
+      isSurprise:     !!r.is_surprise,
+      surpriseTeaser: r.surprise_teaser ?? undefined,
+      surpriseOpened: (() => {
+        if (r.surprise_opened_by?.includes(myId)) return true;
+        try {
+          const key = `hooda_surprise_fallback_${myId}`;
+          const local: string[] = JSON.parse(localStorage.getItem(key) ?? "[]");
+          return local.includes(r.id);
+        } catch { return false; }
+      })(),
       deliveryStatus: r.status === "read" ? "read" : "sent",
       duration: r.duration ?? undefined,
       reactions: r.reactions ?? {},
@@ -3274,6 +3449,23 @@ function ChatPanel({ myId, contact, onBack }: {
     }
   }
 
+  // ── 🎁 Marcar caixa surpresa como aberta (persistente, mesmo padrão do view-once) ──
+  async function openSurprise(id: string) {
+    patchMsg(id, { surpriseOpened: true });
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        const { error } = await db.rpc("mark_surprise_opened", { p_msg_id: id, p_user_id: myId });
+        if (!error) return;
+      } catch {}
+      if (attempt < 3) await new Promise(r => setTimeout(r, 800 * attempt));
+    }
+    try {
+      const key = `hooda_surprise_fallback_${myId}`;
+      const existing: string[] = JSON.parse(localStorage.getItem(key) ?? "[]");
+      if (!existing.includes(id)) localStorage.setItem(key, JSON.stringify([...existing, id]));
+    } catch {}
+  }
+
   // ── Upload com progresso real (Cloudinary) ──
   async function uploadFile(file: File, folder: string): Promise<string|null> {
     setUploading(true); setUploadPct(5);
@@ -3310,6 +3502,8 @@ function ChatPanel({ myId, contact, onBack }: {
     replyToId?: string,
     duration?: number,
     viewOnce = false,
+    isSurprise = false,
+    surpriseTeaser?: string,
   ) {
     if (sending || uploading) return;
     if (isBlocked) { toast.error(`Desbloqueia @${contact.username} para enviar mensagens.`); return; }
@@ -3326,6 +3520,7 @@ function ChatPanel({ myId, contact, onBack }: {
       mediaUrl, duration, time: new Date().toLocaleTimeString("pt-PT",{hour:"2-digit",minute:"2-digit"}),
       status: "sent", replyTo: replyToId ?? replyTo?.id,
       deliveryStatus: "sending", viewOnce,
+      isSurprise, surpriseTeaser: isSurprise ? (surpriseTeaser || "Tenho uma surpresa para ti") : undefined,
     };
     setMsgs(prev => { const n = [...prev, localMsg]; saveCache(n); return n; });
     setInput(""); setReplyTo(null); setShowEmoji(false); setShowAttach(false);
@@ -3353,6 +3548,8 @@ function ChatPanel({ myId, contact, onBack }: {
         reply_to: replyToId ?? replyTo?.id ?? null,
         view_once: viewOnce,
         duration: duration ?? null,
+        is_surprise: isSurprise,
+        surprise_teaser: isSurprise ? (surpriseTeaser || "Tenho uma surpresa para ti") : null,
       }).select("id").single();
 
       if (error) {
@@ -3881,6 +4078,7 @@ function ChatPanel({ myId, contact, onBack }: {
               onDeleteForMe={() => deleteForMe(merged.id)}
               onDeleteForEveryone={() => deleteForEveryone(merged.id)}
               onOpenViewOnce={() => openViewOnce(merged.id)}
+              onOpenSurprise={() => openSurprise(merged.id)}
               onOpenLightbox={() => {
                 const idx = mediaMsgs.findIndex(x => x.id === merged.id);
                 if (idx !== -1) setLightboxIndex(idx);
@@ -3952,13 +4150,14 @@ function ChatPanel({ myId, contact, onBack }: {
 
       {/* ── ATTACH PANEL ── */}
       {showAttach && !recording && (
-        <div className="px-4 py-5 grid grid-cols-4 gap-4 shrink-0 border-t"
+        <div className="px-4 py-5 grid grid-cols-5 gap-3 shrink-0 border-t"
           style={{ background:"var(--s2)", borderColor:"var(--border-default)" }}>
           {[
             { icon: <ImageIcon className="h-6 w-6 text-white"/>, label:"Galeria", color:"#E94B8A", action:() => imgInputRef.current?.click() },
             { icon: <VideoIcon className="h-6 w-6 text-white"/>, label:"Vídeo",   color:"#1FAFA6", action:() => videoInputRef.current?.click() },
             { icon: <FileText  className="h-6 w-6 text-white"/>, label:"Ficheiro",color:"#5B3FCF", action:() => fileInputRef.current?.click() },
             { icon: <Eye       className="h-6 w-6 text-white"/>, label:"Ver 1x",  color:"#7C3AED", action:() => (document.getElementById("viewonce-input-dm") as HTMLInputElement)?.click() },
+            { icon: <span className="text-xl leading-none">🎁</span>, label:"Surpresa", color:"#F26B3A", action:() => { setShowAttach(false); setShowSurpriseComposer(true); } },
           ].map(a => (
             <button key={a.label} onClick={a.action}
               className="flex flex-col items-center gap-1.5 active:scale-90 transition">
@@ -3970,6 +4169,23 @@ function ChatPanel({ myId, contact, onBack }: {
             </button>
           ))}
         </div>
+      )}
+
+      {showSurpriseComposer && (
+        <SurpriseComposerModal
+          onClose={() => setShowSurpriseComposer(false)}
+          onSend={async ({ type, text, file, teaser }) => {
+            setShowSurpriseComposer(false);
+            if (type === "text") {
+              await send(text, "text", undefined, undefined, undefined, false, true, teaser);
+            } else if (file) {
+              setSending(true);
+              const url = await uploadFile(file, type === "image" ? "images" : "videos");
+              setSending(false);
+              if (url) await send(text, type, url, undefined, undefined, false, true, teaser);
+            }
+          }}
+        />
       )}
 
       {/* ── GRAVAÇÃO EM CURSO — estilo WhatsApp ── */}
@@ -4637,7 +4853,7 @@ function MensagensPage() {
         db.from("conversations").select("id,is_official,reply_allowed").in("id", convIds),
         // última mensagem de TODAS as conversas de uma só vez
         db.from("messages")
-          .select("id,conversation_id,content,created_at,sender_id,status,message_type,deleted_for_all")
+          .select("id,conversation_id,content,created_at,sender_id,status,message_type,deleted_for_all,is_surprise")
           .in("conversation_id", convIds)
           .order("created_at", { ascending: false }),
         // id da conta "Hooda Oficial" — nunca sobrepomos a identidade do próprio admin na sua caixa pessoal
@@ -4716,6 +4932,7 @@ function MensagensPage() {
           lastMsg: (() => {
             if (!lastMsg) return "";
             if (lastMsg.deleted_for_all) return "🚫 Mensagem eliminada";
+            if (lastMsg.is_surprise) return "🎁 Caixa Surpresa";
             const c = lastMsg.content || "";
             if (c.startsWith("e2ee:")) return "🔒 Mensagem";
             const mt = lastMsg.message_type;
