@@ -3,12 +3,14 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { uploadImageToCloudinary } from "@/lib/cloudinary";
 import { toast } from "sonner";
+import { FeedVideoPlayer } from "@/components/FeedVideoPlayer";
 import {
   Lock, Search, Send, LogOut, Loader,
   MessageSquare, ChevronLeft, ShieldAlert, Unlock as UnlockIcon,
   LayoutDashboard, Flag, Users as UsersIcon, Ban, ShieldCheck,
   UsersRound, FileText, Radio, TrendingUp, CheckCircle2, XCircle,
   Trash2, Image as ImageIcon, Video as VideoIcon, ExternalLink, Activity,
+  Megaphone, History, UserX,
 } from "lucide-react";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -41,8 +43,19 @@ type ReportRow = {
   reason: string;
   status: string;
   created_at: string;
-  reporter?: { username: string; full_name: string | null } | null;
-  reported?: { username: string; full_name: string | null } | null;
+  reporter?: { username: string; full_name: string | null; avatar_url: string | null } | null;
+  reported?: { username: string; full_name: string | null; avatar_url: string | null; is_banned?: boolean } | null;
+};
+
+type AuditRow = {
+  id: string;
+  admin_id: string;
+  action: string;
+  target_type: string | null;
+  target_label: string | null;
+  details: string | null;
+  created_at: string;
+  admin_username?: string | null;
 };
 
 type PostRow = {
@@ -195,19 +208,27 @@ function AdminPostMedia({ p }: { p: PostRow }) {
   const photos = p.photos && p.photos.length > 0 ? p.photos : (p.photo_url ? [p.photo_url] : []);
 
   if (videoSrc) {
+    // Mesmo player do feed (HoodaPlayer via FeedVideoPlayer): respeita a
+    // proporção real do vídeo — encolhe em largura quando é vertical, em
+    // vez de esticar a caixa toda como fazia o <video> nativo antes.
     return (
-      <video
-        src={videoSrc}
-        poster={p.clip_thumb_url || undefined}
-        controls
-        playsInline
-        className="w-full max-h-72 rounded-xl bg-black mt-2 object-contain"
-      />
+      <div className="mt-2 max-w-sm">
+        <FeedVideoPlayer
+          src={videoSrc}
+          poster={p.clip_thumb_url || undefined}
+          postId={p.id}
+          kind={p.kind ?? "video"}
+          autoPlay={false}
+          forceLoad
+          maxHeightRatio={0.5}
+          rounded="rounded-xl"
+        />
+      </div>
     );
   }
   if (photos.length > 0) {
     return (
-      <div className={`grid gap-1 mt-2 ${photos.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}>
+      <div className={`grid gap-1 mt-2 max-w-sm ${photos.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}>
         {photos.slice(0, 4).map((url, i) => (
           <img key={i} src={url} alt="" className="w-full max-h-56 object-cover rounded-xl" />
         ))}
@@ -321,7 +342,7 @@ function AdminPage() {
 
 function AdminDashboard({ adminId }: { adminId: string }) {
   const navigate = useNavigate();
-  const [section, setSection] = useState<"dashboard" | "reports" | "users" | "messages" | "posts" | "channels" | "presence">("dashboard");
+  const [section, setSection] = useState<"dashboard" | "reports" | "users" | "messages" | "posts" | "channels" | "presence" | "broadcast" | "audit">("dashboard");
   const [search, setSearch] = useState("");
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
@@ -357,6 +378,15 @@ function AdminDashboard({ adminId }: { adminId: string }) {
   const [presenceLoading, setPresenceLoading] = useState(true);
   const [presenceSearch, setPresenceSearch] = useState("");
   const [nowTick, setNowTick] = useState(Date.now()); // força recálculo de "há Xm" e do estado online
+
+  // ── Comunicados (broadcast oficial para todos os utilizadores) ──
+  const [broadcastText, setBroadcastText] = useState("");
+  const [broadcastSending, setBroadcastSending] = useState(false);
+  const [broadcastProgress, setBroadcastProgress] = useState<{ sent: number; total: number } | null>(null);
+
+  // ── Auditoria (registo de ações do admin) ──
+  const [auditList, setAuditList] = useState<AuditRow[]>([]);
+  const [auditLoading, setAuditLoading] = useState(true);
 
   // ── Dashboard: números reais ──
   useEffect(() => {
@@ -403,10 +433,10 @@ function AdminDashboard({ adminId }: { adminId: string }) {
       .limit(200);
     if (error) { console.error("[admin] erro a carregar denúncias:", error); toast.error("Erro ao carregar denúncias: " + error.message); setReports([]); setReportsLoading(false); return; }
     const ids = Array.from(new Set((data ?? []).flatMap((r: any) => [r.reporter_id, r.reported_user_id])));
-    const profileMap: Record<string, { username: string; full_name: string | null }> = {};
+    const profileMap: Record<string, { username: string; full_name: string | null; avatar_url: string | null; is_banned?: boolean }> = {};
     if (ids.length > 0) {
-      const { data: profs } = await db.from("profiles").select("id,username,full_name").in("id", ids);
-      (profs ?? []).forEach((p: any) => { profileMap[p.id] = { username: p.username, full_name: p.full_name }; });
+      const { data: profs } = await db.from("profiles").select("id,username,full_name,avatar_url,is_banned").in("id", ids);
+      (profs ?? []).forEach((p: any) => { profileMap[p.id] = { username: p.username, full_name: p.full_name, avatar_url: p.avatar_url, is_banned: p.is_banned }; });
     }
     setReports((data ?? []).map((r: any) => ({
       ...r, reporter: profileMap[r.reporter_id] ?? null, reported: profileMap[r.reported_user_id] ?? null,
@@ -423,8 +453,10 @@ function AdminDashboard({ adminId }: { adminId: string }) {
     const { error } = await db.from("user_reports")
       .update({ status, reviewed_at: new Date().toISOString() }).eq("id", id);
     if (error) { toast.error("Não foi possível atualizar a denúncia."); return; }
+    const target = reports.find((r) => r.id === id);
     setReports((prev) => prev.filter((r) => r.id !== id));
     toast.success(status === "reviewed" ? "Denúncia marcada como resolvida." : "Denúncia ignorada.");
+    logAudit(status === "reviewed" ? "report_resolved" : "report_dismissed", "report", `@${target?.reported?.username ?? "?"}`, target?.reason);
   }
 
   /**
@@ -466,6 +498,34 @@ function AdminDashboard({ adminId }: { adminId: string }) {
     }
   }, [adminId]);
 
+  /** Regista uma ação no registo de auditoria (tabela admin_audit_log).
+   * Falha em silêncio (só um log na consola) se a migration ainda não tiver
+   * sido aplicada — nunca deve travar a ação principal do admin. */
+  const logAudit = useCallback(async (action: string, targetType: string, targetLabel: string, details?: string) => {
+    try {
+      const { error } = await db.from("admin_audit_log").insert({
+        admin_id: adminId, action, target_type: targetType, target_label: targetLabel, details: details ?? null,
+      });
+      if (error) console.error("[admin] erro ao registar auditoria:", error);
+    } catch (err) {
+      console.error("[admin] erro ao registar auditoria:", err);
+    }
+  }, [adminId]);
+
+  /** Bane rapidamente o utilizador denunciado, direto do cartão de denúncia
+   * (sem precisar de ir até à aba Utilizadores procurá-lo). */
+  async function banFromReport(r: ReportRow) {
+    if (!r.reported) return;
+    const next = !r.reported.is_banned;
+    const reason = next ? window.prompt("Motivo do banimento (opcional):") ?? "" : "";
+    const { error } = await db.from("profiles").update({ is_banned: next, ban_reason: next ? reason : null }).eq("id", r.reported_user_id);
+    if (error) { toast.error("Não foi possível atualizar o utilizador."); return; }
+    setReports((prev) => prev.map((x) => x.id === r.id ? { ...x, reported: { ...x.reported!, is_banned: next } } : x));
+    setUsers((prev) => prev.map((x) => (x.id === r.reported_user_id ? { ...x, is_banned: next, ban_reason: next ? reason : null } : x)));
+    toast.success(next ? `@${r.reported.username} foi banido.` : `@${r.reported.username} foi desbanido.`);
+    logAudit(next ? "ban" : "unban", "user", `@${r.reported.username}`, next ? (reason || "via denúncia") : "via denúncia");
+  }
+
   // ── Publicações: lista real + eliminar com aviso ao autor ──
   const loadPosts = useCallback(async () => {
     setPostsLoading(true);
@@ -494,6 +554,7 @@ function AdminDashboard({ adminId }: { adminId: string }) {
     if (p.author_id) {
       notifyUserOfficial(p.author_id, reason.trim() || "A tua publicação foi removida por violar os nossos termos de utilização.");
     }
+    logAudit("delete_post", "post", `@${p.author_username ?? "?"}`, reason.trim() || undefined);
   }
 
   // ── Canais: lista real + eliminar com aviso ao dono ──
@@ -530,6 +591,7 @@ function AdminDashboard({ adminId }: { adminId: string }) {
     if (c.owner_id) {
       notifyUserOfficial(c.owner_id, reason.trim() || "O teu canal foi removido por violar os nossos termos de utilização.");
     }
+    logAudit("delete_channel", "channel", `@${c.handle}`, reason.trim() || undefined);
   }
 
   // ── Presença: lista real de last_seen/total_time_seconds, com atualização
@@ -569,6 +631,59 @@ function AdminDashboard({ adminId }: { adminId: string }) {
   });
   const onlineCount = presenceList.filter((u) => isOnlineNow(u.last_seen)).length;
 
+  // ── Auditoria: carregar registo de ações do admin ──
+  const loadAudit = useCallback(async () => {
+    setAuditLoading(true);
+    const { data, error } = await db
+      .from("admin_audit_log")
+      .select("id,admin_id,action,target_type,target_label,details,created_at")
+      .order("created_at", { ascending: false })
+      .limit(300);
+    if (error) {
+      console.error("[admin] erro a carregar auditoria:", error);
+      toast.error("Auditoria indisponível: falta correr a migration do registo de ações.");
+      setAuditList([]);
+      setAuditLoading(false);
+      return;
+    }
+    const adminIds = Array.from(new Set((data ?? []).map((r: any) => r.admin_id)));
+    const adminMap: Record<string, string> = {};
+    if (adminIds.length > 0) {
+      const { data: profs } = await db.from("profiles").select("id,username").in("id", adminIds);
+      (profs ?? []).forEach((p: any) => { adminMap[p.id] = p.username; });
+    }
+    setAuditList((data ?? []).map((r: any) => ({ ...r, admin_username: adminMap[r.admin_id] ?? null })));
+    setAuditLoading(false);
+  }, []);
+
+  useEffect(() => { if (section === "audit") loadAudit(); }, [section, loadAudit]);
+
+  // ── Comunicados: envia uma mensagem oficial a TODOS os utilizadores ──
+  async function sendBroadcast() {
+    const text = broadcastText.trim();
+    if (!text || broadcastSending) return;
+    const confirmed = window.confirm(
+      `Isto envia esta mensagem, como Hooda Oficial, para TODOS os ${users.length} utilizadores. Confirmas?`
+    );
+    if (!confirmed) return;
+    setBroadcastSending(true);
+    setBroadcastProgress({ sent: 0, total: users.length });
+    let okCount = 0;
+    for (let i = 0; i < users.length; i++) {
+      try {
+        await notifyUserOfficial(users[i].id, text);
+        okCount++;
+      } catch (err) {
+        console.error("[admin] erro no broadcast para", users[i].username, err);
+      }
+      setBroadcastProgress({ sent: i + 1, total: users.length });
+    }
+    setBroadcastSending(false);
+    setBroadcastText("");
+    toast.success(`Comunicado enviado a ${okCount} de ${users.length} utilizadores.`);
+    logAudit("broadcast", "all_users", `${okCount} utilizadores`, text);
+  }
+
   async function toggleBan(u: UserRow) {
     const next = !u.is_banned;
     const reason = next ? window.prompt("Motivo do banimento (opcional):") ?? "" : "";
@@ -576,6 +691,7 @@ function AdminDashboard({ adminId }: { adminId: string }) {
     if (error) { toast.error("Não foi possível atualizar o utilizador."); return; }
     setUsers((prev) => prev.map((x) => (x.id === u.id ? { ...x, is_banned: next, ban_reason: next ? reason : null } : x)));
     toast.success(next ? `@${u.username} foi banido.` : `@${u.username} foi desbanido.`);
+    logAudit(next ? "ban" : "unban", "user", `@${u.username}`, next ? reason : undefined);
   }
 
   async function toggleVerified(u: UserRow) {
@@ -584,6 +700,7 @@ function AdminDashboard({ adminId }: { adminId: string }) {
     if (error) { toast.error("Não foi possível atualizar o selo de verificado."); return; }
     setUsers((prev) => prev.map((x) => (x.id === u.id ? { ...x, is_verified: next } : x)));
     toast.success(next ? `@${u.username} agora está verificado.` : `Selo removido de @${u.username}.`);
+    logAudit(next ? "verify" : "unverify", "user", `@${u.username}`);
   }
 
   /** Elimina a conta por completo (auth.users + tudo em cascata: perfil,
@@ -599,6 +716,7 @@ function AdminDashboard({ adminId }: { adminId: string }) {
     setUsers((prev) => prev.filter((x) => x.id !== u.id));
     if (selected?.id === u.id) { setSelected(null); setConvId(""); setMsgs([]); }
     toast.success(`Conta @${u.username} eliminada permanentemente.`);
+    logAudit("delete_account", "user", `@${u.username}`);
   }
 
   // ── Lista de utilizadores ──
@@ -811,6 +929,8 @@ function AdminDashboard({ adminId }: { adminId: string }) {
           { key: "presence" as const, Icon: Activity, label: "Em Linha", badge: onlineCount || undefined },
           { key: "users" as const, Icon: UsersIcon, label: "Utilizadores" },
           { key: "messages" as const, Icon: MessageSquare, label: "Mensagens" },
+          { key: "broadcast" as const, Icon: Megaphone, label: "Comunicados" },
+          { key: "audit" as const, Icon: History, label: "Auditoria" },
         ]).map(({ key, Icon, label, badge }) => (
           <button key={key} onClick={() => setSection(key)} title={label}
             className="relative w-12 h-12 rounded-2xl flex items-center justify-center transition active:scale-90"
@@ -901,29 +1021,64 @@ function AdminDashboard({ adminId }: { adminId: string }) {
           ) : (
             <div className="space-y-3">
               {reports.map((r) => (
-                <div key={r.id} className="rounded-2xl p-4 flex items-start gap-4"
+                <div key={r.id} className="rounded-2xl p-4 flex flex-col gap-3"
                   style={{ background: "#ffffff", border: "1px solid #ececf1" }}>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-neutral-900">
-                      <span className="font-bold">@{r.reported?.username ?? "?"}</span>
-                      <span className="text-neutral-400"> denunciado por </span>
-                      <span className="font-semibold">@{r.reporter?.username ?? "?"}</span>
-                    </p>
-                    <p className="text-neutral-500 text-sm mt-1">{r.reason}</p>
-                    <p className="text-neutral-300 text-[11px] mt-2">{new Date(r.created_at).toLocaleString("pt-PT")}</p>
-                  </div>
-                  {reportFilter === "pending" && (
-                    <div className="flex items-center gap-2 shrink-0">
-                      <button onClick={() => resolveReport(r.id, "reviewed")} title="Marcar como resolvida"
-                        className="p-2 rounded-full transition active:scale-90" style={{ background: "rgba(107,165,71,0.15)" }}>
-                        <CheckCircle2 className="h-4.5 w-4.5" style={{ color: "#6BA547" }} />
-                      </button>
-                      <button onClick={() => resolveReport(r.id, "dismissed")} title="Ignorar denúncia"
-                        className="p-2 rounded-full transition active:scale-90" style={{ background: "rgba(0,0,0,0.05)" }}>
-                        <XCircle className="h-4.5 w-4.5 text-neutral-400" />
+                  <div className="flex items-start gap-4">
+                    <div className="flex-1 min-w-0 space-y-2.5">
+                      {/* Denunciado — nome, avatar e link para o perfil */}
+                      <a href={r.reported?.username ? `/u/${r.reported.username}` : undefined} target="_blank" rel="noreferrer"
+                        className="flex items-center gap-2.5 group">
+                        <div className="w-9 h-9 rounded-full overflow-hidden flex items-center justify-center text-white font-bold shrink-0"
+                          style={{ background: "#E94B8A" }}>
+                          {r.reported?.avatar_url
+                            ? <img src={r.reported.avatar_url} alt="" className="w-full h-full object-cover" />
+                            : (r.reported?.username?.[0] ?? "?").toUpperCase()}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm text-neutral-900 flex items-center gap-1.5 flex-wrap">
+                            <span className="font-bold group-hover:underline">@{r.reported?.username ?? "?"}</span>
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: "rgba(233,75,138,0.15)", color: "#E94B8A" }}>Denunciado</span>
+                            {r.reported?.is_banned && (
+                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: "rgba(239,68,68,0.2)", color: "#F87171" }}>BANIDO</span>
+                            )}
+                          </p>
+                        </div>
+                        <ExternalLink className="h-3.5 w-3.5 text-neutral-300 shrink-0" />
+                      </a>
+                      <p className="text-neutral-500 text-sm bg-neutral-50 rounded-xl px-3 py-2">{r.reason}</p>
+                      {/* Denunciante */}
+                      <div className="flex items-center gap-2 pl-1">
+                        <div className="w-6 h-6 rounded-full overflow-hidden flex items-center justify-center text-white text-[11px] font-bold shrink-0"
+                          style={{ background: "#5B3FCF" }}>
+                          {r.reporter?.avatar_url
+                            ? <img src={r.reporter.avatar_url} alt="" className="w-full h-full object-cover" />
+                            : (r.reporter?.username?.[0] ?? "?").toUpperCase()}
+                        </div>
+                        <p className="text-[12px] text-neutral-400">
+                          denunciado por <span className="font-semibold text-neutral-500">@{r.reporter?.username ?? "?"}</span>
+                        </p>
+                      </div>
+                      <p className="text-neutral-300 text-[11px]">{new Date(r.created_at).toLocaleString("pt-PT")}</p>
+                    </div>
+                    <div className="flex flex-col items-center gap-2 shrink-0">
+                      {reportFilter === "pending" && (
+                        <>
+                          <button onClick={() => resolveReport(r.id, "reviewed")} title="Marcar como resolvida"
+                            className="p-2 rounded-full transition active:scale-90" style={{ background: "rgba(107,165,71,0.15)" }}>
+                            <CheckCircle2 className="h-4.5 w-4.5" style={{ color: "#6BA547" }} />
+                          </button>
+                          <button onClick={() => resolveReport(r.id, "dismissed")} title="Ignorar denúncia"
+                            className="p-2 rounded-full transition active:scale-90" style={{ background: "rgba(0,0,0,0.05)" }}>
+                            <XCircle className="h-4.5 w-4.5 text-neutral-400" />
+                          </button>
+                        </>
+                      )}
+                      <button onClick={() => banFromReport(r)} title={r.reported?.is_banned ? "Desbanir denunciado" : "Banir denunciado"}
+                        className="p-2 rounded-full transition active:scale-90" style={{ background: r.reported?.is_banned ? "rgba(239,68,68,0.22)" : "rgba(239,68,68,0.10)" }}>
+                        <UserX className="h-4.5 w-4.5" style={{ color: "#F87171" }} />
                       </button>
                     </div>
-                  )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -1012,7 +1167,7 @@ function AdminDashboard({ adminId }: { adminId: string }) {
           {postsLoading ? (
             <div className="flex items-center justify-center py-16"><Loader className="h-5 w-5 animate-spin text-neutral-400" /></div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-2 max-w-2xl">
               {postsList
                 .filter((p) => {
                   const q = postsSearch.trim().toLowerCase();
@@ -1192,6 +1347,96 @@ function AdminDashboard({ adminId }: { adminId: string }) {
                       </p>
                       <p className="text-[11px] text-neutral-400">{fmtDuration(u.total_time_seconds)} no total</p>
                     </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Comunicados (broadcast oficial) ── */}
+      {section === "broadcast" && (
+        <div className="flex-1 overflow-y-auto p-6 md:p-10">
+          <h1 className="text-2xl font-extrabold text-neutral-900 mb-1">Comunicados</h1>
+          <p className="text-neutral-400 text-sm mb-6">
+            Envia uma mensagem como <strong>Hooda Oficial</strong> para todos os {users.length} utilizadores da plataforma de uma só vez.
+          </p>
+          <div className="max-w-xl rounded-2xl p-5" style={{ background: "#ffffff", border: "1px solid #ececf1" }}>
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-8 h-8 rounded-xl overflow-hidden flex items-center justify-center shrink-0" style={{ background: "#5B3FCF" }}>
+                <img src={LOGO} alt="" className="w-full h-full object-contain p-1" />
+              </div>
+              <p className="flex items-center gap-1.5 font-extrabold text-sm">
+                <HoodaWordmark size={15} /><span className="text-neutral-500">Oficial</span> <VerifiedBadge size={13} />
+              </p>
+            </div>
+            <textarea
+              value={broadcastText}
+              onChange={(e) => setBroadcastText(e.target.value)}
+              disabled={broadcastSending}
+              rows={5}
+              placeholder="Escreve o comunicado que vai chegar a todos os utilizadores..."
+              className="w-full rounded-2xl px-4 py-3 text-sm outline-none resize-none text-neutral-900 placeholder:text-neutral-400 disabled:opacity-60"
+              style={{ background: "#f5f5f7" }}
+            />
+            <div className="flex items-center justify-between mt-4 gap-3">
+              <p className="text-[11px] text-neutral-400">
+                {broadcastSending && broadcastProgress
+                  ? `A enviar... ${broadcastProgress.sent}/${broadcastProgress.total}`
+                  : "Cada utilizador recebe isto na conversa oficial, como quando um post é removido."}
+              </p>
+              <button onClick={sendBroadcast} disabled={broadcastSending || !broadcastText.trim()}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-2xl font-bold text-sm text-white transition active:scale-95 disabled:opacity-40 shrink-0"
+                style={{ background: "linear-gradient(135deg,#5B3FCF,#7B5CE8)", boxShadow: "0 4px 14px rgba(91,63,207,0.4)" }}>
+                {broadcastSending ? <Loader className="h-4 w-4 animate-spin" /> : <Megaphone className="h-4 w-4" />}
+                Enviar a todos
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Auditoria (registo de ações do admin) ── */}
+      {section === "audit" && (
+        <div className="flex-1 overflow-y-auto p-6 md:p-10">
+          <h1 className="text-2xl font-extrabold text-neutral-900 mb-1">Auditoria</h1>
+          <p className="text-neutral-400 text-sm mb-6">Histórico de todas as ações de moderação feitas no painel.</p>
+          {auditLoading ? (
+            <div className="flex items-center justify-center py-16"><Loader className="h-5 w-5 animate-spin text-neutral-400" /></div>
+          ) : auditList.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 gap-2">
+              <History className="h-8 w-8 text-neutral-300" />
+              <p className="text-neutral-400 text-sm">Ainda sem ações registadas.</p>
+            </div>
+          ) : (
+            <div className="max-w-2xl rounded-2xl overflow-hidden" style={{ background: "#ffffff", border: "1px solid #ececf1" }}>
+              {auditList.map((a, i) => {
+                const actionLabels: Record<string, { label: string; color: string }> = {
+                  ban: { label: "Baniu", color: "#F87171" },
+                  unban: { label: "Desbaniu", color: "#6BA547" },
+                  verify: { label: "Verificou", color: "#3B9EFF" },
+                  unverify: { label: "Removeu selo de", color: "#9a9aa5" },
+                  delete_account: { label: "Eliminou a conta de", color: "#F87171" },
+                  delete_post: { label: "Eliminou publicação de", color: "#F26B3A" },
+                  delete_channel: { label: "Eliminou canal de", color: "#F26B3A" },
+                  report_resolved: { label: "Resolveu denúncia sobre", color: "#6BA547" },
+                  report_dismissed: { label: "Ignorou denúncia sobre", color: "#9a9aa5" },
+                  broadcast: { label: "Enviou comunicado a", color: "#5B3FCF" },
+                };
+                const info = actionLabels[a.action] ?? { label: a.action, color: "#5B3FCF" };
+                return (
+                  <div key={a.id} className="flex items-start gap-3 px-4 py-3" style={{ borderTop: i === 0 ? "none" : "1px solid #f0f0f3" }}>
+                    <div className="w-2 h-2 rounded-full mt-1.5 shrink-0" style={{ background: info.color }} />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm text-neutral-900">
+                        <span className="font-semibold">@{a.admin_username ?? "admin"}</span>
+                        <span style={{ color: info.color }}> {info.label} </span>
+                        <span className="font-semibold">{a.target_label ?? ""}</span>
+                      </p>
+                      {a.details && <p className="text-neutral-400 text-[12px] mt-0.5 line-clamp-2">{a.details}</p>}
+                    </div>
+                    <p className="text-[11px] text-neutral-300 shrink-0">{new Date(a.created_at).toLocaleString("pt-PT")}</p>
                   </div>
                 );
               })}
