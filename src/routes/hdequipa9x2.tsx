@@ -228,10 +228,13 @@ function AdminPostMedia({ p }: { p: PostRow }) {
   }
   if (photos.length > 0) {
     return (
-      <div className={`grid gap-1 mt-2 max-w-sm ${photos.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}>
+      <div className="mt-2 max-w-sm space-y-1">
         {photos.slice(0, 4).map((url, i) => (
-          <img key={i} src={url} alt="" className="w-full max-h-56 object-cover rounded-xl" />
+          <img key={i} src={url} alt="" className="w-full max-h-80 object-contain rounded-xl bg-neutral-100" />
         ))}
+        {photos.length > 4 && (
+          <p className="text-[11px] text-neutral-400">+{photos.length - 4} foto(s) não mostrada(s)</p>
+        )}
       </div>
     );
   }
@@ -915,11 +918,16 @@ function AdminDashboard({ adminId }: { adminId: string }) {
 
   return (
     <div className="h-screen flex" style={{ background: "#f7f7f9" }}>
-      {/* ── Barra de navegação por ícones ── */}
-      <div className="w-16 md:w-20 flex flex-col items-center py-4 gap-2 shrink-0 border-r"
+      {/* ── Barra de navegação lateral (estilo da sidebar do site: ícone + texto) ── */}
+      <div className="w-[76px] md:w-[240px] flex flex-col py-4 px-2 md:px-3 gap-1 shrink-0 border-r"
         style={{ borderColor: "#ececf1", background: "#ffffff" }}>
-        <div className="w-9 h-9 rounded-xl overflow-hidden flex items-center justify-center mb-3 shrink-0" style={{ background: "white", border: "1px solid #ececf1" }}>
-          <img src={LOGO} alt="" className="w-full h-full object-contain p-1" />
+        <div className="flex items-center gap-2.5 px-1.5 mb-4">
+          <div className="w-9 h-9 rounded-xl overflow-hidden flex items-center justify-center shrink-0" style={{ background: "white", border: "1px solid #ececf1" }}>
+            <img src={LOGO} alt="" className="w-full h-full object-contain p-1" />
+          </div>
+          <p className="hidden md:flex items-center gap-1.5 font-extrabold">
+            <HoodaWordmark size={17} /><span className="text-neutral-500 text-sm">Oficial</span>
+          </p>
         </div>
         {([
           { key: "dashboard" as const, Icon: LayoutDashboard, label: "Dashboard" },
@@ -933,20 +941,25 @@ function AdminDashboard({ adminId }: { adminId: string }) {
           { key: "audit" as const, Icon: History, label: "Auditoria" },
         ]).map(({ key, Icon, label, badge }) => (
           <button key={key} onClick={() => setSection(key)} title={label}
-            className="relative w-12 h-12 rounded-2xl flex items-center justify-center transition active:scale-90"
-            style={{ background: section === key ? "linear-gradient(135deg,#5B3FCF,#7B5CE8)" : "#f5f5f7" }}>
-            <Icon className="h-5 w-5" style={{ color: section === key ? "white" : "#6b6b76" }} />
+            className="relative flex items-center gap-3 px-2.5 md:px-3 py-2.5 rounded-2xl transition active:scale-[0.98] w-full"
+            style={{ background: section === key ? "linear-gradient(135deg,#5B3FCF,#7B5CE8)" : "transparent" }}>
+            <Icon className="h-5 w-5 shrink-0" style={{ color: section === key ? "white" : "#6b6b76" }} strokeWidth={section === key ? 2.3 : 1.9} />
+            <span className="hidden md:inline text-[14px] truncate flex-1 text-left"
+              style={{ color: section === key ? "white" : "#3a3a42", fontWeight: section === key ? 800 : 500 }}>
+              {label}
+            </span>
             {!!badge && (
-              <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
-                style={{ background: "#E94B8A" }}>{badge > 99 ? "99+" : badge}</span>
+              <span className="absolute top-1.5 right-1.5 md:static min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0"
+                style={{ background: section === key ? "rgba(255,255,255,0.25)" : "#E94B8A" }}>{badge > 99 ? "99+" : badge}</span>
             )}
           </button>
         ))}
         <div className="flex-1" />
         <button onClick={() => { sessionStorage.removeItem(UNLOCK_KEY); navigate({ to: "/home" }); }}
-          title="Sair do painel" className="w-12 h-12 rounded-2xl flex items-center justify-center transition active:scale-90"
-          style={{ background: "rgba(239,68,68,0.12)" }}>
-          <LogOut className="h-5 w-5" style={{ color: "#F87171" }} />
+          title="Sair do painel" className="flex items-center gap-3 px-2.5 md:px-3 py-2.5 rounded-2xl transition active:scale-[0.98] w-full"
+          style={{ background: "rgba(239,68,68,0.08)" }}>
+          <LogOut className="h-5 w-5 shrink-0" style={{ color: "#F87171" }} />
+          <span className="hidden md:inline text-[14px] font-semibold" style={{ color: "#F87171" }}>Sair do painel</span>
         </button>
       </div>
 
@@ -1569,6 +1582,7 @@ function AdminDashboard({ adminId }: { adminId: string }) {
               {msgs.map(m => {
                 const isAdmin = m.sender_id === adminId;
                 const isImage = m.message_type === "image" && m.media_url;
+                const isVideo = m.message_type === "video" && m.media_url;
                 return (
                   <div key={m.id} className={`flex ${isAdmin ? "justify-end" : "justify-start"}`}>
                     <div className="max-w-[75%]">
@@ -1582,7 +1596,15 @@ function AdminDashboard({ adminId }: { adminId: string }) {
                           src={m.media_url ?? ""}
                           alt=""
                           onClick={() => window.open(m.media_url ?? "", "_blank")}
-                          className="rounded-2xl max-w-full max-h-72 object-cover cursor-zoom-in"
+                          className="rounded-2xl max-w-full max-h-[420px] object-contain bg-black/5 cursor-zoom-in"
+                          style={{ borderBottomRightRadius: isAdmin ? 4 : undefined, borderBottomLeftRadius: !isAdmin ? 4 : undefined }}
+                        />
+                      ) : isVideo ? (
+                        <video
+                          src={m.media_url ?? ""}
+                          controls
+                          playsInline
+                          className="rounded-2xl max-w-full max-h-[420px] object-contain bg-black"
                           style={{ borderBottomRightRadius: isAdmin ? 4 : undefined, borderBottomLeftRadius: !isAdmin ? 4 : undefined }}
                         />
                       ) : (
