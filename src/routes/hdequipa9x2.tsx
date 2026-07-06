@@ -397,17 +397,11 @@ function AdminDashboard({ adminId }: { adminId: string }) {
         }
       }
       if (!foundId) {
-        const { data: newConvId, error: rpcErr } = await db.rpc("create_conversation_with_participants", {
-          p_my_id: adminId,
+        const { data: newConvId, error: rpcErr } = await db.rpc("create_official_conversation", {
           p_other_id: userId,
         });
         if (rpcErr) throw rpcErr;
         foundId = newConvId as string;
-        const { error: updErr } = await db
-          .from("conversations")
-          .update({ is_official: true, reply_allowed: true })
-          .eq("id", foundId);
-        if (updErr) throw updErr;
       }
       const { error: msgErr } = await db.from("messages").insert({
         conversation_id: foundId, sender_id: adminId, receiver_id: userId,
@@ -598,17 +592,11 @@ function AdminDashboard({ adminId }: { adminId: string }) {
       }
 
       if (!foundId) {
-        const { data: newConvId, error: rpcErr } = await db.rpc("create_conversation_with_participants", {
-          p_my_id: adminId,
+        const { data: newConvId, error: rpcErr } = await db.rpc("create_official_conversation", {
           p_other_id: u.id,
         });
         if (rpcErr) throw rpcErr;
         foundId = newConvId as string;
-        const { error: updErr } = await db
-          .from("conversations")
-          .update({ is_official: true, reply_allowed: true })
-          .eq("id", foundId);
-        if (updErr) throw updErr;
         setReplyAllowed(true);
       }
 
