@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Allow: /signup
+
+Disallow: /reset-password
+
+Sitemap: https://hoode.lovable.app/sitemap.xml

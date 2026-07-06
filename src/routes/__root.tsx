@@ -95,18 +95,24 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=5" },
-      { title: "Hooda" },
-      { name: "description", content: "Hooda Login Portal provides a modern, minimalist interface for accessing the Hooda social platform." },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Hooda" },
-      { property: "og:description", content: "Hooda Login Portal provides a modern, minimalist interface for accessing the Hooda social platform." },
+      { title: "Hooda — Partilha Vídeos, Fotos e Conversa com Amigos" },
+      { name: "description", content: "Hooda é a rede social para partilhares vídeos, fotos e Gotas, conversares com amigos e descobrires conteúdo novo todos os dias. Cria a tua conta grátis." },
+      { name: "keywords", content: "Hooda, rede social, partilhar vídeos, Gotas, Hooda TV, Hooda Studio" },
+      { name: "author", content: "Hooda" },
+      { property: "og:title", content: "Hooda — Partilha Vídeos, Fotos e Conversa com Amigos" },
+      { property: "og:description", content: "Hooda é a rede social para partilhares vídeos, fotos e Gotas, conversares com amigos e descobrires conteúdo novo todos os dias." },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
-      { name: "twitter:site", content: "@Lovable" },
-      { name: "twitter:title", content: "Hooda" },
-      { name: "twitter:description", content: "Hooda Login Portal provides a modern, minimalist interface for accessing the Hooda social platform." },
-      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/0f280a33-cfec-44e1-9c4c-4607a8a066e3" },
-      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/0f280a33-cfec-44e1-9c4c-4607a8a066e3" },
+      { property: "og:locale", content: "pt_PT" },
+      { property: "og:site_name", content: "Hooda" },
+      { property: "og:url", content: "https://hoode.lovable.app/" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Hooda — Partilha Vídeos, Fotos e Conversa com Amigos" },
+      { name: "twitter:description", content: "Hooda é a rede social para partilhares vídeos, fotos e Gotas, conversares com amigos e descobrires conteúdo novo todos os dias." },
+      { property: "og:image", content: "https://hoode.lovable.app/icons/icon-512.png" },
+      { property: "og:image:width", content: "512" },
+      { property: "og:image:height", content: "512" },
+      { name: "twitter:image", content: "https://hoode.lovable.app/icons/icon-512.png" },
+      { name: "robots", content: "index, follow" },
       // PWA
       { name: "theme-color", content: "#5B3FCF" },
       { name: "mobile-web-app-capable", content: "yes" },
@@ -135,7 +141,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="pt">
       <head>
         <HeadContent />
       </head>
