@@ -94,20 +94,6 @@ export function getVideoStreamUrl(publicId: string): string {
   return `https://res.cloudinary.com/${CLOUD_NAME}/video/upload/sp_hd/${publicId}.m3u8`;
 }
 
-/**
- * Normaliza uma URL de vídeo do Cloudinary para forçar SDR/H.264, mesmo
- * em vídeos já publicados antes deste fix (que guardaram o secure_url em
- * bruto na base de dados). Se já tiver transformação (contém "/upload/"
- * seguido de parâmetros) ou não for do Cloudinary, devolve tal como está.
- */
-export function normalizeCloudinaryVideoUrl(url: string): string {
-  if (!url) return url;
-  const marker = "res.cloudinary.com";
-  if (!url.includes(marker) || !url.includes("/video/upload/")) return url;
-  if (url.includes("vc_h264")) return url; // já normalizado
-  return url.replace("/video/upload/", "/video/upload/q_auto,f_auto,vc_h264/");
-}
-
 /** URL de reprodução directa (mp4 optimizado).
  *  vc_h264 força um recodifica para H.264/SDR — sem isto, vídeos HDR
  *  (comuns em iPhones — Dolby Vision/HDR10) tocavam com o URL original

@@ -19,7 +19,6 @@
 import { useRef } from "react";
 import { HoodaPlayer } from "@/components/HoodaPlayer";
 import { usePostVideoView } from "@/hooks/usePostVideoView";
-import { normalizeCloudinaryVideoUrl } from "@/lib/cloudinary";
 
 interface Props {
   src: string;
@@ -43,7 +42,7 @@ export function FeedVideoPlayer({ src, poster, postId, kind, rounded, autoPlay =
   return (
     <HoodaPlayer
       ref={videoRef}
-      src={normalizeCloudinaryVideoUrl(src)}
+      src={src}
       poster={poster}
       aspectRatio="auto"
       rounded={rounded ?? "rounded-none"}
