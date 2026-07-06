@@ -211,6 +211,7 @@ export function SideNav() {
 /* ─── Mobile Bottom Nav ─── */
 export function BottomNav() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const navigate = useNavigate();
   const { avatarUrl, name } = useAvatar();
   const { unreadMessages } = useBadges();
   const initial = (name?.[0] ?? "?").toUpperCase();
@@ -238,7 +239,8 @@ export function BottomNav() {
         <ul className="grid grid-cols-6 h-[58px]">
           {MOBILE_ITEMS.map(({ to, label, Icon, search }) => {
             const isMenu = to === null;
-            const active = !isMenu && (
+            const isNotif = label === "Notificações";
+            const active = !isMenu && !isNotif && (
               (to as string) === "/hoodatv" || (to as string) === "/studio"
                 ? pathname.startsWith(to as string)
                 : pathname === to
@@ -258,6 +260,40 @@ export function BottomNav() {
                         transition: "background 0.2s",
                       }}>
                       <Icon className="h-[20px] w-[20px]" strokeWidth={1.8} />
+                    </div>
+                    <span className="text-[9.5px] tracking-tight font-400">{label}</span>
+                  </button>
+                ) : isNotif ? (
+                  <button
+                    onClick={() => {
+                      if (pathname === "/home") {
+                        window.dispatchEvent(new CustomEvent("hooda:open-notifications"));
+                      } else {
+                        navigate({ to: "/home" });
+                        setTimeout(() => window.dispatchEvent(new CustomEvent("hooda:open-notifications")), 60);
+                      }
+                    }}
+                    className="flex flex-col items-center justify-center gap-1 h-full w-full transition-all duration-150 active:scale-90"
+                    style={{ color: "var(--text-muted)" }}>
+                    <div className="relative flex items-center justify-center"
+                      style={{
+                        width: 38, height: 28, borderRadius: 12,
+                        background: "transparent",
+                        transition: "background 0.2s",
+                      }}>
+                      <Icon className="h-[20px] w-[20px]" strokeWidth={1.8} />
+                      {badgeCount > 0 && (
+                        <span className="absolute flex items-center justify-center rounded-full font-bold text-white"
+                          style={{
+                            top: 2, right: 2,
+                            minWidth: 15, height: 15, padding: "0 3px",
+                            fontSize: 8.5, lineHeight: 1,
+                            background: "#E94B8A",
+                            boxShadow: "0 0 0 2px var(--surface-0)",
+                          }}>
+                          {badgeCount > 99 ? "99+" : badgeCount}
+                        </span>
+                      )}
                     </div>
                     <span className="text-[9.5px] tracking-tight font-400">{label}</span>
                   </button>
