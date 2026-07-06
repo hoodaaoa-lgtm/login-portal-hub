@@ -4709,7 +4709,7 @@ function MensagensPage() {
           full_name: isOfficial ? "Hooda Oficial" : profile.full_name,
           avatar_url: isOfficial ? "/icons/icon-192.png" : profile.avatar_url,
           color: colorFor(profile.username || profile.id),
-          is_online: false,
+          is_online: isOfficial ? false : !!profile.is_online,
           isOfficial,
           replyAllowed: meta?.reply_allowed ?? true,
           conversationId: convId,
