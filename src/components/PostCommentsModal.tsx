@@ -269,10 +269,16 @@ function PostCommentsModalInner({
   accent = "#5B3FCF",
   title = "Publicação",
   creatorId,
+  hasMedia: hasMediaProp,
 }: {
   onClose: () => void;
   header?: React.ReactNode;
   body?: React.ReactNode;
+  /** Diz explicitamente se `body` contém foto/vídeo real. Se não for passado,
+   *  cai no comportamento antigo (`!!body`) — mas como `body` é quase sempre
+   *  um fragmento truthy mesmo em posts só-texto, prefere-se sempre passar
+   *  isto explicitamente para não aparecer um painel preto vazio. */
+  hasMedia?: boolean;
   actions?: React.ReactNode;
   comments: PostComment[];
   onSend: (text: string) => void;
@@ -372,7 +378,13 @@ function PostCommentsModalInner({
   }
 
   const displayComments = withLocalState(comments);
-  const hasMedia = !!body;
+  // hasMedia: usa o valor explícito passado por quem chama, quando
+  // disponível. Antes usávamos `!!body`, mas o `body` é sempre um
+  // fragmento truthy (mesmo em posts só-texto/enquete), o que fazia
+  // aparecer sempre o painel preto vazio no desktop — e, pior, no
+  // mobile podia empurrar o vídeo real para um layout que não tinha
+  // sido pensado para conteúdo sem mídia.
+  const hasMedia = hasMediaProp ?? !!body;
 
   return createPortal(
     <div
@@ -429,8 +441,13 @@ function PostCommentsModalInner({
             </div>
           )}
 
-          {/* Scrollable: header do post + actions + comentários */}
-          <div ref={listRef} className="overflow-y-auto flex-1">
+          {/* Scrollable: header do post + actions + comentários.
+              min-h-0 é essencial: sem isto, num flex-col com altura fixa
+              (92vh), este bloco não conseguia encolher quando o vídeo
+              (fixo no topo, no mobile) era alto — o excesso ficava
+              escondido pelo overflow-hidden do container pai, empurrando
+              a caixa de escrever comentário para fora da área visível. */}
+          <div ref={listRef} className="overflow-y-auto flex-1 min-h-0">
             {/* Em desktop com mídia: só header + actions aqui (mídia está no painel esquerdo)
                 Em mobile: apenas header + actions (mídia já está fixo acima) */}
             {(header || actions) && (

@@ -244,6 +244,7 @@ function SinglePostPage() {
       {showComments && post && (
         <PostCommentsModal
           onClose={() => setShowComments(false)}
+          hasMedia={!!(post.video_url || post.photo_url)}
           header={
             <div className="flex items-center gap-3 pb-2">
               <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0"

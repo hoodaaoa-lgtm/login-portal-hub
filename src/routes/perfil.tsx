@@ -459,6 +459,7 @@ function PostCard({
         <PostCommentsModal
           onClose={() => setShowComments(false)}
           creatorId={authorId}
+          hasMedia={!!(post.videoUrl || post.photo)}
           header={
             <div className="flex items-center gap-3 pb-2">
               <Avatar name={name} size={36} src={avatarUrl} />
