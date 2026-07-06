@@ -38,21 +38,21 @@ CREATE POLICY "msg insert own strict" ON public.messages FOR INSERT TO authentic
 );
 
 -- 5. REALTIME — força a adição de tabelas críticas
-BEGIN;
-  -- Tenta adicionar; ignora se já existe
-  ALTER PUBLICATION supabase_realtime ADD TABLE public.messages;
-EXCEPTION WHEN duplicate_object THEN NULL;
-END;
-
-BEGIN;
-  ALTER PUBLICATION supabase_realtime ADD TABLE public.conversation_participants;
-EXCEPTION WHEN duplicate_object THEN NULL;
-END;
-
-BEGIN;
-  ALTER PUBLICATION supabase_realtime ADD TABLE public.conversations;
-EXCEPTION WHEN duplicate_object THEN NULL;
-END;
+DO $$
+BEGIN
+  BEGIN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.messages;
+  EXCEPTION WHEN duplicate_object THEN NULL;
+  END;
+  BEGIN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.conversation_participants;
+  EXCEPTION WHEN duplicate_object THEN NULL;
+  END;
+  BEGIN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.conversations;
+  EXCEPTION WHEN duplicate_object THEN NULL;
+  END;
+END $$;
 
 -- 6. INDICES para performance
 CREATE INDEX IF NOT EXISTS idx_conversation_participants_user_id 
