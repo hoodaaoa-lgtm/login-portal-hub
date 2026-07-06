@@ -261,7 +261,7 @@ function SinglePostPage() {
             <>
               {post.video_url && (
                 <div className="pb-3 md:px-4">
-                  <FeedVideoPlayer src={post.video_url} poster={post.photo_url || undefined} postId={post.id} kind="video" rounded="rounded-2xl" />
+                  <FeedVideoPlayer src={post.video_url} poster={post.photo_url || undefined} postId={post.id} kind="video" rounded="rounded-2xl" forceLoad={true} maxHeightRatio={0.42} />
                 </div>
               )}
               {post.photo_url && !post.video_url && <img src={post.photo_url} alt="" className="w-full block" />}

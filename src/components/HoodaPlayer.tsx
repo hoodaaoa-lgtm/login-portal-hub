@@ -88,6 +88,15 @@ interface HoodaPlayerProps {
    *  Usar dentro de modais/lightboxes onde o elemento está num portal (fixed) e o
    *  observer pode nunca disparar com threshold suficiente. */
   forceLoad?: boolean;
+  /** Fração do viewport usada como altura máxima (mobile: default 0.80,
+   *  desktop: default 0.75). Usar um valor menor (ex.: 0.40) dentro de
+   *  espaços mais pequenos, como o painel de vídeo do modal de
+   *  comentários — sem isto, o vídeo pedia até 80% da altura do ecrã e
+   *  ficava maior do que o espaço disponível, e se o contentor à volta
+   *  cortasse esse excesso com overflow:hidden, cortava exatamente a
+   *  parte onde o vídeo (centrado) estava, deixando só o fundo escuro
+   *  desfocado visível — "vídeo tapado pelo preto". */
+  maxHeightRatio?: number;
 }
 
 /** Limite de altura estilo X: o vídeo ocupa sempre a largura total do
@@ -111,6 +120,7 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
     watermark,
     signature,
     forceLoad = false,
+    maxHeightRatio,
   },
   forwardedRef,
 ) {
@@ -214,8 +224,8 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
   // No desktop mantém-se mais contido (75%, teto de 650px) para não
   // dominar um ecrã largo.
   const maxHeightPx = isMobile
-    ? Math.min(viewportHeight * 0.80, 900)
-    : Math.min(viewportHeight * 0.75, 650);
+    ? Math.min(viewportHeight * (maxHeightRatio ?? 0.80), maxHeightRatio ? viewportHeight * maxHeightRatio : 900)
+    : Math.min(viewportHeight * (maxHeightRatio ?? 0.75), maxHeightRatio ? viewportHeight * maxHeightRatio : 650);
   // No telemóvel, vídeos HORIZONTAIS ficam um pouco mais altos do que a
   // proporção real deles indicaria (menos "achatados"), aproximando-se
   // do estilo Instagram/TikTok — a CAIXA usa uma proporção ligeiramente

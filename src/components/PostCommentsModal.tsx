@@ -442,13 +442,14 @@ function PostCommentsModalInner({
             </button>
           </div>
 
-          {/* Mobile: vídeo/foto fixo no topo, fora do scroll.
-              Altura limitada a 40dvh — sem este limite, um vídeo vertical
-              alto (o HoodaPlayer deixa-o ocupar até 80% do ecrã) sozinho já
-              enchia quase toda a folha (92dvh), sem sobrar espaço nenhum
-              para os comentários e a caixa de escrever no fundo. */}
+          {/* Mobile: vídeo/foto fixo no topo, fora do scroll. O próprio
+              FeedVideoPlayer já recebe maxHeightRatio (ver callers) para
+              não pedir mais altura do que cabe aqui — nunca cortamos com
+              overflow:hidden, porque isso cortava o vídeo centrado e
+              deixava só o fundo escuro desfocado à mostra ("vídeo tapado
+              pelo preto"). */}
           {hasMedia && body && (
-            <div className="shrink-0 lg:hidden overflow-hidden" style={{ maxHeight: "40dvh" }}>
+            <div className="shrink-0 lg:hidden">
               {body}
             </div>
           )}

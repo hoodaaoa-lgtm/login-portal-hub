@@ -1345,7 +1345,7 @@ function PostCard({ p }: { p: any }) {
             <>
               {p.video && (
                 <div className="pb-3 md:px-4">
-                  <FeedVideoPlayer src={p.video} poster={p.video_thumb || p.photo || undefined} postId={p.id} kind="video" rounded="rounded-2xl" forceLoad={true} />
+                  <FeedVideoPlayer src={p.video} poster={p.video_thumb || p.photo || undefined} postId={p.id} kind="video" rounded="rounded-2xl" forceLoad={true} maxHeightRatio={0.42} />
                 </div>
               )}
               {p.text && !p.video && (p.bg_color

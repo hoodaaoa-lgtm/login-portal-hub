@@ -32,9 +32,11 @@ interface Props {
   autoPlay?: boolean;
   /** Força carregamento imediato sem esperar pelo IntersectionObserver. Usar dentro de modais. */
   forceLoad?: boolean;
+  /** Ver HoodaPlayer — usar valor menor (ex.: 0.42) em espaços pequenos como o modal de comentários. */
+  maxHeightRatio?: number;
 }
 
-export function FeedVideoPlayer({ src, poster, postId, kind, rounded, autoPlay = true, forceLoad = false }: Props) {
+export function FeedVideoPlayer({ src, poster, postId, kind, rounded, autoPlay = true, forceLoad = false, maxHeightRatio }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   usePostVideoView(postId, kind, videoRef);
@@ -48,6 +50,7 @@ export function FeedVideoPlayer({ src, poster, postId, kind, rounded, autoPlay =
       rounded={rounded ?? "rounded-none"}
       autoPlay={autoPlay}
       forceLoad={forceLoad}
+      maxHeightRatio={maxHeightRatio}
     />
   );
 }
