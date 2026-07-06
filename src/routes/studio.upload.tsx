@@ -10,7 +10,7 @@ import { Bell,
   CheckCircle, Info, Palette,
 } from "lucide-react";
 import { toast } from "sonner";
-import { uploadToCloudinary } from "@/lib/cloudinary";
+import { uploadToCloudinary, uploadImageToCloudinary } from "@/lib/cloudinary";
 
 export const Route = createFileRoute("/studio/upload")({
   head: () => ({ meta: [{ title: "Hooda" }] }),
@@ -178,14 +178,11 @@ function UploadPage() {
       let thumbnailUrl: string = cloudResult.thumbnailUrl;
       if (thumbFile) {
         setProgLabel("A enviar miniatura…");
-        const tExt  = thumbFile.name.split(".").pop() ?? "jpg";
-        const tPath = `${uid}/${videoId}-thumb.${tExt}`;
-        const { error: tErr } = await supabase.storage
-          .from("thumbnails")
-          .upload(tPath, thumbFile, { cacheControl: "3600", upsert: false, contentType: thumbFile.type });
-        if (!tErr) {
-          const { data: tUrl } = supabase.storage.from("thumbnails").getPublicUrl(tPath);
-          thumbnailUrl = tUrl.publicUrl;
+        try {
+          const { url } = await uploadImageToCloudinary(thumbFile, `hooda/thumbnails/${uid}`);
+          thumbnailUrl = url;
+        } catch {
+          // mantém a thumbnail gerada pelo Cloudinary a partir do vídeo
         }
       }
       setProgress(88); setProgLabel("A guardar informações…");
