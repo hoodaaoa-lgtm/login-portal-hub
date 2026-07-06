@@ -28,7 +28,12 @@ ALTER TABLE public.channel_watermark_settings ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "cws read own" ON public.channel_watermark_settings FOR SELECT USING (
   channel_id IN (SELECT id FROM public.channels WHERE owner_id = auth.uid())
 );
-CREATE POLICY "cws write own" ON public.channel_watermark_settings FOR INSERT, UPDATE USING (
+CREATE POLICY "cws insert own" ON public.channel_watermark_settings FOR INSERT WITH CHECK (
+  channel_id IN (SELECT id FROM public.channels WHERE owner_id = auth.uid())
+);
+CREATE POLICY "cws update own" ON public.channel_watermark_settings FOR UPDATE USING (
+  channel_id IN (SELECT id FROM public.channels WHERE owner_id = auth.uid())
+) WITH CHECK (
   channel_id IN (SELECT id FROM public.channels WHERE owner_id = auth.uid())
 );
 
