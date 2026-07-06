@@ -135,6 +135,12 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
   const [metadataLoaded, setMetadataLoaded] = useState(false);
+  // Se o vídeo falhar a carregar (URL quebrada, CORS, formato não suportado)
+  // ou simplesmente nunca disparar loadedmetadata, antes ficava preso para
+  // sempre no skeleton escuro — parecia que "o vídeo não aparece", sem
+  // nenhuma pista do que se passou. Agora mostramos um estado de erro
+  // visível, com botão de tentar de novo.
+  const [loadError, setLoadError] = useState(false);
   // Proporção real do vídeo, detectada assim que o metadata carrega —
   // usada SEMPRE (horizontal ou vertical), igual ao X: a caixa segue o
   // vídeo, nunca o contrário. Antes do metadata carregar, usa a
@@ -277,7 +283,19 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
     setNaturalRatio(null);
     setMetadataLoaded(false);
     setHasStarted(false);
+    setLoadError(false);
   }, [src]);
+
+  /* ─── Watchdog: se o metadata não carregar em 12s (URL quebrada, CORS,
+     CDN lento/sem resposta), assume erro em vez de deixar o skeleton
+     escuro girando para sempre sem nenhuma pista visível. ─── */
+  useEffect(() => {
+    if (!hasEnteredOnce || metadataLoaded) return;
+    const timer = setTimeout(() => {
+      if (!metadataLoaded) setLoadError(true);
+    }, 12000);
+    return () => clearTimeout(timer);
+  }, [hasEnteredOnce, metadataLoaded, src]);
 
   /* ─── Autoplay respeitoso: só reproduz com o vídeo visível na tela
      e a página em primeiro plano; pausa sozinho ao sair da tela ─── */
@@ -419,8 +437,17 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
   }
 
   const progress = duration ? (currentTime / duration) * 100 : 0;
-  const showSkeleton = !metadataLoaded && !hasStarted;
+  const showSkeleton = !metadataLoaded && !hasStarted && !loadError;
   const preload: "none" | "metadata" = hasEnteredOnce ? "metadata" : "none";
+
+  function retryLoad() {
+    setLoadError(false);
+    setMetadataLoaded(false);
+    const vid = videoRef.current;
+    if (vid) {
+      vid.load();
+    }
+  }
 
   return (
     <div
@@ -496,6 +523,7 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
           setMetadataLoaded(true);
         }}
         onPause={() => setIsPlaying(false)}
+        onError={() => setLoadError(true)}
         onVolumeChange={(e) => setIsMuted(e.currentTarget.muted)}
         onTimeUpdate={() => {
           const v = videoRef.current;
@@ -506,6 +534,28 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
         }}
         onContextMenu={(e) => e.preventDefault()}
       />
+
+      {/* Estado de erro visível — antes disto, uma falha de carregamento
+          (URL quebrada, CORS, etc.) deixava a caixa completamente preta e
+          vazia, sem nenhum sinal do que se passou. */}
+      {loadError && (
+        <div
+          className="absolute inset-0 flex flex-col items-center justify-center gap-2 pointer-events-auto"
+          style={{ background: "rgba(0,0,0,0.85)" }}
+        >
+          <span className="text-white/70 text-xs">Não foi possível carregar o vídeo</span>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              retryLoad();
+            }}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold text-white transition active:scale-95"
+            style={{ background: BRAND }}
+          >
+            <RotateCcw className="w-3.5 h-3.5" /> Tentar de novo
+          </button>
+        </div>
+      )}
 
       {/* Placeholder inteligente: miniatura + skeleton com shimmer, do
           tamanho exato do player final — nada "salta" quando o vídeo

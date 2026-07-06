@@ -398,7 +398,15 @@ function PostCommentsModalInner({
             ? "lg:flex-row lg:rounded-2xl lg:max-w-[1100px] lg:w-[92vw]"
             : "lg:max-w-sm lg:rounded-3xl"
         }`}
-        style={{ maxHeight: "92vh", height: hasMedia ? "92vh" : undefined }}
+        style={{
+          // dvh (dynamic viewport height) em vez de vh: no mobile, "vh" conta
+          // com a barra de endereço do browser mesmo quando ela está
+          // escondida, fazendo a folha ficar mais alta do que o espaço
+          // realmente visível — o fundo (caixa de escrever comentário)
+          // ficava então fora do ecrã, cortado pelo overflow-hidden.
+          maxHeight: "92dvh",
+          height: hasMedia ? "92dvh" : undefined,
+        }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Painel de mídia — só em desktop e só quando há foto/vídeo */}
@@ -434,9 +442,13 @@ function PostCommentsModalInner({
             </button>
           </div>
 
-          {/* Mobile: vídeo/foto fixo no topo, fora do scroll */}
+          {/* Mobile: vídeo/foto fixo no topo, fora do scroll.
+              Altura limitada a 40dvh — sem este limite, um vídeo vertical
+              alto (o HoodaPlayer deixa-o ocupar até 80% do ecrã) sozinho já
+              enchia quase toda a folha (92dvh), sem sobrar espaço nenhum
+              para os comentários e a caixa de escrever no fundo. */}
           {hasMedia && body && (
-            <div className="shrink-0 lg:hidden">
+            <div className="shrink-0 lg:hidden overflow-hidden" style={{ maxHeight: "40dvh" }}>
               {body}
             </div>
           )}
