@@ -226,11 +226,9 @@ function SinglePostPage() {
               </div>
 
               <div className="px-3 pb-3">
-                {likeCount > 0 && (
-                  <p className="text-[13px] font-bold mb-1" style={{ color: "var(--text-primary)" }}>
-                    {likeCount === 1 ? "1 gosto" : `${fmtNum(likeCount)} gostos`}
-                  </p>
-                )}
+                <p className="text-[13px] font-bold mb-1" style={{ color: "var(--text-primary)" }}>
+                  {likeCount === 1 ? "1 gosto" : `${fmtNum(likeCount)} gostos`}
+                </p>
                 {commentCount > 0 && (
                   <button onClick={() => setShowComments(true)} className="text-[13px]" style={{ color: "var(--text-muted)" }}>
                     Ver {commentCount === 1 ? "1 comentário" : `todos os ${fmtNum(commentCount)} comentários`}

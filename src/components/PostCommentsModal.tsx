@@ -176,12 +176,10 @@ function CommentRow({
             >
               Responder
             </button>
-            {likeCount > 0 && (
-              <span className="flex items-center gap-1 text-[11px] text-neutral-400 ml-auto">
-                <Heart className="h-3 w-3 fill-current" style={{ color: accent }} />
-                {likeCount}
-              </span>
-            )}
+            <span className="flex items-center gap-1 text-[11px] text-neutral-400 ml-auto">
+              <Heart className="h-3 w-3 fill-current" style={{ color: accent }} />
+              {likeCount}
+            </span>
           </div>
 
           {/* Caixa de resposta a este comentário */}

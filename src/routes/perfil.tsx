@@ -13,7 +13,7 @@ import {
   Settings, LogOut, MessageCircle, Flag, X, Image, Type, Plus, Repeat2, Quote,
   BookOpen, ChevronRight, Lock, Shield, TrendingUp, Bookmark,
   Info, Camera, Link, MapPin, Calendar, Bell, HelpCircle, Globe,
-  Banknote, BarChart3, Users, Eye, Star, Heart, Share2,
+  Banknote, BarChart3, Users, Star, Heart, Share2,
   MoreHorizontal, Trash2, Send, Copy, Moon, Sun, ExternalLink,
   Twitter, Instagram, Youtube, Facebook, Linkedin, Music2, Loader, Tv, Film,
   ArrowLeft, Check,
@@ -419,15 +419,15 @@ function PostCard({
       <div className="flex items-center justify-between px-3 pt-1.5 pb-0.5">
         <button onClick={() => setShowComments(true)} className="flex items-center gap-1.5 p-1.5 rounded-full transition active:scale-90">
           <MessageCircle className="h-5 w-5" style={{ color: "var(--text-primary)" }} />
-          {commentCount > 0 && <span className="text-xs font-semibold" style={{ color: "var(--text-muted)" }}>{fmtNum(commentCount)}</span>}
+          <span className="text-xs font-semibold" style={{ color: "var(--text-muted)" }}>{fmtNum(commentCount)}</span>
         </button>
         <button onClick={() => onLike(post.id)} className="flex items-center gap-1.5 p-1.5 rounded-full transition active:scale-90 group">
           <Heart className={`h-5 w-5 transition-all ${post.likedByMe ? "fill-red-500 text-red-500 scale-110" : "group-hover:text-red-400"}`}
             style={{ color: post.likedByMe ? undefined : "var(--text-primary)" }} />
-          {post.likes > 0 && <span className="text-xs font-semibold" style={{ color: post.likedByMe ? "#ef4444" : "var(--text-muted)" }}>{fmtNum(post.likes)}</span>}
+          <span className="text-xs font-semibold" style={{ color: post.likedByMe ? "#ef4444" : "var(--text-muted)" }}>{fmtNum(post.likes)}</span>
         </button>
         <span className="flex items-center gap-1.5 p-1.5 text-xs font-semibold" style={{ color: "var(--text-muted)" }}>
-          <Eye className="h-5 w-5" />{viewCount > 0 ? fmtNum(viewCount) : 0}
+          <BarChart3 className="h-5 w-5" />{fmtNum(viewCount)}
         </span>
         <div className="flex items-center gap-0.5">
           {!isOwner && (
@@ -494,9 +494,10 @@ function PostCard({
               <button onClick={() => onLike(post.id)}
                 className={`flex items-center gap-1.5 px-2 py-1.5 rounded-full transition-all active:scale-95 ${post.likedByMe ? "text-red-500" : "hover:bg-[var(--s1)]"}`}>
                 <Heart className={`h-5 w-5 ${post.likedByMe ? "fill-red-500 text-red-500" : "text-[var(--text-muted)]"}`} />
+                <span className="text-xs font-semibold" style={{ color: post.likedByMe ? "#ef4444" : "var(--text-muted)" }}>{fmtNum(post.likes)}</span>
               </button>
               <span className="flex items-center gap-1.5 px-2 py-1.5 text-xs font-semibold" style={{ color: "var(--text-muted)" }}>
-                <Eye className="h-5 w-5" />{viewCount > 0 ? fmtNum(viewCount) : 0}
+                <BarChart3 className="h-5 w-5" />{fmtNum(viewCount)}
               </span>
               <Share2 className="h-5 w-5 text-[var(--text-muted)]" />
             </div>

@@ -11,7 +11,7 @@ import {
   ChevronLeft, Heart, MessageCircle, Share2, Bookmark,
   Play, Loader, X, Bell, BellOff, MoreHorizontal,
   Check, Forward, Link as LinkIcon, Calendar, Users,
-  Eye, Grid3x3, Film, Image as ImageIcon,
+  BarChart3, Grid3x3, Film, Image as ImageIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import { FeedVideoPlayer } from "@/components/FeedVideoPlayer";
@@ -194,7 +194,7 @@ function VideoCard({ v, myId }: { v: any; myId: string | null }) {
         </div>
         <div className="flex-1 min-w-0">
           <p className="font-bold text-sm leading-tight truncate" style={{ color: "var(--text-primary)" }}>{v.title}</p>
-          <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>{timeAgo(v.published_at || v.created_at)} · <Eye className="inline h-3 w-3" /> {fmtNum(v.views_count ?? 0)}</p>
+          <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>{timeAgo(v.published_at || v.created_at)} · <BarChart3 className="inline h-3 w-3" /> {fmtNum(v.views_count ?? 0)}</p>
         </div>
         <button onClick={() => navigate({ to: `/watch/${v.id}` })}
           className="text-xs font-bold px-3 py-1.5 rounded-xl transition active:scale-95"
@@ -222,10 +222,10 @@ function VideoCard({ v, myId }: { v: any; myId: string | null }) {
         <button onClick={toggleLike} className="flex items-center gap-1.5 p-1.5 rounded-full transition active:scale-90">
           <Heart className={`h-5 w-5 transition-all ${liked ? "fill-red-500 text-red-500 scale-110" : ""}`}
             style={{ color: liked ? undefined : "var(--text-primary)" }} />
-          {likeCount > 0 && <span className="text-xs font-semibold" style={{ color: liked ? "#ef4444" : "var(--text-muted)" }}>{fmtNum(likeCount)}</span>}
+          <span className="text-xs font-semibold" style={{ color: liked ? "#ef4444" : "var(--text-muted)" }}>{fmtNum(likeCount)}</span>
         </button>
         <span className="flex items-center gap-1.5 p-1.5 text-xs font-semibold" style={{ color: "var(--text-muted)" }}>
-          <Eye className="h-5 w-5" />{fmtNum(v.views_count ?? 0)}
+          <BarChart3 className="h-5 w-5" />{fmtNum(v.views_count ?? 0)}
         </span>
         <div className="flex items-center gap-0.5">
           <button onClick={() => setBookmarked(b => !b)} className="p-1.5 rounded-full transition active:scale-90">

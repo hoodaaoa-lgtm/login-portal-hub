@@ -22,7 +22,7 @@ import {
   Search, Bell, Plus, MessageCircle, Share2, Music, X, Heart,
   Volume2, VolumeX, ChevronLeft, ChevronRight, Play, Pause,
   ImageIcon, Type as TypeIcon, Check, ArrowLeft,
-  AlignLeft, AlignCenter, AlignRight, Bold, Italic, Send, Eye,
+  AlignLeft, AlignCenter, AlignRight, Bold, Italic, Send, BarChart3,
   Trash2, Layers, Smile, Sliders, SlidersHorizontal,
   Bookmark, BookmarkCheck, Forward, Repeat2,
 } from "lucide-react";
@@ -907,24 +907,23 @@ function ClipCard({ p, liked, likeCount, viewCount, onLike, onComment }: {
         <div className="flex items-center gap-0.5 pt-2 border-t" style={{ borderColor: "var(--border-subtle)" }}>
           {/* 👁 Views */}
           <span className="flex items-center gap-1 text-xs font-semibold px-2" style={{ color: "var(--text-muted)" }}>
-            <Eye className="h-3.5 w-3.5" />{(viewCount ?? 0).toLocaleString("pt-PT")}
+            <BarChart3 className="h-3.5 w-3.5" />{(viewCount ?? 0).toLocaleString("pt-PT")}
           </span>
           {/* ❤️ Gosto */}
           <button onClick={onLike}
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl transition active:scale-90 group">
             <Heart className={`h-5 w-5 transition-all ${liked ? "fill-red-500 text-red-500 scale-110" : "group-hover:text-red-400"}`}
               style={{ color: liked ? undefined : "var(--text-primary)" }} />
-            {likeCount > 0 && (
-              <span className="text-xs font-semibold"
-                style={{ color: liked ? "#ef4444" : "var(--text-muted)" }}>
-                {likeCount}
-              </span>
-            )}
+            <span className="text-xs font-semibold"
+              style={{ color: liked ? "#ef4444" : "var(--text-muted)" }}>
+              {likeCount}
+            </span>
           </button>
           {/* 💬 Comentar */}
           <button onClick={onComment}
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl transition active:scale-90">
             <MessageCircle className="h-5 w-5" style={{ color: "var(--text-primary)" }} />
+            <span className="text-xs font-semibold" style={{ color: "var(--text-muted)" }}>{p.comments ?? 0}</span>
           </button>
           {/* ↗️ Partilhar */}
           <button
@@ -1292,9 +1291,7 @@ function PostCard({ p }: { p: any }) {
             <button onClick={() => setShowRepost(true)}
               className="flex items-center gap-1.5 px-2 py-1.5 rounded-full transition-all active:scale-95 hover:bg-[var(--s1)]">
               <Repeat2 className="h-5 w-5" style={{ color: didRepost ? "#1FAFA6" : "var(--text-muted)" }} />
-              {repostCount > 0 && (
-                <span className="text-xs font-semibold" style={{ color: didRepost ? "#1FAFA6" : "var(--text-muted)" }}>{repostCount}</span>
-              )}
+              <span className="text-xs font-semibold" style={{ color: didRepost ? "#1FAFA6" : "var(--text-muted)" }}>{repostCount}</span>
             </button>
           )}
           {/* Gosto */}
@@ -1305,7 +1302,7 @@ function PostCard({ p }: { p: any }) {
           </button>
           {/* Visualizações */}
           <span className="flex items-center gap-1.5 px-2 py-1.5 text-xs font-semibold" style={{ color: "var(--text-muted)" }}>
-            <Eye className="h-5 w-5" />{viewCount > 0 ? viewCount.toLocaleString("pt-PT") : 0}
+            <BarChart3 className="h-5 w-5" />{viewCount.toLocaleString("pt-PT")}
           </span>
           <div className="flex items-center gap-0.5">
             {!isOwnPost && <BookmarkButton />}
@@ -1372,16 +1369,12 @@ function PostCard({ p }: { p: any }) {
               )}
 
               <div className="flex items-center gap-3 px-4 pt-2">
-                {viewCount > 0 && (
-                  <p className="text-[12px] font-semibold" style={{ color: "var(--text-muted)" }}>
-                    <Eye className="h-3 w-3 inline mr-1 mb-0.5" />{viewCount.toLocaleString("pt-PT")} visualizaç{viewCount === 1 ? "ão" : "ões"}
-                  </p>
-                )}
-                {likeCount > 0 && (
-                  <p className="text-[12px] font-bold" style={{ color: "var(--text-muted)" }}>
-                    <Heart className="h-3 w-3 inline mr-1 mb-0.5 fill-red-500 text-red-500" />{likeCount} curtida{likeCount !== 1 ? "s" : ""}
-                  </p>
-                )}
+                <p className="text-[12px] font-semibold" style={{ color: "var(--text-muted)" }}>
+                  <BarChart3 className="h-3 w-3 inline mr-1 mb-0.5" />{viewCount.toLocaleString("pt-PT")} visualizaç{viewCount === 1 ? "ão" : "ões"}
+                </p>
+                <p className="text-[12px] font-bold" style={{ color: "var(--text-muted)" }}>
+                  <Heart className={`h-3 w-3 inline mr-1 mb-0.5 ${liked ? "fill-red-500 text-red-500" : ""}`} />{likeCount} curtida{likeCount !== 1 ? "s" : ""}
+                </p>
               </div>
             </>
           }
@@ -1391,14 +1384,16 @@ function PostCard({ p }: { p: any }) {
                 <button onClick={() => setShowRepost(true)}
                   className="flex items-center gap-1.5 px-2 py-1.5 rounded-full transition-all active:scale-95 hover:bg-[var(--s1)]">
                   <Repeat2 className="h-5 w-5" style={{ color: didRepost ? "#1FAFA6" : "var(--text-muted)" }} />
+                  <span className="text-xs font-semibold" style={{ color: didRepost ? "#1FAFA6" : "var(--text-muted)" }}>{repostCount}</span>
                 </button>
               )}
               <button onClick={toggleLike}
                 className={`flex items-center gap-1.5 px-2 py-1.5 rounded-full transition-all active:scale-95 ${liked ? "text-red-500" : "hover:bg-[var(--s1)]"}`}>
                 <Heart className={`h-5 w-5 ${liked ? "fill-red-500 text-red-500" : "text-[var(--text-muted)]"}`} />
+                <span className="text-xs font-semibold" style={{ color: liked ? "#ef4444" : "var(--text-muted)" }}>{likeCount}</span>
               </button>
               <span className="flex items-center gap-1.5 px-2 py-1.5 text-xs font-semibold" style={{ color: "var(--text-muted)" }}>
-                <Eye className="h-5 w-5" />{viewCount > 0 ? viewCount.toLocaleString("pt-PT") : 0}
+                <BarChart3 className="h-5 w-5" />{viewCount.toLocaleString("pt-PT")}
               </span>
               <Share2 className="h-5 w-5 text-[var(--text-muted)]" />
             </div>
