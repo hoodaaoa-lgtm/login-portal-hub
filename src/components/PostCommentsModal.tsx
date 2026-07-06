@@ -6,6 +6,36 @@ import { createPortal } from "react-dom";
 import { X, Send, Loader, Smile, Heart } from "lucide-react";
 import { pauseAllVideos, incrementModalDepth, decrementModalDepth } from "@/lib/mediaManager";
 
+/**
+ * Sabe se estamos no breakpoint desktop (lg, 1024px+) — usado para só
+ * montar UMA instância do vídeo/mídia (nunca as duas ao mesmo tempo).
+ *
+ * ANTES disto, o `body` (que inclui o FeedVideoPlayer) era colocado
+ * DUAS vezes na árvore: uma escondida por CSS (`hidden lg:flex`) para
+ * desktop, outra escondida por CSS (`lg:hidden`) para mobile. As DUAS
+ * ficavam montadas ao mesmo tempo, cada uma com o seu próprio <video> e
+ * o seu próprio autoplay — e como cada vídeo que começa a tocar pausa
+ * "todos os outros" (mediaManager), a instância montada por último
+ * (sempre a do mobile, por vir depois na árvore) ganhava a corrida e
+ * pausava a do desktop mesmo quando era essa que estava visível. Por
+ * isso o vídeo "não aparecia" só no desktop — ficava pausado/preso no
+ * primeiro frame por causa do gémeo escondido do mobile.
+ */
+function useIsDesktopLg(): boolean {
+  const [isDesktop, setIsDesktop] = useState(() =>
+    typeof window !== "undefined" ? window.matchMedia("(min-width: 1024px)").matches : false,
+  );
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mql = window.matchMedia("(min-width: 1024px)");
+    const onChange = () => setIsDesktop(mql.matches);
+    onChange();
+    mql.addEventListener("change", onChange);
+    return () => mql.removeEventListener("change", onChange);
+  }, []);
+  return isDesktop;
+}
+
 /* ─── Error Boundary local — impede que erros nos comentários derrubem a página ─── */
 class CommentsErrorBoundary extends React.Component<
   { children: React.ReactNode; onClose: () => void },
@@ -378,6 +408,7 @@ function PostCommentsModalInner({
   }
 
   const displayComments = withLocalState(comments);
+  const isDesktop = useIsDesktopLg();
   // hasMedia: usa o valor explícito passado por quem chama, quando
   // disponível. Antes usávamos `!!body`, mas o `body` é sempre um
   // fragmento truthy (mesmo em posts só-texto/enquete), o que fazia
@@ -420,7 +451,7 @@ function PostCommentsModalInner({
               <X className="h-5 w-5 text-white" />
             </button>
             <div className="w-full flex items-center justify-center p-6" style={{ minWidth: 0 }}>
-              {body}
+              {isDesktop ? body : null}
             </div>
           </div>
         )}
@@ -448,7 +479,7 @@ function PostCommentsModalInner({
               overflow:hidden, porque isso cortava o vídeo centrado e
               deixava só o fundo escuro desfocado à mostra ("vídeo tapado
               pelo preto"). */}
-          {hasMedia && body && (
+          {hasMedia && body && !isDesktop && (
             <div className="shrink-0 lg:hidden">
               {body}
             </div>
