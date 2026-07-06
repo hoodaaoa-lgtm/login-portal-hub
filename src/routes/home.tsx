@@ -2100,3 +2100,7 @@ function HomePage() {
     </div>
   );
 }
+
+// Reexporta o PostCard para reutilização noutras páginas (ex.: Explorador,
+// resultados de pesquisa de vídeos/publicações).
+export { PostCard };

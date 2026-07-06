@@ -1,10 +1,11 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { BottomNav, SideNav, PageWrapper, FeedLayout } from "@/components/AppShell";
 import { RightSidebar } from "@/components/RightSidebar";
+import { PostCard } from "@/routes/home";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect, useMemo } from "react";
-import { Search, X, Play, Heart, TrendingUp, Users, Video, FileText, Tv2, UserPlus, UserCheck, BookOpen, Download, Bookmark } from "lucide-react";
+import { Search, X, Heart, TrendingUp, Users, FileText, Tv2, UserPlus, UserCheck, BookOpen, Download, Bookmark } from "lucide-react";
 import { t } from "@/lib/useT";
 import { toast } from "sonner";
 
@@ -225,20 +226,6 @@ function ExplorePage() {
     staleTime: 30_000,
   });
 
-  /* ── Query: vídeos (aba Mídia + trending) — todos, por ordem cronológica, sem algoritmo ── */
-  const { data: featuredVideos = [] } = useQuery({
-    queryKey: ["explore-videos"],
-    queryFn: async () => {
-      const { data } = await (supabase as any).from("videos")
-        .select("id,title,thumbnail_url,views_count,duration_seconds,channel_id,channels(name,avatar_url,handle),created_at")
-        .eq("status","published").eq("visibility","public")
-        .order("created_at", { ascending: false }).limit(500);
-      return data ?? [];
-    },
-    enabled: tab === "trending" || tab === "posts",
-    staleTime: 60_000,
-  });
-
   /* ── Query: pessoas sugeridas ── */
   const { data: suggestedPeople = [] } = useQuery({
     queryKey: ["explore-people", myId],
@@ -254,13 +241,15 @@ function ExplorePage() {
     staleTime: 60_000,
   });
 
-  /* ── Query: posts (aba Mídia + trending) — todos, por ordem cronológica, sem algoritmo ── */
+  /* ── Query: posts (aba Mídia + trending) — nunca inclui vídeos; vídeos só
+     aparecem quando o utilizador pesquisa (ver searchVideos/searchVideoPosts
+     mais abaixo), nunca na navegação normal. ── */
   const { data: popularPosts = [] } = useQuery({
     queryKey: ["explore-posts"],
     queryFn: async () => {
       const { data } = await (supabase as any).from("posts")
         .select("id,content,kind,photo_url,image_url,likes_count,author_username,author_color,author_id,created_at")
-        .in("kind",["photo","post","video"])
+        .in("kind",["photo","post"])
         .order("created_at", { ascending: false }).limit(500);
       return data ?? [];
     },
@@ -281,24 +270,106 @@ function ExplorePage() {
     staleTime: 60_000,
   });
 
-  /* ── Query: resultados de pesquisa ── */
-  const { data: searchVideos = [] } = useQuery({
+  /* ── Pesquisa: vídeos do Studio/HoodaTV que batem com o termo pesquisado ── */
+  const { data: searchChannelVideos = [] } = useQuery({
     queryKey: ["explore-search-videos", search],
     queryFn: async () => {
       const { data } = await (supabase as any).from("videos")
-        .select("id,title,thumbnail_url,views_count,channels(name,handle)")
-        .eq("status","published").ilike("title",`%${search}%`).limit(10);
+        .select("id,title,thumbnail_url,views_count,likes_count,duration_seconds,created_at,owner_id,channel_id,channels(name,avatar_url,handle)")
+        .eq("status","published").eq("visibility","public")
+        .ilike("title",`%${search}%`).limit(10);
       return data ?? [];
     },
     enabled: searchActive,
     staleTime: 30_000,
   });
 
+  /* ── Pesquisa: publicações de vídeo (feed) cujo texto bate com o termo ── */
+  const { data: searchVideoPostsRaw = [] } = useQuery({
+    queryKey: ["explore-search-video-posts", search],
+    queryFn: async () => {
+      const { data } = await (supabase as any).from("posts")
+        .select("id,author_id,author_username,author_name,author_color,content,kind,created_at,video_url,views_count,reposts_count")
+        .eq("kind","video")
+        .ilike("content",`%${search}%`).limit(10);
+      return data ?? [];
+    },
+    enabled: searchActive,
+    staleTime: 30_000,
+  });
+
+  /* ── Autores dos resultados de vídeo, para o PostCard mostrar nome/avatar ── */
+  const videoAuthorIds = useMemo(() => {
+    const ids = new Set<string>();
+    (searchChannelVideos ?? []).forEach((v: any) => { if (v.owner_id) ids.add(v.owner_id); });
+    (searchVideoPostsRaw ?? []).forEach((p: any) => { if (p.author_id) ids.add(p.author_id); });
+    return [...ids];
+  }, [searchChannelVideos, searchVideoPostsRaw]);
+
+  const { data: videoAuthorProfiles = [] } = useQuery({
+    queryKey: ["explore-search-video-authors", videoAuthorIds],
+    queryFn: async () => {
+      if (videoAuthorIds.length === 0) return [];
+      const { data } = await (supabase as any).from("profiles")
+        .select("id,username,full_name,avatar_url").in("id", videoAuthorIds);
+      return data ?? [];
+    },
+    enabled: searchActive && videoAuthorIds.length > 0,
+    staleTime: 30_000,
+  });
+
+  /* ── Resultados de vídeo (canal + posts) já no formato "p" do PostCard do
+     Lar — igual ao que o feed principal já faz, para não reinventar a roda. ── */
+  const searchVideos = useMemo(() => {
+    const authorMap: Record<string, { username: string; full_name: string | null; avatar_url: string | null }> = {};
+    (videoAuthorProfiles ?? []).forEach((a: any) => { authorMap[a.id] = a; });
+
+    const fromChannelVideos = (searchChannelVideos ?? []).map((v: any) => {
+      const author = authorMap[v.owner_id];
+      const ch = v.channels;
+      const name = author?.full_name || author?.username || ch?.name || "hooda";
+      return {
+        id: `vidfeed_${v.id}`, user_id: v.owner_id, author_id: v.owner_id,
+        author_username: author?.username || null,
+        user: name, name: `@${author?.username || ch?.handle || "?"}`,
+        color: colorFor(name), avatar_url: author?.avatar_url ?? null,
+        text: null, photo: null, photos: null, video: null,
+        bg_color: null, created_at: v.created_at, kind: "clip", is_ad: false,
+        likes: v.likes_count ?? 0, liked_by_me: false, comments: 0,
+        views_count: v.views_count ?? 0, reposts_count: 0,
+        clip_video_id: v.id, clip_start: 0, clip_end: v.duration_seconds ?? 0,
+        clip_title: v.title, clip_thumb_url: v.thumbnail_url,
+        channel_id: v.channel_id, channel_handle: ch?.handle ?? null,
+        channel_name: ch?.name ?? null, channel_avatar: ch?.avatar_url ?? null,
+      };
+    });
+
+    const fromVideoPosts = (searchVideoPostsRaw ?? []).map((p: any) => {
+      const author = authorMap[p.author_id];
+      const name = p.author_name || author?.full_name || author?.username || "hooda";
+      const username = p.author_username || author?.username || "";
+      return {
+        id: p.id, user_id: p.author_id, author_id: p.author_id,
+        author_username: username || null,
+        user: name, name: `@${username || "?"}`,
+        color: p.author_color || colorFor(name), avatar_url: author?.avatar_url ?? null,
+        text: p.content, photo: null, photos: null, video: p.video_url ?? null,
+        bg_color: null, created_at: p.created_at, kind: p.kind, is_ad: false,
+        likes: 0, liked_by_me: false, comments: 0,
+        views_count: p.views_count ?? 0, reposts_count: p.reposts_count ?? 0,
+      };
+    });
+
+    return [...fromChannelVideos, ...fromVideoPosts]
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  }, [searchChannelVideos, searchVideoPostsRaw, videoAuthorProfiles]);
+
   const { data: searchPosts = [] } = useQuery({
     queryKey: ["explore-search-posts", search],
     queryFn: async () => {
       const { data } = await (supabase as any).from("posts")
         .select("id,content,kind,photo_url,image_url,likes_count,author_username,author_color")
+        .in("kind",["photo","post"])
         .ilike("content",`%${search}%`).limit(10);
       return data ?? [];
     },
@@ -330,11 +401,6 @@ function ExplorePage() {
     }
   }
 
-  function fmtDur(s: number) {
-    const m = Math.floor(s / 60), sec = s % 60;
-    return `${m}:${String(sec).padStart(2, "0")}`;
-  }
-
   /* ── Render helpers ── */
   function PersonCard({ p }: { p: any }) {
     const isF = followMap[p.id] ?? myFollowsSet.has(p.username);
@@ -358,51 +424,6 @@ function ExplorePage() {
           </button>
         )}
       </div>
-    );
-  }
-
-  function VideoThumb({ v }: { v: any }) {
-    const ch = v.channels;
-    const bg = colorFor(ch?.name || "?");
-    return (
-      <button className="group text-left w-full" onClick={() => navigate({ to: `/hoodatv/watch/${v.id}` })}>
-        {/* Thumbnail 16/9 igual ao HoodaTV */}
-        <div className="relative rounded-xl overflow-hidden mb-2" style={{ aspectRatio: "16/9", background: "var(--s2)" }}>
-          {v.thumbnail_url
-            ? <img src={v.thumbnail_url} alt={v.title} className="w-full h-full object-cover group-hover:scale-[1.04] transition-transform duration-500" />
-            : <div className="w-full h-full flex items-center justify-center" style={{ background: GRAD }}>
-                <Play className="h-8 w-8 text-white" fill="white" />
-              </div>}
-          {v.duration_seconds && (
-            <span className="absolute bottom-2 right-2 text-[11px] font-bold text-white px-1.5 py-0.5 rounded-md"
-              style={{ background: "rgba(0,0,0,0.82)" }}>
-              {fmtDur(v.duration_seconds)}
-            </span>
-          )}
-          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200"
-            style={{ background: "rgba(0,0,0,0.18)" }}>
-            <div className="w-12 h-12 rounded-full flex items-center justify-center shadow-2xl"
-              style={{ background: "rgba(255,255,255,0.92)" }}>
-              <Play className="h-5 w-5 ml-0.5" style={{ color: P }} fill={P} />
-            </div>
-          </div>
-        </div>
-        {/* Meta — avatar do canal + título + views */}
-        <div className="flex gap-2">
-          <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 flex items-center justify-center text-white text-xs font-bold"
-            style={{ background: bg }}>
-            {ch?.avatar_url
-              ? <img src={ch.avatar_url} alt={ch.name} className="w-full h-full object-cover" />
-              : (ch?.name?.[0] ?? "?").toUpperCase()}
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[12.5px] font-semibold line-clamp-2 leading-snug" style={{ color: "var(--text-primary)" }}>{v.title}</p>
-            <p className="text-[11px] mt-0.5" style={{ color: "var(--text-muted)" }}>
-              {ch?.name} · {fmtNum(v.views_count ?? 0)} views
-            </p>
-          </div>
-        </div>
-      </button>
     );
   }
 
@@ -493,12 +514,12 @@ function ExplorePage() {
                 </div>
               </section>
             )}
-            {/* Vídeos */}
+            {/* Vídeos — mesmo cartão usado no Lar, nunca um thumbnail à parte */}
             {searchVideos.length > 0 && (
               <section>
                 <p className="text-[11px] font-bold uppercase tracking-wider mb-2.5" style={{ color: "var(--text-muted)" }}>Vídeos</p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {searchVideos.map((v: any) => <VideoThumb key={v.id} v={v} />)}
+                <div className="space-y-4 -mx-4">
+                  {searchVideos.map((v: any) => <PostCard key={v.id} p={v} />)}
                 </div>
               </section>
             )}
@@ -540,23 +561,6 @@ function ExplorePage() {
                   </button>
                 ))}
               </div>
-            </section>
-
-            {/* Vídeos em destaque */}
-            <section className="px-4">
-              <div className="flex items-center justify-between mb-2.5">
-                <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>Vídeos em destaque</p>
-                <button onClick={() => setTab("posts")} className="text-xs font-semibold" style={{ color: P }}>Ver tudo →</button>
-              </div>
-              {featuredVideos.length === 0 ? (
-                <p className="text-sm text-center py-8" style={{ color: "var(--text-muted)" }}>
-                  Ainda não há vídeos em destaque.
-                </p>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {featuredVideos.slice(0,4).map((v: any) => <VideoThumb key={v.id} v={v} />)}
-                </div>
-              )}
             </section>
 
             {/* Pessoas para seguir */}
@@ -621,19 +625,9 @@ function ExplorePage() {
             {suggestedPeople.map((p: any) => <PersonCard key={p.id} p={p} />)}
           </div>
 
-        /* ══════════ MÍDIA (posts + vídeos de qualquer pessoa/canal) ══════════ */
+        /* ══════════ MÍDIA (posts de qualquer pessoa; vídeos só na pesquisa) ══════════ */
         ) : tab === "posts" ? (
           <div className="px-4 py-4 space-y-6">
-            {featuredVideos.length > 0 && (
-              <section>
-                <p className="text-[11px] font-bold uppercase tracking-wider mb-3" style={{ color: "var(--text-muted)" }}>
-                  Vídeos
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {featuredVideos.map((v: any) => <VideoThumb key={v.id} v={v} />)}
-                </div>
-              </section>
-            )}
             {popularPosts.length > 0 && (
               <section>
                 <p className="text-[11px] font-bold uppercase tracking-wider mb-3" style={{ color: "var(--text-muted)" }}>
@@ -644,7 +638,7 @@ function ExplorePage() {
                 </div>
               </section>
             )}
-            {featuredVideos.length === 0 && popularPosts.length === 0 && (
+            {popularPosts.length === 0 && (
               <div className="py-20 text-center">
                 <p className="font-bold" style={{ color: "var(--text-primary)" }}>Ainda não há mídia</p>
               </div>
