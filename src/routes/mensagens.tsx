@@ -204,6 +204,182 @@ function LinkPreview({ url, isMe }: { url: string; isMe: boolean }) {
   );
 }
 
+// ── Deteção automática de conteúdo (links, emails, telefones, @menções, #hashtags,
+// domínios sem protocolo) — usada tanto na bolha da mensagem como, em tempo
+// real, na caixa de escrita. ──────────────────────────────────────────────────
+type ContentToken = {
+  type: "text" | "url" | "email" | "phone" | "mention" | "hashtag" | "domain";
+  value: string;
+};
+
+// Ordem importa: alternativas mais específicas primeiro (url/email) para que
+// não sejam mal-interpretadas como domínio nu ou telefone.
+const CONTENT_TOKEN_REGEX =
+  /(https?:\/\/[^\s<>"']+)|([\w.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9.-]+)|(\+?\d[\d\s().-]{7,}\d)|(@[a-zA-Z0-9_.]{2,30})|(#[\p{L}\d_]{2,50})|(\b(?:[a-zA-Z0-9-]+\.){1,3}[a-zA-Z]{2,}\b)/gu;
+
+function tokenizeContent(text: string): ContentToken[] {
+  const tokens: ContentToken[] = [];
+  let lastIndex = 0;
+  let m: RegExpExecArray | null;
+  CONTENT_TOKEN_REGEX.lastIndex = 0;
+  while ((m = CONTENT_TOKEN_REGEX.exec(text))) {
+    if (m.index > lastIndex) tokens.push({ type: "text", value: text.slice(lastIndex, m.index) });
+    let value = m[0];
+    let type: ContentToken["type"] = "text";
+    if (m[1]) type = "url";
+    else if (m[2]) type = "email";
+    else if (m[3]) type = "phone";
+    else if (m[4]) type = "mention";
+    else if (m[5]) type = "hashtag";
+    else if (m[6]) type = "domain";
+    // Não deixa pontuação de fim de frase colada ao link (ex: "hooda.com." ou "(https://x.com)")
+    let trail = "";
+    if (type === "url" || type === "domain") {
+      const tm = value.match(/[.,!?;:)\]"']+$/);
+      if (tm) { trail = tm[0]; value = value.slice(0, value.length - trail.length); }
+    }
+    tokens.push({ type, value });
+    if (trail) tokens.push({ type: "text", value: trail });
+    lastIndex = m.index + m[0].length;
+  }
+  if (lastIndex < text.length) tokens.push({ type: "text", value: text.slice(lastIndex) });
+  return tokens;
+}
+
+/** Texto de uma mensagem com deteção automática de URLs, emails, telefones,
+ * @menções, #hashtags e domínios sem "https://" — tudo convertido em links
+ * clicáveis com cor de destaque. */
+function LinkifiedText({ text, isMe }: { text: string; isMe: boolean }) {
+  const navigate = useNavigate();
+  const tokens = useMemo(() => tokenizeContent(text), [text]);
+  const linkColor = isMe ? "#FFE9A8" : "#5B3FCF";
+  const linkStyle: React.CSSProperties = {
+    color: linkColor, fontWeight: 600, textDecoration: "underline",
+    textUnderlineOffset: 2, cursor: "pointer", wordBreak: "break-word",
+  };
+
+  return (
+    <>
+      {tokens.map((tok, i) => {
+        if (tok.type === "text") return <span key={i}>{tok.value}</span>;
+        const stop = (e: React.MouseEvent) => e.stopPropagation();
+        switch (tok.type) {
+          case "url":
+            return (
+              <a key={i} href={tok.value} target="_blank" rel="noopener noreferrer"
+                style={linkStyle} onClick={stop}>{tok.value}</a>
+            );
+          case "domain":
+            return (
+              <a key={i} href={`https://${tok.value}`} target="_blank" rel="noopener noreferrer"
+                style={linkStyle} onClick={stop}>{tok.value}</a>
+            );
+          case "email":
+            return (
+              <a key={i} href={`mailto:${tok.value}`} style={linkStyle} onClick={stop}>{tok.value}</a>
+            );
+          case "phone":
+            return (
+              <a key={i} href={`tel:${tok.value.replace(/[^\d+]/g, "")}`} style={linkStyle} onClick={stop}>
+                {tok.value}
+              </a>
+            );
+          case "mention":
+            return (
+              <a key={i} href={`/u/${tok.value.slice(1)}`} style={linkStyle}
+                onClick={e => { e.preventDefault(); stop(e); navigate({ to: "/u/$username", params: { username: tok.value.slice(1) } }); }}>
+                {tok.value}
+              </a>
+            );
+          case "hashtag":
+            return (
+              <a key={i} href={`/explorar?q=${encodeURIComponent(tok.value)}`} style={linkStyle}
+                onClick={e => { e.preventDefault(); stop(e); navigate({ to: "/explorar", search: { q: tok.value } as any }); }}>
+                {tok.value}
+              </a>
+            );
+          default:
+            return <span key={i}>{tok.value}</span>;
+        }
+      })}
+    </>
+  );
+}
+
+// ── "Ler mais / Ver menos" para mensagens longas ──────────────────────────────
+const LONG_TEXT_CHAR_LIMIT = 320;
+const LONG_TEXT_LINE_LIMIT = 6;
+
+function isTextLong(text: string): boolean {
+  if (text.length > LONG_TEXT_CHAR_LIMIT) return true;
+  const lines = text.split("\n").length;
+  return lines > LONG_TEXT_LINE_LIMIT;
+}
+
+function truncateText(text: string): string {
+  // Corta por linhas primeiro (mantém frases inteiras quando possível)
+  const lines = text.split("\n");
+  if (lines.length > LONG_TEXT_LINE_LIMIT) {
+    return lines.slice(0, LONG_TEXT_LINE_LIMIT).join("\n");
+  }
+  return text.slice(0, LONG_TEXT_CHAR_LIMIT);
+}
+
+/** Mensagem de texto com "Ler mais/Ver menos" (para textos longos) e deteção
+ * automática de conteúdo (links, emails, telefones, menções, hashtags). */
+function ExpandableMessageText({ text, isMe }: { text: string; isMe: boolean }) {
+  const [expanded, setExpanded] = useState(false);
+  const long = useMemo(() => isTextLong(text), [text]);
+  const shown = expanded || !long ? text : truncateText(text) + "…";
+  const toggleColor = isMe ? "rgba(255,255,255,0.85)" : "#5B3FCF";
+
+  return (
+    <div
+      style={{
+        maxHeight: expanded ? 4000 : (long ? 220 : undefined),
+        overflow: "hidden",
+        transition: "max-height 0.35s ease",
+      }}
+    >
+      <p className="break-words text-sm leading-relaxed whitespace-pre-wrap">
+        <LinkifiedText text={shown} isMe={isMe} />
+      </p>
+      {long && (
+        <button
+          onClick={e => { e.stopPropagation(); setExpanded(v => !v); }}
+          className="text-xs font-bold mt-1 transition active:opacity-70"
+          style={{ color: toggleColor }}
+        >
+          {expanded ? "Ver menos" : "Ler mais"}
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ── Deteção em tempo real enquanto o utilizador escreve (composer) ───────────
+// Cores diferentes por tipo de conteúdo — puramente visual, sem links clicáveis
+// (o texto ainda está a ser escrito).
+const COMPOSER_HIGHLIGHT_COLORS: Record<string, string> = {
+  url: "#3B82F6", domain: "#3B82F6", email: "#1FAFA6",
+  phone: "#6BA547", mention: "#E94B8A", hashtag: "#5B3FCF",
+};
+
+function ComposerHighlightOverlay({ text }: { text: string }) {
+  const tokens = useMemo(() => tokenizeContent(text), [text]);
+  return (
+    <>
+      {tokens.map((tok, i) =>
+        tok.type === "text"
+          ? <span key={i}>{tok.value}</span>
+          : <span key={i} style={{ color: COMPOSER_HIGHLIGHT_COLORS[tok.type], fontWeight: 700 }}>{tok.value}</span>
+      )}
+      {/* Espaço fantasma no fim para a altura acompanhar uma quebra de linha final */}
+      {text.endsWith("\n") ? "\u00A0" : ""}
+    </>
+  );
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const Route = createFileRoute("/mensagens")({
@@ -2136,9 +2312,10 @@ function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit
         {!isMe && contact.isOfficial && <OfficialSenderName />}
 
         {/* Bubble */}
-        <div className="rounded-2xl overflow-hidden shadow-sm transition-transform duration-150"
+        <div className="rounded-2xl overflow-hidden shadow-sm transition-all duration-150"
           style={{
             background: bubbleBg, color: bubbleText, borderRadius: br,
+            opacity: isMe && m.deliveryStatus === "sending" ? 0.65 : 1,
             transform: isPressing ? "scale(0.97)" : `translateX(${swipeDx}px)`,
           }}>
 
@@ -2206,10 +2383,8 @@ function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit
             {/* Text */}
             {m.type === "text" && m.text && (
               <>
-                <p className="break-words text-sm leading-relaxed">
-                  {m.text}
-                  {m.edited && <span className="text-[10px] ml-1.5 opacity-60">editado</span>}
-                </p>
+                <ExpandableMessageText text={m.text} isMe={isMe} />
+                {m.edited && <span className="text-[10px] ml-1.5 opacity-60 align-middle">editado</span>}
                 {extractUrl(m.text) && (
                   <LinkPreview url={extractUrl(m.text)!} isMe={isMe} />
                 )}
@@ -2222,17 +2397,32 @@ function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit
               {isMe && (() => {
                 const st = m.status;
                 const ds = m.deliveryStatus;
+                // a enviar — mensagem ainda em trânsito (optimistic), mostra
+                // label + relógio a piscar, como pedido explicitamente.
+                if (ds === "sending") {
+                  return (
+                    <span className="flex items-center gap-1">
+                      <span className="text-[10px] italic" style={{ opacity: 0.75 }}>A enviar…</span>
+                      <Clock className="h-3 w-3 animate-pulse" style={{ color: isMe ? "rgba(255,255,255,0.5)" : "#bbb" }} />
+                    </span>
+                  );
+                }
                 // read (azul duplo, só se confirmações ativas)
                 if (st === "read" || ds === "read")
                   return <CheckCheck className="h-3.5 w-3.5" style={{ color: readReceipts !== false ? "#53BDEB" : (isMe ? "rgba(255,255,255,0.55)" : "#999") }} />;
                 // delivered (cinza duplo)
-                if (st === "delivered" || ds === "sent")
+                if (st === "delivered")
                   return <CheckCheck className="h-3.5 w-3.5" style={{ color: isMe ? "rgba(255,255,255,0.55)" : "#999" }} />;
                 // sent (cinza simples)
-                if (st === "sent" || ds === "sending")
+                if (st === "sent")
                   return <Check className="h-3.5 w-3.5" style={{ color: isMe ? "rgba(255,255,255,0.55)" : "#999" }} />;
-                // a enviar (relógio)
-                return <Clock className="h-3 w-3" style={{ color: isMe ? "rgba(255,255,255,0.4)" : "#bbb" }} />;
+                // fallback — a enviar (relógio)
+                return (
+                  <span className="flex items-center gap-1">
+                    <span className="text-[10px] italic" style={{ opacity: 0.75 }}>A enviar…</span>
+                    <Clock className="h-3 w-3 animate-pulse" style={{ color: isMe ? "rgba(255,255,255,0.4)" : "#bbb" }} />
+                  </span>
+                );
               })()}
             </div>
           </div>
@@ -2684,6 +2874,7 @@ function ChatPanel({ myId, contact, onBack }: {
   // ── Refs ──
   const bottomRef     = useRef<HTMLDivElement>(null);
   const inputRef      = useRef<HTMLTextAreaElement>(null);
+  const composerBackdropRef = useRef<HTMLDivElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder|null>(null);
   const audioChunksRef   = useRef<Blob[]>([]);
   const recordTimerRef   = useRef<ReturnType<typeof setInterval>|null>(null);
@@ -3202,9 +3393,31 @@ function ChatPanel({ myId, contact, onBack }: {
   }
 
   // ── Media queue ──
-  function openMediaQueue(files: FileList, type: "image"|"video") {
+  function openMediaQueue(files: FileList | File[], type: "image"|"video") {
     const items = Array.from(files).map(f => ({ file: f, url: URL.createObjectURL(f), type, edit: null, caption: "" }));
     setMediaSendQueue(items); setMediaQueueIdx(0); setShowMediaPreview(true);
+  }
+
+  // ── Colar imagens diretamente (CTRL+V) — funciona com qualquer imagem na
+  // área de transferência: screenshot, copiada do navegador, de outra app, etc.
+  // Suporta múltiplas imagens coladas de uma vez, reaproveitando o mesmo fluxo
+  // de pré-visualização/legenda/envio usado para anexos normais.
+  function handleComposerPaste(e: React.ClipboardEvent<HTMLTextAreaElement>) {
+    const items = e.clipboardData?.items;
+    if (!items || items.length === 0) return;
+    const imageFiles: File[] = [];
+    for (let i = 0; i < items.length; i++) {
+      const it = items[i];
+      if (it.kind === "file" && it.type.startsWith("image/")) {
+        const f = it.getAsFile();
+        if (f) imageFiles.push(f);
+      }
+    }
+    if (imageFiles.length > 0) {
+      e.preventDefault();
+      setShowAttach(false);
+      openMediaQueue(imageFiles, "image");
+    }
   }
 
   // Aplana edições (filtros, brilho, textos, stickers) numa imagem usando Canvas
@@ -3971,13 +4184,26 @@ function ChatPanel({ myId, contact, onBack }: {
           }}>
           <Plus className="h-5 w-5" />
         </button>
-        {/* Campo de texto — igual ao WhatsApp */}
+        {/* Campo de texto — igual ao WhatsApp, com destaque em tempo real
+            (URLs/emails/telefones/@menções/#hashtags) por trás do texto */}
         <div className="flex-1 flex items-end rounded-3xl px-4 py-2 gap-2 min-h-[44px]"
           style={{ background: "var(--s2)", boxShadow: "0 1px 4px rgba(0,0,0,0.1)" }}>
-          <textarea ref={inputRef} value={input} onChange={e => setInput(e.target.value)} rows={1}
-            onKeyDown={e => { if (e.key==="Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
-            placeholder="Mensagem..." className="flex-1 bg-transparent outline-none text-sm resize-none py-1 max-h-28 leading-relaxed"
-            style={{ color:"var(--text-primary,#111)" }} />
+          <div className="relative flex-1">
+            <div
+              ref={composerBackdropRef}
+              aria-hidden
+              className="absolute inset-0 whitespace-pre-wrap break-words text-sm resize-none py-1 leading-relaxed overflow-hidden pointer-events-none"
+              style={{ color: "var(--text-primary,#111)" }}
+            >
+              <ComposerHighlightOverlay text={input} />
+            </div>
+            <textarea ref={inputRef} value={input} onChange={e => setInput(e.target.value)} rows={1}
+              onKeyDown={e => { if (e.key==="Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
+              onScroll={e => { if (composerBackdropRef.current) composerBackdropRef.current.scrollTop = e.currentTarget.scrollTop; }}
+              onPaste={handleComposerPaste}
+              placeholder="Mensagem..." className="relative w-full bg-transparent outline-none text-sm resize-none py-1 max-h-28 leading-relaxed"
+              style={{ color: input ? "transparent" : "var(--text-primary,#111)", caretColor: "var(--text-primary,#111)" }} />
+          </div>
           <button onClick={() => { setShowEmoji(v=>!v); setShowAttach(false); }}
             className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center transition active:scale-90 mb-0.5"
             style={{ color: showEmoji ? "#5B3FCF" : "#aaa" }}>
@@ -4082,6 +4308,19 @@ function ChatPanel({ myId, contact, onBack }: {
 
 
 // ── Contact List ──
+// ── Remover conversa da lista (só do meu lado) ────────────────────────────────
+// Guarda, por conversationId, o instante em que a pessoa a removeu da lista.
+// A conversa só reaparece quando chegar uma mensagem MAIS RECENTE do que esse
+// instante — nunca apaga nada para a outra pessoa.
+const HIDDEN_CONV_KEY = "hooda_hidden_conversations";
+
+function loadHiddenConversations(): Record<string, number> {
+  try { return JSON.parse(localStorage.getItem(HIDDEN_CONV_KEY) || "{}"); } catch { return {}; }
+}
+function saveHiddenConversations(map: Record<string, number>) {
+  try { localStorage.setItem(HIDDEN_CONV_KEY, JSON.stringify(map)); } catch {}
+}
+
 function ContactList({ contacts, loading, refreshing, search, setSearch, active, setActive, setShowAddContact, setShowRequests, pendingRequestCount }: {
   contacts: Contact[];
   loading: boolean;
@@ -4094,14 +4333,67 @@ function ContactList({ contacts, loading, refreshing, search, setSearch, active,
   setShowRequests: (v: boolean) => void;
   pendingRequestCount: number;
 }) {
+  const isMobile = useIsMobile();
+  const [hiddenMap, setHiddenMap] = useState<Record<string, number>>(() => loadHiddenConversations());
+  const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; contact: Contact } | null>(null);
+  const [sheetContact, setSheetContact] = useState<Contact | null>(null);
+  const [confirmHide, setConfirmHide] = useState<Contact | null>(null);
+  const ctxMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!ctxMenu) return;
+    const close = () => setCtxMenu(null);
+    document.addEventListener("click", close);
+    document.addEventListener("scroll", close, true);
+    return () => { document.removeEventListener("click", close); document.removeEventListener("scroll", close, true); };
+  }, [ctxMenu]);
+
+  function hideConversation(c: Contact) {
+    const next = { ...hiddenMap, [c.conversationId]: Date.now() };
+    setHiddenMap(next);
+    saveHiddenConversations(next);
+    if (active?.conversationId === c.conversationId) setActive(null);
+    toast.success("Conversa removida da lista");
+  }
+
+  const visible = useMemo(() => {
+    return contacts.filter(c => {
+      const hiddenAt = hiddenMap[c.conversationId];
+      if (!hiddenAt) return true;
+      const lastTs = (c as any).lastTimestamp ?? 0;
+      return lastTs > hiddenAt; // reaparece automaticamente com mensagem nova
+    });
+  }, [contacts, hiddenMap]);
+
   const filtered = useMemo(() => {
-    if (!search.trim()) return contacts;
+    if (!search.trim()) return visible;
     const lower = search.toLowerCase();
-    return contacts.filter(c =>
+    return visible.filter(c =>
       c.username?.toLowerCase().includes(lower) ||
       c.full_name?.toLowerCase().includes(lower)
     );
-  }, [contacts, search]);
+  }, [visible, search]);
+
+  // Long-press (mobile) para abrir o menu de ações do item da conversa —
+  // mesmo padrão usado nas bolhas de mensagem.
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const actionFired = useRef(false);
+  function handleItemTouchStart(c: Contact) {
+    if (!isMobile) return;
+    actionFired.current = false;
+    longPressTimer.current = setTimeout(() => {
+      actionFired.current = true;
+      setSheetContact(c);
+      if (navigator.vibrate) navigator.vibrate(15);
+    }, 420);
+  }
+  function handleItemTouchEnd(e: React.TouchEvent) {
+    if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; }
+    if (actionFired.current) { e.preventDefault(); e.stopPropagation(); }
+  }
+  function handleItemTouchMove() {
+    if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; }
+  }
 
   return (
     <div className="flex flex-col h-full" style={{ background: "var(--surface-0,#fff)" }}>
@@ -4169,6 +4461,10 @@ function ContactList({ contacts, loading, refreshing, search, setSearch, active,
           <button
             key={c.conversationId}
             onClick={() => setActive(c)}
+            onContextMenu={e => { if (!isMobile) { e.preventDefault(); setCtxMenu({ x: e.clientX, y: e.clientY, contact: c }); } }}
+            onTouchStart={() => handleItemTouchStart(c)}
+            onTouchMove={handleItemTouchMove}
+            onTouchEnd={handleItemTouchEnd}
             className="w-full flex items-center gap-3 px-4 py-3.5 text-left transition-colors active:bg-[var(--s1)]"
             style={{
               borderBottom: "1px solid var(--border-subtle,#f0f0f0)",
@@ -4216,6 +4512,81 @@ function ContactList({ contacts, loading, refreshing, search, setSearch, active,
           </button>
         ))}
       </div>
+
+      {/* ── Menu contextual (DESKTOP) — clique direito na conversa ── */}
+      {ctxMenu && createPortal(
+        <div ref={ctxMenuRef} onClick={e => e.stopPropagation()}
+          className="fixed z-[9999] rounded-2xl shadow-2xl overflow-hidden min-w-[190px] border"
+          style={{ top: ctxMenu.y, left: ctxMenu.x, background: "var(--s0,white)", borderColor: "var(--border-default,#eee)" }}>
+          <button
+            onClick={() => { setConfirmHide(ctxMenu.contact); setCtxMenu(null); }}
+            className="w-full flex items-center gap-2.5 px-4 py-3 text-sm transition active:opacity-70"
+            onMouseOver={e => (e.currentTarget.style.background = "var(--s2)")}
+            onMouseOut={e => (e.currentTarget.style.background = "transparent")}>
+            <X className="h-4 w-4" style={{ color: "#F97316" }} />
+            <span style={{ color: "var(--text-primary)" }}>Remover da lista</span>
+          </button>
+        </div>,
+        document.body
+      )}
+
+      {/* ── Menu de ações (MOBILE) — pressionar e segurar a conversa ── */}
+      {sheetContact && isMobile && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-end" style={{ background: "rgba(0,0,0,0.5)" }}
+          onClick={() => setSheetContact(null)}>
+          <div className="w-full rounded-t-3xl overflow-hidden shadow-2xl animate-in slide-in-from-bottom duration-200"
+            style={{ background: "var(--s0)", maxHeight: "60vh" }}
+            onClick={e => e.stopPropagation()}>
+            <div className="flex justify-center pt-2.5 pb-1">
+              <div className="w-10 h-1 rounded-full" style={{ background: "var(--border-default)" }} />
+            </div>
+            <div className="px-4 py-3 border-b flex items-center gap-3" style={{ borderColor: "var(--border-subtle)" }}>
+              <Av name={sheetContact.username} color={(sheetContact as any).color} size={36} src={sheetContact.avatar_url} />
+              <p className="font-semibold text-sm truncate" style={{ color: "var(--text-primary)" }}>
+                {sheetContact.full_name || sheetContact.username}
+              </p>
+            </div>
+            <button
+              onClick={() => { setConfirmHide(sheetContact); setSheetContact(null); }}
+              className="w-full flex items-center gap-2.5 px-4 py-3.5 text-sm transition active:opacity-70">
+              <X className="h-4 w-4" style={{ color: "#F97316" }} />
+              <span style={{ color: "var(--text-primary)" }}>Remover da lista</span>
+            </button>
+            <div style={{ height: "env(safe-area-inset-bottom, 12px)" }} />
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* ── Confirmação — remover conversa da lista ── */}
+      {confirmHide && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-6"
+          style={{ background: "rgba(0,0,0,0.5)" }}
+          onClick={() => setConfirmHide(null)}>
+          <div className="rounded-2xl p-5 max-w-xs w-full shadow-2xl" style={{ background: "var(--s0)" }}
+            onClick={e => e.stopPropagation()}>
+            <p className="font-bold text-sm mb-1" style={{ color: "var(--text-primary)" }}>
+              Remover conversa da lista?
+            </p>
+            <p className="text-xs mb-4" style={{ color: "var(--text-muted)" }}>
+              Tem certeza que deseja remover esta conversa da sua lista? Ela não é apagada — reaparece automaticamente se chegar uma nova mensagem.
+            </p>
+            <div className="flex gap-2">
+              <button onClick={() => setConfirmHide(null)}
+                className="flex-1 py-2 rounded-xl text-sm font-semibold"
+                style={{ background: "var(--s2)", color: "var(--text-secondary)" }}>
+                Cancelar
+              </button>
+              <button onClick={() => { hideConversation(confirmHide); setConfirmHide(null); }}
+                className="flex-1 py-2 rounded-xl text-sm font-bold text-white"
+                style={{ background: "#F97316" }}>
+                Remover
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }
