@@ -178,10 +178,10 @@ export function SideNav() {
       )}
 
       {/* Bottom user card — X style */}
-      <div className="px-2 py-3">
+      <div className="px-2 py-3 flex items-center gap-1">
         <button
           onClick={() => setShowDrawer(true)}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-full transition hover:bg-[color-mix(in_oklab,var(--text-primary)_6%,transparent)]">
+          className="flex-1 min-w-0 flex items-center gap-3 px-3 py-2.5 rounded-full transition hover:bg-[color-mix(in_oklab,var(--text-primary)_6%,transparent)]">
           <div className="h-10 w-10 rounded-full overflow-hidden flex items-center justify-center text-white text-sm font-bold shrink-0"
             style={{ background: avatarUrl ? "transparent" : "#5B3FCF" }}>
             {avatarUrl
@@ -192,13 +192,13 @@ export function SideNav() {
             <p className="text-sm font-bold truncate" style={{ color: "var(--text-primary)" }}>{name || "Utilizador"}</p>
             <p className="text-xs truncate" style={{ color: "var(--text-muted)" }}>Menu</p>
           </div>
-          <button
-            onClick={(e) => { e.stopPropagation(); toggle(); }}
-            aria-label="Alternar tema"
-            className="p-2 rounded-full hover:bg-[color-mix(in_oklab,var(--text-primary)_8%,transparent)]"
-            style={{ color: "var(--text-secondary)" }}>
-            {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-          </button>
+        </button>
+        <button
+          onClick={toggle}
+          aria-label="Alternar tema"
+          className="p-2 rounded-full hover:bg-[color-mix(in_oklab,var(--text-primary)_8%,transparent)] shrink-0"
+          style={{ color: "var(--text-secondary)" }}>
+          {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
         </button>
       </div>
     </aside>
