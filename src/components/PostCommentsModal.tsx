@@ -383,15 +383,15 @@ function PostCommentsModalInner({
       <div
         className={`w-full flex flex-col overflow-hidden shadow-2xl hooda-modal-sheet rounded-t-3xl ${
           hasMedia
-            ? "lg:flex-row lg:rounded-none lg:max-w-[1100px] lg:w-[92vw]"
+            ? "lg:flex-row lg:rounded-2xl lg:max-w-[1100px] lg:w-[92vw]"
             : "lg:max-w-sm lg:rounded-3xl"
         }`}
-        style={{ maxHeight: "92vh", height: "92vh" }}
+        style={{ maxHeight: "92vh", height: hasMedia ? "92vh" : undefined }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Painel de mídia — só em desktop e só quando há foto/vídeo */}
         {hasMedia && (
-          <div className="hidden lg:flex lg:flex-1 min-w-0 items-center justify-center relative shrink-0" style={{ background: "#000" }}>
+          <div className="hidden lg:flex lg:flex-1 min-w-0 items-center justify-center relative self-stretch" style={{ background: "#000" }}>
             <button
               onClick={onClose}
               className="absolute top-4 left-4 w-9 h-9 rounded-full flex items-center justify-center z-10 transition active:scale-90"
@@ -399,7 +399,7 @@ function PostCommentsModalInner({
             >
               <X className="h-5 w-5 text-white" />
             </button>
-            <div className="w-full h-full flex items-center justify-center px-6 py-6" style={{ minWidth: 0 }}>
+            <div className="w-full flex items-center justify-center p-6" style={{ minWidth: 0 }}>
               {body}
             </div>
           </div>
@@ -407,8 +407,7 @@ function PostCommentsModalInner({
 
         {/* Coluna direita (desktop) / coluna única (mobile) */}
         <div
-          className={`flex flex-col shrink-0 ${hasMedia ? "lg:w-[420px] lg:h-full bg-white" : "w-full"}`}
-          style={!hasMedia ? { height: "100%" } : undefined}
+          className={`flex flex-col shrink-0 self-stretch ${hasMedia ? "lg:w-[420px] bg-white" : "w-full"}`}
         >
           {/* Drag indicator (mobile) */}
           <div className="flex justify-center pt-2.5 pb-0 shrink-0 lg:hidden">
@@ -423,13 +422,22 @@ function PostCommentsModalInner({
             </button>
           </div>
 
-          {/* Scrollable: post + actions + comments, tudo num scroll só, como o Facebook */}
+          {/* Mobile: vídeo/foto fixo no topo, fora do scroll */}
+          {hasMedia && body && (
+            <div className="shrink-0 lg:hidden">
+              {body}
+            </div>
+          )}
+
+          {/* Scrollable: header do post + actions + comentários */}
           <div ref={listRef} className="overflow-y-auto flex-1">
-            {/* Publicação inteira no topo — em desktop com mídia, a mídia já está no painel esquerdo, então só mostra header/actions aqui */}
-            {(header || (body && !hasMedia)) && (
+            {/* Em desktop com mídia: só header + actions aqui (mídia está no painel esquerdo)
+                Em mobile: apenas header + actions (mídia já está fixo acima) */}
+            {(header || actions) && (
               <div className="border-b border-neutral-100">
                 {header && <div className="px-4 pt-3">{header}</div>}
-                {body && <div className={hasMedia ? "pt-2 lg:hidden" : "pt-2"}>{body}</div>}
+                {/* body sem mídia (texto/enquete sem foto) — só aparece se não há hasMedia */}
+                {body && !hasMedia && <div className="pt-2">{body}</div>}
                 {actions && <div className="px-4 pb-1">{actions}</div>}
               </div>
             )}
