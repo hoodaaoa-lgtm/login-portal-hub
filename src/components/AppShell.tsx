@@ -23,11 +23,12 @@ const NAV_ITEMS = [
 ] as const;
 
 const MOBILE_ITEMS = [
-  { to: "/home",       label: t("nav.home"),      Icon: Home          },
-  { to: "/explorar",   label: t("nav.explore"),  Icon: Compass       },
-  { to: "/drops",      label: "Gotas",     Icon: Droplet       },
-  { to: "/mensagens",  label: t("nav.messages"), Icon: MessageSquare },
-  { to: null,          label: "Menu",      Icon: Menu          }, // Menu Hamburger
+  { to: "/home",       label: t("nav.home"),      Icon: Home,          search: undefined as Record<string, string> | undefined },
+  { to: "/explorar",   label: t("nav.explore"),  Icon: Compass,        search: undefined as Record<string, string> | undefined },
+  { to: "/drops",      label: "Gotas",     Icon: Droplet,               search: undefined as Record<string, string> | undefined },
+  { to: "/mensagens",  label: t("nav.messages"), Icon: MessageSquare,   search: undefined as Record<string, string> | undefined },
+  { to: "/home",       label: "Notificações", Icon: Bell,               search: { notifications: "1" } as Record<string, string> | undefined },
+  { to: null,          label: "Menu",      Icon: Menu,                  search: undefined as Record<string, string> | undefined }, // Menu Hamburger
 ] as const;
 
 /** Resolve o valor do badge para uma rota de navegação a partir dos contadores já carregados */
@@ -234,8 +235,8 @@ export function BottomNav() {
           WebkitBackdropFilter: "blur(24px)",
           paddingBottom: "max(env(safe-area-inset-bottom), 4px)",
         }}>
-        <ul className="grid grid-cols-5 h-[58px]">
-          {MOBILE_ITEMS.map(({ to, label, Icon }) => {
+        <ul className="grid grid-cols-6 h-[58px]">
+          {MOBILE_ITEMS.map(({ to, label, Icon, search }) => {
             const isMenu = to === null;
             const active = !isMenu && (
               (to as string) === "/hoodatv" || (to as string) === "/studio"
@@ -261,7 +262,7 @@ export function BottomNav() {
                     <span className="text-[9.5px] tracking-tight font-400">{label}</span>
                   </button>
                 ) : (
-                  <Link to={to as string}
+                  <Link to={to as string} search={search}
                     className="flex flex-col items-center justify-center gap-1 h-full transition-all duration-150 active:scale-90"
                     style={{ color: active ? "#5B3FCF" : "var(--text-muted)" }}>
                     <div className="relative flex items-center justify-center"
