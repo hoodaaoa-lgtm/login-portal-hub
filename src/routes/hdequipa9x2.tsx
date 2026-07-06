@@ -406,26 +406,31 @@ function AdminDashboard({ adminId }: { adminId: string }) {
       const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
       const startWeek = new Date(now.getTime() - 7 * 86400000).toISOString();
       const [
-        { count: totalUsers },
-        { count: newToday },
-        { count: newWeek },
-        { count: totalPosts },
-        { count: postsToday },
-        { count: totalChannels },
-        { count: pendingReports },
+        totalUsersRes, newTodayRes, newWeekRes,
+        totalPostsRes, postsTodayRes, totalChannelsRes, pendingReportsRes,
       ] = await Promise.all([
-        db.from("profiles").select("*", { count: "exact", head: true }),
-        db.from("profiles").select("*", { count: "exact", head: true }).gte("created_at", startToday),
-        db.from("profiles").select("*", { count: "exact", head: true }).gte("created_at", startWeek),
-        db.from("posts").select("*", { count: "exact", head: true }),
-        db.from("posts").select("*", { count: "exact", head: true }).gte("created_at", startToday),
-        db.from("channels").select("*", { count: "exact", head: true }),
-        db.from("user_reports").select("*", { count: "exact", head: true }).eq("status", "pending"),
+        // NOTA: "profiles" só tem GRANT SELECT em colunas específicas (ver
+        // migração 20260627085510) — nunca em todas ("*"). Pedir select("*")
+        // aqui fazia a query falhar sempre (erro de permissão), e o count
+        // ficava undefined -> 0, mesmo havendo utilizadores reais. Pedir só
+        // "id" evita o problema porque "id" está sempre na lista de colunas
+        // concedidas.
+        db.from("profiles").select("id", { count: "exact", head: true }),
+        db.from("profiles").select("id", { count: "exact", head: true }).gte("created_at", startToday),
+        db.from("profiles").select("id", { count: "exact", head: true }).gte("created_at", startWeek),
+        db.from("posts").select("id", { count: "exact", head: true }),
+        db.from("posts").select("id", { count: "exact", head: true }).gte("created_at", startToday),
+        db.from("channels").select("id", { count: "exact", head: true }),
+        db.from("user_reports").select("id", { count: "exact", head: true }).eq("status", "pending"),
       ]);
+      [totalUsersRes, newTodayRes, newWeekRes, totalPostsRes, postsTodayRes, totalChannelsRes, pendingReportsRes]
+        .forEach((r, i) => {
+          if (r.error) console.error(`[admin] erro ao contar estatística #${i}:`, r.error);
+        });
       setStats({
-        totalUsers: totalUsers ?? 0, newToday: newToday ?? 0, newWeek: newWeek ?? 0,
-        totalPosts: totalPosts ?? 0, postsToday: postsToday ?? 0, totalChannels: totalChannels ?? 0,
-        pendingReports: pendingReports ?? 0,
+        totalUsers: totalUsersRes.count ?? 0, newToday: newTodayRes.count ?? 0, newWeek: newWeekRes.count ?? 0,
+        totalPosts: totalPostsRes.count ?? 0, postsToday: postsTodayRes.count ?? 0, totalChannels: totalChannelsRes.count ?? 0,
+        pendingReports: pendingReportsRes.count ?? 0,
       });
       setStatsLoading(false);
     })();
