@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect, useMemo } from "react";
 import { Search, X, Heart, TrendingUp, Users, FileText, Tv2, UserPlus, UserCheck, BookOpen, Download, Bookmark } from "lucide-react";
 import { t } from "@/lib/useT";
+import { getHoodaOfficialId } from "@/lib/hoodaOfficial";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/explorar")({
@@ -216,11 +217,13 @@ function ExplorePage() {
   const { data: searchPeople = [] } = useQuery({
     queryKey: ["explore-search-people", search],
     queryFn: async () => {
+      const officialId = await getHoodaOfficialId();
       const { data } = await (supabase as any).from("profiles")
         .select("id,username,full_name,avatar_url,bio")
         .or(`username.ilike.%${search}%,full_name.ilike.%${search}%`)
         .limit(20);
-      return data ?? [];
+      // A conta "Hooda Oficial" nunca aparece em pesquisas de pessoas.
+      return (data ?? []).filter((p: any) => p.id !== officialId);
     },
     enabled: searchActive && tab === "trending",
     staleTime: 30_000,
@@ -230,12 +233,13 @@ function ExplorePage() {
   const { data: suggestedPeople = [] } = useQuery({
     queryKey: ["explore-people", myId],
     queryFn: async () => {
+      const officialId = await getHoodaOfficialId();
       const { data } = await (supabase as any).from("profiles")
         .select("id,username,full_name,avatar_url,bio")
         .neq("id", myId || "00000000-0000-0000-0000-000000000000")
         .order("created_at", { ascending: false })
         .limit(200);
-      return data ?? [];
+      return (data ?? []).filter((p: any) => p.id !== officialId);
     },
     enabled: tab === "trending" || tab === "people",
     staleTime: 60_000,
