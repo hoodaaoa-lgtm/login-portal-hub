@@ -1,7 +1,19 @@
 User-agent: *
 Allow: /
 Allow: /signup
+Allow: /explorar
+Allow: /livros
+Allow: /privacidade
+Allow: /uso
 
 Disallow: /reset-password
+Disallow: /auth/bridge
+Disallow: /home
+Disallow: /drops
+Disallow: /mensagens
+Disallow: /definicoes
+Disallow: /perfil
+Disallow: /studio
+Disallow: /hdequipa9x2
 
 Sitemap: https://hoode.lovable.app/sitemap.xml
