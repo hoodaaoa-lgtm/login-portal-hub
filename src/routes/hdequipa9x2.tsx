@@ -397,15 +397,17 @@ function AdminDashboard({ adminId }: { adminId: string }) {
         }
       }
       if (!foundId) {
-        const { data: newConv, error: convErr } = await db
-          .from("conversations").insert({ is_official: true, reply_allowed: true }).select("id").single();
-        if (convErr) throw convErr;
-        foundId = newConv.id;
-        const { error: partErr } = await db.from("conversation_participants").insert([
-          { conversation_id: foundId, user_id: adminId },
-          { conversation_id: foundId, user_id: userId },
-        ]);
-        if (partErr) throw partErr;
+        const { data: newConvId, error: rpcErr } = await db.rpc("create_conversation_with_participants", {
+          p_my_id: adminId,
+          p_other_id: userId,
+        });
+        if (rpcErr) throw rpcErr;
+        foundId = newConvId as string;
+        const { error: updErr } = await db
+          .from("conversations")
+          .update({ is_official: true, reply_allowed: true })
+          .eq("id", foundId);
+        if (updErr) throw updErr;
       }
       const { error: msgErr } = await db.from("messages").insert({
         conversation_id: foundId, sender_id: adminId, receiver_id: userId,
@@ -596,19 +598,18 @@ function AdminDashboard({ adminId }: { adminId: string }) {
       }
 
       if (!foundId) {
-        const { data: newConv, error: convErr } = await db
+        const { data: newConvId, error: rpcErr } = await db.rpc("create_conversation_with_participants", {
+          p_my_id: adminId,
+          p_other_id: u.id,
+        });
+        if (rpcErr) throw rpcErr;
+        foundId = newConvId as string;
+        const { error: updErr } = await db
           .from("conversations")
-          .insert({ is_official: true, reply_allowed: true })
-          .select("id")
-          .single();
-        if (convErr) throw convErr;
-        foundId = newConv.id;
+          .update({ is_official: true, reply_allowed: true })
+          .eq("id", foundId);
+        if (updErr) throw updErr;
         setReplyAllowed(true);
-        const { error: partErr } = await db.from("conversation_participants").insert([
-          { conversation_id: foundId, user_id: adminId },
-          { conversation_id: foundId, user_id: u.id },
-        ]);
-        if (partErr) throw partErr;
       }
 
       setConvId(foundId);
