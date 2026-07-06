@@ -150,9 +150,13 @@ function SignupPage() {
     });
     setLoading(false);
     if (error) {
+      // Log completo para diagnóstico (a consola do browser mostra o erro real).
+      console.error("[hooda] Erro no signUp:", error);
       // Traduzir erros comuns do Supabase
-      const msg = error.message;
-      if (msg.includes("User already registered")) setError("Este email já tem uma conta. Tenta iniciar sessão.");
+      const msg = typeof error.message === "string" ? error.message : "";
+      if (!msg || msg === "{}") {
+        setError("Não foi possível criar a conta agora. Tenta novamente daqui a pouco ou contacta o suporte se persistir.");
+      } else if (msg.includes("User already registered")) setError("Este email já tem uma conta. Tenta iniciar sessão.");
       else if (msg.includes("Password should be")) setError("A senha deve ter pelo menos 6 caracteres.");
       else if (msg.includes("Unable to validate email")) setError("Email inválido. Verifica o formato.");
       else if (msg.includes("username")) setError("Este nome de utilizador já está ocupado. Escolhe outro.");
