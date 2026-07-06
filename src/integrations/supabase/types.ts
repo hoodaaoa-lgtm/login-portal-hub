@@ -2535,6 +2535,10 @@ export type Database = {
         Args: { p_my_id: string; p_other_id: string }
         Returns: string
       }
+      create_official_conversation: {
+        Args: { p_other_id: string }
+        Returns: string
+      }
       decrement_post_replies: {
         Args: { p_post_id: string }
         Returns: undefined
