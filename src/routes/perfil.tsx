@@ -472,7 +472,7 @@ function PostCard({
             <>
               {post.videoUrl && (
                 <div className="w-full pb-3 md:px-4">
-                  <FeedVideoPlayer src={post.videoUrl} poster={post.photo || undefined} postId={post.id} kind="video" rounded="rounded-2xl" />
+                  <FeedVideoPlayer src={post.videoUrl} poster={post.photo || undefined} postId={post.id} kind="video" rounded="rounded-2xl" forceLoad={true} />
                 </div>
               )}
               {post.photo && !post.videoUrl && <img src={post.photo} alt="" className="w-full" style={{ display: "block" }} />}

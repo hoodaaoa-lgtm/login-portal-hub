@@ -30,9 +30,11 @@ interface Props {
   rounded?: string;
   /** Toca sozinho (sem som) quando o vídeo entra na tela, pausa ao sair — igual ao Instagram/TikTok. Default: true. */
   autoPlay?: boolean;
+  /** Força carregamento imediato sem esperar pelo IntersectionObserver. Usar dentro de modais. */
+  forceLoad?: boolean;
 }
 
-export function FeedVideoPlayer({ src, poster, postId, kind, rounded, autoPlay = true }: Props) {
+export function FeedVideoPlayer({ src, poster, postId, kind, rounded, autoPlay = true, forceLoad = false }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   usePostVideoView(postId, kind, videoRef);
@@ -45,6 +47,7 @@ export function FeedVideoPlayer({ src, poster, postId, kind, rounded, autoPlay =
       aspectRatio="auto"
       rounded={rounded ?? "rounded-none"}
       autoPlay={autoPlay}
+      forceLoad={forceLoad}
     />
   );
 }

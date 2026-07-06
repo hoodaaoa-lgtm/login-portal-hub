@@ -84,6 +84,10 @@ interface HoodaPlayerProps {
   rounded?: string;
   watermark?: WatermarkConfig | null;
   signature?: SignatureConfig | null;
+  /** Força o carregamento e reprodução imediatos sem esperar pelo IntersectionObserver.
+   *  Usar dentro de modais/lightboxes onde o elemento está num portal (fixed) e o
+   *  observer pode nunca disparar com threshold suficiente. */
+  forceLoad?: boolean;
 }
 
 /** Limite de altura estilo X: o vídeo ocupa sempre a largura total do
@@ -106,6 +110,7 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
     rounded = "rounded-2xl",
     watermark,
     signature,
+    forceLoad = false,
   },
   forwardedRef,
 ) {
@@ -113,7 +118,11 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
   const videoRef = useRef<HTMLVideoElement>(null);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const { ref: wrapperRef, isInView, hasEnteredOnce } = useVideoInView<HTMLDivElement>();
+  const { ref: wrapperRef, isInView: _isInView, hasEnteredOnce: _hasEnteredOnce } = useVideoInView<HTMLDivElement>();
+  // forceLoad=true: ignora o IntersectionObserver — carrega e toca imediatamente.
+  // Necessário dentro de modais (portal fixed) onde o observer pode nunca disparar.
+  const isInView = forceLoad ? true : _isInView;
+  const hasEnteredOnce = forceLoad ? true : _hasEnteredOnce;
 
   const [isPlaying, setIsPlaying] = useState(false);
   // Nasce com o som que estiver ativo globalmente (Instagram-style): se o

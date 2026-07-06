@@ -391,7 +391,7 @@ function PostCommentsModalInner({
       >
         {/* Painel de mídia — só em desktop e só quando há foto/vídeo */}
         {hasMedia && (
-          <div className="hidden lg:flex lg:flex-1 items-center justify-center relative shrink-0" style={{ background: "#000" }}>
+          <div className="hidden lg:flex lg:flex-1 min-w-0 items-center justify-center relative shrink-0" style={{ background: "#000" }}>
             <button
               onClick={onClose}
               className="absolute top-4 left-4 w-9 h-9 rounded-full flex items-center justify-center z-10 transition active:scale-90"
@@ -399,7 +399,7 @@ function PostCommentsModalInner({
             >
               <X className="h-5 w-5 text-white" />
             </button>
-            <div className="w-full h-full flex items-center justify-center px-6 py-6">
+            <div className="w-full h-full flex items-center justify-center px-6 py-6" style={{ minWidth: 0 }}>
               {body}
             </div>
           </div>
