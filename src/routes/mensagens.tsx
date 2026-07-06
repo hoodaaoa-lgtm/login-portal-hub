@@ -37,6 +37,7 @@ import MediaEditor, { MediaEditState, DEFAULT_EDIT, EditedMediaDisplay } from "@
 import { HoodaPlayer } from "@/components/HoodaPlayer";
 import { FeedVideoPlayer } from "@/components/FeedVideoPlayer";
 import { uploadImageToCloudinary } from "@/lib/cloudinary";
+import { getHoodaOfficialId } from "@/lib/hoodaOfficial";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 // Upload directo para Cloudinary com progresso (suporta audio/video via resource_type=video)
@@ -454,13 +455,18 @@ function AddContactModal({ myId, onClose, onAdd, existingContacts }: {
     setSearching(true);
     const clean = query.trim().replace(/^@/, "");
     try {
+      // A conta "Hooda Oficial" nunca pode ser encontrada/adicionada aqui —
+      // só o admin, a partir do painel, inicia conversas com essa conta.
+      const officialId = await getHoodaOfficialId();
+
       // Pesquisar por username OU full_name
-      const { data, error } = await db
+      let q = db
         .from("profiles")
         .select("id,username,full_name,avatar_url,msg_permission")
         .or(`username.ilike.%${clean}%,full_name.ilike.%${clean}%`)
-        .neq("id", myId)
-        .limit(10);
+        .neq("id", myId);
+      if (officialId) q = q.neq("id", officialId);
+      const { data, error } = await q.limit(10);
 
       if (error) {
         console.error("Erro na pesquisa:", error);
@@ -470,7 +476,7 @@ function AddContactModal({ myId, onClose, onAdd, existingContacts }: {
       }
 
       const validResults = (data || [])
-        .filter((p: any) => isValidUUID(p.id))
+        .filter((p: any) => isValidUUID(p.id) && p.id !== officialId)
         .map((p: any) => ({
           id: p.id,
           username: p.username || "?",
