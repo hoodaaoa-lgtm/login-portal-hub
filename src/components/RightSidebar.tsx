@@ -3,6 +3,7 @@ import { RefreshCw, Users, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { getHoodaOfficialId } from "@/lib/hoodaOfficial";
 import { FOLLOW_KEYS } from "@/hooks/useSocialSystem";
 
@@ -50,7 +51,7 @@ export function RightSidebar() {
       p_target_username: username,
       p_target_id: userId,
     });
-    if (error) { console.error("Erro ao seguir:", error); return; }
+    if (error) { console.error("Erro ao seguir:", error); toast.error(`Não foi possível seguir: ${error.message}`); return; }
     // Sincroniza a cache partilhada — se o perfil desta pessoa já estiver
     // aberto noutro sítio, passa a mostrar "A seguir" sem precisar de reload.
     qc.setQueryData(FOLLOW_KEYS.status(myId, username), !!data?.following);
