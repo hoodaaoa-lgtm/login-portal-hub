@@ -3,6 +3,7 @@ import { useNavigate } from "@tanstack/react-router";
 interface RichTextProps {
   text: string;
   className?: string;
+  style?: React.CSSProperties;
   onHashtagClick?: (tag: string) => void;
 }
 
@@ -11,14 +12,14 @@ interface RichTextProps {
  * - @menções em roxo clicáveis → vai para /u/username
  * - #hashtags em azul clicáveis → vai para /explorar?q=%23hashtag
  */
-export function RichText({ text, className = "", onHashtagClick }: RichTextProps) {
+export function RichText({ text, className = "", style, onHashtagClick }: RichTextProps) {
   const navigate = useNavigate();
 
   // Partir o texto em tokens: normal | @mention | #hashtag
-  const parts = text.split(/(@[a-zA-Z0-9_.]{2,30}|#[a-zA-Z0-9_\u00C0-\u024F]{2,50})/g);
+  const parts = (text ?? "").split(/(@[a-zA-Z0-9_.]{2,30}|#[a-zA-Z0-9_\u00C0-\u024F]{2,50})/g);
 
   return (
-    <span className={className}>
+    <span className={className} style={style}>
       {parts.map((part, i) => {
         if (part.startsWith("@")) {
           const username = part.slice(1);

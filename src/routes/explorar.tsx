@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { BottomNav, SideNav, PageWrapper, FeedLayout } from "@/components/AppShell";
 import { RightSidebar } from "@/components/RightSidebar";
-import { PostCard } from "@/routes/home";
+import { UniversalPostCard } from "@/components/UniversalPostCard";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect, useMemo } from "react";
@@ -523,7 +523,7 @@ function ExplorePage() {
               <section>
                 <p className="text-[11px] font-bold uppercase tracking-wider mb-2.5" style={{ color: "var(--text-muted)" }}>Vídeos</p>
                 <div className="space-y-4 -mx-4">
-                  {searchVideos.map((v: any) => <PostCard key={v.id} p={v} />)}
+                  {searchVideos.map((v: any) => <UniversalPostCard key={v.id} post={v} />)}
                 </div>
               </section>
             )}
