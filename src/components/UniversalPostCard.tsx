@@ -13,6 +13,7 @@ import { FeedVideoPlayer } from "@/components/FeedVideoPlayer";
 import { PollCard } from "@/components/PollCard";
 import { useTimeAgo } from "@/hooks/useTimeAgo";
 import { useScrollLock } from "@/hooks/useScrollLock";
+import { useFollowState, usePostLikeState, getViewerFingerprint } from "@/hooks/useSocialSystem";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { QUERY_KEYS, REALTIME_QUERY_OPTIONS } from "@/lib/queryClient";
 import {
@@ -796,8 +797,8 @@ export function UniversalPostCard({ post: p, onDeleted, onBookmarkChange }: {
   onDeleted?: (id: string) => void;
   onBookmarkChange?: (id: string, bookmarked: boolean) => void;
 }) {
-  const [following, setFollowing] = useState<boolean | null>(null);
   const dwellRef = useRef<{ start: number; recorded: boolean }>({ start: 0, recorded: false });
+  const viewRecordedRef = useRef(false);
   const cardRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const el = cardRef.current;
@@ -805,6 +806,18 @@ export function UniversalPostCard({ post: p, onDeleted, onBookmarkChange }: {
     const obs = new IntersectionObserver(([entry]) => {
       if (entry.isIntersecting) {
         dwellRef.current.start = Date.now();
+        // Views para conteúdo sem vídeo: conta ao aparecer no ecrã
+        // (posts kind="video"/"clip" são contados pelo FeedVideoPlayer,
+        // que usa tempo assistido em vez de simples aparição).
+        if (!viewRecordedRef.current && p.kind !== "video" && p.kind !== "clip") {
+          viewRecordedRef.current = true;
+          (supabase as any).rpc("record_post_view", {
+            p_post_id: p.id,
+            p_viewer_fingerprint: getViewerFingerprint(),
+          }).then(({ data }: any) => {
+            if (data?.counted) setViewCount((c: number) => c + 1);
+          }).catch(() => {});
+        }
       } else if (dwellRef.current.start > 0 && !dwellRef.current.recorded) {
         const dwell_ms = Date.now() - dwellRef.current.start;
         if (dwell_ms > 1500) {
@@ -824,7 +837,7 @@ export function UniversalPostCard({ post: p, onDeleted, onBookmarkChange }: {
     }, { threshold: 0.5 });
     obs.observe(el);
     return () => obs.disconnect();
-  }, [p.id, p.author_id]);
+  }, [p.id, p.author_id, p.kind]);
 
   const [showComments, setShowComments] = useState(false);
   const [showForward, setShowForward] = useState(false);
@@ -839,8 +852,8 @@ export function UniversalPostCard({ post: p, onDeleted, onBookmarkChange }: {
   type PC = import("@/components/PostCommentsModal").PostComment;
   const meRef = useRef<{ id: string; username: string } | null>(null);
   const [myUserId, setMyUserId] = useState<string | null>(null);
-  const [liked, setLiked] = useState(p.liked_by_me ?? false);
-  const [likeCount, setLikeCount] = useState(p.likes ?? 0);
+  const { liked, likeCount, toggle: toggleLikeShared } = usePostLikeState(p.id, myUserId, { liked: p.liked_by_me ?? false, count: p.likes ?? 0 });
+  const { isFollowing: following, isLoading: followLoading, toggle: toggleFollow } = useFollowState(myUserId, p.author_username, p.author_id);
   const [commentCount, setCommentCount] = useState(p.comments ?? 0);
   const [viewCount, setViewCount] = useState(Number(p.views_count ?? 0));
   const isAd = !!p.ad || !!p.is_ad;
@@ -858,16 +871,6 @@ export function UniversalPostCard({ post: p, onDeleted, onBookmarkChange }: {
       const { data: saveRow } = await supabase.from("post_saves").select("id").eq("post_id", p.id).eq("user_id", session.user.id).maybeSingle();
       setBookmarked(!!saveRow);
     })();
-  }, [p.id]);
-
-  // Incrementar views do post (uma vez por sessão por post)
-  useEffect(() => {
-    if (isAd) return;
-    const key = `post_view_${p.id}`;
-    if (sessionStorage.getItem(key)) return;
-    sessionStorage.setItem(key, "1");
-    setViewCount((c: number) => c + 1);
-    (supabase as any).from("posts").update({ views_count: (p.views_count ?? 0) + 1 } as any).eq("id", p.id).then(() => {});
   }, [p.id]);
 
   useEffect(() => {
@@ -928,43 +931,9 @@ export function UniversalPostCard({ post: p, onDeleted, onBookmarkChange }: {
     await toggleCommentLike(commentId, me.id, !!target?.likedByMe);
   }
 
-  useEffect(() => {
-    if (isAd || !p.author_id) return;
-    (async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-      if (p.author_id === session.user.id) { setFollowing(null); return; }
-      const { data: row } = await supabase.from("follows").select("follower_id")
-        .eq("follower_id", session.user.id)
-        .or(`following_id.eq.${p.author_id},target_username.eq.${p.author_username ?? ""}`)
-        .maybeSingle();
-      setFollowing(!!row);
-    })();
-  }, [isAd, p.author_id, p.author_username]);
-
-  async function toggleFollow() {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
-    if (following) {
-      await supabase.from("follows").delete().eq("follower_id", session.user.id).eq("following_id", p.author_id ?? "");
-      setFollowing(false);
-    } else {
-      await supabase.from("follows").upsert({ follower_id: session.user.id, following_id: p.author_id, target_username: p.author_username } as any, { onConflict: "follower_id,target_username", ignoreDuplicates: true });
-      setFollowing(true);
-    }
-  }
-
   async function toggleLike() {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) { toast.error("Inicia sessão para gostar."); return; }
-    if (liked) {
-      await (supabase as any).from("post_likes").delete().eq("post_id", p.id).eq("user_id", session.user.id);
-      setLikeCount((n: number) => n - 1);
-    } else {
-      await (supabase as any).from("post_likes").insert({ post_id: p.id, user_id: session.user.id });
-      setLikeCount((n: number) => n + 1);
-    }
-    setLiked((v: boolean) => !v);
+    if (!myUserId) { toast.error("Inicia sessão para gostar."); return; }
+    await toggleLikeShared();
   }
 
   async function toggleBookmark() {
@@ -993,20 +962,12 @@ export function UniversalPostCard({ post: p, onDeleted, onBookmarkChange }: {
   if (p.kind === "clip" && p.clip_video_id) {
     return (
       <ClipCard p={p} liked={liked} likeCount={likeCount} viewCount={viewCount}
-        onLike={async () => {
-          if (!meRef.current) { toast.error("Inicia sessão para gostar."); return; }
-          setLiked((l: boolean) => !l);
-          setLikeCount((c: number) => liked ? c - 1 : c + 1);
-          if (liked) {
-            await supabase.from("post_likes").delete().eq("post_id", p.id).eq("user_id", meRef.current!.id);
-          } else {
-            await supabase.from("post_likes").insert({ post_id: p.id, user_id: meRef.current!.id });
-          }
-        }}
+        onLike={toggleLike}
         onComment={() => setShowComments(true)}
       />
     );
   }
+
 
   return (
     <article ref={cardRef} className="hooda-card overflow-hidden animate-fade-in-up">
@@ -1042,14 +1003,14 @@ export function UniversalPostCard({ post: p, onDeleted, onBookmarkChange }: {
         </div>
         <div className="flex items-center gap-1.5">
           {!isAd && p.author_id && !isOwnPost && (
-            <button onClick={toggleFollow} disabled={following === null}
+            <button onClick={toggleFollow} disabled={followLoading}
               className="text-xs font-bold px-3 py-1.5 rounded-full transition-all active:scale-95"
               style={following
                 ? { background: "var(--s2)", color: "var(--text-secondary)", border: "1.5px solid var(--border-default)" }
-                : following === null
+                : followLoading
                   ? { background: "var(--s2)", color: "var(--text-muted)", border: "1.5px solid var(--border-subtle)", opacity: 0.5 }
                   : { background: "#5B3FCF", color: "#fff", boxShadow: "0 2px 8px rgba(91,63,207,0.35)" }}>
-              {following === null ? "+ Seguir" : following ? "A seguir ✓" : "+ Seguir"}
+              {followLoading ? "+ Seguir" : following ? "A seguir ✓" : "+ Seguir"}
             </button>
           )}
           {!isAd && isOwnPost && (

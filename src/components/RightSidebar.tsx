@@ -2,7 +2,9 @@ import React, { useEffect, useState } from "react";
 import { RefreshCw, Users, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { getHoodaOfficialId } from "@/lib/hoodaOfficial";
+import { FOLLOW_KEYS } from "@/hooks/useSocialSystem";
 
 const ACCENT = "#5B3FCF";
 
@@ -13,13 +15,16 @@ function colorFor(s: string) {
 
 export function RightSidebar() {
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const [suggestions, setSuggestions] = useState<{ id: string; username: string; full_name: string; avatar_url?: string | null }[]>([]);
   const [loading, setLoading] = useState(true);
+  const [myId, setMyId] = useState<string | null>(null);
 
   async function load() {
     setLoading(true);
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) { setLoading(false); return; }
+    setMyId(session.user.id);
     const { data: follows } = await supabase.from("follows")
       .select("following_id").eq("follower_id", session.user.id);
     const followingIds = (follows ?? []).map((f: any) => f.following_id);
@@ -37,16 +42,19 @@ export function RightSidebar() {
   useEffect(() => { load(); }, []);
 
   async function follow(userId: string, username: string) {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
-    // A tabela "follows" exige sempre target_username (coluna obrigatória) —
-    // sem isto o insert falha silenciosamente e o botão parece não fazer nada.
-    const { error } = await (supabase as any).from("follows").upsert({
-      follower_id: session.user.id,
-      following_id: userId,
-      target_username: username,
-    }, { onConflict: "follower_id,target_username", ignoreDuplicates: true });
+    if (!myId) return;
+    // Fonte única de verdade: a mesma RPC usada em todo o resto da app
+    // (UniversalPostCard, perfil, canal...), para os contadores e o
+    // estado de "seguido" ficarem sempre consistentes em toda a parte.
+    const { data, error } = await (supabase as any).rpc("toggle_follow", {
+      p_target_username: username,
+      p_target_id: userId,
+    });
     if (error) { console.error("Erro ao seguir:", error); return; }
+    // Sincroniza a cache partilhada — se o perfil desta pessoa já estiver
+    // aberto noutro sítio, passa a mostrar "A seguir" sem precisar de reload.
+    qc.setQueryData(FOLLOW_KEYS.status(myId, username), !!data?.following);
+    qc.invalidateQueries({ queryKey: FOLLOW_KEYS.counts(username) });
     setSuggestions(p => p.filter(u => u.id !== userId));
   }
 

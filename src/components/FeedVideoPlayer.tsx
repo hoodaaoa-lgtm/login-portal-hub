@@ -18,7 +18,7 @@
  */
 import { useRef } from "react";
 import { HoodaPlayer } from "@/components/HoodaPlayer";
-import { usePostVideoView } from "@/hooks/usePostVideoView";
+import { useVideoPostView } from "@/hooks/useSocialSystem";
 
 interface Props {
   src: string;
@@ -39,7 +39,7 @@ interface Props {
 export function FeedVideoPlayer({ src, poster, postId, kind, rounded, autoPlay = true, forceLoad = false, maxHeightRatio }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  usePostVideoView(postId, kind, videoRef);
+  useVideoPostView(postId, kind, videoRef);
 
   return (
     <HoodaPlayer
