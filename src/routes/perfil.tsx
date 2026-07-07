@@ -2473,25 +2473,41 @@ function ProfilePage() {
         data = d1;
       }
 
-      // Auto-reparação: se o profile não tem username (trigger falhou no signup
-      // ou conta antiga sem profile completo), tenta recuperar do user_metadata
-      // ou cria um username genérico, para nunca ficar "utilizador" para sempre.
+      // Auto-reparação: cobre dois casos —
+      //  (a) o profile existe mas ficou sem username (trigger correu mas com
+      //      metadata vazia, ou foi apagado por engano);
+      //  (b) o profile NÃO EXISTE DE TODO (a causa real mais comum): o
+      //      trigger handle_new_user que cria a linha em "profiles" ao
+      //      registar não correu para esta conta (ex: migration que o
+      //      define não chegou a ser aplicada no Supabase de produção, ou
+      //      a conta foi criada antes dessa migration existir). Antes,
+      //      este código só tratava o caso (a) — `if (data && !data.username)`
+      //      — por isso quando `data` vinha `null` (sem linha nenhuma) o
+      //      bloco inteiro era saltado e `profile` ficava `null` PARA
+      //      SEMPRE, mostrando "@utilizador" em todos os carregamentos,
+      //      sem nunca se corrigir sozinho.
       console.log("[hooda:debug] profile carregado:", data);
-      if (data && !data.username) {
-        console.log("[hooda:debug] username vazio detectado, a iniciar auto-reparação...");
+      if (!data || !data.username) {
+        console.log("[hooda:debug] profile ausente ou sem username, a iniciar auto-reparação...");
         const meta = session.session.user.user_metadata as any;
         console.log("[hooda:debug] user_metadata:", meta);
         let recoveredUsername = (meta?.username || "").toLowerCase().trim()
           || `user${session.session.user.id.slice(0, 8)}`;
-        const recoveredName = meta?.full_name || data.full_name || "";
+        const recoveredName = meta?.full_name || data?.full_name || "";
 
         let repaired: any = null;
         let repairErr: any = null;
         for (let attempt = 0; attempt < 3; attempt++) {
+          // upsert (não update): se a linha não existir, cria-a; se existir,
+          // só atualiza os campos indicados — nunca falha por "0 linhas".
           const res = await supabase
             .from("profiles")
-            .update({ username: recoveredUsername, full_name: recoveredName || undefined } as any)
-            .eq("id", session.session.user.id)
+            .upsert({
+              id: session.session.user.id,
+              username: recoveredUsername,
+              full_name: recoveredName || undefined,
+              ...(data ? {} : { age: null, bio: null }),
+            } as any, { onConflict: "id" })
             .select("id, username, full_name, age, bio")
             .maybeSingle();
           repaired = res.data;
@@ -2512,10 +2528,14 @@ function ProfilePage() {
         } else if (repairErr) {
           console.error(
             "[hooda] FALHA na auto-reparação do username. Motivo:", repairErr.message || repairErr,
-            "\nPossíveis causas: RLS bloqueando o UPDATE, ou a policy 'Users update own profile' não existe/está errada.",
+            "\nPossíveis causas: RLS bloqueando o UPDATE/INSERT, ou a policy 'Users update own profile' / 'Users insert own profile' não existe/está errada.",
             "\nVerifica no Supabase: Authentication → Policies → tabela profiles."
           );
-          data = { ...data, username: recoveredUsername };
+          // Mesmo sem conseguir gravar na BD, mostra o username recuperado
+          // no ecrã já nesta sessão em vez de "utilizador" — melhor do que
+          // nada, mas o aviso na consola acima explica a causa real para
+          // ires corrigir a policy/trigger na BD.
+          data = { ...(data ?? {}), id: session.session.user.id, username: recoveredUsername };
         }
       }
 
