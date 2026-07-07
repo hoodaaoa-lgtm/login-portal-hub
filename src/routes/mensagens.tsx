@@ -2565,7 +2565,14 @@ function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit
   );
 
   return (
-    <div className={`flex ${isMe ? "justify-end" : "justify-start"} group px-1`}>
+    <div className={`flex ${isMe ? "justify-end" : "justify-start"} group px-1 items-end gap-1.5`}>
+      {/* Ícone de quem enviou — só do lado das mensagens recebidas,
+          como nas redes sociais (Instagram/Messenger). As minhas
+          mensagens não levam ícone, tal como o resto da conversa já
+          mostra "Tu". */}
+      {!isMe && (
+        <Av name={contact.full_name || contact.username} color={(contact as Contact).color} size={26} src={contact.avatar_url} />
+      )}
       <div
         className="max-w-[82%] sm:max-w-[75%] relative"
         onTouchStart={handleBubbleTouchStart}
@@ -2989,6 +2996,33 @@ function ChatPanel({ myId, contact, onBack }: {
     })();
   }, [myId, contact.conversationId]);
 
+  // ── Presença do contacto: consulta a RPC segura (respeita hide_last_seen
+  // de ambos os lados) ao abrir a conversa e depois a cada 20s. ──
+  useEffect(() => {
+    if (!contact.id || contact.isOfficial) return;
+    let mounted = true;
+    async function loadPresence() {
+      const { data, error } = await (db as any).rpc("get_contact_presence", { p_user_id: contact.id });
+      if (!mounted) return;
+      if (error) { console.error("[presence] erro:", error.message); return; }
+      const row = data?.[0] ?? null;
+      setContactPresence(row ? { is_online: row.is_online, last_seen: row.last_seen } : null);
+    }
+    loadPresence();
+    const id = setInterval(loadPresence, 20000);
+    return () => { mounted = false; clearInterval(id); };
+  }, [contact.id, contact.isOfficial]);
+
+  // Texto do subtítulo do cabeçalho: "a escrever…" tem sempre prioridade,
+  // depois "online agora", depois "visto por último", senão volta a @username.
+  const presenceLabel = contactTyping
+    ? "a escrever…"
+    : contactPresence?.is_online
+      ? "online agora"
+      : contactPresence?.last_seen
+        ? `visto ${timeAgo(contactPresence.last_seen)}`
+        : null;
+
   async function toggleReadReceipts() {
     const next = !readReceipts;
     setReadReceipts(next);
@@ -3272,6 +3306,9 @@ function ChatPanel({ myId, contact, onBack }: {
   const atBottom      = useRef(true);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const [contactTyping, setContactTyping] = useState(false);
+  // ── Presença do contacto (online agora / visto por último) ──
+  // null = estado oculto (privacidade mútua) ou ainda não carregado.
+  const [contactPresence, setContactPresence] = useState<{ is_online: boolean | null; last_seen: string | null } | null>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const broadcastChRef = useRef<any>(null);
   const realtimeDmSeqRef = useRef(0);
@@ -4159,8 +4196,15 @@ function ChatPanel({ myId, contact, onBack }: {
             <span className="truncate">{contact.full_name || contact.username}</span>
             {(contact as Contact).isOfficial && <VerifiedBadge size={13} />}
           </p>
-          <p className="text-[11px] text-white/70">
-            {(contact as Contact).isOfficial ? "Comunicação oficial da Hooda" : `@${contact.username}`}
+          <p className="text-[11px] text-white/70 flex items-center gap-1">
+            {(contact as Contact).isOfficial
+              ? "Comunicação oficial da Hooda"
+              : presenceLabel
+                ? (<>
+                    {contactTyping && <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#7CFFB2] animate-pulse" />}
+                    <span>{presenceLabel}</span>
+                  </>)
+                : `@${contact.username}`}
           </p>
         </div>
         {/* Indicador de cifra ponta-a-ponta */}
@@ -4602,6 +4646,7 @@ function ChatPanel({ myId, contact, onBack }: {
       {contactTyping && (
         <div className="flex items-center gap-2 px-3 py-1.5 shrink-0"
           style={{ background: "var(--s0)" }}>
+          <Av name={contact.full_name || contact.username} color={(contact as Contact).color} size={20} src={contact.avatar_url} />
           <div className="flex items-center gap-1">
             {[0,1,2].map(i => (
               <div key={i} className="w-1.5 h-1.5 rounded-full"
