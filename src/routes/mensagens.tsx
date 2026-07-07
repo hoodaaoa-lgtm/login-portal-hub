@@ -2141,49 +2141,36 @@ function ChatMediaLightbox({ items, index, onIndexChange, onClose, onReact, cont
   const dateLabel = displayItem.time;
 
   const [zoom, setZoom] = useState(1);
-  const [showReact, setShowReact] = useState(false);
-  const [showMore, setShowMore] = useState(false);
-  const [reactions, setReactions] = useState<Record<string, string>>({});
-  const REACT_EMOJIS = ["❤️","🔥","😂","👍","😮","😢","🥰","🎉"];
 
   // Reset zoom ao mudar imagem
-  useEffect(() => { setZoom(1); setShowReact(false); setShowMore(false); }, [displayIndex]);
+  useEffect(() => { setZoom(1); }, [displayIndex]);
 
   function toggleFavorite() {
     setFavorited((f) => ({ ...f, [displayItem.id]: !f[displayItem.id] }));
     toast.success(favorited[displayItem.id] ? "Removido dos favoritos" : "Guardado nos favoritos");
   }
 
-  function handleDownload() {
-    if (typeof document === "undefined") return;
-    const a = document.createElement("a");
-    a.href = displayItem.mediaUrl!;
-    a.download = `hooda-media-${Date.now()}`;
-    a.target = "_blank";
-    a.rel = "noopener noreferrer";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    toast.success("Download iniciado");
-  }
-
-  function handleForward() {
-    if (navigator.share && displayItem.mediaUrl) {
-      navigator.share({ url: displayItem.mediaUrl }).catch(() => {});
-    } else if (displayItem.mediaUrl) {
-      navigator.clipboard?.writeText(displayItem.mediaUrl).then(() => toast.success("Link copiado!")).catch(() => toast.info("Partilha não suportada neste browser"));
+  async function handleDownload() {
+    if (!displayItem.mediaUrl) return;
+    try {
+      const res = await fetch(displayItem.mediaUrl, { mode: "cors" });
+      if (!res.ok) throw new Error("fetch failed");
+      const blob = await res.blob();
+      const ext = displayItem.type === "video" ? "mp4" : displayItem.type === "audio" ? "mp3" : "jpg";
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `hooda-media-${Date.now()}.${ext}`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toast.success("Download concluído");
+    } catch {
+      // Fallback: se o fetch falhar (ex: CORS), pelo menos abre o ficheiro
+      // numa nova aba em vez de dar erro silencioso.
+      window.open(displayItem.mediaUrl, "_blank", "noopener,noreferrer");
     }
-  }
-
-  function handleCopyLink() {
-    if (displayItem.mediaUrl) {
-      navigator.clipboard?.writeText(displayItem.mediaUrl).then(() => { toast.success("Link copiado!"); setShowMore(false); }).catch(() => toast.error("Não foi possível copiar"));
-    }
-  }
-
-  function handleReact(emoji: string) {
-    setShowReact(false);
-    onReact?.(displayItem.id, emoji);
   }
 
   function handleZoomToggle() {
@@ -2206,61 +2193,17 @@ function ChatMediaLightbox({ items, index, onIndexChange, onClose, onReact, cont
             style={{ background: zoom !== 1 ? "rgba(255,255,255,0.2)" : "transparent", color: "rgba(255,255,255,0.7)" }}>
             <ZoomIn className="h-[18px] w-[18px]" />
           </button>
-          {/* Encaminhar / partilhar */}
-          <button title={"Partilhar"} onClick={handleForward}
-            className="w-9 h-9 rounded-full flex items-center justify-center text-white/70 hover:text-white hover:bg-[var(--s2)]/10 transition active:scale-90">
-            <Forward className="h-[18px] w-[18px]" />
-          </button>
           {/* Favorito */}
           <button title="Favorito" onClick={toggleFavorite}
             className="w-9 h-9 rounded-full flex items-center justify-center transition active:scale-90"
             style={{ color: favorited[displayItem.id] ? "#FFC93C" : "rgba(255,255,255,0.7)" }}>
             <Star className="h-[18px] w-[18px]" fill={favorited[displayItem.id] ? "#FFC93C" : "none"} />
           </button>
-          {/* Reagir */}
-          <div className="relative">
-            <button title="Reagir" onClick={() => { setShowReact(v => !v); setShowMore(false); }}
-              className="w-9 h-9 rounded-full flex items-center justify-center transition active:scale-90"
-              style={{ color: reactions[displayItem.id] ? "#FFC93C" : "rgba(255,255,255,0.7)", background: showReact ? "rgba(255,255,255,0.15)" : "transparent" }}>
-              {reactions[displayItem.id] ? <span style={{ fontSize: 18 }}>{reactions[displayItem.id]}</span> : <Smile className="h-[18px] w-[18px]" />}
-            </button>
-            {showReact && (
-              <div className="absolute bottom-full right-0 mb-2 flex gap-1 p-2 rounded-2xl shadow-2xl z-50"
-                style={{ background: "#2a2a2a" }}>
-                {REACT_EMOJIS.map(e => (
-                  <button key={e} onClick={() => handleReact(e)}
-                    className="w-9 h-9 flex items-center justify-center text-xl rounded-xl transition active:scale-90 hover:bg-[var(--s2)]/10">
-                    {e}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
           {/* Download */}
           <button title="Transferir" onClick={handleDownload}
             className="w-9 h-9 rounded-full flex items-center justify-center text-white/70 hover:text-white hover:bg-[var(--s2)]/10 transition active:scale-90">
             <Download className="h-[18px] w-[18px]" />
           </button>
-          {/* Mais opções */}
-          <div className="relative">
-            <button title="Mais opções" onClick={() => { setShowMore(v => !v); setShowReact(false); }}
-              className="w-9 h-9 rounded-full flex items-center justify-center text-white/70 hover:text-white hover:bg-[var(--s2)]/10 transition active:scale-90">
-              <MoreVertical className="h-[18px] w-[18px]" />
-            </button>
-            {showMore && (
-              <div className="absolute right-0 top-full mt-1 rounded-2xl overflow-hidden shadow-2xl z-50 min-w-[160px]"
-                style={{ background: "#2a2a2a" }}>
-                <button onClick={handleCopyLink}
-                  className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-white hover:bg-[var(--s2)]/10 transition">
-                  <RefreshCw className="h-4 w-4 opacity-70" /> Copiar link
-                </button>
-                <button onClick={() => { handleDownload(); setShowMore(false); }}
-                  className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-white hover:bg-[var(--s2)]/10 transition">
-                  <Download className="h-4 w-4 opacity-70" /> Guardar
-                </button>
-              </div>
-            )}
-          </div>
           {/* Fechar */}
           <button title={"Fechar"} onClick={onClose}
             className="w-9 h-9 rounded-full flex items-center justify-center text-white/70 hover:text-white hover:bg-[var(--s2)]/10 transition active:scale-90">
