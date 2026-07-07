@@ -3022,10 +3022,19 @@ function ChatPanel({ myId, contact, onBack }: {
         setMsgPermReason(`@${contact.username} só aceita mensagens de utilizadores aprovados.`);
         return;
       }
+      // "seguidores"/"mutuos" usam sempre target_username (nunca
+      // following_id): following_id só fica preenchido quando quem seguiu
+      // passou pela RPC toggle_follow com o id do alvo, e nem todos os
+      // sítios da app faziam isso — usar following_id aqui dava falsos
+      // "não segue" para follows válidos mas sem essa coluna preenchida.
+      // target_username é sempre gravado, por isso é a fonte fiável.
+      const { data: myProf } = await db.from("profiles").select("username").eq("id", myId).maybeSingle();
+      const myUsername = (myProf as any)?.username ?? "";
+
       if (perm === "seguidores") {
         // Verificar se o contacto me segue
-        const { data: follows } = await db.from("follows").select("id")
-          .eq("follower_id", contact.id).eq("following_id", myId).maybeSingle();
+        const { data: follows } = await db.from("follows").select("follower_id")
+          .eq("follower_id", contact.id).eq("target_username", myUsername).maybeSingle();
         if (!follows) {
           setMsgPermBlocked(true);
           setMsgPermReason(`@${contact.username} só aceita mensagens de seguidores.`);
@@ -3036,8 +3045,8 @@ function ChatPanel({ myId, contact, onBack }: {
       }
       if (perm === "mutuos") {
         const [{ data: iFollow }, { data: theyFollow }] = await Promise.all([
-          db.from("follows").select("id").eq("follower_id", myId).eq("following_id", contact.id).maybeSingle(),
-          db.from("follows").select("id").eq("follower_id", contact.id).eq("following_id", myId).maybeSingle(),
+          db.from("follows").select("follower_id").eq("follower_id", myId).eq("target_username", contact.username).maybeSingle(),
+          db.from("follows").select("follower_id").eq("follower_id", contact.id).eq("target_username", myUsername).maybeSingle(),
         ]);
         if (!iFollow || !theyFollow) {
           setMsgPermBlocked(true);

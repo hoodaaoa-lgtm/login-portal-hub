@@ -12,7 +12,7 @@ import { FeedVideoPlayer } from "@/components/FeedVideoPlayer";
 import { fetchPostComments, sendPostComment, replyToPostComment, toggleCommentLike } from "@/lib/comments";
 import { BottomNav, SideNav, PageWrapper, FeedLayout } from "@/components/AppShell";
 import { RightSidebar } from "@/components/RightSidebar";
-import { useFollowState } from "@/hooks/useSocialSystem";
+import { useFollowState, FOLLOW_KEYS } from "@/hooks/useSocialSystem";
 import {
   ChevronLeft, Flag, Share2, Ban,
   MoreHorizontal, UserCheck, UserPlus, X, MapPin,
@@ -178,12 +178,25 @@ function FollowListModal({ userId, kind, onClose }:
     queryKey:["followList",userId,kind],
     queryFn: async () => {
       const db = supabase as any;
+      // Nota: "follows" não tem foreign key para "profiles" (follower_id
+      // aponta para auth.users, e target_username é só texto) — por isso
+      // o embedding do PostgREST (select("profiles!follower_id(...)"))
+      // nunca funcionou aqui, dava sempre 400 Bad Request. Corrigido
+      // fazendo 2 queries separadas, tal como já é feito em UserDrawer.tsx.
       if (kind==="followers") {
-        const {data:rows}=await db.from("follows").select("profiles!follower_id(id,username,full_name,avatar_url)").eq("target_username",(await db.from("profiles").select("username").eq("id",userId).single()).data?.username);
-        return (rows??[]).map((r:any)=>r.profiles).filter(Boolean);
+        const {data:me}=await db.from("profiles").select("username").eq("id",userId).maybeSingle();
+        if (!me?.username) return [];
+        const {data:rows}=await db.from("follows").select("follower_id").eq("target_username",me.username);
+        const ids=[...new Set((rows??[]).map((r:any)=>r.follower_id).filter(Boolean))];
+        if (ids.length===0) return [];
+        const {data:profs}=await db.from("profiles").select("id,username,full_name,avatar_url").in("id",ids);
+        return profs ?? [];
       } else {
-        const {data:rows}=await db.from("follows").select("profiles!target_username(id,username,full_name,avatar_url)").eq("follower_id",userId);
-        return (rows??[]).map((r:any)=>r.profiles).filter(Boolean);
+        const {data:rows}=await db.from("follows").select("target_username").eq("follower_id",userId);
+        const usernames=[...new Set((rows??[]).map((r:any)=>r.target_username).filter(Boolean))];
+        if (usernames.length===0) return [];
+        const {data:profs}=await db.from("profiles").select("id,username,full_name,avatar_url").in("username",usernames);
+        return profs ?? [];
       }
     },
     staleTime:30_000,
@@ -216,16 +229,29 @@ function FollowListModal({ userId, kind, onClose }:
     const next = new Set(prev);
     isF ? next.delete(targetUsername) : next.add(targetUsername);
     qc.setQueryData(key, next);
+    // Estado otimista também na cache PARTILHADA (a mesma que UniversalPostCard
+    // e perfil.tsx leem via useFollowState) — antes este modal só atualizava a
+    // sua própria lista local, então seguir aqui não refletia no botão
+    // "Seguir" do cartão do post ou da página de perfil dessa pessoa.
+    qc.setQueryData(FOLLOW_KEYS.status(myId, targetUsername), !isF);
+    const targetId = (data as any[]).find(u => u.username === targetUsername)?.id ?? null;
     try {
       // Mesma RPC atómica usada em toda a app — verifica a relação real
       // na BD antes de decidir seguir/deixar de seguir, nunca duplica
       // nem falha por a relação já existir.
-      const { error } = await (supabase as any).rpc("toggle_follow", { p_target_username: targetUsername });
+      const { data: res, error } = await (supabase as any).rpc("toggle_follow", {
+        p_target_username: targetUsername,
+        p_target_id: targetId,
+      });
       if (error) throw error;
+      qc.setQueryData(FOLLOW_KEYS.status(myId, targetUsername), !!res?.following);
+      qc.invalidateQueries({ queryKey: FOLLOW_KEYS.counts(targetUsername) });
       qc.invalidateQueries({ queryKey: ["follow-status"], exact: false });
       qc.invalidateQueries({ queryKey: ["follow-counts"], exact: false });
+      qc.invalidateQueries({ queryKey: ["profile"], exact: false });
     } catch {
       qc.setQueryData(key, prev);
+      qc.setQueryData(FOLLOW_KEYS.status(myId, targetUsername), isF);
     }
   }
 

@@ -9,6 +9,7 @@ import { Search, X, Heart, TrendingUp, Users, FileText, Tv2, UserPlus, UserCheck
 import { t } from "@/lib/useT";
 import { getHoodaOfficialId } from "@/lib/hoodaOfficial";
 import { toast } from "sonner";
+import { FOLLOW_KEYS } from "@/hooks/useSocialSystem";
 
 export const Route = createFileRoute("/explorar")({
   head: () => ({ meta: [{ title: "Hooda" }] }),
@@ -174,33 +175,35 @@ function ExplorePage() {
     staleTime: 10_000,
   });
 
-  /* Carregar quais canais já sigo (following_id = channels.id) */
+  /* Carregar quais canais já sigo — mesma tabela dedicada "channel_follows"
+   * usada em canal.$handle.tsx. Antes esta página escrevia canais seguidos
+   * na tabela "follows" (a de pessoas), uma tabela completamente diferente
+   * da que a página do canal lê — por isso seguir um canal aqui nunca
+   * aparecia como seguido ao entrar no canal, e vice-versa. */
   const { data: myChannelFollows } = useQuery({
     queryKey: ["explore-my-channel-follows", myId],
     queryFn: async () => {
       const { data } = await (supabase as any)
-        .from("follows").select("following_id").eq("follower_id", myId).not("following_id", "is", null);
-      return (data ?? []).map((r: any) => r.following_id).filter(Boolean) as string[];
+        .from("channel_follows").select("channel_id").eq("user_id", myId);
+      return (data ?? []).map((r: any) => r.channel_id).filter(Boolean) as string[];
     },
     enabled: !!myId,
     staleTime: 10_000,
   });
   const myChannelFollowsSet = useMemo(() => new Set(myChannelFollows ?? []), [myChannelFollows]);
 
-  async function toggleChannelFollow(channelId: string, channelHandle: string) {
+  async function toggleChannelFollow(channelId: string, _channelHandle: string) {
     if (!myId) { toast.error("Inicia sessão para seguir."); return; }
     const isF = channelFollowMap[channelId] ?? myChannelFollowsSet.has(channelId);
     setChannelFollowMap(prev => ({ ...prev, [channelId]: !isF }));
     const db = supabase as any;
     try {
       if (isF) {
-        const { error } = await db.from("follows").delete().eq("follower_id", myId).eq("following_id", channelId);
+        const { error } = await db.from("channel_follows").delete().eq("user_id", myId).eq("channel_id", channelId);
         if (error) throw error;
         toast.success("Deixaste de seguir o canal");
       } else {
-        // A tabela "follows" exige sempre target_username (coluna obrigatória)
-        // — usamos o handle do canal, sem isto o insert falha silenciosamente.
-        const { error } = await db.from("follows").upsert({ follower_id: myId, following_id: channelId, target_username: channelHandle }, { onConflict: "follower_id,target_username", ignoreDuplicates: true });
+        const { error } = await db.from("channel_follows").upsert({ user_id: myId, channel_id: channelId }, { onConflict: "channel_id,user_id", ignoreDuplicates: true });
         if (error) throw error;
         toast.success("A seguir o canal!");
       }
@@ -387,17 +390,25 @@ function ExplorePage() {
     if (!myId) { toast.error("Inicia sessão para seguir."); return; }
     const isF = followMap[userId] ?? myFollowsSet.has(username);
     setFollowMap(prev => ({ ...prev, [userId]: !isF }));
-    const db = supabase as any;
     try {
-      if (isF) {
-        const { error } = await db.from("follows").delete().eq("follower_id", myId).eq("target_username", username);
-        if (error) throw error;
-        toast.success(`Deixaste de seguir @${username}`);
-      } else {
-        const { error } = await db.from("follows").upsert({ follower_id: myId, target_username: username }, { onConflict: "follower_id,target_username", ignoreDuplicates: true });
-        if (error) throw error;
-        toast.success(`Estás a seguir @${username}!`);
-      }
+      // Mesma RPC atómica usada em toda a app (UniversalPostCard, perfil,
+      // RightSidebar...) — antes esta página escrevia direto na tabela
+      // "follows" com upsert/delete, sem passar por aqui. Isso fazia com
+      // que seguir alguém no Explorar nunca aparecesse como "A seguir" no
+      // feed/perfil dessa pessoa sem recarregar a página inteira, e não
+      // preenchia following_id (usado nas permissões de mensagens).
+      const { data, error } = await (supabase as any).rpc("toggle_follow", {
+        p_target_username: username,
+        p_target_id: userId,
+      });
+      if (error) throw error;
+      toast.success(data?.following ? `Estás a seguir @${username}!` : `Deixaste de seguir @${username}`);
+      // Sincroniza a cache partilhada do sistema social — sem isto, o
+      // botão "Seguir" no feed/perfil desta pessoa só atualizava depois
+      // de expirar o staleTime (60s) ou de um reload manual.
+      qc.setQueryData(FOLLOW_KEYS.status(myId, username), !!data?.following);
+      qc.invalidateQueries({ queryKey: FOLLOW_KEYS.counts(username) });
+      qc.invalidateQueries({ queryKey: ["profile"], exact: false });
       qc.invalidateQueries({ queryKey: ["explore-my-follows", myId] });
     } catch (err: any) {
       setFollowMap(prev => ({ ...prev, [userId]: isF }));
