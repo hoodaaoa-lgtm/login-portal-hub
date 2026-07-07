@@ -1637,6 +1637,78 @@ export type Database = {
         }
         Relationships: []
       }
+      user_events: {
+        Row: {
+          author_id: string | null
+          category: string | null
+          context: Json | null
+          created_at: string
+          dwell_ms: number | null
+          event_type: string
+          id: number
+          session_id: string | null
+          target_id: string | null
+          target_type: string | null
+          user_id: string | null
+          weight: number | null
+        }
+        Insert: {
+          author_id?: string | null
+          category?: string | null
+          context?: Json | null
+          created_at?: string
+          dwell_ms?: number | null
+          event_type: string
+          id?: number
+          session_id?: string | null
+          target_id?: string | null
+          target_type?: string | null
+          user_id?: string | null
+          weight?: number | null
+        }
+        Update: {
+          author_id?: string | null
+          category?: string | null
+          context?: Json | null
+          created_at?: string
+          dwell_ms?: number | null
+          event_type?: string
+          id?: number
+          session_id?: string | null
+          target_id?: string | null
+          target_type?: string | null
+          user_id?: string | null
+          weight?: number | null
+        }
+        Relationships: []
+      }
+      user_interest_scores: {
+        Row: {
+          category: string
+          score_long: number
+          score_medium: number
+          score_short: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category: string
+          score_long?: number
+          score_medium?: number
+          score_short?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          score_long?: number
+          score_medium?: number
+          score_short?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_interests: {
         Row: {
           author_id: string
@@ -2043,6 +2115,7 @@ export type Database = {
         Args: { p_other_id: string }
         Returns: string
       }
+      decay_interest_scores: { Args: never; Returns: undefined }
       decrement_post_replies: {
         Args: { p_post_id: string }
         Returns: undefined
@@ -2097,6 +2170,16 @@ export type Database = {
           notification_prefs: Json
           phone_number: string
           read_receipts_off: boolean
+        }[]
+      }
+      get_user_interest_profile: {
+        Args: { p_limit?: number }
+        Returns: {
+          category: string
+          combined: number
+          score_long: number
+          score_medium: number
+          score_short: number
         }[]
       }
       heartbeat_ping: {
@@ -2165,6 +2248,20 @@ export type Database = {
       }
       toggle_post_like: { Args: { p_post_id: string }; Returns: Json }
       toggle_video_like: { Args: { p_video_id: string }; Returns: Json }
+      track_event: {
+        Args: {
+          p_author_id?: string
+          p_category?: string
+          p_context?: Json
+          p_dwell_ms?: number
+          p_event_type: string
+          p_session_id?: string
+          p_target_id?: string
+          p_target_type?: string
+          p_weight?: number
+        }
+        Returns: undefined
+      }
       update_book_rating_average: {
         Args: { p_book_id: string }
         Returns: {

@@ -1,80 +1,70 @@
-# Redesign global estilo X (Twitter)
+# IA da Hooda — plano em fases
 
-Vou refazer o shell de layout e aplicá-lo de forma idêntica em todas as páginas, sem tocar em lógica de dados, auth ou funcionalidades. Toda a paleta e modo claro/escuro mantêm-se.
+O que pediste é o motor completo de uma plataforma tipo TikTok/YouTube (recomendação, análise multimodal, moderação, monetização, analytics). Não é algo que se ligue "de uma vez" num só passo — envolve modelos de visão, áudio, embeddings, ranking, moderação, infra de eventos e vários painéis. Se eu tentar fazer tudo num turno vais ficar com muita coisa meio-feita e nada a funcionar em produção.
 
-## 1. Novo shell partilhado (`src/components/AppShell.tsx`)
+Proponho construir por **fases**, cada uma entregando algo funcional a correr sem erros. Começamos já pela Fase 1, e vamos avançando à medida que aprovas.
 
-Três colunas fixas, iguais em todas as páginas:
+## Fase 1 — Fundação de sinais + perfil de interesses (já)
 
-```text
-┌──────────┬──────────────────────┬──────────────┐
-│ Sidebar  │  Coluna central      │  Sidebar     │
-│ 275px    │  600px               │  350px       │
-│ (fixa)   │  (sticky header)     │  (fixa)      │
-│ nav +    │  conteúdo da página  │  pesquisa +  │
-│ botão    │                      │  sugestões + │
-│ Publicar │                      │  tendências  │
-│ + avatar │                      │              │
-└──────────┴──────────────────────┴──────────────┘
-```
+O que fica a funcionar:
+- Tabela `user_events` (view, dwell, click, like, comment, share, save, follow, search, profile_visit, channel_visit, hide, report) com timestamp, contexto, referrer.
+- Reforçar `post_impressions` e `user_interests` (já existem).
+- Perfil dinâmico por utilizador: pontuação por categoria com decaimento temporal (curto/médio/longo prazo).
+- Hook `useTrackEvent` no cliente para registar tudo em fire-and-forget.
+- RPC `get_user_interest_profile(user_id)` a devolver top categorias.
 
-- `<XShell>` novo wrapper: sidebar esquerda + `<main>` central 600px + `<RightRail>` à direita, tudo dentro de `max-w-[1290px] mx-auto`.
-- Sidebar esquerda: logo, nav vertical (Home, Explorar, Drops, Mensagens, Notificações, Perfil), botão "Publicar" grande arredondado com gradiente da marca, e no fundo cartão com avatar + nome + `@handle` que abre `UserDrawer`.
-- Em tablet (`md`–`lg`): sidebar reduz a 72px, só ícones + botão redondo.
-- Em mobile (`<md`): sidebar desaparece, bottom nav fixa (Home, Explorar, Drops, Mensagens, Menu) igual à atual, mais FAB "Publicar" acima da bottom nav.
-- `<PageHeader title actions tabs?>` sticky no topo da coluna central com blur/translúcido, tabs opcionais com indicador por baixo (estilo X).
-- `<RightRail context?>` componente único que combina pesquisa + sugestões (via `RightSidebar` atual) + bloco contextual opcional por página (ex: tendências no Home, info do canal em `/canal/$handle`).
+Backend: migração SQL + funções + edge cron para recalcular perfis (a cada X minutos).
 
-## 2. Aplicar o shell em todas as rotas
+## Fase 2 — Classificação automática de conteúdo (texto → vídeo)
 
-Substituir `PageWrapper`/`FeedLayout` por `<XShell>` + `<PageHeader>` nas rotas:
+- Taxonomia global (`content_categories`) com as categorias que listaste + subcategorias.
+- Ao publicar um post: server function chama Lovable AI (`google/gemini-2.5-flash`) para classificar título+descrição+hashtags → categorias com percentagens, palavras-chave, entidades, sentimento.
+- Guardar em `post_classifications`.
+- Para vídeo/imagem: numa 2ª etapa usar Gemini multimodal (frames + transcrição) — mais caro, faz sentido correr assíncrono em worker.
 
-- `/home`, `/explorar`, `/drops`, `/mensagens`, `/perfil`, `/u/$username`, `/canal/$handle`, `/post/$id`, `/livros`, `/definicoes`
+## Fase 3 — Embeddings + pesquisa semântica
 
-Studio (`/studio/*`) mantém o seu próprio layout interno (tem sidebar própria de gestão), mas o header top-level passa a partilhar o mesmo estilo visual.
+- `pgvector` + `post_embeddings` (Gemini embedding-001, 3072 dim).
+- Embedding do post à publicação, embedding da query na pesquisa.
+- `search_posts_semantic(query, k)` combina full-text + vetorial.
+- Base para "conteúdo semelhante" e descoberta.
 
-## 3. Componentes visuais alinhados ao X
+## Fase 4 — Motor de ranking do feed
 
-- **Post card**: sem borda; separação só por `border-b` subtil; avatar 40px à esquerda; header inline (nome bold + `@user` + `·` + tempo); ações em baixo (comentar, republicar, gostar, guardar, partilhar) em cinza `text-muted` que ganham a cor da marca no hover.
-- **Botão Publicar**: pill, `bg-[#5B3FCF]`, `text-white`, `font-bold`, largura total na sidebar / redondo (56px) no mobile.
-- **Tabs**: `border-b` no container, item ativo com pill de texto bold + barra 4px por baixo em `#5B3FCF`.
-- **Pesquisa**: input arredondado (`rounded-full`), fundo `--s1`, ícone `Search` à esquerda, presente na `RightRail` de todas as páginas.
-- **Modais / dialogs**: já ajustados; confirmar `rounded-2xl` e overlay `bg-black/60 backdrop-blur-sm`.
-- **Hover states**: `hover:bg-[var(--s1)]` em items de nav e ações; transições `150ms`.
+- Score = `w1·afinidade_interesse + w2·qualidade + w3·frescura + w4·diversidade − w5·penalizações`.
+- Composição adaptativa 40/30/20/10 (interesses / seguidos / descoberta / tendências).
+- Exploration bonus para criadores novos (dar chance inicial durante N impressões).
+- RPC `get_personalized_feed(user_id, cursor)`.
 
-## 4. Tokens / estilos globais (`src/styles.css`)
+## Fase 5 — Qualidade de conteúdo
 
-Adicionar utilitários:
-- `.x-sticky-header` (sticky top, `backdrop-blur`, `bg-[var(--surface-0)]/80`, `border-b`)
-- `.x-hover-row` (hover cinza subtil usado no post card e nos items de nav)
-- `.x-divider` (border-b uniforme entre posts)
+- `content_quality` por post: qualidade técnica (resolução/duração/áudio via metadata), engajamento (retenção, shares, saves), originalidade (hash perceptual + similaridade de embedding), satisfação (hide/report ratio).
+- Score final 0-100 que entra no ranking.
 
-Nada muda na paleta nem nas variáveis `--surface/--text/--border` existentes.
+## Fase 6 — Moderação e conteúdo sensível
 
-## 5. Responsividade
+- Classificação automática (seguro / sensível / nudez / violência / spam / golpe) via Lovable AI.
+- Blur + aviso "conteúdo sensível" na UI com botões "Ver" / "Ocultar semelhantes".
+- Aprender com a escolha do utilizador (feedback loop no perfil).
+- Detecção de spam: bots, publicações repetidas, redes coordenadas.
 
-- `<md` (mobile): 1 coluna, bottom nav + FAB Publicar; sem coluna direita.
-- `md`–`lg` (tablet): sidebar 72px só ícones; sem coluna direita.
-- `≥lg`: 3 colunas completas, coluna direita a partir de `xl` (≥1280px) sempre que houver espaço.
+## Fase 7 — Analytics para criadores (expandir studio.estatisticas)
 
-## 6. Preservado sem alterações
+- Tempo médio assistido, retenção por segundo, origem do tráfego, categorias da audiência, seguidores ganhos por dia.
 
-- Paleta (`#5B3FCF`, `#E94B8A`, `#F26B3A`, `#1FAFA6`, `#6BA547`, `#FFC93C`).
-- Modo claro/escuro e todas as vars `--surface/--text/--border`.
-- Toda a lógica: queries, mutations, RLS, autenticação, agendamento de posts, Studio, uploads.
-- Textos e nomes pt-AO.
+## Fase 8 — Monetização
 
-## 7. Verificação
+- Programa de criadores, assinaturas, gorjetas, conteúdo premium, marketplace. Requer Stripe/Paddle — pergunto qual quando chegarmos aqui.
 
-- `bunx tsgo --noEmit` no final para garantir zero erros de tipo.
-- Playwright em desktop (1280) e mobile (390) a percorrer `/home`, `/explorar`, `/drops`, `/mensagens`, `/perfil`, `/post/$id`, `/canal/$handle` para confirmar que todas as páginas seguem o mesmo padrão.
+## Detalhes técnicos (para referência)
 
-## Ficheiros afetados (aprox.)
+- Tudo em `createServerFn` (TanStack) + Supabase, IA via Lovable AI Gateway (sem chaves adicionais).
+- Trabalhos pesados (classificação de vídeo, embeddings) em edge functions chamadas por cron ou triggers, não no request do utilizador.
+- Nada bloqueia a UI; tudo fire-and-forget do lado do cliente.
+- Modelos: `google/gemini-2.5-flash` (classificação/texto), `google/gemini-2.5-pro` (vídeo/multimodal), `google/gemini-embedding-001` (vetores).
 
-- `src/components/AppShell.tsx` — reescrito (novo `XShell`, `PageHeader`, `RightRail`, mantém `SideNav`/`BottomNav` compatíveis).
-- `src/components/RightSidebar.tsx` — ajustar para caber no novo `RightRail`.
-- `src/styles.css` — 3 novas utility classes.
-- ~10 ficheiros em `src/routes/*.tsx` — trocar wrapper e header pelo novo shell.
-- Zero alterações em ficheiros Supabase, migrations ou `src/integrations/`.
+## Confirma antes de eu avançar
 
-Confirma para eu avançar (ou diz o que queres ajustar no plano).
+1. **Ok começar pela Fase 1** (sinais + perfil de interesses) neste turno?
+2. Alguma fase que queres saltar, adiar, ou pôr à frente?
+3. Para vídeo/imagem multimodal (Fase 2b), consumirá créditos de IA por cada upload — ok avançar assim ou preferes só texto no início?
