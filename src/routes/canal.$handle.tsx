@@ -284,14 +284,16 @@ function CanalPage() {
       if (!ch) { setLoading(false); return; }
       setChannel(ch);
 
-      // Seguidores
-      const { count } = await (supabase as any).from("follows")
-        .select("*", { count: "exact", head: true }).eq("following_id", ch.id);
+      // Seguidores — tabela dedicada a canais (não a "follows", que é
+      // para pessoas e usa "target_username"; misturar as duas arriscava
+      // colidir com o username de uma pessoa igual ao handle do canal).
+      const { count } = await (supabase as any).from("channel_follows")
+        .select("*", { count: "exact", head: true }).eq("channel_id", ch.id);
       setFollowCount(count ?? 0);
 
       if (session?.user?.id) {
-        const { data: fw } = await (supabase as any).from("follows")
-          .select("id").eq("follower_id", session.user.id).eq("following_id", ch.id).maybeSingle();
+        const { data: fw } = await (supabase as any).from("channel_follows")
+          .select("id").eq("user_id", session.user.id).eq("channel_id", ch.id).maybeSingle();
         setFollowing(!!fw);
       }
 
@@ -314,13 +316,28 @@ function CanalPage() {
 
   async function toggleFollow() {
     if (!myId || !channel) { toast.error("Inicia sessão."); return; }
+    const wasFollowing = following;
     setFollowing(f => !f);
-    setFollowCount(c => following ? c - 1 : c + 1);
-    if (following) await (supabase as any).from("follows").delete().eq("follower_id", myId).eq("following_id", channel.id);
-    // A tabela "follows" exige sempre target_username (coluna obrigatória) —
-    // usamos o handle do canal como identificador, sem isto o insert falha
-    // silenciosamente e o botão parece não fazer nada.
-    else await (supabase as any).from("follows").upsert({ follower_id: myId, following_id: channel.id, target_username: channel.handle }, { onConflict: "follower_id,target_username", ignoreDuplicates: true });
+    setFollowCount(c => wasFollowing ? c - 1 : c + 1);
+    try {
+      if (wasFollowing) {
+        const { error } = await (supabase as any).from("channel_follows")
+          .delete().eq("user_id", myId).eq("channel_id", channel.id);
+        if (error) throw error;
+      } else {
+        const { error } = await (supabase as any).from("channel_follows")
+          .upsert({ user_id: myId, channel_id: channel.id }, { onConflict: "channel_id,user_id", ignoreDuplicates: true });
+        if (error) throw error;
+      }
+    } catch (err) {
+      // Reverte o otimismo — sem isto, uma falha silenciosa (rede, RLS,
+      // etc.) deixava o botão a mostrar "Seguindo" mesmo sem ter sido
+      // guardado, e ao voltar a entrar no canal aparecia "Seguir" de novo.
+      console.error("[hooda:canal] falha ao seguir/deixar de seguir canal:", err);
+      setFollowing(wasFollowing);
+      setFollowCount(c => wasFollowing ? c + 1 : c - 1);
+      toast.error("Não foi possível seguir o canal. Tenta novamente.");
+    }
   }
 
   const isOwner = myId === channel?.owner_id;
