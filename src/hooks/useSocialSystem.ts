@@ -28,21 +28,44 @@ export const FOLLOW_KEYS = {
 
 /**
  * Sincronização em tempo real: uma ÚNICA subscrição por sessão de app
- * (não uma por componente montado) ouve mudanças na tabela "follows" e
- * invalida a cache partilhada. Assim, se eu seguir alguém no telemóvel,
- * o mesmo perfil aberto no computador atualiza sozinho, sem refresh.
+ * (não uma por componente montado) ouve mudanças nas tabelas sociais
+ * (follows, post_comments, post_likes, post_saves) e invalida a cache
+ * partilhada certa. Assim, uma ação num dispositivo/aba reflete-se
+ * automaticamente em qualquer outro sítio aberto, sem refresh.
  */
 let followRealtimeChannel: ReturnType<typeof supabase.channel> | null = null;
 function ensureFollowRealtimeSync(qc: ReturnType<typeof useQueryClient>) {
   if (followRealtimeChannel) return;
   followRealtimeChannel = supabase
-    .channel("follows-realtime-sync")
+    .channel("social-realtime-sync")
     .on("postgres_changes", { event: "*", schema: "public", table: "follows" }, () => {
-      // Invalida tudo o que depende de "follows" — status e contadores,
-      // em qualquer perfil/canal aberto na app neste momento.
       qc.invalidateQueries({ queryKey: ["follow-status"], exact: false });
       qc.invalidateQueries({ queryKey: ["follow-counts"], exact: false });
       qc.invalidateQueries({ queryKey: ["profile"], exact: false });
+    })
+    .on("postgres_changes", { event: "*", schema: "public", table: "post_comments" }, (payload: any) => {
+      const postId = payload?.new?.post_id ?? payload?.old?.post_id;
+      if (postId) {
+        // Recalcula pelo valor real da BD (posts.comments_count é mantido
+        // por trigger), evitando drift entre dispositivos/abas.
+        (supabase as any).from("posts").select("comments_count").eq("id", postId).maybeSingle()
+          .then(({ data }: any) => {
+            if (data) qc.setQueryData(COMMENT_COUNT_KEYS.post(postId), data.comments_count ?? 0);
+          });
+      }
+    })
+    .on("postgres_changes", { event: "*", schema: "public", table: "post_likes" }, (payload: any) => {
+      const postId = payload?.new?.post_id ?? payload?.old?.post_id;
+      if (postId) {
+        (supabase as any).from("posts").select("likes_count").eq("id", postId).maybeSingle()
+          .then(({ data }: any) => {
+            if (data) qc.setQueryData<{ liked: boolean; count: number }>(LIKE_KEYS.post(postId), (prev) =>
+              ({ liked: prev?.liked ?? false, count: data.likes_count ?? prev?.count ?? 0 }));
+          });
+      }
+    })
+    .on("postgres_changes", { event: "*", schema: "public", table: "post_saves" }, () => {
+      qc.invalidateQueries({ queryKey: ["post-saved"], exact: false });
     })
     .subscribe();
 }
@@ -134,7 +157,106 @@ export function useFollowState(myId: string | null | undefined, targetUsername: 
   };
 }
 
-// ─── Gostar (posts) ───────────────────────────────────────────────────
+// ─── Comentários (contador) ────────────────────────────────────────────
+
+export const COMMENT_COUNT_KEYS = {
+  post: (postId: string) => ["comment-count", "post", postId] as const,
+};
+
+/** Contador de comentários partilhado — sincronizado entre todos os
+ * cartões que mostrem o mesmo post (feed, perfil, explorador, favoritos,
+ * página da publicação...). Atualiza de forma otimista ao comentar/
+ * apagar, e por realtime quando a alteração acontece noutro dispositivo
+ * ou noutra aba. */
+export function usePostCommentCount(postId: string, initial?: number) {
+  const qc = useQueryClient();
+  const key = COMMENT_COUNT_KEYS.post(postId);
+
+  useEffect(() => {
+    if (initial !== undefined && qc.getQueryData(key) === undefined) {
+      qc.setQueryData(key, initial);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [postId]);
+
+  useEffect(() => { ensureFollowRealtimeSync(qc); }, [qc]);
+
+  const query = useQuery({
+    queryKey: key,
+    queryFn: async () => initial ?? 0,
+    enabled: false,
+    initialData: initial ?? 0,
+    staleTime: Infinity,
+  });
+
+  const increment = useCallback((delta: number) => {
+    qc.setQueryData<number>(key, (prev) => Math.max(0, (prev ?? 0) + delta));
+  }, [qc, key]);
+
+  const setCount = useCallback((n: number) => {
+    qc.setQueryData(key, Math.max(0, n));
+  }, [qc, key]);
+
+  return { count: query.data ?? 0, increment, setCount };
+}
+
+
+
+// ─── Guardar (posts) ────────────────────────────────────────────────
+
+export const SAVE_KEYS = {
+  post: (postId: string) => ["save-state", "post", postId] as const,
+};
+
+/** Estado de "guardado" partilhado — sincronizado entre todos os cartões
+ * que mostrem o mesmo post (feed, perfil, explorador, favoritos...). */
+export function useBookmarkState(postId: string, myId: string | null | undefined, initial?: boolean) {
+  const qc = useQueryClient();
+  const key = SAVE_KEYS.post(postId);
+
+  useEffect(() => {
+    if (initial !== undefined && qc.getQueryData(key) === undefined) {
+      qc.setQueryData(key, initial);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [postId]);
+
+  useEffect(() => { ensureFollowRealtimeSync(qc); }, [qc]);
+
+  const query = useQuery({
+    queryKey: key,
+    queryFn: async () => {
+      if (!myId) return false;
+      const { data } = await (supabase as any).from("post_saves").select("id")
+        .eq("post_id", postId).eq("user_id", myId).maybeSingle();
+      return !!data;
+    },
+    enabled: !!myId && initial === undefined,
+    initialData: initial,
+    staleTime: 60_000,
+  });
+
+  const toggle = useCallback(async () => {
+    if (!myId) return;
+    const prev = qc.getQueryData<boolean>(key) ?? false;
+    const next = !prev;
+    qc.setQueryData(key, next);
+    try {
+      if (next) {
+        const { error } = await (supabase as any).from("post_saves").insert({ post_id: postId, user_id: myId });
+        if (error) throw error;
+      } else {
+        const { error } = await (supabase as any).from("post_saves").delete().eq("post_id", postId).eq("user_id", myId);
+        if (error) throw error;
+      }
+    } catch (err) {
+      console.error("[hooda:social] falha ao guardar/desguardar post:", err);
+      qc.setQueryData(key, prev);
+    }
+  }, [postId, myId, qc, key]);
+
+  return { bookmarked: query.data ?? false, toggle };
+}
 
 export const LIKE_KEYS = {
   post: (postId: string) => ["like-state", "post", postId] as const,

@@ -14,7 +14,7 @@ import { PollCard } from "@/components/PollCard";
 import { SensitiveContentOverlay } from "@/components/SensitiveContentOverlay";
 import { useTimeAgo } from "@/hooks/useTimeAgo";
 import { useScrollLock } from "@/hooks/useScrollLock";
-import { useFollowState, usePostLikeState, getViewerFingerprint } from "@/hooks/useSocialSystem";
+import { useFollowState, usePostLikeState, usePostCommentCount, useBookmarkState, getViewerFingerprint } from "@/hooks/useSocialSystem";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { QUERY_KEYS, REALTIME_QUERY_OPTIONS } from "@/lib/queryClient";
 import {
@@ -852,14 +852,14 @@ export function UniversalPostCard({ post: p, onDeleted, onBookmarkChange }: {
   const [repostCount, setRepostCount] = useState(p.reposts_count ?? 0);
   const [didRepost, setDidRepost] = useState(false);
   const [sendingComment, setSendingComment] = useState(false);
-  const [bookmarked, setBookmarked] = useState(false);
-  const qc = useQueryClient();
+    const qc = useQueryClient();
   type PC = import("@/components/PostCommentsModal").PostComment;
   const meRef = useRef<{ id: string; username: string } | null>(null);
   const [myUserId, setMyUserId] = useState<string | null>(null);
   const { liked, likeCount, toggle: toggleLikeShared } = usePostLikeState(p.id, myUserId, { liked: p.liked_by_me ?? false, count: p.likes ?? 0 });
   const { isFollowing: following, isLoading: followLoading, toggle: toggleFollow } = useFollowState(myUserId, p.author_username, p.author_id);
-  const [commentCount, setCommentCount] = useState(p.comments ?? 0);
+  const { count: commentCount, increment: incrementCommentCount } = usePostCommentCount(p.id, p.comments ?? 0);
+  const { bookmarked, toggle: toggleBookmarkShared } = useBookmarkState(p.id, myUserId);
   const [viewCount, setViewCount] = useState(Number(p.views_count ?? 0));
   const isAd = !!p.ad || !!p.is_ad;
   const isOwnPost = !!myUserId && myUserId === p.author_id;
@@ -873,8 +873,6 @@ export function UniversalPostCard({ post: p, onDeleted, onBookmarkChange }: {
       const { data: prof } = await supabase.from("profiles").select("username").eq("id", session.user.id).maybeSingle();
       meRef.current = { id: session.user.id, username: (prof as any)?.username || "eu" };
       setMyUserId(session.user.id);
-      const { data: saveRow } = await supabase.from("post_saves").select("id").eq("post_id", p.id).eq("user_id", session.user.id).maybeSingle();
-      setBookmarked(!!saveRow);
     })();
   }, [p.id]);
 
@@ -903,7 +901,7 @@ export function UniversalPostCard({ post: p, onDeleted, onBookmarkChange }: {
     const created = await sendPostComment({ postId: p.id, userId: me.id, username: me.username, text });
     if (created) {
       setComments((prev) => [...prev, created]);
-      setCommentCount((n) => n + 1);
+      incrementCommentCount(1);
       if (text.includes("@")) notifyMentions({ text, authorId: me.id, authorUsername: me.username, postId: p.id, commentId: created.id });
     }
     setSendingComment(false);
@@ -915,7 +913,7 @@ export function UniversalPostCard({ post: p, onDeleted, onBookmarkChange }: {
     const created = await replyToPostComment({ postId: p.id, parentCommentId: parentId, userId: me.id, username: me.username, text });
     if (!created) return;
     setComments((prev) => prev.map((c) => c.id === parentId ? { ...c, replies: [...(c.replies || []), created] } : c));
-    setCommentCount((n) => n + 1);
+    incrementCommentCount(1);
     if (text.includes("@")) notifyMentions({ text, authorId: me.id, authorUsername: me.username, postId: p.id, commentId: created.id });
   }
 
@@ -942,16 +940,9 @@ export function UniversalPostCard({ post: p, onDeleted, onBookmarkChange }: {
   }
 
   async function toggleBookmark() {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) { toast.error("Inicia sessão para guardar."); return; }
-    const next = !bookmarked;
-    setBookmarked(next);
-    if (!next) {
-      await supabase.from("post_saves").delete().eq("post_id", p.id).eq("user_id", session.user.id);
-    } else {
-      await supabase.from("post_saves").insert({ post_id: p.id, user_id: session.user.id } as any);
-    }
-    onBookmarkChange?.(p.id, next);
+    if (!myUserId) { toast.error("Inicia sessão para guardar."); return; }
+    await toggleBookmarkShared();
+    onBookmarkChange?.(p.id, !bookmarked);
   }
 
   async function handleDelete() {
@@ -1210,13 +1201,13 @@ export function UniversalPostCard({ post: p, onDeleted, onBookmarkChange }: {
               {p.text && !p.video && (p.bg_color
                 ? <div className="px-4 pb-3">
                     <div className="rounded-2xl px-5 py-6 flex items-center justify-center min-h-28" style={{ background: p.bg_color }}>
-                      <p className="text-white font-bold text-lg text-center leading-snug">{p.text}</p>
+                      <RichText text={p.text} className="text-white font-bold text-lg text-center leading-snug" />
                     </div>
                   </div>
-                : <p className="px-4 pb-3 text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>{p.text}</p>
+                : <div className="px-4 pb-3 text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}><RichText text={p.text} /></div>
               )}
               {p.text && p.video && (
-                <p className="px-4 py-2 text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>{p.text}</p>
+                <div className="px-4 py-2 text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}><RichText text={p.text} /></div>
               )}
               {p.photos && p.photos.length > 0 && <PhotoGrid photos={p.photos} />}
               {p.photo && !p.photos && !p.video && <PhotoGrid photos={[p.photo]} />}
