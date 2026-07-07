@@ -1261,6 +1261,68 @@ function ChatPicker({ tab, setTab, emojiSearch, setEmojiSearch, gifSearch, setGi
 
 type MsgType = "text" | "image" | "audio" | "sticker" | "video" | "file";
 
+// ── ✨ Message Studio ──
+type StudioFontKey = "system" | "serif" | "hand" | "mono";
+type MessageStyle = {
+  font?: StudioFontKey;
+  textColor?: string;   // cor sólida ou gradiente CSS (background-clip:text)
+  card?: string | null; // id de um cartão pronto (ver STUDIO_CARDS) ou null
+};
+
+const STUDIO_FONTS: { key: StudioFontKey; label: string; family: string }[] = [
+  { key: "system", label: "Moderna",    family: "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif" },
+  { key: "serif",  label: "Elegante",   family: "Georgia,'Times New Roman',serif" },
+  { key: "hand",   label: "Manuscrita", family: "'Segoe Script','Bradley Hand','Comic Sans MS',cursive" },
+  { key: "mono",   label: "Máquina",    family: "'SF Mono','Courier New',monospace" },
+];
+
+const STUDIO_TEXT_COLORS = [
+  { key: "white",   label: "Branco",  value: "#FFFFFF" },
+  { key: "gold",    label: "Dourado", value: "linear-gradient(135deg,#F5D67A,#D9A441)" },
+  { key: "pink",    label: "Rosa",    value: "linear-gradient(135deg,#F6A6C1,#E94B8A)" },
+  { key: "violet",  label: "Violeta", value: "linear-gradient(135deg,#C4B5FD,#5B3FCF)" },
+  { key: "sunset",  label: "Pôr do sol", value: "linear-gradient(135deg,#FDBA74,#F26B3A)" },
+  { key: "mint",    label: "Menta",   value: "linear-gradient(135deg,#A7F3D0,#1FAFA6)" },
+  { key: "ink",     label: "Tinta",   value: "#1A1A2E" },
+];
+
+type StudioCard = {
+  id: string; label: string; emoji: string;
+  bg: string;                 // fundo da bolha
+  defaultTextColor: string;   // cor de texto sugerida para este cartão
+  accent?: string;            // decoração leve (emoji a repetir ao fundo)
+};
+
+const STUDIO_CARDS: StudioCard[] = [
+  { id: "birthday",     label: "Aniversário",   emoji: "🎂", bg: "linear-gradient(135deg,#FF6FA5 0%,#7C3AED 100%)", defaultTextColor: "#FFFFFF", accent: "🎉" },
+  { id: "invite",       label: "Convite",       emoji: "🎟️", bg: "linear-gradient(135deg,#1F2937 0%,#5B3FCF 100%)", defaultTextColor: "#F5D67A", accent: "✨" },
+  { id: "love",         label: "Amor",          emoji: "❤️", bg: "linear-gradient(135deg,#F6416C 0%,#E94B8A 60%,#7C3AED 100%)", defaultTextColor: "#FFFFFF", accent: "💗" },
+  { id: "thanks",       label: "Agradecimento", emoji: "🙏", bg: "linear-gradient(135deg,#1FAFA6 0%,#0EA5A0 60%,#134E4A 100%)", defaultTextColor: "#FFFFFF", accent: "✦" },
+  { id: "event",        label: "Evento",        emoji: "📅", bg: "linear-gradient(135deg,#2563EB 0%,#5B3FCF 100%)", defaultTextColor: "#FFFFFF", accent: "🗓️" },
+  { id: "announcement", label: "Anúncio",       emoji: "📣", bg: "linear-gradient(135deg,#F26B3A 0%,#E94B8A 100%)", defaultTextColor: "#FFFFFF", accent: "★" },
+];
+
+function studioFontFamily(key?: StudioFontKey): string {
+  return STUDIO_FONTS.find(f => f.key === key)?.family ?? STUDIO_FONTS[0].family;
+}
+
+/** Estilo de texto (cor sólida ou gradiente via background-clip) pronto a
+ * aplicar num elemento — usado tanto no preview do Studio como na bolha. */
+function studioTextStyle(color?: string): React.CSSProperties {
+  if (!color) return {};
+  if (color.startsWith("linear-gradient")) {
+    return {
+      backgroundImage: color,
+      WebkitBackgroundClip: "text",
+      backgroundClip: "text",
+      color: "transparent",
+      WebkitTextFillColor: "transparent",
+    };
+  }
+  return { color };
+}
+
+
 type Message = {
   id: string;
   senderId: string;
@@ -1279,6 +1341,8 @@ type Message = {
   isSurprise?: boolean;
   surpriseTeaser?: string;
   surpriseOpened?: boolean;
+  /** ✨ Message Studio — fonte/cor/cartão visual da mensagem */
+  style?: MessageStyle | null;
   /** Eliminada apenas para mim */
   deletedForMe?: boolean;
   /** Eliminada para todos (visível como placeholder para ambos) */
@@ -1532,6 +1596,132 @@ function ViewOnceModal({ url, type, onClose }: { url: string; type: "image"|"vid
           <Eye className="h-4 w-4 text-white" />
           <span className="text-white text-sm">Visualização única · desaparece em {secondsLeft}s</span>
         </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
+// ── ✨ Message Studio ──
+// Ecrã cheio com pré-visualização ao vivo: escreve o texto, escolhe fonte,
+// cor/gradiente e, opcionalmente, um dos cartões prontos (que definem o
+// fundo). O resultado continua a ser uma mensagem de texto normal — só
+// muda a forma como é apresentada.
+function MessageStudioModal({ onClose, onSend }: {
+  onClose: () => void;
+  onSend: (text: string, style: MessageStyle) => void;
+}) {
+  const [text, setText] = useState("");
+  const [font, setFont] = useState<StudioFontKey>("system");
+  const [textColor, setTextColor] = useState(STUDIO_TEXT_COLORS[0].value);
+  const [card, setCard] = useState<string | null>(null);
+
+  const selectedCard = STUDIO_CARDS.find(c => c.id === card) ?? null;
+  const previewBg = selectedCard ? selectedCard.bg : "linear-gradient(135deg,var(--s2),var(--s1))";
+  const effectiveTextColor = selectedCard && textColor === STUDIO_TEXT_COLORS[0].value
+    ? selectedCard.defaultTextColor
+    : textColor;
+
+  const canSend = text.trim().length > 0;
+
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex flex-col" style={{ background: "var(--s0)" }}>
+      <div className="flex items-center justify-between px-4 py-4 border-b shrink-0"
+        style={{ borderColor: "var(--border-subtle)" }}>
+        <button onClick={onClose} className="w-9 h-9 rounded-full flex items-center justify-center"
+          style={{ background: "var(--s2)" }}>
+          <X className="h-5 w-5" style={{ color: "var(--text-secondary)" }} />
+        </button>
+        <span className="font-bold" style={{ color: "var(--text-primary)" }}>✨ Message Studio</span>
+        <div className="w-9" />
+      </div>
+
+      <div className="flex-1 overflow-y-auto px-4 py-5">
+        {/* Pré-visualização ao vivo — exatamente como vai aparecer no chat */}
+        <div className="rounded-2xl px-5 py-6 mb-6 flex items-center justify-center text-center"
+          style={{ background: previewBg, minHeight: 140, position: "relative", overflow: "hidden" }}>
+          {selectedCard?.accent && (
+            <span aria-hidden className="absolute select-none" style={{ fontSize: 64, opacity: 0.15, right: -8, bottom: -12 }}>
+              {selectedCard.accent}
+            </span>
+          )}
+          <p style={{
+            fontFamily: studioFontFamily(font),
+            fontSize: 19, fontWeight: 600, lineHeight: 1.4,
+            whiteSpace: "pre-wrap", wordBreak: "break-word", position: "relative",
+            ...studioTextStyle(effectiveTextColor),
+          }}>
+            {text || "A tua mensagem vai aparecer assim..."}
+          </p>
+        </div>
+
+        <textarea autoFocus value={text} onChange={e => setText(e.target.value)} maxLength={280}
+          placeholder="Escreve a tua mensagem..." rows={3}
+          className="w-full px-3 py-3 rounded-2xl text-sm outline-none border resize-none mb-5"
+          style={{ background: "var(--s2)", borderColor: "var(--border-default)", color: "var(--text-primary)" }} />
+
+        <p className="text-xs font-semibold mb-2" style={{ color: "var(--text-muted)" }}>FONTE</p>
+        <div className="flex gap-2 mb-5 overflow-x-auto">
+          {STUDIO_FONTS.map(f => (
+            <button key={f.key} onClick={() => setFont(f.key)}
+              className="px-4 py-2 rounded-xl border shrink-0 transition"
+              style={{
+                fontFamily: f.family,
+                borderColor: font === f.key ? "#8B5CF6" : "var(--border-default)",
+                background: font === f.key ? "#8B5CF615" : "var(--s2)",
+                color: font === f.key ? "#8B5CF6" : "var(--text-secondary)",
+              }}>
+              Aa <span className="text-xs ml-1">{f.label}</span>
+            </button>
+          ))}
+        </div>
+
+        <p className="text-xs font-semibold mb-2" style={{ color: "var(--text-muted)" }}>COR DO TEXTO</p>
+        <div className="flex gap-2 mb-5">
+          {STUDIO_TEXT_COLORS.map(c => (
+            <button key={c.key} onClick={() => setTextColor(c.value)}
+              className="w-9 h-9 rounded-full shrink-0 transition active:scale-90"
+              style={{
+                background: c.value,
+                border: textColor === c.key || textColor === c.value ? "2.5px solid #8B5CF6" : "2.5px solid transparent",
+                boxShadow: "0 0 0 1px var(--border-default)",
+              }}
+              aria-label={c.label} />
+          ))}
+        </div>
+
+        <p className="text-xs font-semibold mb-2" style={{ color: "var(--text-muted)" }}>CARTÕES PRONTOS</p>
+        <div className="grid grid-cols-3 gap-2">
+          <button onClick={() => setCard(null)}
+            className="flex flex-col items-center justify-center gap-1 py-3 rounded-2xl border transition"
+            style={{
+              borderColor: card === null ? "#8B5CF6" : "var(--border-default)",
+              background: card === null ? "#8B5CF615" : "var(--s2)",
+            }}>
+            <span className="text-lg">🚫</span>
+            <span className="text-[11px] font-semibold" style={{ color: "var(--text-secondary)" }}>Nenhum</span>
+          </button>
+          {STUDIO_CARDS.map(c => (
+            <button key={c.id} onClick={() => setCard(c.id)}
+              className="flex flex-col items-center justify-center gap-1 py-3 rounded-2xl border-2 transition overflow-hidden relative"
+              style={{
+                borderColor: card === c.id ? "#8B5CF6" : "transparent",
+                background: c.bg,
+              }}>
+              <span className="text-lg">{c.emoji}</span>
+              <span className="text-[11px] font-bold text-white" style={{ textShadow: "0 1px 2px rgba(0,0,0,0.3)" }}>{c.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="px-4 py-4 border-t shrink-0" style={{ borderColor: "var(--border-subtle)" }}>
+        <button disabled={!canSend}
+          onClick={() => canSend && onSend(text.trim(), { font, textColor: effectiveTextColor, card })}
+          className="w-full py-3 rounded-2xl font-bold text-white transition active:scale-[0.99] disabled:opacity-40"
+          style={{ background: "linear-gradient(135deg,#8B5CF6,#5B3FCF)" }}>
+          ✨ Enviar Mensagem
+        </button>
       </div>
     </div>,
     document.body
@@ -2179,9 +2369,20 @@ function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit
     return () => document.removeEventListener("click", fn);
   }, [showMenu]);
 
-  const bubbleBg   = isMe ? "linear-gradient(135deg,#5B3FCF 0%,#7B5CE8 100%)" : "var(--s1)";
-  const bubbleText = isMe ? "white" : "var(--text-primary)";
+  const studioCard = m.style?.card ? (STUDIO_CARDS.find(c => c.id === m.style!.card) ?? null) : null;
+  const bubbleBg   = studioCard ? studioCard.bg : (isMe ? "linear-gradient(135deg,#5B3FCF 0%,#7B5CE8 100%)" : "var(--s1)");
+  const bubbleText = studioCard ? studioCard.defaultTextColor : (isMe ? "white" : "var(--text-primary)");
   const br         = isMe ? "18px 18px 4px 18px" : "18px 18px 18px 4px";
+
+  // ✨ Message Studio: animação de entrada suave, uma única vez, na primeira
+  // vez que esta bolha com estilo aparece no ecrã.
+  const [studioEntered, setStudioEntered] = useState(false);
+  useEffect(() => {
+    if (m.style) {
+      const t = requestAnimationFrame(() => setStudioEntered(true));
+      return () => cancelAnimationFrame(t);
+    }
+  }, []);
 
   // Visualização única já aberta
   if (m.viewOnce && m.viewOnceOpened) {
@@ -2423,11 +2624,16 @@ function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit
         {!isMe && contact.isOfficial && <OfficialSenderName />}
 
         {/* Bubble */}
-        <div className="rounded-2xl overflow-hidden shadow-sm transition-all duration-150"
+        <div className="rounded-2xl overflow-hidden shadow-sm"
           style={{
             background: bubbleBg, color: bubbleText, borderRadius: br,
-            opacity: isMe && m.deliveryStatus === "sending" ? 0.65 : 1,
-            transform: isPressing ? "scale(0.97)" : `translateX(${swipeDx}px)`,
+            opacity: (isMe && m.deliveryStatus === "sending") ? 0.65 : (m.style ? (studioEntered ? 1 : 0) : 1),
+            transform: isPressing
+              ? "scale(0.97)"
+              : m.style
+                ? (studioEntered ? "translateY(0) scale(1)" : "translateY(8px) scale(0.94)")
+                : `translateX(${swipeDx}px)`,
+            transition: m.style ? "opacity 0.45s cubic-bezier(.22,1,.36,1), transform 0.45s cubic-bezier(.22,1,.36,1)" : "transform 0.15s, opacity 0.15s",
           }}>
 
           {/* Reply strip */}
@@ -2546,7 +2752,18 @@ function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit
             {/* Text */}
             {m.type === "text" && m.text && (
               <>
-                <ExpandableMessageText text={m.text} isMe={isMe} />
+                {m.style ? (
+                  <p style={{
+                    fontFamily: studioFontFamily(m.style.font),
+                    fontWeight: 600, fontSize: 16, lineHeight: 1.45,
+                    whiteSpace: "pre-wrap", wordBreak: "break-word",
+                    ...studioTextStyle(m.style.textColor),
+                  }}>
+                    {m.text}
+                  </p>
+                ) : (
+                  <ExpandableMessageText text={m.text} isMe={isMe} />
+                )}
                 {m.edited && <span className="text-[10px] ml-1.5 opacity-60 align-middle">editado</span>}
                 {extractUrl(m.text) && (
                   <LinkPreview url={extractUrl(m.text)!} isMe={isMe} />
@@ -2701,6 +2918,7 @@ function ChatPanel({ myId, contact, onBack }: {
   const [gifLoading,   setGifLoading]   = useState(false);
   const [showAttach,   setShowAttach]   = useState(false);
   const [showSurpriseComposer, setShowSurpriseComposer] = useState(false);
+  const [showMessageStudio, setShowMessageStudio] = useState(false);
   const [replyTo,      setReplyTo]      = useState<Message|null>(null);
   const [showBgModal,  setShowBgModal]  = useState(false);
   const [bgId,         setBgId]         = useState<BgId>(() => {
@@ -3169,6 +3387,7 @@ function ChatPanel({ myId, contact, onBack }: {
           return local.includes(r.id);
         } catch { return false; }
       })(),
+      style: r.style ?? null,
       deliveryStatus: r.status === "read" ? "read" : "sent",
       duration: r.duration ?? undefined,
       reactions: r.reactions ?? {},
@@ -3510,6 +3729,7 @@ function ChatPanel({ myId, contact, onBack }: {
     surpriseTeaser?: string,
     uploadFileObj?: File,
     uploadFolder?: "images" | "videos",
+    style?: MessageStyle | null,
   ) {
     if (sending || uploading) return;
     if (isBlocked) { toast.error(`Desbloqueia @${contact.username} para enviar mensagens.`); return; }
@@ -3531,6 +3751,7 @@ function ChatPanel({ myId, contact, onBack }: {
       status: "sent", replyTo: replyToId ?? replyTo?.id,
       deliveryStatus: "sending", viewOnce,
       isSurprise, surpriseTeaser: isSurprise ? (surpriseTeaser || "Tenho uma surpresa para ti") : undefined,
+      style: style ?? null,
     };
     setMsgs(prev => { const n = [...prev, localMsg]; saveCache(n); return n; });
     setInput(""); setReplyTo(null); setShowEmoji(false); setShowAttach(false);
@@ -3573,6 +3794,7 @@ function ChatPanel({ myId, contact, onBack }: {
         duration: duration ?? null,
         is_surprise: isSurprise,
         surprise_teaser: isSurprise ? (surpriseTeaser || "Tenho uma surpresa para ti") : null,
+        style: style ?? null,
       }).select("id").single();
 
       if (error) {
@@ -4173,22 +4395,23 @@ function ChatPanel({ myId, contact, onBack }: {
 
       {/* ── ATTACH PANEL ── */}
       {showAttach && !recording && (
-        <div className="px-4 py-5 grid grid-cols-5 gap-3 shrink-0 border-t"
+        <div className="px-3 py-4 grid grid-cols-6 gap-2 shrink-0 border-t"
           style={{ background:"var(--s2)", borderColor:"var(--border-default)" }}>
           {[
-            { icon: <ImageIcon className="h-6 w-6 text-white"/>, label:"Galeria", color:"#E94B8A", action:() => imgInputRef.current?.click() },
-            { icon: <VideoIcon className="h-6 w-6 text-white"/>, label:"Vídeo",   color:"#1FAFA6", action:() => videoInputRef.current?.click() },
-            { icon: <FileText  className="h-6 w-6 text-white"/>, label:"Ficheiro",color:"#5B3FCF", action:() => fileInputRef.current?.click() },
-            { icon: <Eye       className="h-6 w-6 text-white"/>, label:"Ver 1x",  color:"#7C3AED", action:() => (document.getElementById("viewonce-input-dm") as HTMLInputElement)?.click() },
-            { icon: <span className="text-xl leading-none">🎁</span>, label:"Surpresa", color:"#F26B3A", action:() => { setShowAttach(false); setShowSurpriseComposer(true); } },
+            { icon: <ImageIcon className="h-5 w-5 text-white"/>, label:"Galeria", color:"#E94B8A", action:() => imgInputRef.current?.click() },
+            { icon: <VideoIcon className="h-5 w-5 text-white"/>, label:"Vídeo",   color:"#1FAFA6", action:() => videoInputRef.current?.click() },
+            { icon: <FileText  className="h-5 w-5 text-white"/>, label:"Ficheiro",color:"#5B3FCF", action:() => fileInputRef.current?.click() },
+            { icon: <Eye       className="h-5 w-5 text-white"/>, label:"Ver 1x",  color:"#7C3AED", action:() => (document.getElementById("viewonce-input-dm") as HTMLInputElement)?.click() },
+            { icon: <span className="text-lg leading-none">🎁</span>, label:"Surpresa", color:"#F26B3A", action:() => { setShowAttach(false); setShowSurpriseComposer(true); } },
+            { icon: <span className="text-lg leading-none">✨</span>, label:"Studio",   color:"#8B5CF6", action:() => { setShowAttach(false); setShowMessageStudio(true); } },
           ].map(a => (
             <button key={a.label} onClick={a.action}
               className="flex flex-col items-center gap-1.5 active:scale-90 transition">
-              <div className="w-14 h-14 rounded-full flex items-center justify-center shadow"
+              <div className="w-12 h-12 rounded-full flex items-center justify-center shadow"
                 style={{ background: `linear-gradient(135deg,${a.color},${a.color}99)` }}>
                 {a.icon}
               </div>
-              <span className="text-[11px] font-semibold" style={{ color:"var(--text-secondary)" }}>{a.label}</span>
+              <span className="text-[10px] font-semibold" style={{ color:"var(--text-secondary)" }}>{a.label}</span>
             </button>
           ))}
         </div>
@@ -4208,6 +4431,17 @@ function ChatPanel({ myId, contact, onBack }: {
               await send(text, type, undefined, undefined, undefined, false, true, teaser,
                 file, type === "image" ? "images" : "videos");
             }
+          }}
+        />
+      )}
+
+      {showMessageStudio && (
+        <MessageStudioModal
+          onClose={() => setShowMessageStudio(false)}
+          onSend={async (text, style) => {
+            setShowMessageStudio(false);
+            await send(text, "text", undefined, undefined, undefined, false, false, undefined,
+              undefined, undefined, style);
           }}
         />
       )}
