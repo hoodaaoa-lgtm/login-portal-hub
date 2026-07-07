@@ -32,7 +32,7 @@ import {
   Crop, Grid3x3, Download, ZoomIn, Forward, Star,
   Eye, EyeOff, Trash2, Reply, Copy,
   AlertCircle, RefreshCw, ArrowDown,
-  Lock, Unlock,
+  Lock, Unlock, Maximize2,
 } from "lucide-react";
 import MediaEditor, { MediaEditState, DEFAULT_EDIT, EditedMediaDisplay } from "@/components/MediaEditor";
 import { HoodaPlayer } from "@/components/HoodaPlayer";
@@ -2848,10 +2848,20 @@ function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit
 
             {/* Video */}
             {m.type === "video" && m.mediaUrl && !m.viewOnce && (
-              <div className="w-full max-w-xs">
+              <div className="relative w-full max-w-xs">
                 {m.editState
                   ? <EditedMediaDisplay src={m.mediaUrl} type="video" edit={m.editState} maxH={280} />
                   : <FeedVideoPlayer src={m.mediaUrl} rounded="rounded-xl" />}
+                {/* Botão para abrir em ecrã cheio, igual ao lightbox das fotos */}
+                <button
+                  type="button"
+                  title="Ver em ecrã cheio"
+                  onClick={(e) => { e.stopPropagation(); onOpenLightbox(); }}
+                  className="absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center transition active:scale-90"
+                  style={{ background: "rgba(0,0,0,0.45)" }}
+                >
+                  <Maximize2 className="h-4 w-4 text-white" />
+                </button>
               </div>
             )}
 
