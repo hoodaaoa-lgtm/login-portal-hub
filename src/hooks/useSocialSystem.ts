@@ -68,6 +68,36 @@ function ensureFollowRealtimeSync(qc: ReturnType<typeof useQueryClient>) {
     .on("postgres_changes", { event: "*", schema: "public", table: "post_saves" }, () => {
       qc.invalidateQueries({ queryKey: ["post-saved"], exact: false });
     })
+    .on("postgres_changes", { event: "*", schema: "public", table: "video_likes" }, (payload: any) => {
+      const videoId = payload?.new?.video_id ?? payload?.old?.video_id;
+      if (videoId) {
+        (supabase as any).from("videos").select("likes_count").eq("id", videoId).maybeSingle()
+          .then(({ data }: any) => {
+            if (data) qc.setQueryData<{ liked: boolean; count: number }>(VIDEO_LIKE_KEYS.video(videoId), (prev) =>
+              ({ liked: prev?.liked ?? false, count: data.likes_count ?? prev?.count ?? 0 }));
+          });
+      }
+    })
+    .on("postgres_changes", { event: "*", schema: "public", table: "video_comments" }, (payload: any) => {
+      const videoId = payload?.new?.video_id ?? payload?.old?.video_id;
+      if (videoId) {
+        (supabase as any).from("videos").select("comments_count").eq("id", videoId).maybeSingle()
+          .then(({ data }: any) => {
+            if (data) qc.setQueryData(VIDEO_COMMENT_COUNT_KEYS.video(videoId), data.comments_count ?? 0);
+          });
+      }
+    })
+    .on("postgres_changes", { event: "UPDATE", schema: "public", table: "videos" }, (payload: any) => {
+      // Cobre views_count (incrementado via RPC record_video_view) e qualquer
+      // outra alteração ao contador de vídeo feita fora de likes/comments.
+      const videoId = payload?.new?.id;
+      if (videoId) {
+        qc.setQueryData(VIDEO_VIEWS_COUNT_KEYS.video(videoId), payload.new.views_count ?? 0);
+        qc.setQueryData(VIDEO_COMMENT_COUNT_KEYS.video(videoId), payload.new.comments_count ?? 0);
+        qc.setQueryData<{ liked: boolean; count: number }>(VIDEO_LIKE_KEYS.video(videoId), (prev) =>
+          prev ? { ...prev, count: payload.new.likes_count ?? prev.count } : prev);
+      }
+    })
     .subscribe();
 }
 
@@ -300,6 +330,76 @@ export function usePostLikeState(postId: string, myId: string | null | undefined
   }, [postId, myId, qc, key]);
 
   return { liked: query.data?.liked ?? false, likeCount: query.data?.count ?? 0, toggle };
+}
+
+// ─── Comentários e views (vídeos do HoodaTV) ───────────────────────────
+
+export const VIDEO_COMMENT_COUNT_KEYS = {
+  video: (videoId: string) => ["comment-count", "video", videoId] as const,
+};
+
+export const VIDEO_VIEWS_COUNT_KEYS = {
+  video: (videoId: string) => ["views-count", "video", videoId] as const,
+};
+
+/** Contador de comentários de vídeo partilhado — sincronizado em tempo
+ * real entre todos os espectadores (canal, watch, studio...), tal como
+ * usePostCommentCount faz para posts. Antes, cada VideoCard guardava o
+ * contador só no seu próprio useState local: quem comentava via o valor
+ * mudar (otimismo local), mas todos os outros ficavam presos ao número
+ * carregado na primeira vez que a página abriu — nunca atualizava. */
+export function useVideoCommentCount(videoId: string, initial?: number) {
+  const qc = useQueryClient();
+  const key = VIDEO_COMMENT_COUNT_KEYS.video(videoId);
+
+  useEffect(() => {
+    if (initial !== undefined && qc.getQueryData(key) === undefined) {
+      qc.setQueryData(key, initial);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [videoId]);
+
+  useEffect(() => { ensureFollowRealtimeSync(qc); }, [qc]);
+
+  const query = useQuery({
+    queryKey: key,
+    queryFn: async () => initial ?? 0,
+    enabled: false,
+    initialData: initial ?? 0,
+    staleTime: Infinity,
+  });
+
+  const increment = useCallback((delta: number) => {
+    qc.setQueryData<number>(key, (prev) => Math.max(0, (prev ?? 0) + delta));
+  }, [qc, key]);
+
+  return { count: query.data ?? 0, increment };
+}
+
+/** Contador de views de vídeo partilhado — mesma lógica de sincronização
+ * em tempo real, para não ficar preso ao valor carregado inicialmente. */
+export function useVideoViewsCount(videoId: string, initial?: number) {
+  const qc = useQueryClient();
+  const key = VIDEO_VIEWS_COUNT_KEYS.video(videoId);
+
+  useEffect(() => {
+    if (initial !== undefined && qc.getQueryData(key) === undefined) {
+      qc.setQueryData(key, initial);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [videoId]);
+
+  useEffect(() => { ensureFollowRealtimeSync(qc); }, [qc]);
+
+  const query = useQuery({
+    queryKey: key,
+    queryFn: async () => initial ?? 0,
+    enabled: false,
+    initialData: initial ?? 0,
+    staleTime: Infinity,
+  });
+
+  return { count: query.data ?? 0 };
 }
 
 // ─── Gostar (vídeos do HoodaTV) ────────────────────────────────────────

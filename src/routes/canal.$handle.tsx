@@ -7,6 +7,7 @@ import { RightSidebar } from "@/components/RightSidebar";
 import { PostCommentsModal } from "@/components/PostCommentsModal";
 import { PhotoViewer } from "@/components/PhotoViewer";
 import { useScrollLock } from "@/hooks/useScrollLock";
+import { useVideoLikeState, useVideoCommentCount, useVideoViewsCount } from "@/hooks/useSocialSystem";
 import {
   ChevronLeft, Heart, MessageCircle, Share2, Bookmark,
   Play, Loader, X, Bell, BellOff, MoreHorizontal,
@@ -149,8 +150,13 @@ function ForwardModal({ item, myId, onClose, isVideo = false }: { item: any; myI
 /* ── VideoCard ── */
 function VideoCard({ v, myId }: { v: any; myId: string | null }) {
   const navigate = useNavigate();
-  const [liked, setLiked] = useState(false);
-  const [likeCount, setLikeCount] = useState(v.likes_count ?? 0);
+  // Estado partilhado + tempo real (useSocialSystem) em vez de useState
+  // local isolado — antes, quem gostava/comentava só via o número mudar
+  // na sua própria sessão; outros espectadores ficavam presos ao valor
+  // carregado na primeira vez que a página abriu.
+  const { liked, likeCount, toggle: rawToggleLike } = useVideoLikeState(v.id, myId, { liked: false, count: v.likes_count ?? 0 });
+  const { count: commentCount, increment: incrementCommentCount } = useVideoCommentCount(v.id, v.comments_count ?? 0);
+  const { count: viewsCount } = useVideoViewsCount(v.id, v.views_count ?? 0);
   const [showComments, setShowComments] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [bookmarked, setBookmarked] = useState(false);
@@ -160,10 +166,7 @@ function VideoCard({ v, myId }: { v: any; myId: string | null }) {
 
   async function toggleLike() {
     if (!myId) { toast.error("Inicia sessão."); return; }
-    setLiked(l => !l);
-    setLikeCount((c: number) => liked ? c - 1 : c + 1);
-    if (liked) await (supabase as any).from("video_likes").delete().eq("video_id", v.id).eq("user_id", myId);
-    else await (supabase as any).from("video_likes").insert({ video_id: v.id, user_id: myId });
+    await rawToggleLike();
   }
 
   async function loadComments() {
@@ -194,7 +197,7 @@ function VideoCard({ v, myId }: { v: any; myId: string | null }) {
         </div>
         <div className="flex-1 min-w-0">
           <p className="font-bold text-sm leading-tight truncate" style={{ color: "var(--text-primary)" }}>{v.title}</p>
-          <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>{timeAgo(v.published_at || v.created_at)} · <BarChart3 className="inline h-3 w-3" /> {fmtNum(v.views_count ?? 0)}</p>
+          <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>{timeAgo(v.published_at || v.created_at)} · <BarChart3 className="inline h-3 w-3" /> {fmtNum(viewsCount)}</p>
         </div>
         <button onClick={() => navigate({ to: `/watch/${v.id}` })}
           className="text-xs font-bold px-3 py-1.5 rounded-xl transition active:scale-95"
@@ -218,6 +221,7 @@ function VideoCard({ v, myId }: { v: any; myId: string | null }) {
       <div className="flex items-center justify-between px-3 pt-2 pb-1">
         <button onClick={() => setShowComments(true)} className="flex items-center gap-1.5 p-1.5 rounded-full transition active:scale-90">
           <MessageCircle className="h-5 w-5" style={{ color: "var(--text-primary)" }} />
+          <span className="text-xs font-semibold" style={{ color: "var(--text-muted)" }}>{fmtNum(commentCount)}</span>
         </button>
         <button onClick={toggleLike} className="flex items-center gap-1.5 p-1.5 rounded-full transition active:scale-90">
           <Heart className={`h-5 w-5 transition-all ${liked ? "fill-red-500 text-red-500 scale-110" : ""}`}
@@ -225,7 +229,7 @@ function VideoCard({ v, myId }: { v: any; myId: string | null }) {
           <span className="text-xs font-semibold" style={{ color: liked ? "#ef4444" : "var(--text-muted)" }}>{fmtNum(likeCount)}</span>
         </button>
         <span className="flex items-center gap-1.5 p-1.5 text-xs font-semibold" style={{ color: "var(--text-muted)" }}>
-          <BarChart3 className="h-5 w-5" />{fmtNum(v.views_count ?? 0)}
+          <BarChart3 className="h-5 w-5" />{fmtNum(viewsCount)}
         </span>
         <div className="flex items-center gap-0.5">
           <button onClick={() => setBookmarked(b => !b)} className="p-1.5 rounded-full transition active:scale-90">
@@ -244,7 +248,8 @@ function VideoCard({ v, myId }: { v: any; myId: string | null }) {
           onSend={async (text: string) => {
             if (!myId) { toast.error("Inicia sessão."); return; }
             setSending(true);
-            await (supabase as any).from("video_comments").insert({ video_id: v.id, user_id: myId, content: text });
+            const { error } = await (supabase as any).from("video_comments").insert({ video_id: v.id, user_id: myId, content: text });
+            if (!error) incrementCommentCount(1);
             await loadComments();
             setSending(false);
           }}
@@ -299,7 +304,7 @@ function CanalPage() {
 
       // Vídeos
       const { data: vids } = await (supabase as any).from("videos")
-        .select("id,title,thumbnail_url,cf_stream_url,video_path,views_count,likes_count,published_at,created_at,duration_seconds,channels(name,handle,avatar_url)")
+        .select("id,title,thumbnail_url,cf_stream_url,video_path,views_count,likes_count,comments_count,published_at,created_at,duration_seconds,channels(name,handle,avatar_url)")
         .eq("channel_id", ch.id).eq("status", "published").eq("visibility", "public")
         .order("published_at", { ascending: false });
       setVideos(vids ?? []);
