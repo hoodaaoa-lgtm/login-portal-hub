@@ -24,6 +24,8 @@ import {
   MoreHorizontal,
 } from "lucide-react";
 import { toast } from "sonner";
+import { extractUrl } from "@/lib/linkPreview";
+import { LinkPreview } from "@/components/LinkPreview";
 
 export const ACCENT_COLOR = "#5B3FCF";
 
@@ -1089,9 +1091,12 @@ export function UniversalPostCard({ post: p, onDeleted, onBookmarkChange }: {
                 <RichText text={p.text} className="text-base italic font-medium text-black leading-relaxed" />
               </div>
             </div>
-          : <p className="px-4 pb-3 text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-              <RichText text={p.text} />
-            </p>
+          : <div className="px-4 pb-3">
+              <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+                <RichText text={p.text} />
+              </p>
+              {extractUrl(p.text) && <LinkPreview url={extractUrl(p.text)!} variant="post" />}
+            </div>
       )}
       {p.text && p.video && (
         <p className="px-4 py-2 text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>

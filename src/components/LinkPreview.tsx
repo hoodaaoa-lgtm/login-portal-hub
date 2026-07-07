@@ -1,0 +1,123 @@
+import { useEffect, useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
+import { FeedVideoPlayer } from "@/components/FeedVideoPlayer";
+import {
+  getYouTubeId, getHoodaPostId, isDirectVideo, fetchOgData, fetchHoodaPost,
+  type OgData, type HoodaPostPreview,
+} from "@/lib/linkPreview";
+
+/**
+ * Prévia rica de um link — usada em Mensagens e em Publicações.
+ * `variant="message"` respeita a bolha (isMe muda as cores);
+ * `variant="post"` usa o estilo neutro do cartão de publicação.
+ */
+export function LinkPreview({ url, isMe = false, variant = "post" }: { url: string; isMe?: boolean; variant?: "message" | "post" }) {
+  const navigate = useNavigate();
+  const ytId = getYouTubeId(url);
+  const isDirect = isDirectVideo(url);
+  const hoodaPostId = getHoodaPostId(url);
+  const [og, setOg] = useState<OgData | null | "loading">("loading");
+  const [hoodaPost, setHoodaPost] = useState<HoodaPostPreview | null | "loading">("loading");
+
+  useEffect(() => {
+    if (ytId || isDirect || hoodaPostId) { setOg(null); return; }
+    fetchOgData(url).then(setOg);
+  }, [url, ytId, isDirect, hoodaPostId]);
+
+  useEffect(() => {
+    if (!hoodaPostId) { setHoodaPost(null); return; }
+    fetchHoodaPost(hoodaPostId).then(setHoodaPost);
+  }, [hoodaPostId]);
+
+  const border = variant === "message" && isMe ? "rgba(255,255,255,0.15)" : "var(--border-subtle)";
+  const bg = variant === "message" && isMe ? "rgba(0,0,0,0.2)" : "var(--s2)";
+  const textColor = variant === "message" && isMe ? "white" : "var(--text-primary)";
+  const mutedColor = variant === "message" && isMe ? "rgba(255,255,255,0.6)" : "var(--text-muted)";
+  const marginTop = variant === "message" ? "mt-2" : "mt-3";
+
+  if (hoodaPostId) {
+    if (hoodaPost === "loading") {
+      return (
+        <div className={`${marginTop} rounded-xl overflow-hidden animate-pulse`} style={{ background: bg, border: `1px solid ${border}`, height: 96 }} />
+      );
+    }
+    if (!hoodaPost) return null;
+    const img = hoodaPost.photo_url || hoodaPost.photos?.[0] || null;
+    return (
+      <div className={`${marginTop} rounded-xl overflow-hidden`} style={{ border: `1px solid ${border}` }}>
+        {hoodaPost.video_url ? (
+          <FeedVideoPlayer src={hoodaPost.video_url} rounded="rounded-none" />
+        ) : img ? (
+          <img src={img} alt="" className="w-full max-h-64 object-cover"
+            onError={e => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+        ) : null}
+        <button onClick={() => navigate({ to: "/post/$id", params: { id: hoodaPostId } })}
+          className="w-full text-left p-2.5" style={{ background: bg }}>
+          <p className="text-[10px] font-semibold uppercase tracking-wide truncate" style={{ color: mutedColor }}>
+            Hooda · @{hoodaPost.author_username}
+          </p>
+          {hoodaPost.content && (
+            <p className="text-xs font-medium leading-snug line-clamp-2 mt-0.5" style={{ color: textColor }}>
+              {hoodaPost.content}
+            </p>
+          )}
+        </button>
+      </div>
+    );
+  }
+
+  if (ytId) {
+    return (
+      <div className={`${marginTop} rounded-xl overflow-hidden`} style={{ border: `1px solid ${border}` }} onClick={(e) => e.stopPropagation()}>
+        <div style={{ position: "relative", paddingBottom: "56.25%", height: 0 }}>
+          <iframe
+            src={`https://www.youtube.com/embed/${ytId}?autoplay=0&rel=0`}
+            title="YouTube video"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none" }}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  if (isDirect) {
+    return (
+      <div className={`${marginTop} rounded-xl overflow-hidden`} style={{ border: `1px solid ${border}` }} onClick={(e) => e.stopPropagation()}>
+        <video src={url} controls preload="metadata" className="w-full max-h-64 bg-black" />
+      </div>
+    );
+  }
+
+  if (og === "loading") {
+    return (
+      <div className={`${marginTop} rounded-xl overflow-hidden animate-pulse`} style={{ background: bg, border: `1px solid ${border}`, height: 72 }} />
+    );
+  }
+
+  if (!og) return null;
+
+  return (
+    <a href={url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
+      className={`${marginTop} rounded-xl overflow-hidden flex gap-0 block transition hover:opacity-90`}
+      style={{ background: bg, border: `1px solid ${border}`, textDecoration: "none" }}>
+      {og.image && (
+        <img src={og.image} alt="" className="w-20 h-full object-cover shrink-0 self-stretch"
+          style={{ minHeight: 64, maxHeight: 100 }}
+          onError={e => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+      )}
+      <div className="p-2.5 min-w-0 flex-1">
+        {og.siteName && (
+          <p className="text-[10px] font-semibold uppercase tracking-wide truncate" style={{ color: mutedColor }}>{og.siteName}</p>
+        )}
+        {og.title && (
+          <p className="text-xs font-bold leading-snug line-clamp-2" style={{ color: textColor }}>{og.title}</p>
+        )}
+        {og.description && (
+          <p className="text-[11px] mt-0.5 line-clamp-2" style={{ color: mutedColor }}>{og.description}</p>
+        )}
+      </div>
+    </a>
+  );
+}

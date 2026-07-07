@@ -37,6 +37,8 @@ import {
 import MediaEditor, { MediaEditState, DEFAULT_EDIT, EditedMediaDisplay } from "@/components/MediaEditor";
 import { HoodaPlayer } from "@/components/HoodaPlayer";
 import { FeedVideoPlayer } from "@/components/FeedVideoPlayer";
+import { extractUrl } from "@/lib/linkPreview";
+import { LinkPreview as SharedLinkPreview } from "@/components/LinkPreview";
 import { uploadImageToCloudinary } from "@/lib/cloudinary";
 import { getHoodaOfficialId } from "@/lib/hoodaOfficial";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -75,48 +77,15 @@ function cloudinaryUploadMedia(
   });
 }
 
-// ── Link Preview inteligente ──────────────────────────────────────────────────
+
+// ── Link Preview inteligente — lógica partilhada com o feed de publicações ──
 // Detecta o primeiro URL numa mensagem de texto e mostra uma prévia rica:
-// título, imagem, descrição e domínio — igual ao WhatsApp/Telegram.
-// Se for YouTube/Vimeo/vídeo direto, embeds um player mesmo na mensagem.
-
-const URL_REGEX = /https?:\/\/[^\s<>"']+/gi;
-
-function extractUrl(text: string): string | null {
-  const m = text.match(URL_REGEX);
-  return m ? m[0] : null;
+// título, imagem, descrição e domínio — igual ao WhatsApp/Telegram. Se for
+// YouTube/vídeo direto/publicação Hooda, embeds um player mesmo na mensagem.
+function LinkPreview({ url, isMe }: { url: string; isMe: boolean }) {
+  return <SharedLinkPreview url={url} isMe={isMe} variant="message" />;
 }
 
-function getYouTubeId(url: string): string | null {
-  // Parse real da URL em vez de regex frágil — funciona com qualquer ordem
-  // de parâmetros (ex: partilhas do telemóvel que trazem "?si=..." antes
-  // de "v="), domínios m.youtube.com / youtube-nocookie.com, /live/, etc.
-  try {
-    const u = new URL(url);
-    const host = u.hostname.replace(/^www\.|^m\./, "");
-    if (host === "youtu.be") {
-      const id = u.pathname.slice(1).split("/")[0];
-      return id.length === 11 ? id : null;
-    }
-    if (host === "youtube.com" || host === "youtube-nocookie.com") {
-      if (u.pathname === "/watch") {
-        const v = u.searchParams.get("v");
-        return v && v.length === 11 ? v : null;
-      }
-      const m = u.pathname.match(/^\/(?:embed|shorts|live)\/([A-Za-z0-9_-]{11})/);
-      return m ? m[1] : null;
-    }
-    return null;
-  } catch {
-    return null;
-  }
-}
-
-/** Deteta um link para uma publicação/vídeo da própria Hooda (ex: /post/<id>),
- * seja qual for o domínio (produção, preview, localhost) — basta o caminho
- * bater certo. Isto permite ir buscar os dados reais diretamente à base de
- * dados (mais rápido e fiável que uma API externa) e reproduzir o vídeo
- * mesmo dentro da conversa, tal como pedido. */
 /** Limiar para considerar um utilizador "online agora": se o último heartbeat
  * (a cada 30s enquanto a app está visível) foi há menos de 90s, está online.
  * Não confiamos apenas na flag is_online guardada na BD porque não há forma
@@ -127,207 +96,6 @@ const ONLINE_THRESHOLD_MS = 90_000;
 function isOnlineNow(isOnline: boolean | null | undefined, lastSeen: string | null | undefined) {
   if (!isOnline || !lastSeen) return false;
   return Date.now() - new Date(lastSeen).getTime() < ONLINE_THRESHOLD_MS;
-}
-
-function getHoodaPostId(url: string): string | null {
-  try {
-    const u = new URL(url);
-    const m = u.pathname.match(/^\/post\/([0-9a-fA-F-]{36})\/?$/);
-    return m ? m[1] : null;
-  } catch {
-    return null;
-  }
-}
-
-interface HoodaPostPreview {
-  id: string;
-  content: string | null;
-  photo_url: string | null;
-  photos: string[] | null;
-  video_url: string | null;
-  author_name: string | null;
-  author_username: string | null;
-  author_color: string | null;
-}
-
-const hoodaPostCache = new Map<string, HoodaPostPreview | null>();
-
-async function fetchHoodaPost(id: string): Promise<HoodaPostPreview | null> {
-  if (hoodaPostCache.has(id)) return hoodaPostCache.get(id)!;
-  try {
-    const { data, error } = await supabase
-      .from("posts")
-      .select("id,content,photo_url,photos,video_url,author_name,author_username,author_color")
-      .eq("id", id)
-      .maybeSingle();
-    if (error || !data) throw error ?? new Error("not found");
-    hoodaPostCache.set(id, data as HoodaPostPreview);
-    return data as HoodaPostPreview;
-  } catch {
-    hoodaPostCache.set(id, null);
-    return null;
-  }
-}
-
-function isDirectVideo(url: string): boolean {
-  return /\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(url);
-}
-
-interface OgData {
-  title?: string;
-  description?: string;
-  image?: string;
-  url?: string;
-  siteName?: string;
-}
-
-const ogCache = new Map<string, OgData | null>();
-
-async function fetchOgData(url: string): Promise<OgData | null> {
-  if (ogCache.has(url)) return ogCache.get(url)!;
-  try {
-    // Usa microlink.io — API gratuita, sem key, suporta YouTube/Twitter/etc.
-    const res = await fetch(`https://api.microlink.io?url=${encodeURIComponent(url)}&screenshot=false`);
-    if (!res.ok) throw new Error("microlink fail");
-    const json = await res.json();
-    if (json.status !== "success") throw new Error("no data");
-    const d = json.data;
-    const data: OgData = {
-      title: d.title ?? undefined,
-      description: d.description ?? undefined,
-      image: d.image?.url ?? d.logo?.url ?? undefined,
-      url: d.url ?? url,
-      siteName: d.publisher ?? new URL(url).hostname.replace("www.", ""),
-    };
-    ogCache.set(url, data);
-    return data;
-  } catch {
-    // A API externa pode falhar por instabilidade/limite de pedidos — em
-    // vez de não mostrar nada (o bug reportado: quem recebe não vê a
-    // informação nenhuma), mostra pelo menos um cartão simples com o
-    // domínio, para o link nunca ficar "em branco".
-    let fallback: OgData | null = null;
-    try { fallback = { url, siteName: new URL(url).hostname.replace("www.", "") }; } catch {}
-    ogCache.set(url, fallback);
-    return fallback;
-  }
-}
-
-function LinkPreview({ url, isMe }: { url: string; isMe: boolean }) {
-  const navigate = useNavigate();
-  const ytId = getYouTubeId(url);
-  const isDirect = isDirectVideo(url);
-  const hoodaPostId = getHoodaPostId(url);
-  const [og, setOg] = useState<OgData | null | "loading">("loading");
-  const [hoodaPost, setHoodaPost] = useState<HoodaPostPreview | null | "loading">("loading");
-
-  useEffect(() => {
-    if (ytId || isDirect || hoodaPostId) { setOg(null); return; }
-    fetchOgData(url).then(setOg);
-  }, [url, ytId, isDirect, hoodaPostId]);
-
-  useEffect(() => {
-    if (!hoodaPostId) { setHoodaPost(null); return; }
-    fetchHoodaPost(hoodaPostId).then(setHoodaPost);
-  }, [hoodaPostId]);
-
-  const border = isMe ? "rgba(255,255,255,0.15)" : "var(--border-subtle)";
-  const bg = isMe ? "rgba(0,0,0,0.2)" : "var(--s2)";
-  const textColor = isMe ? "white" : "var(--text-primary)";
-  const mutedColor = isMe ? "rgba(255,255,255,0.6)" : "var(--text-muted)";
-
-  // ── Link de uma publicação/vídeo da própria Hooda: dados vêm direto da
-  // base de dados (rápido e sempre fiável, ao contrário de uma API externa)
-  // e o vídeo reproduz mesmo dentro da conversa, tal como pedido. ──
-  if (hoodaPostId) {
-    if (hoodaPost === "loading") {
-      return (
-        <div className="mt-2 rounded-xl overflow-hidden animate-pulse" style={{ background: bg, border: `1px solid ${border}`, height: 96 }} />
-      );
-    }
-    if (!hoodaPost) return null; // publicação apagada/inexistente — sem cartão
-    const img = hoodaPost.photo_url || hoodaPost.photos?.[0] || null;
-    return (
-      <div className="mt-2 rounded-xl overflow-hidden" style={{ border: `1px solid ${border}` }}>
-        {hoodaPost.video_url ? (
-          <FeedVideoPlayer src={hoodaPost.video_url} rounded="rounded-none" />
-        ) : img ? (
-          <img src={img} alt="" className="w-full max-h-64 object-cover"
-            onError={e => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
-        ) : null}
-        <button onClick={() => navigate({ to: "/post/$id", params: { id: hoodaPostId } })}
-          className="w-full text-left p-2.5" style={{ background: bg }}>
-          <p className="text-[10px] font-semibold uppercase tracking-wide truncate" style={{ color: mutedColor }}>
-            Hooda · @{hoodaPost.author_username}
-          </p>
-          {hoodaPost.content && (
-            <p className="text-xs font-medium leading-snug line-clamp-2 mt-0.5" style={{ color: textColor }}>
-              {hoodaPost.content}
-            </p>
-          )}
-        </button>
-      </div>
-    );
-  }
-
-  // YouTube embed
-  if (ytId) {
-    return (
-      <div className="mt-2 rounded-xl overflow-hidden" style={{ border: `1px solid ${border}` }}>
-        <div style={{ position: "relative", paddingBottom: "56.25%", height: 0 }}>
-          <iframe
-            src={`https://www.youtube.com/embed/${ytId}?autoplay=0&rel=0`}
-            title="YouTube video"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-            style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none" }}
-          />
-        </div>
-      </div>
-    );
-  }
-
-  // Vídeo direto (.mp4, .webm, etc.)
-  if (isDirect) {
-    return (
-      <div className="mt-2 rounded-xl overflow-hidden" style={{ border: `1px solid ${border}` }}>
-        <video src={url} controls preload="metadata" className="w-full max-h-64 bg-black" />
-      </div>
-    );
-  }
-
-  // A carregar
-  if (og === "loading") {
-    return (
-      <div className="mt-2 rounded-xl overflow-hidden animate-pulse" style={{ background: bg, border: `1px solid ${border}`, height: 72 }} />
-    );
-  }
-
-  // Sem dados OG
-  if (!og) return null;
-
-  return (
-    <a href={url} target="_blank" rel="noopener noreferrer"
-      className="mt-2 rounded-xl overflow-hidden flex gap-0 block transition hover:opacity-90"
-      style={{ background: bg, border: `1px solid ${border}`, textDecoration: "none" }}>
-      {og.image && (
-        <img src={og.image} alt="" className="w-20 h-full object-cover shrink-0 self-stretch"
-          style={{ minHeight: 64, maxHeight: 100 }}
-          onError={e => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
-      )}
-      <div className="p-2.5 min-w-0 flex-1">
-        {og.siteName && (
-          <p className="text-[10px] font-semibold uppercase tracking-wide truncate" style={{ color: mutedColor }}>{og.siteName}</p>
-        )}
-        {og.title && (
-          <p className="text-xs font-bold leading-snug line-clamp-2" style={{ color: textColor }}>{og.title}</p>
-        )}
-        {og.description && (
-          <p className="text-[11px] mt-0.5 line-clamp-2" style={{ color: mutedColor }}>{og.description}</p>
-        )}
-      </div>
-    </a>
-  );
 }
 
 // ── Deteção automática de conteúdo (links, emails, telefones, @menções, #hashtags,
