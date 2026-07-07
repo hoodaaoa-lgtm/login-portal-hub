@@ -401,42 +401,11 @@ function UserProfilePage() {
   const [openingChat, setOpeningChat] = useState(false);
   const [followOverride, setFollowOverride] = useState<boolean|null>(null);
   const [followerDelta, setFollowerDelta] = useState(0);
-  const [likeOverrides, setLikeOverrides] = useState<Record<string,boolean>>({});
-  const [likeCountOverrides, setLikeCountOverrides] = useState<Record<string,number>>({});
   const [showFollowers, setShowFollowers] = useState(false);
   const [showFollowing, setShowFollowing] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
-  const [repostingPost, setRepostingPost] = useState<any>(null);
-  const [forwardingPost, setForwardingPost] = useState<any>(null);
-  const [repostedIds, setRepostedIds] = useState<Set<string>>(new Set());
-  const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
-  const [sharingPost, setSharingPost] = useState<any>(null);
-
-  useEffect(() => {
-    if (!myId) return;
-    (supabase as any).from("saved_posts").select("post_id").eq("user_id", myId)
-      .then(({ data }: any) => {
-        if (data) setBookmarkedIds(new Set(data.map((r: any) => r.post_id)));
-      });
-  }, [myId]);
-
-  async function toggleBookmark(postId: string) {
-    if (!myId) { toast.error("Inicia sessão para guardar."); return; }
-    const isSaved = bookmarkedIds.has(postId);
-    setBookmarkedIds(prev => {
-      const next = new Set(prev);
-      if (isSaved) next.delete(postId); else next.add(postId);
-      return next;
-    });
-    if (isSaved) {
-      await (supabase as any).from("saved_posts").delete().eq("user_id", myId).eq("post_id", postId);
-    } else {
-      await (supabase as any).from("saved_posts").insert({ user_id: myId, post_id: postId });
-      toast.success("Guardado!");
-    }
-  }
   const [commentPostId, setCommentPostId] = useState<string|null>(null);
   const [photoViewing, setPhotoViewing] = useState<string|null>(null);
 
@@ -544,20 +513,7 @@ function UserProfilePage() {
     staleTime:30_000,
   });
 
-  /* ─ Query 4: Likes do utilizador ─ */
   const posts = postsQuery.data??[];
-  const postIds = useMemo(()=>posts.map((p:any)=>p.id),[posts]);
-  const likesQuery = useQuery({
-    queryKey:["profileLikes2", myId, postIds.join(",")],
-    queryFn: async ()=>{
-      const {data}=await (supabase as any).from("post_likes")
-        .select("post_id").eq("user_id",myId).in("post_id",postIds);
-      return new Set<string>((data??[]).map((l:any)=>l.post_id));
-    },
-    enabled:!!myId&&postIds.length>0,
-    staleTime:30_000,
-  });
-  const likedPosts:Set<string> = likesQuery.data??new Set();
 
   /* ─ Valores derivados ─ */
   const following = followOverride??statsQuery.data?.following??false;
@@ -620,21 +576,6 @@ function UserProfilePage() {
       ]);
       navigate({to:"/mensagens",search:{conv:conv.id} as any});
     } finally { setOpeningChat(false); }
-  }
-
-  async function toggleLike(postId:string, currentCount:number) {
-    if (!myId) { toast.error("Inicia sessão para gostar."); return; }
-    const isLiked=likeOverrides[postId]??likedPosts.has(postId);
-    setLikeOverrides(prev=>({...prev,[postId]:!isLiked}));
-    setLikeCountOverrides(prev=>({...prev,[postId]:(prev[postId]??currentCount)+(isLiked?-1:1)}));
-    const db=supabase as any;
-    try {
-      if (isLiked) await db.from("post_likes").delete().eq("post_id",postId).eq("user_id",myId);
-      else await db.from("post_likes").insert({post_id:postId,user_id:myId});
-    } catch(_){
-      setLikeOverrides(prev=>({...prev,[postId]:isLiked}));
-      setLikeCountOverrides(prev=>({...prev,[postId]:currentCount}));
-    }
   }
 
   function shareProfile() {
