@@ -437,6 +437,9 @@ function UserProfilePage() {
   const [showFollowing, setShowFollowing] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const [menuPos, setMenuPos] = useState<{top:number; right:number} | null>(null);
+  const menuBtnRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const [showShareModal, setShowShareModal] = useState(false);
   const [commentPostId, setCommentPostId] = useState<string|null>(null);
   const [photoViewing, setPhotoViewing] = useState<string|null>(null);
@@ -589,6 +592,21 @@ function UserProfilePage() {
     setShowMenu(false);
   }
 
+  /* Fecha o menu de três pontos ao clicar fora — sem overlay a tapar
+     os botões (o menu vive num portal, por isso comparamos com o botão
+     e com o próprio menu via refs, nunca com z-index). */
+  useEffect(() => {
+    if (!showMenu) return;
+    function onDocClick(e: MouseEvent) {
+      const target = e.target as Node;
+      if (menuRef.current?.contains(target)) return;
+      if (menuBtnRef.current?.contains(target)) return;
+      setShowMenu(false);
+    }
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, [showMenu]);
+
   /* ─ Loading ─ */
   if (profileQuery.isLoading) return (
     <>
@@ -647,13 +665,19 @@ function UserProfilePage() {
               <p className="text-[11px]" style={{color:"var(--text-muted)"}}>{postCount} publicações</p>
             </div>
             <div className="relative">
-              <button onClick={()=>setShowMenu(m=>!m)}
+              <button ref={menuBtnRef} onClick={()=>{
+                  if (!showMenu && menuBtnRef.current) {
+                    const r = menuBtnRef.current.getBoundingClientRect();
+                    setMenuPos({ top: r.bottom + 6, right: window.innerWidth - r.right });
+                  }
+                  setShowMenu(m=>!m);
+                }}
                 className="p-2 rounded-full hover:bg-[var(--s2)] transition">
                 <MoreHorizontal className="h-5 w-5" style={{color:"var(--text-primary)"}} />
               </button>
-              {showMenu && (
-                <div className="absolute right-0 top-10 w-48 rounded-2xl shadow-2xl py-1 z-50"
-                  style={{background:"var(--s0)",border:"1px solid var(--border-subtle)"}}>
+              {showMenu && menuPos && createPortal(
+                <div ref={menuRef} className="fixed w-48 rounded-2xl shadow-2xl py-1 z-[999]"
+                  style={{background:"var(--s0)",border:"1px solid var(--border-subtle)",top:menuPos.top,right:menuPos.right}}>
                   {[
                     {icon:<Share2 className="h-4 w-4"/>, label:"Partilhar perfil", action:shareProfile, danger:false},
                     ...(myId ? [{
@@ -670,7 +694,8 @@ function UserProfilePage() {
                       <span style={{color: item.danger ? "#ef4444" : "var(--text-muted)"}}>{item.icon}</span>{item.label}
                     </button>
                   ))}
-                </div>
+                </div>,
+                document.body
               )}
             </div>
           </div>
@@ -856,16 +881,6 @@ function UserProfilePage() {
           subtitle={profile?.username ? `@${profile.username}` : undefined}
           onClose={() => setPhotoViewing(null)}
         />
-      )}
-
-      {/* Fechar menu ao clicar fora */}
-      {/* z-20: tem de ficar ABAIXO do header (z-30, que é "sticky" e cria o
-          seu próprio stacking context). Estava a z-40 — acima do header —
-          por isso interceptava todos os cliques nos itens do dropdown
-          (Partilhar/Bloquear/Denunciar): o clique fechava o menu em vez de
-          disparar a ação, porque o overlay ficava fisicamente por cima. */}
-      {showMenu && (
-        <div className="fixed inset-0 z-20" onClick={()=>setShowMenu(false)}/>
       )}
 
       {showShareModal && (
