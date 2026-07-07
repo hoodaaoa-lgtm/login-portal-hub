@@ -26,6 +26,7 @@ const TOKEN_RE = new RegExp(
     "(\\+?\\d[\\d\\s()-]{7,}\\d)",                       // 4: telefone (+244..., ou nacional)
     "(@[a-zA-Z0-9_.]{2,30})",                            // 5: menção
     "(#[a-zA-Z0-9_\\u00C0-\\u024F]{2,50})",              // 6: hashtag
+    "((?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,}\\/[^\\s<]*)",   // 7: domínio nu + caminho (sem protocolo/www), ex: youtube.com/watch?v=...
   ].join("|"),
   "g"
 );
@@ -42,10 +43,10 @@ export function RichText({ text, className = "", style, onHashtagClick }: RichTe
 
   while ((match = TOKEN_RE.exec(raw)) !== null) {
     if (match.index > lastIndex) nodes.push(<span key={key++}>{raw.slice(lastIndex, match.index)}</span>);
-    const [full, link, www, email, phone, mention, hashtag] = match;
+    const [full, link, www, email, phone, mention, hashtag, bareDomain] = match;
 
-    if (link || www) {
-      const href = link || `https://${www}`;
+    if (link || www || bareDomain) {
+      const href = link || `https://${www || bareDomain}`;
       nodes.push(
         <a key={key++} href={href} target="_blank" rel="noopener noreferrer nofollow"
           className="font-medium underline decoration-1 underline-offset-2 break-all"

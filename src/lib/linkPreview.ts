@@ -7,11 +7,17 @@
 
 import { supabase } from "@/integrations/supabase/client";
 
-const URL_REGEX = /https?:\/\/[^\s<>"']+/gi;
+// Reconhece: link completo (http/https), link começado por "www.", e
+// domínio "nu" com caminho (ex: "youtube.com/watch?v=...",
+// "youtu.be/xxxx") — o formato mais comum quando se cola um link direto
+// da barra de endereço do telemóvel, sem protocolo.
+const URL_REGEX = /https?:\/\/[^\s<>"']+|www\.[a-zA-Z0-9-]+\.[a-zA-Z]{2,}[^\s<>"']*|(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}\/[^\s<>"']*/gi;
 
 export function extractUrl(text: string): string | null {
   const m = text.match(URL_REGEX);
-  return m ? m[0] : null;
+  if (!m) return null;
+  const raw = m[0];
+  return raw.startsWith("http") ? raw : `https://${raw}`;
 }
 
 /** Parse real da URL em vez de regex frágil — funciona com qualquer ordem
