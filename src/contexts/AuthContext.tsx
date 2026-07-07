@@ -15,6 +15,37 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
+/**
+ * Marca o utilizador atual como offline imediatamente. Tem de ser chamado
+ * ENQUANTO ainda há sessão válida — depois de supabase.auth.signOut() o
+ * cliente já não tem um token para autenticar o update (a RLS bloqueia-o).
+ * É por isso que markOffline() é sempre chamado ANTES do signOut(), nunca
+ * a reagir ao evento SIGNED_OUT.
+ */
+async function markOffline() {
+  try {
+    const { data } = await supabase.auth.getSession();
+    const uid = data.session?.user?.id;
+    if (!uid) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any).from("profiles").update({ is_online: false }).eq("id", uid);
+  } catch {
+    // best-effort — nunca bloqueia o logout por causa disto
+  }
+}
+
+/**
+ * Único ponto de saída da app: marca o utilizador offline (para que os
+ * contactos deixem de o ver "online agora" de imediato, em vez de ficar
+ * assim até o heartbeat expirar sozinho ao fim de ~90s) e só depois
+ * termina a sessão. Usar SEMPRE isto em vez de supabase.auth.signOut()
+ * diretamente nos ecrãs (definições, perfil, studio, etc.).
+ */
+export async function signOutHooda() {
+  await markOffline();
+  await supabase.auth.signOut();
+}
+
 const SESSION_CACHE_KEY = "hooda.session.cache.v1";
 
 /**
@@ -142,9 +173,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const onVisible = () => { if (document.visibilityState === "visible") ping(); };
     document.addEventListener("visibilitychange", onVisible);
 
+    // Melhor esforço: se a pessoa fechar mesmo a aba/app ou navegar para
+    // fora do site (não apenas trocar de separador — isso não conta),
+    // tenta marcar offline na hora em vez de esperar o heartbeat expirar
+    // sozinho ao fim de ~90s. Não é 100% garantido (o browser pode matar
+    // a página antes do pedido terminar), mas ajuda bastante nos casos
+    // normais de navegação/fecho.
+    window.addEventListener("pagehide", markOffline);
+
     return () => {
       clearInterval(intervalId);
       document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("pagehide", markOffline);
     };
   }, [status]);
 

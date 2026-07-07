@@ -2,6 +2,7 @@ import { createFileRoute, Outlet, Link, useNavigate, useRouterState } from "@tan
 import { useQuery } from "@tanstack/react-query";
 import { myChannelQuery } from "@/lib/channel-queries";
 import { supabase } from "@/integrations/supabase/client";
+import { signOutHooda } from "@/contexts/AuthContext";
 import {
   LayoutDashboard, PlusCircle, Calendar, FolderOpen, BarChart2,
   Settings, HelpCircle, LogOut, ArrowLeft, Menu, X, Tv2, Palette,
@@ -43,7 +44,7 @@ function StudioLayout() {
     exact ? path === to : path === to || path.startsWith(to + "/");
 
   async function signOut() {
-    await supabase.auth.signOut();
+    await signOutHooda();
     navigate({ to: "/", replace: true });
   }
 

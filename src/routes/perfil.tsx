@@ -5,6 +5,7 @@ import { useScrollLock } from "@/hooks/useScrollLock";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
+import { signOutHooda } from "@/contexts/AuthContext";
 import { STATIC_QUERY_OPTIONS } from "@/lib/queryClient";
 import { BottomNav, SideNav, PageWrapper, FeedLayout } from "@/components/AppShell";
 import { RightSidebar } from "@/components/RightSidebar";
@@ -2530,7 +2531,7 @@ function ProfilePage() {
   }, [navigate]);
 
   async function signOut() {
-    await supabase.auth.signOut();
+    await signOutHooda();
     navigate({ to: "/", replace: true });
   }
 

@@ -6,6 +6,7 @@ import {
   Users as UsersIcon, Eye, Heart, Film,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { signOutHooda } from "@/contexts/AuthContext";
 import { useNavigate } from "@tanstack/react-router";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useScrollLock } from "@/hooks/useScrollLock";
@@ -227,7 +228,7 @@ export function UserDrawer({ userId: _userId, onClose }: UserDrawerProps) {
   }
 
   async function logout() {
-    await supabase.auth.signOut();
+    await signOutHooda();
     onClose();
     navigate({ to: "/" });
   }

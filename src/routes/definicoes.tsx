@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { signOutHooda } from "@/contexts/AuthContext";
 import { BottomNav, SideNav, PageWrapper } from "@/components/AppShell";
 import {
   ChevronRight, Bell, Lock, Shield, HelpCircle,
@@ -109,7 +110,7 @@ function DefinicoesPage() {
     {
       icon: <LogOut className="w-5 h-5"/>, color: "#F26B3A",
       label: "Terminar sessão", desc: "Sair da tua conta neste dispositivo",
-      action: async () => { await supabase.auth.signOut(); navigate({ to: "/" }); },
+      action: async () => { await signOutHooda(); navigate({ to: "/" }); },
     },
     {
       icon: <Trash2 className="w-5 h-5"/>, color: "#ef4444",
