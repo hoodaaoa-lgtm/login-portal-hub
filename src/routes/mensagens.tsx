@@ -117,6 +117,18 @@ function getYouTubeId(url: string): string | null {
  * bater certo. Isto permite ir buscar os dados reais diretamente à base de
  * dados (mais rápido e fiável que uma API externa) e reproduzir o vídeo
  * mesmo dentro da conversa, tal como pedido. */
+/** Limiar para considerar um utilizador "online agora": se o último heartbeat
+ * (a cada 30s enquanto a app está visível) foi há menos de 90s, está online.
+ * Não confiamos apenas na flag is_online guardada na BD porque não há forma
+ * fiável de a apagar quando o utilizador fecha a aba/app (beforeunload não é
+ * garantido, especialmente em mobile) — por isso calculamos aqui pela
+ * recência do last_seen, tal como no painel admin. */
+const ONLINE_THRESHOLD_MS = 90_000;
+function isOnlineNow(isOnline: boolean | null | undefined, lastSeen: string | null | undefined) {
+  if (!isOnline || !lastSeen) return false;
+  return Date.now() - new Date(lastSeen).getTime() < ONLINE_THRESHOLD_MS;
+}
+
 function getHoodaPostId(url: string): string | null {
   try {
     const u = new URL(url);
@@ -5305,7 +5317,7 @@ function MensagensPage() {
 
       const { data: profiles } = await db
         .from("profiles")
-        .select("id,username,full_name,avatar_url,is_online")
+        .select("id,username,full_name,avatar_url,is_online,last_seen")
         .in("id", otherIds as any);
 
       const allMsgs: any[] = allMsgsResult.data ?? [];
@@ -5357,7 +5369,7 @@ function MensagensPage() {
           full_name: isOfficial ? "Hooda Oficial" : profile.full_name,
           avatar_url: isOfficial ? "/icons/icon-192.png" : profile.avatar_url,
           color: colorFor(profile.username || profile.id),
-          is_online: isOfficial ? false : !!profile.is_online,
+          is_online: isOfficial ? false : isOnlineNow(profile.is_online, profile.last_seen),
           isOfficial,
           replyAllowed: meta?.reply_allowed ?? true,
           conversationId: convId,
