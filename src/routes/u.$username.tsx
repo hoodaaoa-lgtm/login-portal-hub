@@ -14,11 +14,10 @@ import { BottomNav, SideNav, PageWrapper, FeedLayout } from "@/components/AppShe
 import { RightSidebar } from "@/components/RightSidebar";
 import { useFollowState } from "@/hooks/useSocialSystem";
 import {
-  ChevronLeft, MessageCircle, Flag, Heart, Share2,
+  ChevronLeft, Flag, Share2,
   MoreHorizontal, UserCheck, UserPlus, X, MapPin,
-  Link as LinkIcon, Calendar, Play, Pause, Camera,
-  MessageSquare, Eye, Repeat2, Forward, Bookmark, BookmarkCheck,
-  Copy, Check, TypeIcon,
+  Link as LinkIcon, Calendar, Camera,
+  Copy, Check,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -434,7 +433,6 @@ function UserProfilePage() {
   },[]);
 
   /* ─ UI state ─ */
-  const [openingChat, setOpeningChat] = useState(false);
   const [showFollowers, setShowFollowers] = useState(false);
   const [showFollowing, setShowFollowing] = useState(false);
   const [showReport, setShowReport] = useState(false);
@@ -552,45 +550,6 @@ function UserProfilePage() {
   const color = colorFor(username);
 
   /* ─ Ações ─ */
-  async function openChat() {
-    if (!profile||!myId||openingChat) return;
-    setOpeningChat(true);
-    try {
-      const db=supabase as any;
-      const {data:tp}=await db.from("profiles").select("msg_permission").eq("id",profile.id).single();
-      const perm=tp?.msg_permission??"todos";
-
-      /* Verificar conversa existente */
-      const {data:myConvs}=await db.from("conversation_participants").select("conversation_id").eq("user_id",myId);
-      if (myConvs?.length>0){
-        const ids=myConvs.map((c:any)=>c.conversation_id);
-        const {data:shared}=await db.from("conversation_participants").select("conversation_id")
-          .eq("user_id",profile.id).in("conversation_id",ids).maybeSingle();
-        if (shared){ navigate({to:"/mensagens",search:{conv:shared.conversation_id} as any}); return; }
-      }
-
-      /* Permissão restrita */
-      if (perm!=="todos"){
-        const {data:req}=await db.from("message_requests").select("id,status")
-          .eq("sender_id",myId).eq("receiver_id",profile.id).maybeSingle();
-        if (req?.status==="rejected"){ toast.error(`@${profile.username} não aceita pedidos.`); return; }
-        if (!req) await db.from("message_requests").insert({
-          sender_id:myId,receiver_id:profile.id,preview_text:"Quero enviar-te uma mensagem.",status:"pending"
-        });
-        toast.success(`Pedido enviado a @${profile.username}!`); return;
-      }
-
-      /* Criar conversa nova */
-      const {data:conv,error}=await db.from("conversations").insert({type:"direct"}).select("id").single();
-      if (error||!conv?.id){ toast.error("Erro ao iniciar conversa"); return; }
-      await db.from("conversation_participants").insert([
-        {conversation_id:conv.id,user_id:myId},
-        {conversation_id:conv.id,user_id:profile.id},
-      ]);
-      navigate({to:"/mensagens",search:{conv:conv.id} as any});
-    } finally { setOpeningChat(false); }
-  }
-
   function shareProfile() {
     setShowShareModal(true);
     setShowMenu(false);
@@ -701,14 +660,6 @@ function UserProfilePage() {
 
           {/* ── Botões de ação ── */}
           <div className="flex justify-end gap-2 px-4 pt-3 pb-2">
-            <button onClick={openChat} disabled={openingChat}
-              className="flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-semibold border transition active:scale-95 disabled:opacity-60"
-              style={{borderColor:"var(--border-default)",color:"var(--text-primary)",background:"var(--s0)"}}>
-              {openingChat
-                ? <div className="w-4 h-4 rounded-full border-2 border-t-transparent animate-spin" style={{borderColor:P,borderTopColor:"transparent"}}/>
-                : <MessageCircle className="h-4 w-4" style={{color:P}}/>}
-              Mensagem
-            </button>
             {followLoading ? (
               <div className="h-[30px] w-[104px] rounded-full animate-pulse" style={{background:"var(--s2)"}} />
             ) : (
