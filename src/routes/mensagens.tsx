@@ -3109,33 +3109,6 @@ function ChatPanel({ myId, contact, onBack }: {
     })();
   }, [myId, contact.conversationId]);
 
-  // ── Presença do contacto: consulta a RPC segura (respeita hide_last_seen
-  // de ambos os lados) ao abrir a conversa e depois a cada 20s. ──
-  useEffect(() => {
-    if (!contact.id || contact.isOfficial) return;
-    let mounted = true;
-    async function loadPresence() {
-      const { data, error } = await (db as any).rpc("get_contact_presence", { p_user_id: contact.id });
-      if (!mounted) return;
-      if (error) { console.error("[presence] erro:", error.message); return; }
-      const row = data?.[0] ?? null;
-      setContactPresence(row ? { is_online: row.is_online, last_seen: row.last_seen } : null);
-    }
-    loadPresence();
-    const id = setInterval(loadPresence, 20000);
-    return () => { mounted = false; clearInterval(id); };
-  }, [contact.id, contact.isOfficial]);
-
-  // Texto do subtítulo do cabeçalho: "a escrever…" tem sempre prioridade,
-  // depois "online agora", depois "visto por último", senão volta a @username.
-  const presenceLabel = contactTyping
-    ? "a escrever…"
-    : contactPresence?.is_online
-      ? "online agora"
-      : contactPresence?.last_seen
-        ? `visto ${timeAgo(contactPresence.last_seen)}`
-        : null;
-
   async function toggleReadReceipts() {
     const next = !readReceipts;
     setReadReceipts(next);
@@ -3425,6 +3398,33 @@ function ChatPanel({ myId, contact, onBack }: {
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const broadcastChRef = useRef<any>(null);
   const realtimeDmSeqRef = useRef(0);
+
+  // ── Presença do contacto: consulta a RPC segura (respeita hide_last_seen
+  // de ambos os lados) ao abrir a conversa e depois a cada 20s. ──
+  useEffect(() => {
+    if (!contact.id || contact.isOfficial) return;
+    let mounted = true;
+    async function loadPresence() {
+      const { data, error } = await (db as any).rpc("get_contact_presence", { p_user_id: contact.id });
+      if (!mounted) return;
+      if (error) { console.error("[presence] erro:", error.message); return; }
+      const row = data?.[0] ?? null;
+      setContactPresence(row ? { is_online: row.is_online, last_seen: row.last_seen } : null);
+    }
+    loadPresence();
+    const id = setInterval(loadPresence, 20000);
+    return () => { mounted = false; clearInterval(id); };
+  }, [contact.id, contact.isOfficial]);
+
+  // Texto do subtítulo do cabeçalho: "a escrever…" tem sempre prioridade,
+  // depois "online agora", depois "visto por último", senão volta a @username.
+  const presenceLabel = contactTyping
+    ? "a escrever…"
+    : contactPresence?.is_online
+      ? "online agora"
+      : contactPresence?.last_seen
+        ? `visto ${timeAgo(contactPresence.last_seen)}`
+        : null;
 
   // ── Msgs com cache local ──
   const CACHE_KEY = `hooda_dm_${contact.conversationId}`;
