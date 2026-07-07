@@ -2274,7 +2274,7 @@ function ChatMediaLightbox({ items, index, onIndexChange, onClose, onReact, cont
           </button>
         )}
 
-        <div onClick={(e) => e.stopPropagation()} className="max-w-full max-h-full flex items-center justify-center"
+        <div onClick={(e) => e.stopPropagation()} className="max-w-full max-h-full w-full flex items-center justify-center"
           style={{
             opacity: visible ? 1 : 0,
             transform: visible ? "scale(1) translateX(0)" : `scale(0.96) translateX(${slideDir === "right" ? "-24px" : "24px"})`,
