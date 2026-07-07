@@ -2239,6 +2239,7 @@ export type Database = {
         Args: { p_post_id: string }
         Returns: undefined
       }
+      get_book_file_url: { Args: { p_book_id: string }; Returns: string }
       get_contact_presence: {
         Args: { p_user_id: string }
         Returns: {
