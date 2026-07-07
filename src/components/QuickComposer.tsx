@@ -169,11 +169,19 @@ export function QuickPostModal({ name, username, avatarUrl, onClose, onPublished
         payload.content = text.trim() || pollQuestion.trim();
       }
 
-      const { error } = await (supabase as any).from("posts").insert(payload);
+      const { data: inserted, error } = await (supabase as any).from("posts").insert(payload).select("id").single();
 
       if (error) {
         setErr(error.message ?? "Não foi possível publicar. Tenta novamente.");
         return;
+      }
+
+      // Fase 2 e 6 — Classificação de conteúdo e moderação automática em background.
+      if (inserted?.id) {
+        supabase.functions.invoke("moderate-content", { body: { postId: inserted.id } })
+          .catch(err => console.error("Erro na moderação automática:", err));
+        supabase.functions.invoke("classify-content", { body: { postId: inserted.id } })
+          .catch(err => console.error("Erro na classificação automática:", err));
       }
 
       setStage("done");

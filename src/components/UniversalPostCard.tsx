@@ -11,6 +11,7 @@ import { fetchPostComments, sendPostComment, replyToPostComment, toggleCommentLi
 import { deletePostForEveryone } from "@/lib/posts";
 import { FeedVideoPlayer } from "@/components/FeedVideoPlayer";
 import { PollCard } from "@/components/PollCard";
+import { SensitiveContentOverlay } from "@/components/SensitiveContentOverlay";
 import { useTimeAgo } from "@/hooks/useTimeAgo";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { useFollowState, usePostLikeState, getViewerFingerprint } from "@/hooks/useSocialSystem";
@@ -70,6 +71,9 @@ export type NormalizedPost = {
   channel_handle?: string | null;
   channel_name?: string | null;
   channel_avatar?: string | null;
+  // Fase 6 — moderação de conteúdo
+  moderation_status?: string | null;
+  is_sensitive?: boolean | null;
 };
 
 /* ── normalizePost — converte os formatos de dados de cada página
@@ -1049,12 +1053,26 @@ export function UniversalPostCard({ post: p, onDeleted, onBookmarkChange }: {
       {/* Vídeo */}
       {p.video && (
         <div className="pb-3 md:px-4">
-          <FeedVideoPlayer src={p.video} poster={p.video_thumb || p.photo || undefined} postId={p.id} kind="video" rounded="rounded-2xl" />
+          {p.is_sensitive && p.moderation_status ? (
+            <SensitiveContentOverlay category={p.moderation_status} minHeight={260}>
+              <FeedVideoPlayer src={p.video} poster={p.video_thumb || p.photo || undefined} postId={p.id} kind="video" rounded="rounded-2xl" />
+            </SensitiveContentOverlay>
+          ) : (
+            <FeedVideoPlayer src={p.video} poster={p.video_thumb || p.photo || undefined} postId={p.id} kind="video" rounded="rounded-2xl" />
+          )}
         </div>
       )}
 
       {/* Texto */}
-      {p.text && !p.video && (p.bg_color
+      {p.text && !p.video && !p.photo && !(p.photos && p.photos.length > 0) && p.is_sensitive && p.moderation_status ? (
+        <div className="px-4 pb-3">
+          <SensitiveContentOverlay category={p.moderation_status} minHeight={90}>
+            <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+              <RichText text={p.text} />
+            </p>
+          </SensitiveContentOverlay>
+        </div>
+      ) : p.text && !p.video && (p.bg_color
         ? <div className="px-4 pb-3">
             <div className="rounded-2xl px-5 py-6 flex items-center justify-center min-h-28" style={{ background: p.bg_color }}>
               <RichText text={p.text} className="text-white font-bold text-lg text-center leading-snug" style={{ textShadow: "0 1px 3px rgba(0,0,0,0.25)" }} />
@@ -1077,8 +1095,17 @@ export function UniversalPostCard({ post: p, onDeleted, onBookmarkChange }: {
       )}
 
       {/* Fotos */}
-      {p.photos && p.photos.length > 0 && <PhotoGrid photos={p.photos} />}
-      {p.photo && !p.photos && !p.video && <PhotoGrid photos={[p.photo]} />}
+      {(p.photos && p.photos.length > 0) || (p.photo && !p.photos && !p.video) ? (
+        p.is_sensitive && p.moderation_status ? (
+          <div className="px-0">
+            <SensitiveContentOverlay category={p.moderation_status} minHeight={260}>
+              <PhotoGrid photos={p.photos && p.photos.length > 0 ? p.photos : [p.photo!]} />
+            </SensitiveContentOverlay>
+          </div>
+        ) : (
+          <PhotoGrid photos={p.photos && p.photos.length > 0 ? p.photos : [p.photo!]} />
+        )
+      ) : null}
 
       {/* Enquete */}
       {p.poll && (

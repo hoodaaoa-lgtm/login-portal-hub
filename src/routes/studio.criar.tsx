@@ -194,6 +194,15 @@ function CreatePage() {
       const { data: inserted, error } = await supabase.from("posts").insert(payload).select("id").single();
       if (error) throw error;
 
+      // Fase 2 e 6 — Classificação de conteúdo e moderação automática,
+      // ambas em background, sem bloquear nem falhar a publicação.
+      if (mode !== "draft" && inserted?.id) {
+        supabase.functions.invoke("moderate-content", { body: { postId: inserted.id } })
+          .catch(err => console.error("Erro na moderação automática:", err));
+        supabase.functions.invoke("classify-content", { body: { postId: inserted.id } })
+          .catch(err => console.error("Erro na classificação automática:", err));
+      }
+
       if (mode === "draft") toast.success("Rascunho guardado.");
       else if (mode === "schedule") toast.success("Publicação agendada!");
       else toast.success("Publicado!");
