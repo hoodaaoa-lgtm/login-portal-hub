@@ -217,9 +217,9 @@ function FollowListModal({ mode, targetUsername, targetUserId, onClose }: {
 }
 
 
-function PostsFeed({ posts, loading, name, username, avatarUrl, onLike, onBookmark, onDelete, myUserId }: {
+function PostsFeed({ posts, loading, name, username, avatarUrl, onDelete, myUserId }: {
   posts: Post[]; loading?: boolean; name: string; username: string; avatarUrl?: string | null;
-  onLike: (id: string) => void; onBookmark: (id: string) => void; onDelete: (id: string) => void;
+  onDelete: (id: string) => void;
   myUserId?: string;
 }) {
   if (loading) return (
@@ -245,8 +245,7 @@ function PostsFeed({ posts, loading, name, username, avatarUrl, onLike, onBookma
       {posts.map((post) => (
         <UniversalPostCard key={post.id}
           post={normalizePost(post, "profile", { name, username, avatarUrl, authorId: myUserId })}
-          onDeleted={onDelete}
-          onBookmarkChange={(id) => onBookmark(id)} />
+          onDeleted={onDelete} />
       ))}
     </div>
   );
@@ -1939,34 +1938,6 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
     })();
   }, [tab, myUserId]);
 
-  async function toggleLike(id: string) {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) { toast.error("A iniciar sessão… tenta novamente em 1 segundo."); return; }
-    const target = posts.find((p) => p.id === id) ?? savedPosts.find((p) => p.id === id);
-    if (!target) return;
-    if (target.likedByMe) {
-      await supabase.from("post_likes").delete().eq("post_id", id).eq("user_id", session.user.id);
-    } else {
-      await supabase.from("post_likes").insert({ post_id: id, user_id: session.user.id } as any);
-    }
-    setPosts(prev => prev.map(p => p.id === id
-      ? { ...p, likedByMe: !p.likedByMe, likes: p.likedByMe ? p.likes - 1 : p.likes + 1 }
-      : p));
-  }
-
-  async function toggleBookmark(id: string) {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) { toast.error("A iniciar sessão… tenta novamente em 1 segundo."); return; }
-    const target = posts.find((p) => p.id === id) ?? savedPosts.find((p) => p.id === id);
-    if (!target) return;
-    if (target.bookmarked) {
-      await supabase.from("post_saves").delete().eq("post_id", id).eq("user_id", session.user.id);
-    } else {
-      await supabase.from("post_saves").insert({ post_id: id, user_id: session.user.id } as any);
-    }
-    setPosts(prev => prev.map(p => p.id === id ? { ...p, bookmarked: !p.bookmarked } : p));
-  }
-
   async function deletePost(id: string) {
     setPosts(prev => prev.filter(p => p.id !== id));
   }
@@ -2152,7 +2123,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
         {/* Conteúdo das tabs */}
         {tab === "posts" && (
           <PostsFeed posts={posts} loading={postsLoading} name={name} username={profile?.username || "utilizador"}
-            avatarUrl={avatarUrl} onLike={toggleLike} onBookmark={toggleBookmark} onDelete={deletePost}
+            avatarUrl={avatarUrl} onDelete={deletePost}
             myUserId={myUserId} />
         )}
 
