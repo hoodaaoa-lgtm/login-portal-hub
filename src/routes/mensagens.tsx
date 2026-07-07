@@ -19,6 +19,7 @@ import { useBadges } from "@/contexts/BadgeContext";
 import { ProfileAvatarLink } from "@/components/ProfileAvatarLink";
 import { ConversationListSkeleton, BackgroundRefreshDot } from "@/components/Skeletons";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 // Helper para tabelas não tipadas no schema gerado
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -2564,9 +2565,12 @@ function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit
                 // a enviar — mensagem ainda em trânsito (optimistic), mostra
                 // label + relógio a piscar, como pedido explicitamente.
                 if (ds === "sending") {
+                  const showPct = (m.type === "image" || m.type === "video") && uploadPct && uploadPct > 0 && uploadPct < 100;
                   return (
                     <span className="flex items-center gap-1">
-                      <span className="text-[10px] italic" style={{ opacity: 0.75 }}>A enviar…</span>
+                      <span className="text-[10px] italic" style={{ opacity: 0.75 }}>
+                        {showPct ? `A enviar… ${uploadPct}%` : "A enviar…"}
+                      </span>
                       <Clock className="h-3 w-3 animate-pulse" style={{ color: isMe ? "rgba(255,255,255,0.5)" : "#bbb" }} />
                     </span>
                   );
@@ -3504,20 +3508,26 @@ function ChatPanel({ myId, contact, onBack }: {
     viewOnce = false,
     isSurprise = false,
     surpriseTeaser?: string,
+    uploadFileObj?: File,
+    uploadFolder?: "images" | "videos",
   ) {
     if (sending || uploading) return;
     if (isBlocked) { toast.error(`Desbloqueia @${contact.username} para enviar mensagens.`); return; }
     if (iAmBlockedBy) { toast.error("Não é possível enviar mensagens a este utilizador."); return; }
     if (msgPermBlocked) { toast.error(msgPermReason); return; }
     const t = text.trim();
-    if (!t && !mediaUrl) return;
+    if (!t && !mediaUrl && !uploadFileObj) return;
     setSending(true);
 
-    // Optimistic local msg
+    // Optimistic local msg — se houver ficheiro por enviar, mostra já uma
+    // pré-visualização local (URL do próprio ficheiro) para a bolha aparecer
+    // imediatamente com o estado "A enviar…", em vez de só aparecer depois
+    // do upload terminar (que pode demorar alguns segundos).
+    const localPreviewUrl = uploadFileObj ? URL.createObjectURL(uploadFileObj) : undefined;
     const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2)}`;
     const localMsg: Message = {
       id: tempId, senderId: myId, text: t, type,
-      mediaUrl, duration, time: new Date().toLocaleTimeString("pt-PT",{hour:"2-digit",minute:"2-digit"}),
+      mediaUrl: mediaUrl ?? localPreviewUrl, duration, time: new Date().toLocaleTimeString("pt-PT",{hour:"2-digit",minute:"2-digit"}),
       status: "sent", replyTo: replyToId ?? replyTo?.id,
       deliveryStatus: "sending", viewOnce,
       isSurprise, surpriseTeaser: isSurprise ? (surpriseTeaser || "Tenho uma surpresa para ti") : undefined,
@@ -3527,6 +3537,19 @@ function ChatPanel({ myId, contact, onBack }: {
     setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
 
     try {
+      // Se veio um ficheiro por enviar (em vez de um URL já pronto), faz o
+      // upload agora — a bolha já está visível acima com "A enviar…" durante
+      // todo este tempo, tanto para fotos/vídeos normais como para surpresas.
+      let finalMediaUrl = mediaUrl;
+      if (uploadFileObj) {
+        finalMediaUrl = await uploadFile(uploadFileObj, uploadFolder ?? "images") ?? undefined;
+        if (!finalMediaUrl) {
+          patchMsg(tempId, { status: "failed" } as any);
+          setSending(false);
+          return;
+        }
+      }
+
       const encrypted = type === "text" ? await encrypt(t) : (t ? await encrypt(t) : "");
       // Verificar participação antes de inserir
       const { data: myPart, error: partErr } = await db
@@ -3543,7 +3566,7 @@ function ChatPanel({ myId, contact, onBack }: {
         receiver_id: contact.id,
         content: encrypted || t || "📎",
         status: "sent",
-        media_url: mediaUrl ?? null,
+        media_url: finalMediaUrl ?? null,
         message_type: type,
         reply_to: replyToId ?? replyTo?.id ?? null,
         view_once: viewOnce,
@@ -3558,9 +3581,9 @@ function ChatPanel({ myId, contact, onBack }: {
         throw error;
       }
       console.log("[send] ✅ Inserido id:", data.id);
-      // replace temp with real id
+      // replace temp with real id (e troca a pré-visualização local pelo URL real)
       setMsgs(prev => {
-        const n = prev.map(x => x.id === tempId ? { ...x, id: data.id, deliveryStatus: "sent" as const } : x);
+        const n = prev.map(x => x.id === tempId ? { ...x, id: data.id, mediaUrl: finalMediaUrl ?? x.mediaUrl, deliveryStatus: "sent" as const } : x);
         saveCache(n); return n;
       });
       // mark delivered after 1s
@@ -3585,8 +3608,8 @@ function ChatPanel({ myId, contact, onBack }: {
   // ── View once send ──
   async function sendViewOnce(file: File, type: "image"|"video") {
     setShowAttach(false);
-    const url = await uploadFile(file, type === "image" ? "images" : "videos");
-    if (url) await send("", type, url, undefined, undefined, true);
+    await send("", type, undefined, undefined, undefined, true, false, undefined,
+      file, type === "image" ? "images" : "videos");
   }
 
   // ── Media queue ──
@@ -3717,11 +3740,11 @@ function ChatPanel({ myId, contact, onBack }: {
       }
     }
 
-    const url = await uploadFile(fileToUpload, item.type === "image" ? "images" : "videos");
-    // Para vídeo, editState é guardado como metadado (filtros aplicados via CSS na visualização)
-    // Para imagem com Canvas flatten, editState é null (edições já estão nos pixels)
-    const editMeta = item.type === "video" ? item.edit : null;
-    if (url) await send(item.caption, item.type, url, undefined, undefined);
+    // O upload acontece dentro de send() — a bolha já aparece na conversa
+    // imediatamente com "A enviar…", em vez de só aparecer depois do
+    // upload (que pode demorar alguns segundos) terminar.
+    await send(item.caption, item.type, undefined, undefined, undefined, false, false, undefined,
+      fileToUpload, item.type === "image" ? "images" : "videos");
 
     const nextIdx = mediaQueueIdx + 1;
     if (nextIdx < mediaSendQueue.length) { setMediaQueueIdx(nextIdx); }
@@ -4179,10 +4202,11 @@ function ChatPanel({ myId, contact, onBack }: {
             if (type === "text") {
               await send(text, "text", undefined, undefined, undefined, false, true, teaser);
             } else if (file) {
-              setSending(true);
-              const url = await uploadFile(file, type === "image" ? "images" : "videos");
-              setSending(false);
-              if (url) await send(text, type, url, undefined, undefined, false, true, teaser);
+              // Upload acontece dentro de send() — a caixa já aparece na
+              // conversa com "A enviar…" durante o upload, em vez de só
+              // aparecer depois de terminar.
+              await send(text, type, undefined, undefined, undefined, false, true, teaser,
+                file, type === "image" ? "images" : "videos");
             }
           }}
         />
@@ -4811,7 +4835,13 @@ function ContactList({ contacts, loading, refreshing, search, setSearch, active,
 function MensagensPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const [myId, setMyId] = useState("");
+  const { user } = useAuth();
+  // A sessão já foi resolvida pelo AuthGate antes desta página sequer
+  // montar — usar isso em vez de voltar a chamar supabase.auth.getSession()
+  // aqui evita uma viagem assíncrona extra que atrasava a 1ª aparição
+  // da lista de conversas (o cache do React Query já estava pronto,
+  // só faltava o myId para a query poder arrancar).
+  const [myId, setMyId] = useState(() => (user?.id && isValidUUID(user.id)) ? user.id : "");
   const [search, setSearch] = useState("");
   const [active, setActive] = useState<Contact | null>(null);
   const [showAddContact, setShowAddContact] = useState(false);
@@ -4998,24 +5028,17 @@ function MensagensPage() {
   }, []);
 
   useEffect(() => {
-    (async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session?.user?.id || !isValidUUID(session.user.id)) {
-          navigate({ to: "/", replace: true });
-          return;
-        }
-        const uid = session.user.id;
-        setMyId(uid);
-        // A lista de contactos é buscada automaticamente pelo useQuery
-        // (cache instantâneo) assim que myId muda — só precisamos dos
-        // pedidos pendentes aqui.
-        await loadPendingRequests(uid);
-      } catch {
-        navigate({ to: "/", replace: true });
-      }
-    })();
-  }, [navigate, loadPendingRequests]);
+    if (!user?.id || !isValidUUID(user.id)) {
+      navigate({ to: "/", replace: true });
+      return;
+    }
+    const uid = user.id;
+    setMyId(uid);
+    // A lista de contactos é buscada automaticamente pelo useQuery
+    // (cache instantâneo) assim que myId muda — só precisamos dos
+    // pedidos pendentes aqui.
+    loadPendingRequests(uid);
+  }, [user, navigate, loadPendingRequests]);
 
   // Realtime para pedidos
   useEffect(() => {
