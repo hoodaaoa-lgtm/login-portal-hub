@@ -308,6 +308,82 @@ export type Database = {
         }
         Relationships: []
       }
+      content_moderation_log: {
+        Row: {
+          category: string
+          confidence: number | null
+          created_at: string
+          id: string
+          model: string
+          post_id: string
+          raw_result: Json | null
+        }
+        Insert: {
+          category: string
+          confidence?: number | null
+          created_at?: string
+          id?: string
+          model?: string
+          post_id: string
+          raw_result?: Json | null
+        }
+        Update: {
+          category?: string
+          confidence?: number | null
+          created_at?: string
+          id?: string
+          model?: string
+          post_id?: string
+          raw_result?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_moderation_log_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      content_quality: {
+        Row: {
+          computed_at: string
+          post_id: string
+          quality_engagement: number
+          quality_originality: number
+          quality_satisfaction: number
+          quality_score: number
+          quality_technical: number
+        }
+        Insert: {
+          computed_at?: string
+          post_id: string
+          quality_engagement?: number
+          quality_originality?: number
+          quality_satisfaction?: number
+          quality_score?: number
+          quality_technical?: number
+        }
+        Update: {
+          computed_at?: string
+          post_id?: string
+          quality_engagement?: number
+          quality_originality?: number
+          quality_satisfaction?: number
+          quality_score?: number
+          quality_technical?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_quality_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversation_key_shares: {
         Row: {
           conversation_id: string
@@ -1253,8 +1329,12 @@ export type Database = {
           image_url: string | null
           is_ad: boolean
           is_draft: boolean
+          is_sensitive: boolean
           kind: string | null
           likes_count: number
+          moderation_categories: Json | null
+          moderation_checked_at: string | null
+          moderation_status: string
           music_artist: string | null
           music_cover: string | null
           music_title: string | null
@@ -1301,8 +1381,12 @@ export type Database = {
           image_url?: string | null
           is_ad?: boolean
           is_draft?: boolean
+          is_sensitive?: boolean
           kind?: string | null
           likes_count?: number
+          moderation_categories?: Json | null
+          moderation_checked_at?: string | null
+          moderation_status?: string
           music_artist?: string | null
           music_cover?: string | null
           music_title?: string | null
@@ -1349,8 +1433,12 @@ export type Database = {
           image_url?: string | null
           is_ad?: boolean
           is_draft?: boolean
+          is_sensitive?: boolean
           kind?: string | null
           likes_count?: number
+          moderation_categories?: Json | null
+          moderation_checked_at?: string | null
+          moderation_status?: string
           music_artist?: string | null
           music_cover?: string | null
           music_title?: string | null
@@ -1679,6 +1767,24 @@ export type Database = {
           target_type?: string | null
           user_id?: string | null
           weight?: number | null
+        }
+        Relationships: []
+      }
+      user_hidden_categories: {
+        Row: {
+          category: string
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -2105,6 +2211,15 @@ export type Database = {
     }
     Functions: {
       admin_delete_account: { Args: { target_id: string }; Returns: undefined }
+      apply_content_moderation: {
+        Args: {
+          p_category: string
+          p_confidence: number
+          p_post_id: string
+          p_raw_result?: Json
+        }
+        Returns: undefined
+      }
       cleanup_expired_drops: { Args: never; Returns: undefined }
       cleanup_expired_stories: { Args: never; Returns: undefined }
       create_conversation_with_participants: {
@@ -2172,6 +2287,14 @@ export type Database = {
           read_receipts_off: boolean
         }[]
       }
+      get_personalized_feed: {
+        Args: { p_cursor?: string; p_limit?: number; p_user_id: string }
+        Returns: {
+          bucket: string
+          post_id: string
+          rank_score: number
+        }[]
+      }
       get_user_interest_profile: {
         Args: { p_limit?: number }
         Returns: {
@@ -2186,6 +2309,7 @@ export type Database = {
         Args: { p_interval_seconds?: number }
         Returns: undefined
       }
+      hide_similar_content: { Args: { p_category: string }; Returns: undefined }
       increment_book_download: {
         Args: { p_book_id: string }
         Returns: undefined
@@ -2221,6 +2345,10 @@ export type Database = {
         Args: { p_msg_id: string; p_user_id: string }
         Returns: undefined
       }
+      recompute_content_quality: {
+        Args: { p_post_id: string }
+        Returns: number
+      }
       record_post_view: {
         Args: {
           p_duration_seconds?: number
@@ -2242,6 +2370,10 @@ export type Database = {
         }
         Returns: Json
       }
+      set_post_technical_quality: {
+        Args: { p_post_id: string; p_score: number }
+        Returns: undefined
+      }
       toggle_follow: {
         Args: { p_target_id?: string; p_target_username: string }
         Returns: Json
@@ -2262,6 +2394,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      unhide_category: { Args: { p_category: string }; Returns: undefined }
       update_book_rating_average: {
         Args: { p_book_id: string }
         Returns: {
