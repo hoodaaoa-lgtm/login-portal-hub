@@ -497,7 +497,7 @@ export function UserDrawer({ userId: _userId, onClose }: UserDrawerProps) {
                       : initial}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-bold text-base truncate" style={{ color: "var(--text-primary)" }}>{profile.full_name}</p>
+                    <p className="font-bold text-base truncate" style={{ color: "var(--text-primary)" }}>{profile.full_name || profile.username || "Utilizador"}</p>
                     <p className="text-sm truncate" style={{ color: "var(--text-secondary)" }}>@{profile.username}</p>
                     {stats && (
                       <div className="flex items-center gap-3 mt-1">

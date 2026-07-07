@@ -543,6 +543,8 @@ function UserProfilePage() {
     isLoading: followLoading,
     followersCount: followerCount,
     followingCount,
+    countsLoading,
+    isPending: followTogglePending,
     toggle: toggleFollow,
   } = useFollowState(myId || null, username || null, profileId || null);
   const postCount = statsQuery.data?.postCount??0;
@@ -701,8 +703,8 @@ function UserProfilePage() {
             {followLoading ? (
               <div className="h-[30px] w-[104px] rounded-full animate-pulse" style={{background:"var(--s2)"}} />
             ) : (
-              <button onClick={toggleFollow}
-                className="flex items-center gap-1.5 px-5 py-1.5 rounded-full text-sm font-bold transition active:scale-95 shadow-sm"
+              <button onClick={toggleFollow} disabled={followTogglePending}
+                className="flex items-center gap-1.5 px-5 py-1.5 rounded-full text-sm font-bold transition active:scale-95 shadow-sm disabled:opacity-60"
                 style={following
                   ?{background:"var(--s2)",border:"1px solid var(--border-default)",color:"var(--text-secondary)"}
                   :{background:P,color:"#fff"}}>
@@ -747,7 +749,7 @@ function UserProfilePage() {
             ].map(s=>(
               <button key={s.l} onClick={s.action} disabled={!s.action}
                 className="flex items-center gap-1.5 text-sm transition active:opacity-70">
-                {statsQuery.isLoading
+                {countsLoading
                   ? <div className="h-4 w-6 rounded-full animate-pulse" style={{background:"var(--s3)"}}/>
                   : <span className="font-extrabold" style={{color:"var(--text-primary)"}}>{fmtNum(s.n)}</span>}
                 <span style={{color:"var(--text-muted)"}}>{s.l}</span>

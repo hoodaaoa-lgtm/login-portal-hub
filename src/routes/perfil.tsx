@@ -5,6 +5,7 @@ import { useScrollLock } from "@/hooks/useScrollLock";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { signOutHooda } from "@/contexts/AuthContext";
 import { STATIC_QUERY_OPTIONS } from "@/lib/queryClient";
 import { BottomNav, SideNav, PageWrapper, FeedLayout } from "@/components/AppShell";
@@ -610,12 +611,22 @@ function EditProfileModal({
             "\nDetalhes:", error.details, "\nHint:", error.hint,
             error
           );
+          // O trigger de cooldown de 30 dias rejeitou a troca de username no servidor
+          if (usernameChanged && error.hint === "username_cooldown") {
+            toast.error(error.message || "Ainda não podes trocar de nome de utilizador.");
+            setSaving(false);
+            return;
+          }
           // Tenta sem username_changed_at apenas se o erro for especificamente sobre essa coluna
           if (usernameChanged && (error.message?.includes("username_changed_at") || error.code === "42703" || error.code === "42501")) {
             const { full_name, username: u, bio: b, website: w, location: l, updated_at } = updateData;
             const { error: error2 } = await (supabase as any)
               .from("profiles").update({ full_name, username: u, bio: b, website: w, location: l, updated_at }).eq("id", session.user.id);
             if (error2) console.error("[hooda] ERRO mesmo sem username_changed_at:", error2);
+          } else if (usernameChanged) {
+            toast.error("Não foi possível gravar as alterações. Tenta novamente.");
+            setSaving(false);
+            return;
           }
         } else {
           console.log("[hooda:debug] Perfil gravado com sucesso:", updRes);
@@ -2351,9 +2362,11 @@ function PublicProfile({ profile, email }: { profile: Profile | null; email: str
     isLoading: followLoading,
     followersCount: followerCount,
     followingCount,
+    countsLoading,
+    isPending: followTogglePending,
     toggle: toggleFollow,
   } = useFollowState(myUserId || null, profile?.username || null, (profile as any)?.id || null);
-  const statsLoading = followLoading;
+  const statsLoading = countsLoading;
 
   return (
     <>
@@ -2382,8 +2395,8 @@ function PublicProfile({ profile, email }: { profile: Profile | null; email: str
           {followLoading ? (
             <div className="h-[30px] w-[92px] rounded-full animate-pulse" style={{ background: "var(--s2)" }} />
           ) : (
-            <button onClick={toggleFollow}
-              className={`text-sm font-bold rounded-full px-5 py-1.5 transition shadow-sm ${following ? "border border-neutral-300 bg-[var(--s2)] text-black" : "text-white"}`}
+            <button onClick={toggleFollow} disabled={followTogglePending}
+              className={`text-sm font-bold rounded-full px-5 py-1.5 transition shadow-sm disabled:opacity-60 ${following ? "border border-neutral-300 bg-[var(--s2)] text-black" : "text-white"}`}
               style={{ background: following ? undefined : ACCENT }}>
               {following ? t("profile.unfollow") : t("profile.follow")}
             </button>

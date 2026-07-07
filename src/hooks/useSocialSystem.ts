@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -126,6 +126,8 @@ async function fetchFollowCounts(username: string): Promise<{ followers: number;
  */
 export function useFollowState(myId: string | null | undefined, targetUsername: string | null | undefined, targetId?: string | null) {
   const qc = useQueryClient();
+  const pendingRef = useRef(false);
+  const [isPending, setIsPending] = useState(false);
 
   useEffect(() => { ensureFollowRealtimeSync(qc); }, [qc]);
 
@@ -147,6 +149,10 @@ export function useFollowState(myId: string | null | undefined, targetUsername: 
 
   const toggle = useCallback(async () => {
     if (!myId || !targetUsername) return;
+    // Impede duplo-clique/duplicação: só um toggle de cada vez por hook
+    if (pendingRef.current) return;
+    pendingRef.current = true;
+    setIsPending(true);
     const prevFollowing = !!qc.getQueryData(FOLLOW_KEYS.status(myId, targetUsername));
     const prevCounts = qc.getQueryData<{ followers: number; following: number }>(FOLLOW_KEYS.counts(targetUsername));
 
@@ -177,6 +183,9 @@ export function useFollowState(myId: string | null | undefined, targetUsername: 
       // reverter otimismo
       qc.setQueryData(FOLLOW_KEYS.status(myId, targetUsername), prevFollowing);
       qc.setQueryData(FOLLOW_KEYS.counts(targetUsername), prevCounts);
+    } finally {
+      pendingRef.current = false;
+      setIsPending(false);
     }
   }, [myId, targetUsername, targetId, qc]);
 
@@ -185,6 +194,14 @@ export function useFollowState(myId: string | null | undefined, targetUsername: 
     isLoading: statusQuery.isLoading,
     followersCount: countsQuery.data?.followers ?? 0,
     followingCount: countsQuery.data?.following ?? 0,
+    // Loading real dos CONTADORES (followers/following) — distinto de
+    // `isLoading`, que só reflete se JÁ sigo o alvo. Sem isto, um
+    // consumidor não tem como saber se "0" é o valor real ou só ainda
+    // não chegou, e acaba a mostrar "0" durante o carregamento.
+    countsLoading: countsQuery.isLoading,
+    // Verdadeiro enquanto o pedido de seguir/deixar de seguir está em
+    // curso — usar para desativar o botão e impedir duplo-clique.
+    isPending,
     toggle,
   };
 }
