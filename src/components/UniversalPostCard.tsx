@@ -14,7 +14,7 @@ import { PollCard } from "@/components/PollCard";
 import { SensitiveContentOverlay } from "@/components/SensitiveContentOverlay";
 import { useTimeAgo } from "@/hooks/useTimeAgo";
 import { useScrollLock } from "@/hooks/useScrollLock";
-import { useFollowState, usePostLikeState, usePostCommentCount, useBookmarkState, getViewerFingerprint } from "@/hooks/useSocialSystem";
+import { useFollowState, usePostLikeState, usePostCommentCount, useBookmarkState, useVideoLikeState, getViewerFingerprint } from "@/hooks/useSocialSystem";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { QUERY_KEYS, REALTIME_QUERY_OPTIONS } from "@/lib/queryClient";
 import {
@@ -856,7 +856,17 @@ export function UniversalPostCard({ post: p, onDeleted, onBookmarkChange }: {
   type PC = import("@/components/PostCommentsModal").PostComment;
   const meRef = useRef<{ id: string; username: string } | null>(null);
   const [myUserId, setMyUserId] = useState<string | null>(null);
-  const { liked, likeCount, toggle: toggleLikeShared } = usePostLikeState(p.id, myUserId, { liked: p.liked_by_me ?? false, count: p.likes ?? 0 });
+  const { liked: postLiked, likeCount: postLikeCount, toggle: toggleLikeShared } = usePostLikeState(p.id, myUserId, { liked: p.liked_by_me ?? false, count: p.likes ?? 0 });
+  // Vídeos publicados nos canais aparecem no feed sem ter uma linha própria
+  // em "posts" — o feed dá-lhes um id sintético "vidfeed_<video_id>" só
+  // para efeitos de key/lista. Chamar toggle_post_like com esse id falhava
+  // sempre (não existe nenhum post com esse id), por isso o "gostei" nunca
+  // persistia para este tipo de item — usa-se antes o like real do vídeo.
+  const isVideoFeedItem = typeof p.id === "string" && p.id.startsWith("vidfeed_");
+  const { liked: videoLiked, likeCount: videoLikeCount, toggle: toggleVideoLikeShared } =
+    useVideoLikeState(p.clip_video_id || p.id, myUserId, { liked: p.liked_by_me ?? false, count: p.likes ?? 0 });
+  const liked = isVideoFeedItem ? videoLiked : postLiked;
+  const likeCount = isVideoFeedItem ? videoLikeCount : postLikeCount;
   const { isFollowing: following, isLoading: followLoading, toggle: toggleFollow } = useFollowState(myUserId, p.author_username, p.author_id);
   const { count: commentCount, increment: incrementCommentCount } = usePostCommentCount(p.id, p.comments ?? 0);
   const { bookmarked, toggle: toggleBookmarkShared } = useBookmarkState(p.id, myUserId);
@@ -936,7 +946,8 @@ export function UniversalPostCard({ post: p, onDeleted, onBookmarkChange }: {
 
   async function toggleLike() {
     if (!myUserId) { toast.error("Inicia sessão para gostar."); return; }
-    await toggleLikeShared();
+    if (isVideoFeedItem) await toggleVideoLikeShared();
+    else await toggleLikeShared();
   }
 
   async function toggleBookmark() {

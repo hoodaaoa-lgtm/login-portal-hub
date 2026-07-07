@@ -315,7 +315,7 @@ function HomePage() {
   const FEED_CHUNK_SIZE = 30;
   const ACCENT_LOCAL = ["#5B3FCF","#F26B3A","#1FAFA6","#6BA547","#E94B8A","#FFC93C"];
   const POST_SELECT_FIELDS = "id,author_id,author_username,author_name,author_color,content,kind,is_ad,created_at,photo_url,photos,video_url,clip_video_id,clip_start,clip_end,clip_title,channel_id,channel_handle,channel_name,channel_avatar,clip_thumb_url,views_count,reposts_count,poll,poll_ends_at,moderation_status,is_sensitive";
-  const VIDEO_SELECT_FIELDS = "id,title,thumbnail_url,duration_seconds,views_count,likes_count,created_at,owner_id,channel_id,channels(name,avatar_url,handle)";
+  const VIDEO_SELECT_FIELDS = "id,title,thumbnail_url,duration_seconds,views_count,likes_count,comments_count,created_at,owner_id,channel_id,channels(name,avatar_url,handle)";
 
   // ─── FEED COM RANKING (Fase 4) — busca posts via get_personalized_feed ────
   //
@@ -382,6 +382,7 @@ function HomePage() {
     });
 
     const postIds    = eligiblePosts.map((p: any) => p.id);
+    const videoIds   = eligibleVideos.map((v: any) => v.id);
     const authorIds  = new Set<string>();
     eligiblePosts.forEach((p: any) => { const k = p.author_id || p.user_id; if (k) authorIds.add(k); });
     eligibleVideos.forEach((v: any) => { if (v.owner_id) authorIds.add(v.owner_id); });
@@ -391,6 +392,7 @@ function HomePage() {
       { data: likesData },
       { data: commentsData },
       { data: authorProfiles },
+      { data: videoLikesData },
     ] = await Promise.all([
       postIds.length > 0
         ? supabase.from("post_likes").select("post_id,user_id").in("post_id", postIds)
@@ -401,7 +403,12 @@ function HomePage() {
       authorIds.size > 0
         ? supabase.from("profiles").select("id,avatar_url,username,full_name").in("id", [...authorIds])
         : Promise.resolve({ data: [] as any[] }),
+      videoIds.length > 0 && uid
+        ? (supabase as any).from("video_likes").select("video_id").eq("user_id", uid).in("video_id", videoIds)
+        : Promise.resolve({ data: [] as any[] }),
     ]);
+
+    const likedVideoSet = new Set((videoLikesData || []).map((l: any) => l.video_id));
 
     const likesByPost: Record<string, string[]> = {};
     (likesData || []).forEach((l: any) => {
@@ -469,7 +476,7 @@ function HomePage() {
         avatar_url: authorKey ? (avatarMap[authorKey] ?? null) : null,
         text: null, photo: null, photos: null, video: null,
         bg_color: null, created_at: v.created_at, kind: "clip", is_ad: false,
-        likes: v.likes_count ?? 0, liked_by_me: false, comments: 0,
+        likes: v.likes_count ?? 0, liked_by_me: likedVideoSet.has(v.id), comments: v.comments_count ?? 0,
         views_count: v.views_count ?? 0, reposts_count: 0,
         clip_video_id: v.id, clip_start: 0, clip_end: v.duration_seconds ?? 0,
         clip_title: v.title, clip_thumb_url: v.thumbnail_url,
