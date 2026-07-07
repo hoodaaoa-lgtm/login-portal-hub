@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_audit_log: {
+        Row: {
+          action: string
+          admin_id: string
+          created_at: string
+          details: string | null
+          id: string
+          target_label: string | null
+          target_type: string | null
+        }
+        Insert: {
+          action: string
+          admin_id: string
+          created_at?: string
+          details?: string | null
+          id?: string
+          target_label?: string | null
+          target_type?: string | null
+        }
+        Update: {
+          action?: string
+          admin_id?: string
+          created_at?: string
+          details?: string | null
+          id?: string
+          target_label?: string | null
+          target_type?: string | null
+        }
+        Relationships: []
+      }
       blocked_users: {
         Row: {
           blocked_id: string
@@ -278,336 +308,6 @@ export type Database = {
         }
         Relationships: []
       }
-      communities: {
-        Row: {
-          allow_search: boolean
-          category: string | null
-          cover_color: string | null
-          created_at: string
-          description: string | null
-          emoji: string | null
-          id: string
-          invite_code: string | null
-          member_count: number
-          name: string
-          owner_id: string
-          photo_url: string | null
-          privacy: string
-          slug: string
-        }
-        Insert: {
-          allow_search?: boolean
-          category?: string | null
-          cover_color?: string | null
-          created_at?: string
-          description?: string | null
-          emoji?: string | null
-          id?: string
-          invite_code?: string | null
-          member_count?: number
-          name: string
-          owner_id: string
-          photo_url?: string | null
-          privacy?: string
-          slug?: string
-        }
-        Update: {
-          allow_search?: boolean
-          category?: string | null
-          cover_color?: string | null
-          created_at?: string
-          description?: string | null
-          emoji?: string | null
-          id?: string
-          invite_code?: string | null
-          member_count?: number
-          name?: string
-          owner_id?: string
-          photo_url?: string | null
-          privacy?: string
-          slug?: string
-        }
-        Relationships: []
-      }
-      community_bans: {
-        Row: {
-          banned_by: string
-          community_id: string
-          created_at: string
-          id: string
-          reason: string | null
-          user_id: string
-        }
-        Insert: {
-          banned_by: string
-          community_id: string
-          created_at?: string
-          id?: string
-          reason?: string | null
-          user_id: string
-        }
-        Update: {
-          banned_by?: string
-          community_id?: string
-          created_at?: string
-          id?: string
-          reason?: string | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "community_bans_community_id_fkey"
-            columns: ["community_id"]
-            isOneToOne: false
-            referencedRelation: "communities"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      community_key_shares: {
-        Row: {
-          community_id: string
-          created_at: string
-          encrypted_key: string
-          recipient_id: string
-          sender_id: string
-          sender_public_key: string
-        }
-        Insert: {
-          community_id: string
-          created_at?: string
-          encrypted_key: string
-          recipient_id: string
-          sender_id: string
-          sender_public_key: string
-        }
-        Update: {
-          community_id?: string
-          created_at?: string
-          encrypted_key?: string
-          recipient_id?: string
-          sender_id?: string
-          sender_public_key?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "community_key_shares_community_id_fkey"
-            columns: ["community_id"]
-            isOneToOne: false
-            referencedRelation: "communities"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      community_members: {
-        Row: {
-          community_id: string
-          id: string
-          joined_at: string
-          role: string
-          user_id: string
-        }
-        Insert: {
-          community_id: string
-          id?: string
-          joined_at?: string
-          role?: string
-          user_id: string
-        }
-        Update: {
-          community_id?: string
-          id?: string
-          joined_at?: string
-          role?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "community_members_community_id_fkey"
-            columns: ["community_id"]
-            isOneToOne: false
-            referencedRelation: "communities"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      community_messages: {
-        Row: {
-          community_id: string
-          content: string
-          created_at: string
-          deleted: boolean
-          id: string
-          is_encrypted: boolean
-          reply_to: string | null
-          reply_to_id: string | null
-          reply_to_preview: string | null
-          sender_color: string | null
-          sender_id: string
-          sender_username: string
-          user_color: string | null
-          user_id: string | null
-          username: string | null
-        }
-        Insert: {
-          community_id: string
-          content: string
-          created_at?: string
-          deleted?: boolean
-          id?: string
-          is_encrypted?: boolean
-          reply_to?: string | null
-          reply_to_id?: string | null
-          reply_to_preview?: string | null
-          sender_color?: string | null
-          sender_id: string
-          sender_username: string
-          user_color?: string | null
-          user_id?: string | null
-          username?: string | null
-        }
-        Update: {
-          community_id?: string
-          content?: string
-          created_at?: string
-          deleted?: boolean
-          id?: string
-          is_encrypted?: boolean
-          reply_to?: string | null
-          reply_to_id?: string | null
-          reply_to_preview?: string | null
-          sender_color?: string | null
-          sender_id?: string
-          sender_username?: string
-          user_color?: string | null
-          user_id?: string | null
-          username?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "community_messages_community_id_fkey"
-            columns: ["community_id"]
-            isOneToOne: false
-            referencedRelation: "communities"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "community_messages_reply_to_fkey"
-            columns: ["reply_to"]
-            isOneToOne: false
-            referencedRelation: "community_messages"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      community_mutes: {
-        Row: {
-          community_id: string
-          created_at: string
-          id: string
-          muted_by: string
-          muted_until: string
-          user_id: string
-        }
-        Insert: {
-          community_id: string
-          created_at?: string
-          id?: string
-          muted_by: string
-          muted_until: string
-          user_id: string
-        }
-        Update: {
-          community_id?: string
-          created_at?: string
-          id?: string
-          muted_by?: string
-          muted_until?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "community_mutes_community_id_fkey"
-            columns: ["community_id"]
-            isOneToOne: false
-            referencedRelation: "communities"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      community_rules: {
-        Row: {
-          community_id: string
-          created_at: string
-          id: string
-          order_index: number
-          rule_text: string
-        }
-        Insert: {
-          community_id: string
-          created_at?: string
-          id?: string
-          order_index?: number
-          rule_text: string
-        }
-        Update: {
-          community_id?: string
-          created_at?: string
-          id?: string
-          order_index?: number
-          rule_text?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "community_rules_community_id_fkey"
-            columns: ["community_id"]
-            isOneToOne: false
-            referencedRelation: "communities"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      community_settings: {
-        Row: {
-          can_send_images: boolean
-          can_send_videos: boolean
-          can_share_links: boolean
-          community_id: string
-          posts_need_approval: boolean
-          updated_at: string
-          who_can_comment: string
-          who_can_post: string
-        }
-        Insert: {
-          can_send_images?: boolean
-          can_send_videos?: boolean
-          can_share_links?: boolean
-          community_id: string
-          posts_need_approval?: boolean
-          updated_at?: string
-          who_can_comment?: string
-          who_can_post?: string
-        }
-        Update: {
-          can_send_images?: boolean
-          can_send_videos?: boolean
-          can_share_links?: boolean
-          community_id?: string
-          posts_need_approval?: boolean
-          updated_at?: string
-          who_can_comment?: string
-          who_can_post?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "community_settings_community_id_fkey"
-            columns: ["community_id"]
-            isOneToOne: true
-            referencedRelation: "communities"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       conversation_key_shares: {
         Row: {
           conversation_id: string
@@ -835,84 +535,6 @@ export type Database = {
         }
         Relationships: []
       }
-      friend_requests: {
-        Row: {
-          created_at: string
-          id: string
-          receiver_id: string
-          sender_id: string
-          status: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          receiver_id: string
-          sender_id: string
-          status?: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          receiver_id?: string
-          sender_id?: string
-          status?: string
-        }
-        Relationships: []
-      }
-      library_books: {
-        Row: {
-          author_id: string
-          author_name: string
-          category: string
-          cover_color: string
-          cover_url: string | null
-          created_at: string
-          description: string
-          downloads_count: number
-          file_data: string
-          file_name: string
-          file_size: number
-          id: string
-          title: string
-          uploader_username: string
-          views_count: number
-        }
-        Insert: {
-          author_id: string
-          author_name: string
-          category?: string
-          cover_color?: string
-          cover_url?: string | null
-          created_at?: string
-          description?: string
-          downloads_count?: number
-          file_data: string
-          file_name?: string
-          file_size?: number
-          id?: string
-          title: string
-          uploader_username?: string
-          views_count?: number
-        }
-        Update: {
-          author_id?: string
-          author_name?: string
-          category?: string
-          cover_color?: string
-          cover_url?: string | null
-          created_at?: string
-          description?: string
-          downloads_count?: number
-          file_data?: string
-          file_name?: string
-          file_size?: number
-          id?: string
-          title?: string
-          uploader_username?: string
-          views_count?: number
-        }
-        Relationships: []
-      }
       message_reactions: {
         Row: {
           created_at: string
@@ -988,6 +610,7 @@ export type Database = {
           duration: number | null
           edited_at: string | null
           id: string
+          is_surprise: boolean
           media_url: string | null
           message_type: string
           reactions: Json
@@ -995,6 +618,9 @@ export type Database = {
           reply_to: string | null
           sender_id: string
           status: string
+          style: Json | null
+          surprise_opened_by: string[]
+          surprise_teaser: string | null
           view_once: boolean
           view_once_opened_by: string[]
         }
@@ -1006,6 +632,7 @@ export type Database = {
           duration?: number | null
           edited_at?: string | null
           id?: string
+          is_surprise?: boolean
           media_url?: string | null
           message_type?: string
           reactions?: Json
@@ -1013,6 +640,9 @@ export type Database = {
           reply_to?: string | null
           sender_id: string
           status?: string
+          style?: Json | null
+          surprise_opened_by?: string[]
+          surprise_teaser?: string | null
           view_once?: boolean
           view_once_opened_by?: string[]
         }
@@ -1024,6 +654,7 @@ export type Database = {
           duration?: number | null
           edited_at?: string | null
           id?: string
+          is_surprise?: boolean
           media_url?: string | null
           message_type?: string
           reactions?: Json
@@ -1031,6 +662,9 @@ export type Database = {
           reply_to?: string | null
           sender_id?: string
           status?: string
+          style?: Json | null
+          surprise_opened_by?: string[]
+          surprise_teaser?: string | null
           view_once?: boolean
           view_once_opened_by?: string[]
         }
@@ -1563,19 +1197,25 @@ export type Database = {
           created_at: string
           id: string
           post_id: string
+          user_id: string | null
           viewer_fingerprint: string
+          watch_seconds: number | null
         }
         Insert: {
           created_at?: string
           id?: string
           post_id: string
+          user_id?: string | null
           viewer_fingerprint: string
+          watch_seconds?: number | null
         }
         Update: {
           created_at?: string
           id?: string
           post_id?: string
+          user_id?: string | null
           viewer_fingerprint?: string
+          watch_seconds?: number | null
         }
         Relationships: [
           {
@@ -1604,6 +1244,7 @@ export type Database = {
           clip_thumb_url: string | null
           clip_title: string | null
           clip_video_id: string | null
+          comments_count: number
           content: string
           created_at: string
           emoji: string | null
@@ -1651,6 +1292,7 @@ export type Database = {
           clip_thumb_url?: string | null
           clip_title?: string | null
           clip_video_id?: string | null
+          comments_count?: number
           content: string
           created_at?: string
           emoji?: string | null
@@ -1698,6 +1340,7 @@ export type Database = {
           clip_thumb_url?: string | null
           clip_title?: string | null
           clip_video_id?: string | null
+          comments_count?: number
           content?: string
           created_at?: string
           emoji?: string | null
@@ -1770,6 +1413,8 @@ export type Database = {
           cover_url: string | null
           created_at: string
           e2ee_public_key: string | null
+          followers_count: number
+          following_count: number
           full_name: string
           hide_last_seen: boolean
           id: string
@@ -1783,6 +1428,7 @@ export type Database = {
           notification_prefs: Json
           phone_number: string | null
           read_receipts_off: boolean
+          total_time_seconds: number
           updated_at: string
           username: string
           username_changed_at: string | null
@@ -1797,6 +1443,8 @@ export type Database = {
           cover_url?: string | null
           created_at?: string
           e2ee_public_key?: string | null
+          followers_count?: number
+          following_count?: number
           full_name: string
           hide_last_seen?: boolean
           id: string
@@ -1810,6 +1458,7 @@ export type Database = {
           notification_prefs?: Json
           phone_number?: string | null
           read_receipts_off?: boolean
+          total_time_seconds?: number
           updated_at?: string
           username: string
           username_changed_at?: string | null
@@ -1824,6 +1473,8 @@ export type Database = {
           cover_url?: string | null
           created_at?: string
           e2ee_public_key?: string | null
+          followers_count?: number
+          following_count?: number
           full_name?: string
           hide_last_seen?: boolean
           id?: string
@@ -1837,6 +1488,7 @@ export type Database = {
           notification_prefs?: Json
           phone_number?: string | null
           read_receipts_off?: boolean
+          total_time_seconds?: number
           updated_at?: string
           username?: string
           username_changed_at?: string | null
@@ -1934,48 +1586,6 @@ export type Database = {
           },
         ]
       }
-      stories: {
-        Row: {
-          author_color: string
-          author_username: string
-          bg_grad: string | null
-          created_at: string
-          expires_at: string | null
-          filter_css: string | null
-          id: string
-          photo_url: string | null
-          story_data: Json
-          text: string | null
-          user_id: string
-        }
-        Insert: {
-          author_color?: string
-          author_username: string
-          bg_grad?: string | null
-          created_at?: string
-          expires_at?: string | null
-          filter_css?: string | null
-          id?: string
-          photo_url?: string | null
-          story_data?: Json
-          text?: string | null
-          user_id: string
-        }
-        Update: {
-          author_color?: string
-          author_username?: string
-          bg_grad?: string | null
-          created_at?: string
-          expires_at?: string | null
-          filter_css?: string | null
-          id?: string
-          photo_url?: string | null
-          story_data?: Json
-          text?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
       stories_books: {
         Row: {
           author_id: string
@@ -2023,115 +1633,6 @@ export type Database = {
           rating_count?: number
           status?: string
           title?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      story_chapters: {
-        Row: {
-          book_id: string
-          chapter_number: number
-          content: string
-          created_at: string
-          id: string
-          title: string | null
-        }
-        Insert: {
-          book_id: string
-          chapter_number?: number
-          content?: string
-          created_at?: string
-          id?: string
-          title?: string | null
-        }
-        Update: {
-          book_id?: string
-          chapter_number?: number
-          content?: string
-          created_at?: string
-          id?: string
-          title?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "story_chapters_book_id_fkey"
-            columns: ["book_id"]
-            isOneToOne: false
-            referencedRelation: "stories_books"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      story_message_notifications: {
-        Row: {
-          created_at: string
-          id: string
-          message_id: string
-          read_at: string | null
-          story_id: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          message_id: string
-          read_at?: string | null
-          story_id: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          message_id?: string
-          read_at?: string | null
-          story_id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "story_message_notifications_message_id_fkey"
-            columns: ["message_id"]
-            isOneToOne: false
-            referencedRelation: "story_messages"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      story_messages: {
-        Row: {
-          author_color: string
-          author_id: string
-          author_username: string
-          content: string
-          created_at: string
-          id: string
-          media_url: string | null
-          message_type: string
-          story_id: string
-          updated_at: string
-        }
-        Insert: {
-          author_color?: string
-          author_id: string
-          author_username: string
-          content: string
-          created_at?: string
-          id?: string
-          media_url?: string | null
-          message_type?: string
-          story_id: string
-          updated_at?: string
-        }
-        Update: {
-          author_color?: string
-          author_id?: string
-          author_username?: string
-          content?: string
-          created_at?: string
-          id?: string
-          media_url?: string | null
-          message_type?: string
-          story_id?: string
           updated_at?: string
         }
         Relationships: []
@@ -2379,6 +1880,7 @@ export type Database = {
           viewed_at: string
           viewer_fingerprint: string | null
           watch_pct: number | null
+          watch_seconds: number | null
         }
         Insert: {
           channel_id: string
@@ -2390,6 +1892,7 @@ export type Database = {
           viewed_at?: string
           viewer_fingerprint?: string | null
           watch_pct?: number | null
+          watch_seconds?: number | null
         }
         Update: {
           channel_id?: string
@@ -2401,6 +1904,7 @@ export type Database = {
           viewed_at?: string
           viewer_fingerprint?: string | null
           watch_pct?: number | null
+          watch_seconds?: number | null
         }
         Relationships: [
           {
@@ -2547,6 +2051,13 @@ export type Database = {
         Args: { p_post_id: string }
         Returns: undefined
       }
+      get_contact_presence: {
+        Args: { p_user_id: string }
+        Returns: {
+          is_online: boolean
+          last_seen: string
+        }[]
+      }
       get_feed_clips: {
         Args: { p_limit?: number; p_offset?: number }
         Returns: {
@@ -2588,6 +2099,10 @@ export type Database = {
           read_receipts_off: boolean
         }[]
       }
+      heartbeat_ping: {
+        Args: { p_interval_seconds?: number }
+        Returns: undefined
+      }
       increment_book_download: {
         Args: { p_book_id: string }
         Returns: undefined
@@ -2614,12 +2129,22 @@ export type Database = {
         Returns: boolean
       }
       is_hooda_admin: { Args: never; Returns: boolean }
+      mark_offline: { Args: never; Returns: undefined }
+      mark_surprise_opened: {
+        Args: { p_msg_id: string; p_user_id: string }
+        Returns: undefined
+      }
       mark_view_once_opened: {
         Args: { p_msg_id: string; p_user_id: string }
         Returns: undefined
       }
       record_post_view: {
-        Args: { p_post_id: string; p_viewer_fingerprint: string }
+        Args: {
+          p_duration_seconds?: number
+          p_post_id: string
+          p_viewer_fingerprint: string
+          p_watch_seconds?: number
+        }
         Returns: Json
       }
       record_video_view: {
@@ -2627,11 +2152,19 @@ export type Database = {
           p_channel_id?: string
           p_country?: string
           p_country_code?: string
+          p_duration_seconds?: number
           p_video_id: string
           p_viewer_fingerprint?: string
+          p_watch_seconds?: number
         }
         Returns: Json
       }
+      toggle_follow: {
+        Args: { p_target_id?: string; p_target_username: string }
+        Returns: Json
+      }
+      toggle_post_like: { Args: { p_post_id: string }; Returns: Json }
+      toggle_video_like: { Args: { p_video_id: string }; Returns: Json }
       update_book_rating_average: {
         Args: { p_book_id: string }
         Returns: {
