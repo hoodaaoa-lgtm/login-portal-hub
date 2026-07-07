@@ -183,7 +183,7 @@ export function PhotoGrid({ photos }: { photos: string[] }) {
 
   return (
     <>
-      <div className="relative w-full select-none px-4 pb-3">
+      <div className="relative w-full select-none px-4 pb-3 max-w-[520px] mx-auto">
         <div className="relative w-full cursor-pointer rounded-2xl overflow-hidden flex items-center justify-center"
           style={{ minHeight: 200, maxHeight: "min(70vh, 620px)", background: "var(--s1)" }}
           onClick={() => setFullscreen(true)}>
@@ -1046,7 +1046,7 @@ export function UniversalPostCard({ post: p, onDeleted, onBookmarkChange }: {
 
       {/* Vídeo */}
       {p.video && (
-        <div className="pb-3 md:px-4">
+        <div className="pb-3 md:px-4 max-w-[520px] mx-auto">
           {p.is_sensitive && p.moderation_status ? (
             <SensitiveContentOverlay category={p.moderation_status} minHeight={260}>
               <FeedVideoPlayer src={p.video} poster={p.video_thumb || p.photo || undefined} postId={p.id} kind="video" rounded="rounded-2xl" />
@@ -1194,7 +1194,7 @@ export function UniversalPostCard({ post: p, onDeleted, onBookmarkChange }: {
           body={
             <>
               {p.video && (
-                <div className="pb-3 md:px-4">
+                <div className="pb-3 md:px-4 w-full max-w-[520px] mx-auto">
                   <FeedVideoPlayer src={p.video} poster={p.video_thumb || p.photo || undefined} postId={p.id} kind="video" rounded="rounded-2xl" forceLoad={true} maxHeightRatio={0.42} />
                 </div>
               )}
