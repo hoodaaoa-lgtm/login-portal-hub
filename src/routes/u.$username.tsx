@@ -14,7 +14,7 @@ import { BottomNav, SideNav, PageWrapper, FeedLayout } from "@/components/AppShe
 import { RightSidebar } from "@/components/RightSidebar";
 import { useFollowState } from "@/hooks/useSocialSystem";
 import {
-  ChevronLeft, Flag, Share2,
+  ChevronLeft, Flag, Share2, Ban,
   MoreHorizontal, UserCheck, UserPlus, X, MapPin,
   Link as LinkIcon, Calendar, Camera,
   Copy, Check,
@@ -440,6 +440,8 @@ function UserProfilePage() {
   const [showShareModal, setShowShareModal] = useState(false);
   const [commentPostId, setCommentPostId] = useState<string|null>(null);
   const [photoViewing, setPhotoViewing] = useState<string|null>(null);
+  const [isBlocked, setIsBlocked] = useState(false);
+  const [showBlockConfirm, setShowBlockConfirm] = useState(false);
 
   /* ─ Query 1: Perfil ─ */
   const profileQuery = useQuery({
@@ -549,6 +551,36 @@ function UserProfilePage() {
   const coverUrl = profile?.cover_url||null;
   const color = colorFor(username);
 
+  /* ─ Bloqueio: mesma tabela/lógica usada em mensagens.tsx ─ */
+  useEffect(()=>{
+    if (!myId||!profileId) { setIsBlocked(false); return; }
+    (supabase as any).from("blocked_users").select("blocker_id")
+      .eq("blocker_id",myId).eq("blocked_id",profileId).maybeSingle()
+      .then(({data}:any)=>setIsBlocked(!!data));
+  },[myId,profileId]);
+
+  async function blockUser() {
+    if (!myId||!profileId) return;
+    setShowBlockConfirm(false);
+    const { error } = await (supabase as any).from("blocked_users").upsert(
+      { blocker_id:myId, blocked_id:profileId }, { onConflict:"blocker_id,blocked_id" }
+    );
+    if (error) { toast.error("Erro ao bloquear: "+error.message); return; }
+    setIsBlocked(true);
+    setShowMenu(false);
+    toast.success(`🚫 @${profile?.username} bloqueado`);
+  }
+
+  async function unblockUser() {
+    if (!myId||!profileId) return;
+    const { error } = await (supabase as any).from("blocked_users")
+      .delete().eq("blocker_id",myId).eq("blocked_id",profileId);
+    if (error) { toast.error("Erro ao desbloquear: "+error.message); return; }
+    setIsBlocked(false);
+    setShowMenu(false);
+    toast.success(`✓ @${profile?.username} desbloqueado`);
+  }
+
   /* ─ Ações ─ */
   function shareProfile() {
     setShowShareModal(true);
@@ -621,13 +653,19 @@ function UserProfilePage() {
                 <div className="absolute right-0 top-10 w-48 rounded-2xl shadow-2xl py-1 z-50"
                   style={{background:"var(--s0)",border:"1px solid var(--border-subtle)"}}>
                   {[
-                    {icon:<Share2 className="h-4 w-4"/>, label:"Partilhar perfil", action:shareProfile},
-                    {icon:<Flag className="h-4 w-4"/>, label:"Denunciar", action:()=>{setShowMenu(false);setShowReport(true);}},
+                    {icon:<Share2 className="h-4 w-4"/>, label:"Partilhar perfil", action:shareProfile, danger:false},
+                    ...(myId ? [{
+                      icon:<Ban className="h-4 w-4"/>,
+                      label: isBlocked ? "Desbloquear" : "Bloquear",
+                      action: ()=>{ setShowMenu(false); isBlocked ? unblockUser() : setShowBlockConfirm(true); },
+                      danger: !isBlocked,
+                    }] : []),
+                    {icon:<Flag className="h-4 w-4"/>, label:"Denunciar", action:()=>{setShowMenu(false);setShowReport(true);}, danger:false},
                   ].map(item=>(
                     <button key={item.label} onClick={item.action}
                       className="w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-[var(--s2)] transition text-left"
-                      style={{color:"var(--text-primary)"}}>
-                      <span style={{color:"var(--text-muted)"}}>{item.icon}</span>{item.label}
+                      style={{color: item.danger ? "#ef4444" : "var(--text-primary)"}}>
+                      <span style={{color: item.danger ? "#ef4444" : "var(--text-muted)"}}>{item.icon}</span>{item.label}
                     </button>
                   ))}
                 </div>
@@ -785,6 +823,29 @@ function UserProfilePage() {
       {commentPostId && <CommentsModal postId={commentPostId} authorId={profileId ?? undefined} onClose={()=>setCommentPostId(null)}/>}
       {showReport && <ReportModal username={profile.username} userId={profileId!} onClose={()=>setShowReport(false)}/>}
 
+      {showBlockConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{background:"rgba(0,0,0,0.6)"}} onClick={()=>setShowBlockConfirm(false)}>
+          <div className="w-full max-w-sm rounded-3xl shadow-2xl p-5" style={{background:"var(--s0)"}}
+            onClick={e=>e.stopPropagation()}>
+            <p className="font-extrabold text-base mb-1" style={{color:"var(--text-primary)"}}>Bloquear @{profile.username}?</p>
+            <p className="text-sm mb-4" style={{color:"var(--text-muted)"}}>
+              @{profile.username} deixa de poder seguir-te, enviar-te mensagens ou ver o teu perfil.
+            </p>
+            <div className="flex gap-2">
+              <button onClick={()=>setShowBlockConfirm(false)}
+                className="flex-1 h-10 rounded-xl text-sm font-semibold" style={{background:"var(--s2)",color:"var(--text-primary)"}}>
+                Cancelar
+              </button>
+              <button onClick={blockUser}
+                className="flex-1 h-10 rounded-xl text-sm font-bold text-white" style={{background:"#ef4444"}}>
+                Bloquear
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Visualizador de foto ── */}
       {photoViewing && (
         <PhotoViewer
@@ -796,8 +857,13 @@ function UserProfilePage() {
       )}
 
       {/* Fechar menu ao clicar fora */}
+      {/* z-20: tem de ficar ABAIXO do header (z-30, que é "sticky" e cria o
+          seu próprio stacking context). Estava a z-40 — acima do header —
+          por isso interceptava todos os cliques nos itens do dropdown
+          (Partilhar/Bloquear/Denunciar): o clique fechava o menu em vez de
+          disparar a ação, porque o overlay ficava fisicamente por cima. */}
       {showMenu && (
-        <div className="fixed inset-0 z-40" onClick={()=>setShowMenu(false)}/>
+        <div className="fixed inset-0 z-20" onClick={()=>setShowMenu(false)}/>
       )}
 
       {showShareModal && (
