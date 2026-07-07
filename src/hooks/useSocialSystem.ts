@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 /**
  * Sistema social central — seguir, gostar e views.
@@ -140,8 +141,9 @@ export function useFollowState(myId: string | null | undefined, targetUsername: 
       // A contagem "a seguir" de quem clicou também muda — invalida a dela
       qc.invalidateQueries({ queryKey: ["follow-counts"], exact: false });
       qc.invalidateQueries({ queryKey: ["profile"], exact: false });
-    } catch (err) {
+    } catch (err: any) {
       console.error("[hooda:social] falha ao seguir/deixar de seguir:", err);
+      toast.error(err?.message ? `Não foi possível seguir: ${err.message}` : "Não foi possível seguir. Tenta novamente.");
       // reverter otimismo
       qc.setQueryData(FOLLOW_KEYS.status(myId, targetUsername), prevFollowing);
       qc.setQueryData(FOLLOW_KEYS.counts(targetUsername), prevCounts);
