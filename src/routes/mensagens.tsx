@@ -88,8 +88,73 @@ function extractUrl(text: string): string | null {
 }
 
 function getYouTubeId(url: string): string | null {
-  const m = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
-  return m ? m[1] : null;
+  // Parse real da URL em vez de regex frágil — funciona com qualquer ordem
+  // de parâmetros (ex: partilhas do telemóvel que trazem "?si=..." antes
+  // de "v="), domínios m.youtube.com / youtube-nocookie.com, /live/, etc.
+  try {
+    const u = new URL(url);
+    const host = u.hostname.replace(/^www\.|^m\./, "");
+    if (host === "youtu.be") {
+      const id = u.pathname.slice(1).split("/")[0];
+      return id.length === 11 ? id : null;
+    }
+    if (host === "youtube.com" || host === "youtube-nocookie.com") {
+      if (u.pathname === "/watch") {
+        const v = u.searchParams.get("v");
+        return v && v.length === 11 ? v : null;
+      }
+      const m = u.pathname.match(/^\/(?:embed|shorts|live)\/([A-Za-z0-9_-]{11})/);
+      return m ? m[1] : null;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/** Deteta um link para uma publicação/vídeo da própria Hooda (ex: /post/<id>),
+ * seja qual for o domínio (produção, preview, localhost) — basta o caminho
+ * bater certo. Isto permite ir buscar os dados reais diretamente à base de
+ * dados (mais rápido e fiável que uma API externa) e reproduzir o vídeo
+ * mesmo dentro da conversa, tal como pedido. */
+function getHoodaPostId(url: string): string | null {
+  try {
+    const u = new URL(url);
+    const m = u.pathname.match(/^\/post\/([0-9a-fA-F-]{36})\/?$/);
+    return m ? m[1] : null;
+  } catch {
+    return null;
+  }
+}
+
+interface HoodaPostPreview {
+  id: string;
+  content: string | null;
+  photo_url: string | null;
+  photos: string[] | null;
+  video_url: string | null;
+  author_name: string | null;
+  author_username: string | null;
+  author_color: string | null;
+}
+
+const hoodaPostCache = new Map<string, HoodaPostPreview | null>();
+
+async function fetchHoodaPost(id: string): Promise<HoodaPostPreview | null> {
+  if (hoodaPostCache.has(id)) return hoodaPostCache.get(id)!;
+  try {
+    const { data, error } = await supabase
+      .from("posts")
+      .select("id,content,photo_url,photos,video_url,author_name,author_username,author_color")
+      .eq("id", id)
+      .maybeSingle();
+    if (error || !data) throw error ?? new Error("not found");
+    hoodaPostCache.set(id, data as HoodaPostPreview);
+    return data as HoodaPostPreview;
+  } catch {
+    hoodaPostCache.set(id, null);
+    return null;
+  }
 }
 
 function isDirectVideo(url: string): boolean {
@@ -125,25 +190,73 @@ async function fetchOgData(url: string): Promise<OgData | null> {
     ogCache.set(url, data);
     return data;
   } catch {
-    ogCache.set(url, null);
-    return null;
+    // A API externa pode falhar por instabilidade/limite de pedidos — em
+    // vez de não mostrar nada (o bug reportado: quem recebe não vê a
+    // informação nenhuma), mostra pelo menos um cartão simples com o
+    // domínio, para o link nunca ficar "em branco".
+    let fallback: OgData | null = null;
+    try { fallback = { url, siteName: new URL(url).hostname.replace("www.", "") }; } catch {}
+    ogCache.set(url, fallback);
+    return fallback;
   }
 }
 
 function LinkPreview({ url, isMe }: { url: string; isMe: boolean }) {
+  const navigate = useNavigate();
   const ytId = getYouTubeId(url);
   const isDirect = isDirectVideo(url);
+  const hoodaPostId = getHoodaPostId(url);
   const [og, setOg] = useState<OgData | null | "loading">("loading");
+  const [hoodaPost, setHoodaPost] = useState<HoodaPostPreview | null | "loading">("loading");
 
   useEffect(() => {
-    if (ytId || isDirect) { setOg(null); return; }
+    if (ytId || isDirect || hoodaPostId) { setOg(null); return; }
     fetchOgData(url).then(setOg);
-  }, [url, ytId, isDirect]);
+  }, [url, ytId, isDirect, hoodaPostId]);
+
+  useEffect(() => {
+    if (!hoodaPostId) { setHoodaPost(null); return; }
+    fetchHoodaPost(hoodaPostId).then(setHoodaPost);
+  }, [hoodaPostId]);
 
   const border = isMe ? "rgba(255,255,255,0.15)" : "var(--border-subtle)";
   const bg = isMe ? "rgba(0,0,0,0.2)" : "var(--s2)";
   const textColor = isMe ? "white" : "var(--text-primary)";
   const mutedColor = isMe ? "rgba(255,255,255,0.6)" : "var(--text-muted)";
+
+  // ── Link de uma publicação/vídeo da própria Hooda: dados vêm direto da
+  // base de dados (rápido e sempre fiável, ao contrário de uma API externa)
+  // e o vídeo reproduz mesmo dentro da conversa, tal como pedido. ──
+  if (hoodaPostId) {
+    if (hoodaPost === "loading") {
+      return (
+        <div className="mt-2 rounded-xl overflow-hidden animate-pulse" style={{ background: bg, border: `1px solid ${border}`, height: 96 }} />
+      );
+    }
+    if (!hoodaPost) return null; // publicação apagada/inexistente — sem cartão
+    const img = hoodaPost.photo_url || hoodaPost.photos?.[0] || null;
+    return (
+      <div className="mt-2 rounded-xl overflow-hidden" style={{ border: `1px solid ${border}` }}>
+        {hoodaPost.video_url ? (
+          <FeedVideoPlayer src={hoodaPost.video_url} rounded="rounded-none" />
+        ) : img ? (
+          <img src={img} alt="" className="w-full max-h-64 object-cover"
+            onError={e => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+        ) : null}
+        <button onClick={() => navigate({ to: "/post/$id", params: { id: hoodaPostId } })}
+          className="w-full text-left p-2.5" style={{ background: bg }}>
+          <p className="text-[10px] font-semibold uppercase tracking-wide truncate" style={{ color: mutedColor }}>
+            Hooda · @{hoodaPost.author_username}
+          </p>
+          {hoodaPost.content && (
+            <p className="text-xs font-medium leading-snug line-clamp-2 mt-0.5" style={{ color: textColor }}>
+              {hoodaPost.content}
+            </p>
+          )}
+        </button>
+      </div>
+    );
+  }
 
   // YouTube embed
   if (ytId) {
