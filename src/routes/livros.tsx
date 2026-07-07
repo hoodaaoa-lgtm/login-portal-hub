@@ -465,16 +465,18 @@ function LivrosPage() {
   }
 
   async function handleDownload(book: any) {
-    if (!book.file_url) { toast.error("Ficheiro não disponível."); return; }
-    await (supabase as any).from("books").update({ downloads: (book.downloads ?? 0) + 1 }).eq("id", book.id);
-    if (uid) await (supabase as any).from("book_downloads").insert({ user_id: uid, book_id: book.id }).catch(() => {});
+    if (!uid) { toast.error("Inicia sessão para descarregar."); return; }
+
+    // Obter o URL do ficheiro pela função controlada (regista o download e incrementa contador)
+    const { data: fileUrl, error: urlError } = await (supabase as any).rpc("get_book_file_url", { p_book_id: book.id });
+    if (urlError || !fileUrl) { toast.error("Ficheiro não disponível."); return; }
     qc.invalidateQueries({ queryKey: ["books"] });
 
     try {
-      const res = await fetch(book.file_url);
+      const res = await fetch(fileUrl);
       if (!res.ok) throw new Error("download falhou");
       const blob = await res.blob();
-      const ext = (book.file_url.split(".").pop() || "pdf").split("?")[0].slice(0, 5);
+      const ext = (fileUrl.split(".").pop() || "pdf").split("?")[0].slice(0, 5);
       const safeName = (book.title || "livro").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\w\- ]+/g, "").trim() || "livro";
       const blobUrl = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -486,7 +488,7 @@ function LivrosPage() {
       setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
     } catch {
       // Fallback: se o download direto falhar (ex: CORS), abre numa nova aba
-      window.open(book.file_url, "_blank");
+      window.open(fileUrl, "_blank");
       toast.info("Não foi possível baixar diretamente — o ficheiro abriu numa nova aba.");
     }
   }
