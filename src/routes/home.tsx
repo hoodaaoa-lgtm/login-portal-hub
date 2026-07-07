@@ -317,20 +317,17 @@ function HomePage() {
   const POST_SELECT_FIELDS = "id,author_id,author_username,author_name,author_color,content,kind,is_ad,created_at,photo_url,photos,video_url,clip_video_id,clip_start,clip_end,clip_title,channel_id,channel_handle,channel_name,channel_avatar,clip_thumb_url,views_count,reposts_count,poll,poll_ends_at,moderation_status,is_sensitive";
   const VIDEO_SELECT_FIELDS = "id,title,thumbnail_url,duration_seconds,views_count,likes_count,created_at,owner_id,channel_id,channels(name,avatar_url,handle)";
 
-  // ─── FEED SEM ALGORITMO — busca e funde posts + vídeos publicados ──────────
+  // ─── FEED COM RANKING (Fase 4) — busca posts via get_personalized_feed ────
   //
-  // Mostra tudo o que foi publicado por qualquer pessoa (posts de texto/foto/
-  // vídeo E vídeos publicados nos canais), fundido por ordem cronológica —
-  // sem scoring, sem segmentação e sem qualquer curadoria automática.
-  // `cursor` (created_at ISO) permite continuar a busca a partir de onde a
-  // página anterior parou, para o scroll infinito.
+  // Os posts já não são só cronológicos: vêm ordenados pela RPC
+  // get_personalized_feed (afinidade + qualidade + frescura + descoberta,
+  // 40/30/20/10 adaptativo). Os vídeos publicados nos canais continuam por
+  // agora só por frescura (ainda não têm content_quality/user_interests),
+  // e entram no mesmo merge final por uma pontuação comparável (0-100).
+  // `cursor` (created_at ISO) delimita a janela de candidatos "mais antigos
+  // que X", para o scroll infinito continuar de onde a página anterior parou.
   async function fetchFeedChunk(uid: string, cursor: string | null) {
-    let postsQuery = supabase
-      .from("posts")
-      .select(POST_SELECT_FIELDS)
-      .order("created_at", { ascending: false })
-      .limit(FEED_CHUNK_SIZE);
-    if (cursor) postsQuery = postsQuery.lt("created_at", cursor);
+    const rpcCursor = cursor ?? new Date().toISOString();
 
     let videosQuery = (supabase as any)
       .from("videos")
@@ -340,9 +337,33 @@ function HomePage() {
       .limit(FEED_CHUNK_SIZE);
     if (cursor) videosQuery = videosQuery.lt("created_at", cursor);
 
-    const [{ data: postsData }, { data: videosData }] = await Promise.all([postsQuery, videosQuery]);
+    const [{ data: rankedRows, error: rankErr }, { data: videosData }] = await Promise.all([
+      (supabase as any).rpc("get_personalized_feed", {
+        p_user_id: uid, p_cursor: rpcCursor, p_limit: FEED_CHUNK_SIZE,
+      }),
+      videosQuery,
+    ]);
 
-    const rawPosts  = postsData ?? [];
+    // Se a RPC de ranking falhar por qualquer razão, cai de volta à busca
+    // cronológica simples de posts — nunca deixa o feed vazio por causa disto.
+    let rawPosts: any[] = [];
+    let rankByPostId: Record<string, number> = {};
+    if (rankErr || !rankedRows) {
+      console.error("get_personalized_feed falhou, a usar ordem cronológica:", rankErr);
+      let fallbackQuery = supabase.from("posts").select(POST_SELECT_FIELDS)
+        .order("created_at", { ascending: false }).limit(FEED_CHUNK_SIZE);
+      if (cursor) fallbackQuery = fallbackQuery.lt("created_at", cursor);
+      const { data } = await fallbackQuery;
+      rawPosts = data ?? [];
+    } else {
+      const postIds = rankedRows.map((r: any) => r.post_id);
+      rankedRows.forEach((r: any) => { rankByPostId[r.post_id] = Number(r.rank_score) || 0; });
+      if (postIds.length > 0) {
+        const { data } = await supabase.from("posts").select(POST_SELECT_FIELDS).in("id", postIds);
+        rawPosts = (data ?? []).sort((a: any, b: any) => (rankByPostId[b.id] ?? 0) - (rankByPostId[a.id] ?? 0));
+      }
+    }
+
     const rawVideos = videosData ?? [];
     if (rawPosts.length === 0 && rawVideos.length === 0) return { items: [] as any[], nextCursor: null, hasMore: false };
 
@@ -430,6 +451,7 @@ function HomePage() {
         channel_name: p.channel_name, channel_avatar: p.channel_avatar,
         moderation_status: p.moderation_status ?? null, is_sensitive: !!p.is_sensitive,
         poll: p.poll ?? null, poll_ends_at: p.poll_ends_at ?? null,
+        rank_score: rankByPostId[p.id] ?? 0,
       };
     });
 
@@ -453,16 +475,25 @@ function HomePage() {
         clip_title: v.title, clip_thumb_url: v.thumbnail_url,
         channel_id: v.channel_id, channel_handle: ch?.handle ?? null,
         channel_name: ch?.name ?? null, channel_avatar: ch?.avatar_url ?? null,
+        // Vídeos ainda não têm content_quality/user_interests (Fase 4 cobre
+        // só "posts" por agora) — usa só frescura, na mesma escala 0-100 dos
+        // posts, para poder entrar no mesmo merge ordenado com sentido.
+        rank_score: Math.max(0, 100 - ((Date.now() - new Date(v.created_at).getTime()) / 259200000) * 100),
       };
     });
 
-    // ── Fundir por ordem cronológica ──
+    // ── Fundir pela pontuação de ranking (não por ordem cronológica) ──
     const merged = [...mappedPosts, ...mappedVideos].sort(
-      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      (a, b) => (b.rank_score ?? 0) - (a.rank_score ?? 0)
     );
 
     const page = merged.slice(0, FEED_CHUNK_SIZE);
-    const nextCursor = page.length > 0 ? page[page.length - 1].created_at : null;
+    // O cursor da próxima página é o created_at mais ANTIGO desta página
+    // (não o último da lista, já que a ordem agora é por score, não por
+    // tempo) — garante que a janela de candidatos avança sem repetir.
+    const nextCursor = page.length > 0
+      ? page.reduce((oldest: string, it: any) => (new Date(it.created_at) < new Date(oldest) ? it.created_at : oldest), page[0].created_at)
+      : null;
     // Há mais conteúdo se qualquer uma das fontes devolveu uma página cheia
     // (pode haver mais posts e/ou vídeos por buscar a seguir)
     const hasMore = rawPosts.length === FEED_CHUNK_SIZE || rawVideos.length === FEED_CHUNK_SIZE || merged.length > FEED_CHUNK_SIZE;
