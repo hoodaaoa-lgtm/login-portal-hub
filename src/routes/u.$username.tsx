@@ -12,6 +12,7 @@ import { FeedVideoPlayer } from "@/components/FeedVideoPlayer";
 import { fetchPostComments, sendPostComment, replyToPostComment, toggleCommentLike } from "@/lib/comments";
 import { BottomNav, SideNav, PageWrapper, FeedLayout } from "@/components/AppShell";
 import { RightSidebar } from "@/components/RightSidebar";
+import { useFollowState } from "@/hooks/useSocialSystem";
 import {
   ChevronLeft, MessageCircle, Flag, Heart, Share2,
   MoreHorizontal, UserCheck, UserPlus, X, MapPin,
@@ -166,7 +167,7 @@ function ShareProfileModal({ username, name, onClose }: { username: string; name
 function FollowListModal({ userId, kind, onClose }:
   { userId:string; kind:"followers"|"following"; onClose:()=>void }) {
   const [myId, setMyId] = useState("");
-  const [following, setFollowing] = useState<Set<string>>(new Set());
+  const qc = useQueryClient();
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -189,13 +190,44 @@ function FollowListModal({ userId, kind, onClose }:
     staleTime:30_000,
   });
 
-  async function toggleFollow(targetId:string, targetUsername:string) {
-    if (!myId || myId===targetId) return;
-    const isF = following.has(targetId);
-    setFollowing(prev=>{ const s=new Set(prev); isF?s.delete(targetId):s.add(targetId); return s; });
-    const db=supabase as any;
-    if (isF) await db.from("follows").delete().eq("follower_id",myId).eq("target_username",targetUsername);
-    else await db.from("follows").upsert({follower_id:myId,target_username:targetUsername}, { onConflict: "follower_id,target_username", ignoreDuplicates: true });
+  // Estado REAL de "já sigo" para cada pessoa da lista, vindo diretamente
+  // da BD — nunca assumido vazio. Sem isto, o botão mostrava sempre
+  // "Seguir" mesmo quando já se seguia, e um clique podia na verdade
+  // DEIXAR de seguir por engano (porque a relação já existia).
+  const usernames = useMemo(()=>data.map((u:any)=>u.username).filter(Boolean), [data]);
+  const { data: followingSet } = useQuery({
+    queryKey:["followListStatus", myId, usernames.join(",")],
+    queryFn: async () => {
+      if (!myId || usernames.length===0) return new Set<string>();
+      const { data: rows } = await (supabase as any).from("follows")
+        .select("target_username").eq("follower_id", myId).in("target_username", usernames);
+      return new Set((rows??[]).map((r:any)=>r.target_username));
+    },
+    enabled: !!myId && usernames.length>0,
+    staleTime: 15_000,
+  });
+  const following = followingSet ?? new Set<string>();
+  const followStatusLoading = !!myId && usernames.length>0 && followingSet===undefined;
+
+  async function toggleFollow(targetUsername:string) {
+    if (!myId) return;
+    const key = ["followListStatus", myId, usernames.join(",")];
+    const prev = qc.getQueryData<Set<string>>(key) ?? new Set<string>();
+    const isF = prev.has(targetUsername);
+    const next = new Set(prev);
+    isF ? next.delete(targetUsername) : next.add(targetUsername);
+    qc.setQueryData(key, next);
+    try {
+      // Mesma RPC atómica usada em toda a app — verifica a relação real
+      // na BD antes de decidir seguir/deixar de seguir, nunca duplica
+      // nem falha por a relação já existir.
+      const { error } = await (supabase as any).rpc("toggle_follow", { p_target_username: targetUsername });
+      if (error) throw error;
+      qc.invalidateQueries({ queryKey: ["follow-status"], exact: false });
+      qc.invalidateQueries({ queryKey: ["follow-counts"], exact: false });
+    } catch {
+      qc.setQueryData(key, prev);
+    }
   }
 
   return (
@@ -236,13 +268,17 @@ function FollowListModal({ userId, kind, onClose }:
                 <p className="text-xs" style={{color:"var(--text-muted)"}}>@{u.username}</p>
               </div>
               {myId && myId!==u.id && (
-                <button onClick={()=>toggleFollow(u.id,u.username)}
-                  className="px-3 py-1.5 rounded-full text-xs font-bold transition active:scale-95"
-                  style={following.has(u.id)
-                    ?{background:"var(--s2)",color:"var(--text-secondary)",border:"1px solid var(--border-default)"}
-                    :{background:P,color:"#fff"}}>
-                  {following.has(u.id)?"Seguindo":"Seguir"}
-                </button>
+                followStatusLoading ? (
+                  <div className="h-[26px] w-[68px] rounded-full animate-pulse" style={{background:"var(--s2)"}} />
+                ) : (
+                  <button onClick={()=>toggleFollow(u.username)}
+                    className="px-3 py-1.5 rounded-full text-xs font-bold transition active:scale-95"
+                    style={following.has(u.username)
+                      ?{background:"var(--s2)",color:"var(--text-secondary)",border:"1px solid var(--border-default)"}
+                      :{background:P,color:"#fff"}}>
+                    {following.has(u.username)?"Seguindo":"Seguir"}
+                  </button>
+                )
               )}
             </div>
           ))}
@@ -399,8 +435,6 @@ function UserProfilePage() {
 
   /* ─ UI state ─ */
   const [openingChat, setOpeningChat] = useState(false);
-  const [followOverride, setFollowOverride] = useState<boolean|null>(null);
-  const [followerDelta, setFollowerDelta] = useState(0);
   const [showFollowers, setShowFollowers] = useState(false);
   const [showFollowing, setShowFollowing] = useState(false);
   const [showReport, setShowReport] = useState(false);
@@ -429,25 +463,12 @@ function UserProfilePage() {
       navigate({to:"/perfil",replace:true});
   },[sessionChecked,myId,profileId,navigate]);
 
-  /* ─ Query 2: Stats + follow ─ */
+  /* ─ Query 2: Contagem de publicações (o resto do social vem do hook central) ─ */
   const statsQuery = useQuery({
-    queryKey:["profileStats2", username, profileId, myId],
+    queryKey:["profilePostCount2", profileId],
     queryFn: async ()=>{
-      const db=supabase as any;
-      const [
-        followRowRes,
-        {count:fc},
-        {count:foc},
-        {count:pc},
-      ] = await Promise.all([
-        myId
-          ? db.from("follows").select("follower_id").eq("follower_id",myId).eq("target_username",username).maybeSingle()
-          : Promise.resolve({data:null}),
-        db.from("follows").select("*",{count:"exact",head:true}).eq("target_username",username),
-        db.from("follows").select("*",{count:"exact",head:true}).eq("follower_id",profileId),
-        db.from("posts").select("*",{count:"exact",head:true}).eq("author_id",profileId),
-      ]);
-      return { following:!!followRowRes?.data, followerCount:fc??0, followingCount:foc??0, postCount:pc??0 };
+      const {count:pc} = await (supabase as any).from("posts").select("*",{count:"exact",head:true}).eq("author_id",profileId);
+      return { postCount:pc??0 };
     },
     enabled:!!profileId,
     staleTime:30_000,
@@ -516,9 +537,14 @@ function UserProfilePage() {
   const posts = postsQuery.data??[];
 
   /* ─ Valores derivados ─ */
-  const following = followOverride??statsQuery.data?.following??false;
-  const followerCount = (statsQuery.data?.followerCount??0)+followerDelta;
-  const followingCount = statsQuery.data?.followingCount??0;
+  /* ─ Seguir: fonte única de verdade, mesmo hook/cache/RPC de toda a app ─ */
+  const {
+    isFollowing: following,
+    isLoading: followLoading,
+    followersCount: followerCount,
+    followingCount,
+    toggle: toggleFollow,
+  } = useFollowState(myId || null, username || null, profileId || null);
   const postCount = statsQuery.data?.postCount??0;
   const name = profile?.full_name||profile?.username||username;
   const avatarUrl = profile?.avatar_url||null;
@@ -526,19 +552,6 @@ function UserProfilePage() {
   const color = colorFor(username);
 
   /* ─ Ações ─ */
-  async function toggleFollow() {
-    if (!profile||!myId) return;
-    const next=!following;
-    setFollowOverride(next);
-    setFollowerDelta(d=>d+(next?1:-1));
-    const db=supabase as any;
-    try {
-      if (!next) await db.from("follows").delete().eq("follower_id",myId).eq("target_username",username);
-      else await db.from("follows").upsert({follower_id:myId,target_username:username}, { onConflict: "follower_id,target_username", ignoreDuplicates: true });
-      qc.invalidateQueries({queryKey:["profileStats2",username,profileId,myId]});
-    } catch(_){ setFollowOverride(!next); setFollowerDelta(d=>d-(next?1:-1)); }
-  }
-
   async function openChat() {
     if (!profile||!myId||openingChat) return;
     setOpeningChat(true);
@@ -696,13 +709,17 @@ function UserProfilePage() {
                 : <MessageCircle className="h-4 w-4" style={{color:P}}/>}
               Mensagem
             </button>
-            <button onClick={toggleFollow}
-              className="flex items-center gap-1.5 px-5 py-1.5 rounded-full text-sm font-bold transition active:scale-95 shadow-sm"
-              style={following
-                ?{background:"var(--s2)",border:"1px solid var(--border-default)",color:"var(--text-secondary)"}
-                :{background:P,color:"#fff"}}>
-              {following ? <><UserCheck className="h-4 w-4"/>Seguindo</> : <><UserPlus className="h-4 w-4"/>Seguir</>}
-            </button>
+            {followLoading ? (
+              <div className="h-[30px] w-[104px] rounded-full animate-pulse" style={{background:"var(--s2)"}} />
+            ) : (
+              <button onClick={toggleFollow}
+                className="flex items-center gap-1.5 px-5 py-1.5 rounded-full text-sm font-bold transition active:scale-95 shadow-sm"
+                style={following
+                  ?{background:"var(--s2)",border:"1px solid var(--border-default)",color:"var(--text-secondary)"}
+                  :{background:P,color:"#fff"}}>
+                {following ? <><UserCheck className="h-4 w-4"/>Seguindo</> : <><UserPlus className="h-4 w-4"/>Seguir</>}
+              </button>
+            )}
           </div>
 
           {/* ── Info ── */}

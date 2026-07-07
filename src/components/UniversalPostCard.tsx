@@ -1007,15 +1007,17 @@ export function UniversalPostCard({ post: p, onDeleted, onBookmarkChange }: {
         </div>
         <div className="flex items-center gap-1.5">
           {!isAd && p.author_id && !isOwnPost && (
-            <button onClick={toggleFollow} disabled={followLoading}
-              className="text-xs font-bold px-3 py-1.5 rounded-full transition-all active:scale-95"
-              style={following
-                ? { background: "var(--s2)", color: "var(--text-secondary)", border: "1.5px solid var(--border-default)" }
-                : followLoading
-                  ? { background: "var(--s2)", color: "var(--text-muted)", border: "1.5px solid var(--border-subtle)", opacity: 0.5 }
+            followLoading ? (
+              <div className="h-[26px] w-[68px] rounded-full animate-pulse" style={{ background: "var(--s2)" }} />
+            ) : (
+              <button onClick={toggleFollow}
+                className="text-xs font-bold px-3 py-1.5 rounded-full transition-all active:scale-95"
+                style={following
+                  ? { background: "var(--s2)", color: "var(--text-secondary)", border: "1.5px solid var(--border-default)" }
                   : { background: "#5B3FCF", color: "#fff", boxShadow: "0 2px 8px rgba(91,63,207,0.35)" }}>
-              {followLoading ? "+ Seguir" : following ? "A seguir ✓" : "+ Seguir"}
-            </button>
+                {following ? "A seguir ✓" : "+ Seguir"}
+              </button>
+            )
           )}
           {!isAd && isOwnPost && (
             <div className="relative">

@@ -26,6 +26,27 @@ export const FOLLOW_KEYS = {
   counts: (username: string | null | undefined) => ["follow-counts", username] as const,
 };
 
+/**
+ * Sincronização em tempo real: uma ÚNICA subscrição por sessão de app
+ * (não uma por componente montado) ouve mudanças na tabela "follows" e
+ * invalida a cache partilhada. Assim, se eu seguir alguém no telemóvel,
+ * o mesmo perfil aberto no computador atualiza sozinho, sem refresh.
+ */
+let followRealtimeChannel: ReturnType<typeof supabase.channel> | null = null;
+function ensureFollowRealtimeSync(qc: ReturnType<typeof useQueryClient>) {
+  if (followRealtimeChannel) return;
+  followRealtimeChannel = supabase
+    .channel("follows-realtime-sync")
+    .on("postgres_changes", { event: "*", schema: "public", table: "follows" }, () => {
+      // Invalida tudo o que depende de "follows" — status e contadores,
+      // em qualquer perfil/canal aberto na app neste momento.
+      qc.invalidateQueries({ queryKey: ["follow-status"], exact: false });
+      qc.invalidateQueries({ queryKey: ["follow-counts"], exact: false });
+      qc.invalidateQueries({ queryKey: ["profile"], exact: false });
+    })
+    .subscribe();
+}
+
 async function fetchFollowStatus(myId: string, targetUsername: string): Promise<boolean> {
   const { data } = await (supabase as any)
     .from("follows")
@@ -51,6 +72,8 @@ async function fetchFollowCounts(username: string): Promise<{ followers: number;
  */
 export function useFollowState(myId: string | null | undefined, targetUsername: string | null | undefined, targetId?: string | null) {
   const qc = useQueryClient();
+
+  useEffect(() => { ensureFollowRealtimeSync(qc); }, [qc]);
 
   const statusQuery = useQuery({
     queryKey: FOLLOW_KEYS.status(myId, targetUsername),

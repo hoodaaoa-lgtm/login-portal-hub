@@ -23,6 +23,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useAvatar } from "@/contexts/AvatarContext";
 import { ProfileAvatarLink } from "@/components/ProfileAvatarLink";
 import { PostCommentsModal } from "@/components/PostCommentsModal";
+import { useFollowState } from "@/hooks/useSocialSystem";
 import { LanguagePanel } from "@/components/LanguageSwitcher";
 import { LANGUAGES, getCurrentLang } from "@/lib/i18n";
 import { uploadImageToCloudinary, uploadToCloudinary } from "@/lib/cloudinary";
@@ -2330,52 +2331,29 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
 
 /* ─── Perfil público ─── */
 function PublicProfile({ profile, email }: { profile: Profile | null; email: string }) {
-  const [following, setFollowing] = useState(false);
-  const [followerCount, setFollowerCount] = useState(0);
-  const [followingCount, setFollowingCount] = useState(0);
-  const [statsLoading, setStatsLoading] = useState(true);
   const [myUserId, setMyUserId] = useState("");
   const [followListMode, setFollowListMode] = useState<"followers" | "following" | null>(null);
   const navigate = useNavigate();
   const name = profile?.full_name || profile?.username || email?.split("@")[0] || "?";
 
   useEffect(() => {
-    if (!profile) return;
     (async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) return;
-        setMyUserId(session.user.id);
-        // follows table: follower_id = UUID, target_username = text username
-        const targetUsername = profile.username;
-        const { data: followRow } = await supabase.from("follows")
-          .select("follower_id").eq("follower_id", session.user.id).eq("target_username", targetUsername).maybeSingle();
-        setFollowing(!!followRow);
-        const [{ count: fc }, { count: foc }] = await Promise.all([
-          supabase.from("follows").select("*", { count: "exact", head: true }).eq("target_username", targetUsername),
-          supabase.from("follows").select("*", { count: "exact", head: true }).eq("follower_id", (profile as any).id),
-        ]);
-        setFollowerCount(fc ?? 0);
-        setFollowingCount(foc ?? 0);
-      } finally {
-        setStatsLoading(false);
-      }
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) setMyUserId(session.user.id);
     })();
-  }, [profile]);
+  }, []);
 
-  async function toggleFollow() {
-    if (!profile || !myUserId) return;
-    const targetUsername = profile.username;
-    if (following) {
-      await supabase.from("follows").delete().eq("follower_id", myUserId).eq("target_username", targetUsername);
-      setFollowing(false);
-      setFollowerCount((n) => Math.max(0, n - 1));
-    } else {
-      await supabase.from("follows").upsert({ follower_id: myUserId, target_username: targetUsername } as any, { onConflict: "follower_id,target_username", ignoreDuplicates: true });
-      setFollowing(true);
-      setFollowerCount((n) => n + 1);
-    }
-  }
+  // Fonte única de verdade: mesmo hook/cache/RPC usado em todo o resto da
+  // app (feed, canal, u.$username...). O estado real vem sempre da BD
+  // logo ao montar — nunca assume "Seguir" por defeito enquanto carrega.
+  const {
+    isFollowing: following,
+    isLoading: followLoading,
+    followersCount: followerCount,
+    followingCount,
+    toggle: toggleFollow,
+  } = useFollowState(myUserId || null, profile?.username || null, (profile as any)?.id || null);
+  const statsLoading = followLoading;
 
   return (
     <>
@@ -2401,11 +2379,15 @@ function PublicProfile({ profile, email }: { profile: Profile | null; email: str
           >
             <MessageCircle className="h-4 w-4" style={{ color: "#5B3FCF" }} /> Mensagem
           </button>
-          <button onClick={toggleFollow}
-            className={`text-sm font-bold rounded-full px-5 py-1.5 transition shadow-sm ${following ? "border border-neutral-300 bg-[var(--s2)] text-black" : "text-white"}`}
-            style={{ background: following ? undefined : ACCENT }}>
-            {following ? t("profile.unfollow") : t("profile.follow")}
-          </button>
+          {followLoading ? (
+            <div className="h-[30px] w-[92px] rounded-full animate-pulse" style={{ background: "var(--s2)" }} />
+          ) : (
+            <button onClick={toggleFollow}
+              className={`text-sm font-bold rounded-full px-5 py-1.5 transition shadow-sm ${following ? "border border-neutral-300 bg-[var(--s2)] text-black" : "text-white"}`}
+              style={{ background: following ? undefined : ACCENT }}>
+              {following ? t("profile.unfollow") : t("profile.follow")}
+            </button>
+          )}
         </div>
         <div className="px-5 pt-9 pb-3">
           <p className="text-xl font-extrabold text-black">{name}</p>
