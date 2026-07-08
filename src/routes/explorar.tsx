@@ -248,6 +248,15 @@ function ExplorePage() {
     return () => clearTimeout(timer);
   }, [search, searchActive, myId]);
 
+  /* ── Termo "estabilizado" para a pesquisa inteligente (IA) — espera
+     500ms sem digitar antes de chamar o modelo, para não disparar um
+     pedido a cada tecla premida. ── */
+  const [debouncedSearch, setDebouncedSearch] = useState(search);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search.trim()), 500);
+    return () => clearTimeout(timer);
+  }, [search]);
+
   /* ── Query: posts (aba Mídia + trending) — nunca inclui vídeos; vídeos só
      aparecem quando o utilizador pesquisa (ver searchVideos/searchVideoPosts
      mais abaixo), nunca na navegação normal. ── */
@@ -273,7 +282,7 @@ function ExplorePage() {
       const { data } = await (supabase as any).from("videos")
         .select("id,title,thumbnail_url,views_count,likes_count,duration_seconds,created_at,owner_id")
         .eq("status","published").eq("visibility","public")
-        .ilike("title",`%${search}%`).limit(10);
+        .ilike("title",`%${search}%`).limit(25);
       return data ?? [];
     },
     enabled: searchActive,
@@ -289,7 +298,7 @@ function ExplorePage() {
         .eq("kind","video")
         .eq("is_draft", false)
         .or(`scheduled_at.is.null,scheduled_at.lte.${new Date().toISOString()}`)
-        .ilike("content",`%${search}%`).limit(10);
+        .ilike("content",`%${search}%`).limit(25);
       return data ?? [];
     },
     enabled: searchActive,
@@ -367,7 +376,7 @@ function ExplorePage() {
         .in("kind",["photo","post"])
         .eq("is_draft", false)
         .or(`scheduled_at.is.null,scheduled_at.lte.${new Date().toISOString()}`)
-        .ilike("content",`%${search}%`).limit(10);
+        .ilike("content",`%${search}%`).limit(25);
       return data ?? [];
     },
     enabled: searchActive,
@@ -419,6 +428,52 @@ function ExplorePage() {
 
   const popularPostCards = useMemo(() => (popularPosts ?? []).map(toCanonicalPost), [popularPosts, postAvatarMap]);
   const searchPostCards  = useMemo(() => (searchPosts ?? []).map(toCanonicalPost),  [searchPosts, postAvatarMap]);
+
+  /* ── Pesquisa inteligente: em vez de só confiar no ILIKE (que só bate
+     palavra exata), manda os candidatos já encontrados a um modelo de IA
+     (mesma infra do classify-content, sem chave nova) para perceber a
+     intenção real da pesquisa — sinónimos, tema, erros de escrita — e
+     escolher/ordenar só o que faz sentido, mais uma frase a dizer o que
+     encontrou. Se a IA falhar ou ainda não tiver resposta, mostra os
+     resultados na ordem normal (nunca fica sem nada). ── */
+  const smartCandidates = useMemo(() => {
+    const fromVideos = searchVideos.map((v: any) => ({
+      id: String(v.id), type: "video", text: v.text || v.user || "",
+    }));
+    const fromPosts = searchPostCards.map((p: any) => ({
+      id: String(p.id), type: "post", text: p.text || "",
+    }));
+    return [...fromVideos, ...fromPosts];
+  }, [searchVideos, searchPostCards]);
+
+  const { data: smartSearch } = useQuery({
+    queryKey: ["explore-smart-search", debouncedSearch, smartCandidates.map((c) => c.id).join(",")],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke("smart-search", {
+        body: { query: debouncedSearch, candidates: smartCandidates },
+      });
+      if (error) throw error;
+      return data as { summary: string; ranked: { id: string; type: string; score: number }[] };
+    },
+    enabled: searchActive && debouncedSearch === search.trim() && smartCandidates.length > 0,
+    staleTime: 30_000,
+    retry: false,
+  });
+
+  /* Reordena/filtra usando o ranking da IA quando disponível; se ainda
+     não chegou ou falhou, mantém a ordem original do ILIKE. */
+  function applySmartRank<T extends { id: string }>(items: T[], type: string): T[] {
+    if (!smartSearch?.ranked?.length) return items;
+    const order = new Map<string, number>();
+    smartSearch.ranked.forEach((r, i) => { if (r.type === type) order.set(String(r.id), i); });
+    if (order.size === 0) return items;
+    return items
+      .filter((it) => order.has(String(it.id)))
+      .sort((a, b) => (order.get(String(a.id))! - order.get(String(b.id))!));
+  }
+
+  const rankedSearchVideos    = useMemo(() => applySmartRank(searchVideos, "video"),    [searchVideos, smartSearch]);
+  const rankedSearchPostCards = useMemo(() => applySmartRank(searchPostCards, "post"),  [searchPostCards, smartSearch]);
 
   const myFollowsSet = useMemo(() => new Set(myFollowsData ?? []), [myFollowsData]);
 
@@ -590,26 +645,35 @@ function ExplorePage() {
                 </div>
               </section>
             )}
+            {/* Prévia da IA — frase curta a dizer o que encontrou, antes
+                de mostrar os resultados de vídeos/publicações. */}
+            {smartSearch?.summary && (rankedSearchVideos.length > 0 || rankedSearchPostCards.length > 0) && (
+              <div className="flex items-start gap-2.5 px-3.5 py-3 rounded-2xl"
+                style={{ background: `${P}12`, border: `1px solid ${P}30` }}>
+                <span className="text-base leading-none mt-0.5">✨</span>
+                <p className="text-sm font-medium leading-snug" style={{ color: "var(--text-primary)" }}>{smartSearch.summary}</p>
+              </div>
+            )}
             {/* Vídeos — mesmo cartão usado no Lar, nunca um thumbnail à parte */}
-            {searchVideos.length > 0 && (
+            {rankedSearchVideos.length > 0 && (
               <section>
                 <p className="text-[11px] font-bold uppercase tracking-wider mb-2.5" style={{ color: "var(--text-muted)" }}>Vídeos</p>
                 <div className="space-y-4 -mx-4">
-                  {searchVideos.map((v: any) => <UniversalPostCard key={v.id} post={v} />)}
+                  {rankedSearchVideos.map((v: any) => <UniversalPostCard key={v.id} post={v} />)}
                 </div>
               </section>
             )}
             {/* Posts — agora com o mesmo cartão universal (foto/texto/vídeo),
                 nunca mais um thumbnail estático à parte. */}
-            {searchPostCards.length > 0 && (
+            {rankedSearchPostCards.length > 0 && (
               <section>
                 <p className="text-[11px] font-bold uppercase tracking-wider mb-2.5" style={{ color: "var(--text-muted)" }}>Publicações</p>
                 <div className="space-y-4 -mx-4">
-                  {searchPostCards.map((p: any) => <UniversalPostCard key={p.id} post={p} />)}
+                  {rankedSearchPostCards.map((p: any) => <UniversalPostCard key={p.id} post={p} />)}
                 </div>
               </section>
             )}
-            {searchPeople.length === 0 && searchVideos.length === 0 && searchPostCards.length === 0 && searchHashtags.length === 0 && (
+            {searchPeople.length === 0 && rankedSearchVideos.length === 0 && rankedSearchPostCards.length === 0 && searchHashtags.length === 0 && (
               <div className="py-20 text-center">
                 <p className="text-4xl mb-3">🔍</p>
                 <p className="font-bold" style={{ color: "var(--text-primary)" }}>Sem resultados</p>
