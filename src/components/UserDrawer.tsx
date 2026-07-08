@@ -3,7 +3,6 @@ import { createPortal } from "react-dom";
 import {
   X, Search, Star, BookOpen, Settings, LogOut, ChevronRight, ChevronLeft,
   MessageCircle, Bell, Shield, HelpCircle, Info, BarChart2, User, Moon, Sun,
-  Users as UsersIcon, Eye, Heart, Film,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { signOutHooda } from "@/contexts/AuthContext";
@@ -39,22 +38,12 @@ interface MiniUser {
   avatar_url: string | null;
 }
 
-interface VideoStat {
-  id: string;
-  text: string;
-  kind: string;
-  thumb: string | null;
-  views: number;
-  likes: number;
-  createdAt: string;
-}
-
 interface RatingRow {
   stars: number;
   rater: MiniUser | null;
 }
 
-type View = "menu" | "stats" | "followers" | "following" | "ratings";
+type View = "menu" | "ratings";
 
 function Avatar({ user, size = 38 }: { user: { full_name?: string | null; username?: string | null; avatar_url?: string | null }; size?: number }) {
   const initial = (user.full_name?.[0] ?? user.username?.[0] ?? "?").toUpperCase();
@@ -81,9 +70,6 @@ export function UserDrawer({ userId: _userId, onClose }: UserDrawerProps) {
   const [savingRating, setSavingRating] = useState(false);
 
   // Sub-view data
-  const [followers, setFollowers] = useState<MiniUser[] | null>(null);
-  const [following, setFollowing] = useState<MiniUser[] | null>(null);
-  const [videoStats, setVideoStats] = useState<VideoStat[] | null>(null);
   const [ratings, setRatings] = useState<RatingRow[] | null>(null);
   useScrollLock();
 
@@ -131,9 +117,6 @@ export function UserDrawer({ userId: _userId, onClose }: UserDrawerProps) {
   // Lazy-load sub-view data when entering each view
   useEffect(() => {
     if (!uid) return;
-    if (view === "followers" && followers === null) loadFollowers();
-    if (view === "following" && following === null) loadFollowing();
-    if (view === "stats" && videoStats === null) loadVideoStats();
     if (view === "ratings" && ratings === null) loadRatings();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view, uid]);
@@ -147,55 +130,6 @@ export function UserDrawer({ userId: _userId, onClose }: UserDrawerProps) {
     const byId = new Map<string, MiniUser>();
     (data ?? []).forEach((p: any) => byId.set(p.id, p as MiniUser));
     return ids.map(id => byId.get(id)).filter(Boolean) as MiniUser[];
-  }
-
-  async function loadFollowers() {
-    // follows.target_username é TEXT — precisamos do username do dono do perfil
-    const { data: prof } = await supabase.from("profiles").select("username").eq("id", uid).maybeSingle();
-    const username = (prof as any)?.username;
-    if (!username) { setFollowers([]); return; }
-    const { data } = await supabase
-      .from("follows")
-      .select("follower_id")
-      .eq("target_username", username)
-      .limit(200);
-    const ids = [...new Set((data ?? []).map((r: any) => r.follower_id).filter(Boolean))];
-    setFollowers(await fetchProfilesByIds(ids));
-  }
-
-  async function loadFollowing() {
-    const { data } = await supabase
-      .from("follows")
-      .select("target_username")
-      .eq("follower_id", uid)
-      .limit(200);
-    const usernames = [...new Set((data ?? []).map((r: any) => r.target_username).filter(Boolean))];
-    if (usernames.length === 0) { setFollowing([]); return; }
-    const { data: profs } = await supabase
-      .from("profiles")
-      .select("id,username,full_name,avatar_url")
-      .in("username", usernames);
-    setFollowing((profs ?? []) as MiniUser[]);
-  }
-
-  async function loadVideoStats() {
-    const { data } = await supabase
-      .from("posts")
-      .select("id, text, kind, clip_thumb_url, views_count, likes_count, created_at")
-      .eq("author_id", uid)
-      .in("kind", ["video", "clip"])
-      .order("created_at", { ascending: false })
-      .limit(100);
-    const list: VideoStat[] = (data ?? []).map((p: any) => ({
-      id: p.id,
-      text: p.text ?? "(sem título)",
-      kind: p.kind,
-      thumb: p.clip_thumb_url ?? null,
-      views: p.views_count ?? 0,
-      likes: p.likes_count ?? 0,
-      createdAt: p.created_at,
-    }));
-    setVideoStats(list);
   }
 
   async function loadRatings() {
@@ -245,9 +179,6 @@ export function UserDrawer({ userId: _userId, onClose }: UserDrawerProps) {
     {
       title: "Estatísticas",
       items: [
-        { icon: BarChart2, label: "Estatísticas do perfil", color: "#5B3FCF", action: () => setView("stats") },
-        { icon: UsersIcon, label: `Seguidores${stats ? ` (${stats.followers})` : ""}`, color: "#1FAFA6", action: () => setView("followers") },
-        { icon: UsersIcon, label: `A seguir${stats ? ` (${stats.following})` : ""}`, color: "#6BA547", action: () => setView("following") },
         { icon: Star, label: `Rating de utilizadores${stats?.ratingCount ? ` (${stats.ratingCount})` : ""}`, color: "#FFC93C", action: () => setView("ratings") },
       ],
     },
@@ -329,92 +260,6 @@ export function UserDrawer({ userId: _userId, onClose }: UserDrawerProps) {
   );
 
   function renderSubView() {
-    if (view === "followers") {
-      return (
-        <>
-          {subHeader(`Seguidores${followers ? ` (${followers.length})` : ""}`)}
-          <div className="flex-1 overflow-y-auto px-3 py-2">
-            {followers === null
-              ? <div className="py-10 flex justify-center"><div className="h-6 w-6 rounded-full border-2 animate-spin" style={{ borderColor: "#5B3FCF", borderTopColor: "transparent" }} /></div>
-              : followers.length === 0
-                ? emptyState("Sem seguidores ainda", UsersIcon)
-                : <div className="space-y-0.5">{followers.map(u => userRow(u))}</div>}
-          </div>
-        </>
-      );
-    }
-    if (view === "following") {
-      return (
-        <>
-          {subHeader(`A seguir${following ? ` (${following.length})` : ""}`)}
-          <div className="flex-1 overflow-y-auto px-3 py-2">
-            {following === null
-              ? <div className="py-10 flex justify-center"><div className="h-6 w-6 rounded-full border-2 animate-spin" style={{ borderColor: "#5B3FCF", borderTopColor: "transparent" }} /></div>
-              : following.length === 0
-                ? emptyState("Ainda não segues ninguém", UsersIcon)
-                : <div className="space-y-0.5">{following.map(u => userRow(u))}</div>}
-          </div>
-        </>
-      );
-    }
-    if (view === "stats") {
-      const totals = (videoStats ?? []).reduce(
-        (acc, v) => ({ views: acc.views + v.views, likes: acc.likes + v.likes }),
-        { views: 0, likes: 0 }
-      );
-      return (
-        <>
-          {subHeader("Estatísticas do perfil")}
-          <div className="flex-1 overflow-y-auto px-3 py-3">
-            {/* Resumo */}
-            {stats && (
-              <div className="grid grid-cols-3 gap-2 mb-4">
-                <div className="rounded-xl p-3" style={{ background: "var(--surface-2)" }}>
-                  <p className="text-[10px] uppercase font-bold tracking-wider" style={{ color: "var(--text-muted)" }}>Posts</p>
-                  <p className="text-lg font-extrabold" style={{ color: "var(--text-primary)" }}>{stats.posts}</p>
-                </div>
-                <div className="rounded-xl p-3" style={{ background: "var(--surface-2)" }}>
-                  <p className="text-[10px] uppercase font-bold tracking-wider" style={{ color: "var(--text-muted)" }}>Views totais</p>
-                  <p className="text-lg font-extrabold" style={{ color: "var(--text-primary)" }}>{totals.views}</p>
-                </div>
-                <div className="rounded-xl p-3" style={{ background: "var(--surface-2)" }}>
-                  <p className="text-[10px] uppercase font-bold tracking-wider" style={{ color: "var(--text-muted)" }}>Likes totais</p>
-                  <p className="text-lg font-extrabold" style={{ color: "var(--text-primary)" }}>{totals.likes}</p>
-                </div>
-              </div>
-            )}
-            <p className="text-[11px] font-bold uppercase tracking-wider mb-2 px-1" style={{ color: "var(--text-muted)" }}>Vídeos & clips</p>
-            {videoStats === null
-              ? <div className="py-8 flex justify-center"><div className="h-6 w-6 rounded-full border-2 animate-spin" style={{ borderColor: "#5B3FCF", borderTopColor: "transparent" }} /></div>
-              : videoStats.length === 0
-                ? emptyState("Ainda não publicaste vídeos", Film)
-                : <div className="space-y-1.5">
-                    {videoStats.map(v => (
-                      <div key={v.id} className="flex items-center gap-3 p-2 rounded-xl" style={{ background: "var(--surface-2)" }}>
-                        <div className="w-14 h-14 rounded-lg overflow-hidden shrink-0 flex items-center justify-center"
-                          style={{ background: "#000" }}>
-                          {v.thumb
-                            ? <img src={v.thumb} alt="" className="w-full h-full object-cover" />
-                            : <Film className="h-5 w-5 text-white/60" />}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>{v.text}</p>
-                          <div className="flex items-center gap-3 mt-0.5">
-                            <span className="text-[11px] flex items-center gap-1" style={{ color: "var(--text-muted)" }}>
-                              <Eye className="h-3 w-3" /> {v.views}
-                            </span>
-                            <span className="text-[11px] flex items-center gap-1" style={{ color: "var(--text-muted)" }}>
-                              <Heart className="h-3 w-3" /> {v.likes}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>}
-          </div>
-        </>
-      );
-    }
     if (view === "ratings") {
       return (
         <>
