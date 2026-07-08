@@ -5,7 +5,7 @@ import { UniversalPostCard } from "@/components/UniversalPostCard";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect, useMemo } from "react";
-import { Search, X, Heart, TrendingUp, Users, FileText, Tv2, UserPlus, UserCheck, BookOpen, Download, Bookmark } from "lucide-react";
+import { Search, X, Heart, TrendingUp, Users, FileText, UserPlus, UserCheck, BookOpen, Download, Bookmark } from "lucide-react";
 import { t } from "@/lib/useT";
 import { getHoodaOfficialId } from "@/lib/hoodaOfficial";
 import { toast } from "sonner";
@@ -32,7 +32,6 @@ const TABS = [
   { key: "trending", label: "Tendência",  icon: TrendingUp },
   { key: "people",   label: "Pessoas",    icon: Users      },
   { key: "posts",    label: "Mídia",      icon: FileText   },
-  { key: "channels", label: "Canais",     icon: Tv2        },
   { key: "books",    label: "Livros",     icon: BookOpen   },
 ] as const;
 type Tab = typeof TABS[number]["key"];
@@ -146,7 +145,6 @@ function ExplorePage() {
   const [tab, setTab]           = useState<Tab>(routeSearch.tab ?? "trending");
   const [myId, setMyId]         = useState("");
   const [followMap, setFollowMap] = useState<Record<string, boolean>>({});
-  const [channelFollowMap, setChannelFollowMap] = useState<Record<string, boolean>>({});
 
   // Se a URL trouxer uma aba (?tab=people) ou um texto de busca (?q=algo),
   // aplica mesmo se o componente já estiver montado (ex: clicar numa hashtag)
@@ -174,45 +172,6 @@ function ExplorePage() {
     enabled: !!myId,
     staleTime: 10_000,
   });
-
-  /* Carregar quais canais já sigo — mesma tabela dedicada "channel_follows"
-   * usada em canal.$handle.tsx. Antes esta página escrevia canais seguidos
-   * na tabela "follows" (a de pessoas), uma tabela completamente diferente
-   * da que a página do canal lê — por isso seguir um canal aqui nunca
-   * aparecia como seguido ao entrar no canal, e vice-versa. */
-  const { data: myChannelFollows } = useQuery({
-    queryKey: ["explore-my-channel-follows", myId],
-    queryFn: async () => {
-      const { data } = await (supabase as any)
-        .from("channel_follows").select("channel_id").eq("user_id", myId);
-      return (data ?? []).map((r: any) => r.channel_id).filter(Boolean) as string[];
-    },
-    enabled: !!myId,
-    staleTime: 10_000,
-  });
-  const myChannelFollowsSet = useMemo(() => new Set(myChannelFollows ?? []), [myChannelFollows]);
-
-  async function toggleChannelFollow(channelId: string, _channelHandle: string) {
-    if (!myId) { toast.error("Inicia sessão para seguir."); return; }
-    const isF = channelFollowMap[channelId] ?? myChannelFollowsSet.has(channelId);
-    setChannelFollowMap(prev => ({ ...prev, [channelId]: !isF }));
-    const db = supabase as any;
-    try {
-      if (isF) {
-        const { error } = await db.from("channel_follows").delete().eq("user_id", myId).eq("channel_id", channelId);
-        if (error) throw error;
-        toast.success("Deixaste de seguir o canal");
-      } else {
-        const { error } = await db.from("channel_follows").upsert({ user_id: myId, channel_id: channelId }, { onConflict: "channel_id,user_id", ignoreDuplicates: true });
-        if (error) throw error;
-        toast.success("A seguir o canal!");
-      }
-      qc.invalidateQueries({ queryKey: ["explore-my-channel-follows", myId] });
-    } catch (err: any) {
-      setChannelFollowMap(prev => ({ ...prev, [channelId]: isF }));
-      toast.error(err?.message ?? "Não foi possível atualizar. Tenta novamente.");
-    }
-  }
 
   /* ── Query: pesquisa ── */
   const searchActive = search.trim().length >= 2;
@@ -264,25 +223,12 @@ function ExplorePage() {
     staleTime: 60_000,
   });
 
-  /* ── Query: canais — todos, por ordem cronológica, sem ranking por popularidade ── */
-  const { data: channels = [] } = useQuery({
-    queryKey: ["explore-channels"],
-    queryFn: async () => {
-      const { data } = await (supabase as any).from("channels")
-        .select("id,name,handle,avatar_url,subscriber_count,videos_count,created_at")
-        .order("created_at", { ascending: false }).limit(500);
-      return data ?? [];
-    },
-    enabled: tab === "trending" || tab === "channels",
-    staleTime: 60_000,
-  });
-
   /* ── Pesquisa: vídeos do Studio/HoodaTV que batem com o termo pesquisado ── */
   const { data: searchChannelVideos = [] } = useQuery({
     queryKey: ["explore-search-videos", search],
     queryFn: async () => {
       const { data } = await (supabase as any).from("videos")
-        .select("id,title,thumbnail_url,views_count,likes_count,duration_seconds,created_at,owner_id,channel_id,channels(name,avatar_url,handle)")
+        .select("id,title,thumbnail_url,views_count,likes_count,duration_seconds,created_at,owner_id")
         .eq("status","published").eq("visibility","public")
         .ilike("title",`%${search}%`).limit(10);
       return data ?? [];
@@ -333,12 +279,11 @@ function ExplorePage() {
 
     const fromChannelVideos = (searchChannelVideos ?? []).map((v: any) => {
       const author = authorMap[v.owner_id];
-      const ch = v.channels;
-      const name = author?.full_name || author?.username || ch?.name || "hooda";
+      const name = author?.full_name || author?.username || "hooda";
       return {
         id: `vidfeed_${v.id}`, user_id: v.owner_id, author_id: v.owner_id,
         author_username: author?.username || null,
-        user: name, name: `@${author?.username || ch?.handle || "?"}`,
+        user: name, name: `@${author?.username || "?"}`,
         color: colorFor(name), avatar_url: author?.avatar_url ?? null,
         text: null, photo: null, photos: null, video: null,
         bg_color: null, created_at: v.created_at, kind: "clip", is_ad: false,
@@ -346,8 +291,8 @@ function ExplorePage() {
         views_count: v.views_count ?? 0, reposts_count: 0,
         clip_video_id: v.id, clip_start: 0, clip_end: v.duration_seconds ?? 0,
         clip_title: v.title, clip_thumb_url: v.thumbnail_url,
-        channel_id: v.channel_id, channel_handle: ch?.handle ?? null,
-        channel_name: ch?.name ?? null, channel_avatar: ch?.avatar_url ?? null,
+        channel_id: v.owner_id, channel_handle: author?.username ?? null,
+        channel_name: author?.full_name ?? null, channel_avatar: author?.avatar_url ?? null,
       };
     });
 
@@ -601,34 +546,6 @@ function ExplorePage() {
                 </div>
               </section>
             )}
-
-            {/* Canais */}
-            {channels.length > 0 && (
-              <section className="px-4">
-                <div className="flex items-center justify-between mb-2.5">
-                  <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>Canais</p>
-                  <button onClick={() => setTab("channels")} className="text-xs font-semibold" style={{ color: P }}>Ver todos →</button>
-                </div>
-                <div className="flex gap-4 overflow-x-auto no-scrollbar pb-1">
-                  {[...channels.slice(0, 5), { id: "more", name: "Ver mais", avatar_url: null, handle: "" }].map((ch: any) => (
-                    <button key={ch.id} onClick={() => ch.id === "more" ? setTab("channels") : navigate({ to: `/hoodatv/canal/${ch.handle}` })}
-                      className="flex-shrink-0 text-center w-16 transition active:scale-95">
-                      <div className="w-14 h-14 rounded-full overflow-hidden flex items-center justify-center mx-auto mb-1.5"
-                        style={{ background: ch.id === "more" ? "var(--s2)" : colorFor(ch.name || "?"), border: ch.id === "more" ? "1px solid var(--border-subtle)" : "none" }}>
-                        {ch.id === "more"
-                          ? <span className="text-lg" style={{ color: "var(--text-muted)" }}>+</span>
-                          : ch.avatar_url
-                            ? <img src={ch.avatar_url} alt={ch.name} className="w-full h-full object-cover" />
-                            : <span className="text-lg font-bold text-white">{ch.name?.[0]?.toUpperCase()}</span>}
-                      </div>
-                      <p className="text-[11px] truncate" style={{ color: ch.id === "more" ? "var(--text-muted)" : "var(--text-primary)" }}>
-                        {ch.id === "more" ? "Ver mais" : ch.name}
-                      </p>
-                    </button>
-                  ))}
-                </div>
-              </section>
-            )}
           </div>
 
         /* ══════════ PESSOAS ══════════ */
@@ -661,36 +578,6 @@ function ExplorePage() {
           </div>
 
         /* ══════════ CANAIS ══════════ */
-        ) : tab === "channels" ? (
-          <div className="px-4 py-4 space-y-2">
-            <p className="text-[11px] font-bold uppercase tracking-wider mb-3" style={{ color: "var(--text-muted)" }}>
-              Canais
-            </p>
-            {channels.map((ch: any) => {
-              const isF = channelFollowMap[ch.id] ?? myChannelFollowsSet.has(ch.id);
-              return (
-                <div key={ch.id} className="w-full flex items-center gap-3 p-3 rounded-2xl border transition hover:bg-[var(--s1)]"
-                  style={{ borderColor: "var(--border-subtle)", background: "var(--s0)" }}>
-                  <button onClick={() => navigate({ to: `/hoodatv/canal/${ch.handle}` })} className="shrink-0">
-                    <Av name={ch.name} src={ch.avatar_url} size={46} />
-                  </button>
-                  <div className="flex-1 min-w-0" onClick={() => navigate({ to: `/hoodatv/canal/${ch.handle}` })} style={{ cursor: "pointer" }}>
-                    <p className="font-bold text-sm truncate" style={{ color: "var(--text-primary)" }}>{ch.name}</p>
-                    <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
-                      @{ch.handle} · {fmtNum(ch.subscriber_count ?? 0)} subscritores · {fmtNum(ch.videos_count ?? 0)} vídeos
-                    </p>
-                  </div>
-                  <button onClick={() => toggleChannelFollow(ch.id, ch.handle)}
-                    className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold transition active:scale-95 shrink-0"
-                    style={isF
-                      ? { background: "var(--s2)", color: "var(--text-secondary)", border: "1px solid var(--border-default)" }
-                      : { background: P, color: "#fff" }}>
-                    {isF ? <><UserCheck className="h-3.5 w-3.5" />A seguir</> : <><UserPlus className="h-3.5 w-3.5" />Seguir</>}
-                  </button>
-                </div>
-              );
-            })}
-          </div>
         ) : tab === "books" ? (
           <BooksSection search={search} navigate={navigate} />
         ) : null}

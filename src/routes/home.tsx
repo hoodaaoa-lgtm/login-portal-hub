@@ -290,7 +290,7 @@ function HomePage() {
       // scoring/relevância acima, cai aqui numa busca simples e directa.
       const { data } = await supabase
         .from("posts")
-        .select("id,author_id,author_username,author_name,author_color,content,kind,is_ad,created_at,photo_url,photos,video_url,thumbnail_url,clip_video_id,clip_start,clip_end,clip_title,channel_id,channel_handle,channel_name,channel_avatar,clip_thumb_url,poll,poll_ends_at,moderation_status,is_sensitive")
+        .select("id,author_id,author_username,author_name,author_color,content,kind,is_ad,created_at,photo_url,photos,video_url,thumbnail_url,clip_video_id,clip_start,clip_end,clip_title,channel_handle,channel_name,channel_avatar,clip_thumb_url,poll,poll_ends_at,moderation_status,is_sensitive")
         .order("created_at", { ascending: false })
         .limit(50);
       return (data ?? []).map((p: any) => {
@@ -312,7 +312,7 @@ function HomePage() {
           likes: 0, liked_by_me: false, comments: 0,
           clip_video_id: p.clip_video_id, clip_start: p.clip_start, clip_end: p.clip_end,
           clip_title: p.clip_title, clip_thumb_url: p.clip_thumb_url,
-          channel_id: p.channel_id, channel_handle: p.channel_handle,
+          channel_id: p.author_id, channel_handle: p.channel_handle,
           channel_name: p.channel_name, channel_avatar: p.channel_avatar,
           poll: p.poll ?? null, poll_ends_at: p.poll_ends_at ?? null,
           moderation_status: p.moderation_status ?? null, is_sensitive: !!p.is_sensitive,
@@ -323,8 +323,8 @@ function HomePage() {
 
   const FEED_CHUNK_SIZE = 30;
   const ACCENT_LOCAL = ["#5B3FCF","#F26B3A","#1FAFA6","#6BA547","#E94B8A","#FFC93C"];
-  const POST_SELECT_FIELDS = "id,author_id,author_username,author_name,author_color,content,kind,is_ad,created_at,photo_url,photos,video_url,thumbnail_url,clip_video_id,clip_start,clip_end,clip_title,channel_id,channel_handle,channel_name,channel_avatar,clip_thumb_url,views_count,reposts_count,poll,poll_ends_at,moderation_status,is_sensitive";
-  const VIDEO_SELECT_FIELDS = "id,title,thumbnail_url,duration_seconds,views_count,likes_count,comments_count,created_at,owner_id,channel_id,channels(name,avatar_url,handle)";
+  const POST_SELECT_FIELDS = "id,author_id,author_username,author_name,author_color,content,kind,is_ad,created_at,photo_url,photos,video_url,thumbnail_url,clip_video_id,clip_start,clip_end,clip_title,channel_handle,channel_name,channel_avatar,clip_thumb_url,views_count,reposts_count,poll,poll_ends_at,moderation_status,is_sensitive";
+  const VIDEO_SELECT_FIELDS = "id,title,thumbnail_url,duration_seconds,views_count,likes_count,comments_count,created_at,owner_id";
 
   // ─── FEED COM RANKING (Fase 4) — busca posts via get_personalized_feed ────
   //
@@ -477,7 +477,6 @@ function HomePage() {
       const authorKey = v.owner_id;
       const name = nameMap[authorKey] || usernameMap[authorKey] || "hooda";
       const username = usernameMap[authorKey] || "";
-      const ch = v.channels;
       return {
         id: `vidfeed_${v.id}`, user_id: authorKey, author_id: authorKey,
         author_username: username || null,
@@ -490,8 +489,8 @@ function HomePage() {
         views_count: v.views_count ?? 0, reposts_count: 0,
         clip_video_id: v.id, clip_start: 0, clip_end: v.duration_seconds ?? 0,
         clip_title: v.title, clip_thumb_url: v.thumbnail_url,
-        channel_id: v.channel_id, channel_handle: ch?.handle ?? null,
-        channel_name: ch?.name ?? null, channel_avatar: ch?.avatar_url ?? null,
+        channel_id: authorKey, channel_handle: username || null,
+        channel_name: name || null, channel_avatar: authorKey ? (avatarMap[authorKey] ?? null) : null,
         // Vídeos ainda não têm content_quality/user_interests (Fase 4 cobre
         // só "posts" por agora) — usa só frescura, na mesma escala 0-100 dos
         // posts, para poder entrar no mesmo merge ordenado com sentido.
@@ -682,13 +681,13 @@ function HomePage() {
         async (payload: any) => {
           const video = payload.new;
           if (video.owner_id === myUserId) return;
-          const { data: channelData } = await supabase
-            .from("channels").select("id, name, handle").eq("id", video.channel_id).maybeSingle();
-          if (!channelData) return;
+          const { data: profileData } = await supabase
+            .from("profiles").select("id, full_name, username").eq("id", video.owner_id).maybeSingle();
+          if (!profileData) return;
           const { data: followRow } = await (supabase as any)
-            .from("follows").select("id").eq("follower_id", myUserId).eq("following_id", video.channel_id).maybeSingle();
+            .from("follows").select("id").eq("follower_id", myUserId).eq("following_id", video.owner_id).maybeSingle();
           if (!followRow) return;
-          insertNotif("video_new", video.owner_id, (channelData as any).name);
+          insertNotif("video_new", video.owner_id, (profileData as any).full_name);
         }
       )
       // ── Likes nos meus vídeos ──
