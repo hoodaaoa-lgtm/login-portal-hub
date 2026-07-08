@@ -89,26 +89,38 @@ export function getVideoThumbnail(publicId: string, timeOffset = "0"): string {
   return `https://res.cloudinary.com/${CLOUD_NAME}/video/upload/so_${timeOffset},w_1280,h_720,c_fill,f_jpg/${publicId}.jpg`;
 }
 
-/** URL de stream HLS do Cloudinary */
-export function getVideoStreamUrl(publicId: string): string {
-  return `https://res.cloudinary.com/${CLOUD_NAME}/video/upload/sp_auto/${publicId}.m3u8`;
+/**
+ * Deriva um "ladder" de resoluções mp4 a partir de QUALQUER URL de
+ * reprodução já existente do Cloudinary — incluindo vídeos publicados
+ * antes do sistema de qualidade adaptativa existir. Não precisa de
+ * re-upload nem migração: o public_id já está codificado no próprio URL.
+ *
+ * Usa transformações "h_<altura>,c_limit" (redimensiona só para baixo,
+ * nunca amplia um vídeo de baixa resolução) — isto funciona em qualquer
+ * plano do Cloudinary, ao contrário do streaming HLS (sp_auto), que
+ * exige o add-on de Adaptive Bitrate Streaming e não estava disponível.
+ *
+ * Devolve null se o URL não for do Cloudinary (ex.: outro CDN/Cloudflare
+ * Stream, que já trata disto sozinho via HLS nativo).
+ */
+export interface CloudinaryRendition {
+  height: number;
+  url: string;
 }
 
-/**
- * Deriva o URL de streaming adaptativo (HLS, várias resoluções via o
- * perfil "sp_auto" do Cloudinary) a partir de QUALQUER URL de reprodução
- * mp4 já existente do Cloudinary — incluindo vídeos publicados antes do
- * sistema de qualidade adaptativa existir. Não precisa de re-upload nem
- * de migração de dados: o public_id já está codificado no próprio URL.
- * Devolve null se o URL não for do Cloudinary (ex.: outro CDN).
- */
-export function toCloudinaryHlsUrl(mp4Url: string): string | null {
+const RENDITION_LADDER = [144, 240, 360, 480, 720, 1080];
+
+export function getCloudinaryRenditions(mp4Url: string): CloudinaryRendition[] | null {
   const match = mp4Url.match(
     /res\.cloudinary\.com\/([^/]+)\/video\/upload\/[^/]+\/(.+?)(?:\.[a-zA-Z0-9]+)?$/,
   );
   if (!match) return null;
   const [, cloud, publicId] = match;
-  return `https://res.cloudinary.com/${cloud}/video/upload/sp_auto/${publicId}.m3u8`;
+
+  return RENDITION_LADDER.map((height) => ({
+    height,
+    url: `https://res.cloudinary.com/${cloud}/video/upload/q_auto,f_auto,vc_h264,h_${height},c_limit/${publicId}.mp4`,
+  }));
 }
 
 /** URL de reprodução directa (mp4 optimizado).

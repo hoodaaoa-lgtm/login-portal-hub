@@ -32,7 +32,7 @@ import { useRef, useState, useEffect, useCallback, forwardRef } from "react";
 import { Play, Pause, Volume2, VolumeX, Maximize, Minimize, RotateCcw, Settings, ChevronRight, ChevronLeft } from "lucide-react";
 import { useVideoInView } from "@/hooks/useVideoInView";
 import { registerVideo, notifyVideoPlaying, getGlobalMuted, setGlobalMuted } from "@/lib/mediaManager";
-import { toCloudinaryHlsUrl } from "@/lib/cloudinary";
+import { getCloudinaryRenditions } from "@/lib/cloudinary";
 import { getCachedVideoPreference, useVideoPreferences } from "@/hooks/useVideoPreferences";
 import {
   pickStartingHeight,
@@ -282,38 +282,84 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
      e expomos os níveis disponíveis para o seletor manual de qualidade. */
   const { preference, setPreference } = useVideoPreferences();
   const hlsRef = useRef<any>(null);
+  // Quando o vídeo não tem HLS real (ex.: Cloudinary), guardamos aqui a
+  // lista de URLs mp4 em várias resoluções, e trocamos de fonte nós
+  // mesmos preservando o tempo actual (sem "reiniciar" o vídeo).
+  const mp4RenditionsRef = useRef<{ height: number; url: string }[] | null>(null);
+  const stallCountRef = useRef(0);
   const [qualityLevels, setQualityLevels] = useState<{ index: number; height: number }[]>([]);
   const [activeLevel, setActiveLevel] = useState<number>(-1); // -1 = automático
   const [showQualityMenu, setShowQualityMenu] = useState(false);
   const [settingsView, setSettingsView] = useState<"root" | "quality">("root");
   const [currentResLabel, setCurrentResLabel] = useState<ResolutionLabel | null>(null);
 
+  const switchMp4Rendition = useCallback((idx: number, persistMode: "auto" | ResolutionLabel | null) => {
+    const vid = videoRef.current;
+    const renditions = mp4RenditionsRef.current;
+    if (!vid || !renditions || !renditions[idx]) return;
+    const wasPlaying = !vid.paused;
+    const t = vid.currentTime;
+    vid.src = renditions[idx].url;
+    vid.currentTime = t;
+    if (wasPlaying) vid.play().catch(() => {});
+    setActiveLevel(idx);
+    setCurrentResLabel(resolutionFromHeight(renditions[idx].height));
+    recordQualityChoice(renditions[idx].height);
+    if (persistMode) setPreference(persistMode === "auto" ? "auto" : "manual", persistMode === "auto" ? null : persistMode);
+  }, [setPreference]);
+
   const applyQualityMode = useCallback(
     (mode: "auto" | ResolutionLabel, persist: boolean) => {
       const hls = hlsRef.current;
-      if (!hls) return;
+      const renditions = mp4RenditionsRef.current;
 
-      if (mode === "auto") {
-        hls.currentLevel = -1; // devolve o controlo ao ABR do hls.js
-        setActiveLevel(-1);
-        if (persist) setPreference("auto");
+      // ─ Fonte HLS real (Cloudflare Stream): usa o ABR nativo do hls.js ─
+      if (hls) {
+        if (mode === "auto") {
+          hls.currentLevel = -1;
+          setActiveLevel(-1);
+          if (persist) setPreference("auto");
+          return;
+        }
+        const targetHeight = { "144p":144,"240p":240,"360p":360,"480p":480,"720p":720,"1080p":1080,"1440p":1440,"4k":2160 }[mode];
+        const levels: { height: number }[] = hls.levels ?? [];
+        let bestIdx = 0;
+        let bestDiff = Infinity;
+        levels.forEach((l, i) => {
+          const diff = Math.abs(l.height - targetHeight);
+          if (diff < bestDiff) { bestDiff = diff; bestIdx = i; }
+        });
+        hls.currentLevel = bestIdx;
+        setActiveLevel(bestIdx);
+        recordQualityChoice(levels[bestIdx]?.height ?? targetHeight);
+        if (persist) setPreference("manual", mode);
         return;
       }
 
-      const targetHeight = { "144p":144,"240p":240,"360p":360,"480p":480,"720p":720,"1080p":1080,"1440p":1440,"4k":2160 }[mode];
-      const levels: { height: number }[] = hls.levels ?? [];
-      let bestIdx = 0;
-      let bestDiff = Infinity;
-      levels.forEach((l, i) => {
-        const diff = Math.abs(l.height - targetHeight);
-        if (diff < bestDiff) { bestDiff = diff; bestIdx = i; }
-      });
-      hls.currentLevel = bestIdx;
-      setActiveLevel(bestIdx);
-      recordQualityChoice(levels[bestIdx]?.height ?? targetHeight);
-      if (persist) setPreference("manual", mode);
+      // ─ Fonte mp4 (Cloudinary): trocamos nós mesmos a fonte ─
+      if (renditions) {
+        if (mode === "auto") {
+          const pref = getCachedVideoPreference();
+          const screenH = typeof window !== "undefined" ? window.innerHeight : 720;
+          const targetHeight = pickStartingHeight(pref, screenH);
+          let bestIdx = 0, bestDiff = Infinity;
+          renditions.forEach((r, i) => {
+            const diff = Math.abs(r.height - targetHeight);
+            if (diff < bestDiff) { bestDiff = diff; bestIdx = i; }
+          });
+          switchMp4Rendition(bestIdx, persist ? "auto" : null);
+          return;
+        }
+        const targetHeight = { "144p":144,"240p":240,"360p":360,"480p":480,"720p":720,"1080p":1080,"1440p":1440,"4k":2160 }[mode];
+        let bestIdx = 0, bestDiff = Infinity;
+        renditions.forEach((r, i) => {
+          const diff = Math.abs(r.height - targetHeight);
+          if (diff < bestDiff) { bestDiff = diff; bestIdx = i; }
+        });
+        switchMp4Rendition(bestIdx, persist ? mode : null);
+      }
     },
-    [setPreference],
+    [setPreference, switchMp4Rendition],
   );
 
   /* ─── Lazy load real: só atribui a fonte quando o vídeo se aproxima
@@ -323,36 +369,16 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
     const vid = videoRef.current;
     if (!vid || !src || !hasEnteredOnce) return;
 
-    // Se o vídeo já vier como .m3u8 (Cloudflare Stream), usa-o directamente.
-    // Caso contrário, se for um mp4 do Cloudinary, deriva o URL de streaming
-    // adaptativo (várias resoluções) a partir do mesmo public_id — funciona
-    // mesmo em vídeos publicados antes deste sistema existir, sem re-upload.
     const nativeHls = src.includes(".m3u8");
-    const derivedHls = nativeHls ? null : toCloudinaryHlsUrl(src);
-    const hlsSrc = nativeHls ? src : derivedHls;
-
     let hlsInstance: any = null;
-    let fellBack = false;
+    mp4RenditionsRef.current = null;
+    stallCountRef.current = 0;
 
-    function fallbackToMp4() {
-      if (fellBack) return;
-      fellBack = true;
-      hlsInstance?.destroy();
-      hlsInstance = null;
-      hlsRef.current = null;
-      setQualityLevels([]);
-      vid!.src = src;
-    }
-
-    if (hlsSrc && !vid.canPlayType("application/vnd.apple.mpegurl")) {
+    if (nativeHls && !vid.canPlayType("application/vnd.apple.mpegurl")) {
       import("hls.js").then(({ default: Hls }) => {
-        if (fellBack) return;
-        if (!Hls.isSupported()) {
-          fallbackToMp4();
-          return;
-        }
+        if (!Hls.isSupported()) { vid.src = src; return; }
         const hls = new Hls({ enableWorker: false, capLevelToPlayerSize: true });
-        hls.loadSource(hlsSrc);
+        hls.loadSource(src);
         hls.attachMedia(vid);
         hlsInstance = hls;
         hlsRef.current = hls;
@@ -396,21 +422,44 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
 
         // Adaptação durante o vídeo (ponto 4): se o hls.js detetar
         // travamentos/erro de buffer, tenta recuperar reduzindo qualidade
-        // em vez de reiniciar o vídeo. Se o manifesto HLS nem sequer
-        // existir (vídeo antigo/streaming profile ainda não gerado pelo
-        // Cloudinary), cai de volta para o mp4 original em vez de mostrar
-        // erro — o utilizador nunca vê o vídeo falhar por causa disto.
+        // em vez de reiniciar o vídeo.
         hls.on(Hls.Events.ERROR, (_evt: any, data: any) => {
           if (!data?.fatal) return;
-          if (derivedHls && data.details === "manifestLoadError") {
-            fallbackToMp4();
-            return;
-          }
           if (data.type === Hls.ErrorTypes.NETWORK_ERROR) hls.startLoad();
           else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) hls.recoverMediaError();
-          else fallbackToMp4();
         });
       });
+    } else if (!nativeHls) {
+      // Cloudinary (ou outra origem mp4): gera um "ladder" de resoluções
+      // via transformação de URL — funciona em qualquer vídeo, mesmo os
+      // publicados antes deste sistema existir, sem re-upload.
+      const renditions = getCloudinaryRenditions(src);
+      if (renditions && renditions.length > 0) {
+        mp4RenditionsRef.current = renditions;
+        setQualityLevels(renditions.map((r, i) => ({ index: i, height: r.height })));
+
+        const pref = getCachedVideoPreference();
+        const screenH = typeof window !== "undefined" ? window.innerHeight : 720;
+        const targetHeight = pickStartingHeight(pref, screenH);
+
+        let startIdx = renditions.length - 1; // default: maior disponível
+        if (pref.quality_mode === "manual" && pref.preferred_resolution) {
+          const target = { "144p":144,"240p":240,"360p":360,"480p":480,"720p":720,"1080p":1080,"1440p":1440,"4k":2160 }[pref.preferred_resolution];
+          let bestDiff = Infinity;
+          renditions.forEach((r, i) => { const d = Math.abs(r.height - target); if (d < bestDiff) { bestDiff = d; startIdx = i; } });
+        } else if (pref.quality_mode !== "high_quality") {
+          let bestDiff = Infinity;
+          renditions.forEach((r, i) => { const d = Math.abs(r.height - targetHeight); if (d < bestDiff) { bestDiff = d; startIdx = i; } });
+        }
+
+        vid.src = renditions[startIdx].url;
+        setActiveLevel(pref.quality_mode === "manual" ? startIdx : -1);
+        setCurrentResLabel(resolutionFromHeight(renditions[startIdx].height));
+        recordQualityChoice(renditions[startIdx].height);
+      } else {
+        setQualityLevels([]);
+        vid.src = src;
+      }
     } else {
       vid.src = src;
     }
@@ -420,6 +469,37 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
       hlsRef.current = null;
     };
   }, [src, hasEnteredOnce, applyQualityMode]);
+
+  /* ─── Adaptação durante o vídeo (ponto 4), para fontes mp4 sem HLS:
+     em modo "Automático", se o vídeo travar repetidamente (buffering),
+     desce um degrau no ladder de resoluções, sem reiniciar — preserva o
+     tempo actual. Não interfere quando o utilizador escolheu manualmente
+     uma resolução fixa. ─── */
+  useEffect(() => {
+    const vid = videoRef.current;
+    if (!vid) return;
+
+    function onWaitingStall() {
+      if (preference.quality_mode === "manual") return;
+      const renditions = mp4RenditionsRef.current;
+      if (!renditions || activeLevel <= 0) return;
+      stallCountRef.current += 1;
+      if (stallCountRef.current >= 2) {
+        stallCountRef.current = 0;
+        switchMp4Rendition(activeLevel - 1, null);
+      }
+    }
+    function onGoodProgress() {
+      stallCountRef.current = 0;
+    }
+
+    vid.addEventListener("waiting", onWaitingStall);
+    vid.addEventListener("playing", onGoodProgress);
+    return () => {
+      vid.removeEventListener("waiting", onWaitingStall);
+      vid.removeEventListener("playing", onGoodProgress);
+    };
+  }, [activeLevel, preference.quality_mode, switchMp4Rendition]);
 
   useEffect(() => {
     setNaturalRatio(null);
