@@ -32,7 +32,7 @@ import { useRef, useState, useEffect, useCallback, forwardRef } from "react";
 import { Play, Pause, Volume2, VolumeX, Maximize, Minimize, RotateCcw, Settings, ChevronRight, ChevronLeft } from "lucide-react";
 import { useVideoInView } from "@/hooks/useVideoInView";
 import { registerVideo, notifyVideoPlaying, getGlobalMuted, setGlobalMuted } from "@/lib/mediaManager";
-import { getCloudinaryRenditions } from "@/lib/cloudinary";
+import { getCloudinaryRenditions, getCloudinaryRawUrl } from "@/lib/cloudinary";
 import { getCachedVideoPreference, useVideoPreferences } from "@/hooks/useVideoPreferences";
 import {
   pickStartingHeight,
@@ -287,6 +287,13 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
   // mesmos preservando o tempo actual (sem "reiniciar" o vídeo).
   const mp4RenditionsRef = useRef<{ height: number; url: string }[] | null>(null);
   const stallCountRef = useRef(0);
+  // Cadeia de fallback quando uma resolução da Cloudinary falha (ex.: 400
+  // por o vídeo original ultrapassar o limite de transformação síncrona
+  // do plano actual): 0 = a tocar a rendition escolhida (ou o src normal,
+  // se não houver ladder), 1 = já caiu para a URL "oficial" sem crop de
+  // resolução, 2 = já caiu para a entrega bruta sem transformação nenhuma
+  // (último recurso — só falha se nem isto carregar).
+  const fallbackStageRef = useRef<0 | 1 | 2>(0);
   const [qualityLevels, setQualityLevels] = useState<{ index: number; height: number }[]>([]);
   const [activeLevel, setActiveLevel] = useState<number>(-1); // -1 = automático
   const [showQualityMenu, setShowQualityMenu] = useState(false);
@@ -506,6 +513,7 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
     setMetadataLoaded(false);
     setHasStarted(false);
     setLoadError(false);
+    fallbackStageRef.current = 0;
   }, [src]);
 
   /* ─── Watchdog: se o metadata não carregar em 12s (URL quebrada, CORS,
@@ -668,10 +676,58 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
   function retryLoad() {
     setLoadError(false);
     setMetadataLoaded(false);
+    fallbackStageRef.current = 0;
     const vid = videoRef.current;
     if (vid) {
       vid.load();
     }
+  }
+
+  /** Se a fonte atual falhar a carregar, tenta cair num degrau mais
+   *  "seguro" antes de admitir erro — cobre o caso mais comum na prática:
+   *  a resolução pedida à Cloudinary dá 400 porque o vídeo original
+   *  ultrapassa o limite de transformação síncrona do plano (ex.: 40MB no
+   *  plano free). Nenhum destes fallbacks reinicia o vídeo do zero (o
+   *  currentTime é preservado). */
+  function handleVideoError() {
+    const vid = videoRef.current;
+    if (!vid) {
+      setLoadError(true);
+      return;
+    }
+    const t = vid.currentTime;
+
+    // Estágio 0 → 1: estávamos a tocar uma rendition da ladder (ou o
+    // próprio src ainda não tentado sem crop) — cai para a URL "oficial"
+    // (q_auto/f_auto/vc_h264, sem redimensionamento), que é a mesma usada
+    // no resto do site e pode já estar em cache.
+    if (fallbackStageRef.current === 0 && mp4RenditionsRef.current) {
+      fallbackStageRef.current = 1;
+      mp4RenditionsRef.current = null;
+      setQualityLevels([]);
+      setActiveLevel(-1);
+      setCurrentResLabel(null);
+      vid.src = src;
+      vid.currentTime = t;
+      vid.play().catch(() => {});
+      return;
+    }
+
+    // Estágio 1 → 2: último recurso — entrega totalmente bruta, sem
+    // nenhuma transformação. Nunca dispara o limite de transformação
+    // síncrona, porque não há nada a processar.
+    if (fallbackStageRef.current <= 1) {
+      const raw = getCloudinaryRawUrl(src);
+      if (raw && raw !== vid.src) {
+        fallbackStageRef.current = 2;
+        vid.src = raw;
+        vid.currentTime = t;
+        vid.play().catch(() => {});
+        return;
+      }
+    }
+
+    setLoadError(true);
   }
 
   return (
@@ -748,7 +804,7 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
           setMetadataLoaded(true);
         }}
         onPause={() => setIsPlaying(false)}
-        onError={() => setLoadError(true)}
+        onError={handleVideoError}
         onVolumeChange={(e) => setIsMuted(e.currentTarget.muted)}
         onTimeUpdate={() => {
           const v = videoRef.current;

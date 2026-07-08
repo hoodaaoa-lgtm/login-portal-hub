@@ -123,6 +123,25 @@ export function getCloudinaryRenditions(mp4Url: string): CloudinaryRendition[] |
   }));
 }
 
+/**
+ * URL de entrega BRUTA, sem nenhuma transformação (nem q_auto, nem
+ * f_auto, nem vc_h264, nem redimensionamento). Último recurso quando até
+ * a URL "oficial" (getVideoPlaybackUrl) falha com 400 — normalmente
+ * porque o vídeo original ultrapassa o limite de transformação síncrona
+ * do plano Cloudinary atual (ex.: 40MB no plano free). Como não pede
+ * nenhum processamento, a Cloudinary só serve o ficheiro tal como foi
+ * enviado — nunca dispara esse limite. Pode devolver o formato original
+ * (nem sempre mp4/H.264), mas pelo menos carrega em vez de dar 400.
+ */
+export function getCloudinaryRawUrl(mp4Url: string): string | null {
+  const match = mp4Url.match(
+    /res\.cloudinary\.com\/([^/]+)\/video\/upload\/[^/]+\/(.+?)(?:\.[a-zA-Z0-9]+)?$/,
+  );
+  if (!match) return null;
+  const [, cloud, publicId] = match;
+  return `https://res.cloudinary.com/${cloud}/video/upload/${publicId}.mp4`;
+}
+
 /** URL de reprodução directa (mp4 optimizado).
  *  vc_h264 força um recodifica para H.264/SDR — sem isto, vídeos HDR
  *  (comuns em iPhones — Dolby Vision/HDR10) tocavam com o URL original
