@@ -154,6 +154,7 @@ export function normalizePost(
     user: raw.author_name ?? raw.author_username,
     name: `@${raw.author_username ?? "?"}`,
     color: raw.author_color ?? undefined,
+    avatar_url: extra?.avatarUrl ?? null,
     text,
     bg_color,
     photo: raw.photo_url ?? null,

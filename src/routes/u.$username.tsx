@@ -508,8 +508,10 @@ function UserProfilePage() {
     queryKey:["profilePosts2", profileId],
     queryFn: async ()=>{
       const {data}=await (supabase as any).from("posts")
-        .select("id,author_id,content,kind,created_at,photo_url,image_url,video_url,clip_title,clip_thumb_url,clip_video_id,clip_start,clip_end,likes_count,views_count")
+        .select("id,author_id,content,kind,created_at,photo_url,image_url,video_url,clip_title,clip_thumb_url,clip_video_id,clip_start,clip_end,likes_count,views_count,is_draft,scheduled_at")
         .eq("author_id",profileId)
+        .eq("is_draft", false)
+        .or(`scheduled_at.is.null,scheduled_at.lte.${new Date().toISOString()}`)
         .order("created_at",{ascending:false})
         .limit(30);
 

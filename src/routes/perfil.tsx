@@ -30,6 +30,7 @@ import { uploadImageToCloudinary, uploadToCloudinary } from "@/lib/cloudinary";
 import { fetchPostComments, sendPostComment, replyToPostComment, toggleCommentLike } from "@/lib/comments";
 import { deletePostForEveryone } from "@/lib/posts";
 import { UniversalPostCard, normalizePost } from "@/components/UniversalPostCard";
+import { FollowListModal } from "@/components/FollowList";
 import { PhotoViewer } from "@/components/PhotoViewer";
 import { FeedVideoPlayer } from "@/components/FeedVideoPlayer";
 import { PollCard } from "@/components/PollCard";
@@ -122,100 +123,7 @@ function StatsGrid({ publications, followers, following, loading, onFollowersCli
   );
 }
 
-/* ─── Lista de Seguidores / Seguindo ─── */
-type FollowListUser = { id: string; username: string; fullName: string; avatarUrl: string | null; color: string };
-
-function FollowListModal({ mode, targetUsername, targetUserId, onClose }: {
-  mode: "followers" | "following";
-  targetUsername: string;
-  targetUserId: string;
-  onClose: () => void;
-}) {
-  useScrollLock();
-  const { data: users = [], isLoading: loading, error: queryError } = useQuery({
-    queryKey: ["followList", mode, mode === "followers" ? targetUsername : targetUserId],
-    queryFn: async (): Promise<FollowListUser[]> => {
-      if (mode === "followers") {
-        const { data: rows, error } = await supabase.from("follows")
-          .select("follower_id").eq("target_username", targetUsername);
-        if (error) throw error;
-        const ids = [...new Set((rows ?? []).map((r: any) => r.follower_id))];
-        if (ids.length === 0) return [];
-        const { data: profs, error: profErr } = await supabase.from("profiles")
-          .select("id,username,full_name,avatar_url").in("id", ids);
-        if (profErr) throw profErr;
-        return (profs ?? []).map((p: any) => ({
-          id: p.id, username: p.username ?? "?", fullName: p.full_name ?? p.username ?? "?",
-          avatarUrl: p.avatar_url ?? null, color: ACCENT,
-        }));
-      } else {
-        const { data: rows, error } = await supabase.from("follows")
-          .select("target_username").eq("follower_id", targetUserId);
-        if (error) throw error;
-        const usernames = [...new Set((rows ?? []).map((r: any) => r.target_username).filter(Boolean))];
-        if (usernames.length === 0) return [];
-        const { data: profs, error: profErr } = await supabase.from("profiles")
-          .select("id,username,full_name,avatar_url").in("username", usernames);
-        if (profErr) throw profErr;
-        return (profs ?? []).map((p: any) => ({
-          id: p.id, username: p.username ?? "?", fullName: p.full_name ?? p.username ?? "?",
-          avatarUrl: p.avatar_url ?? null, color: ACCENT,
-        }));
-      }
-    },
-    enabled: mode === "followers" ? !!targetUsername : !!targetUserId,
-    ...STATIC_QUERY_OPTIONS,
-  });
-  const err = queryError ? (queryError instanceof Error ? queryError.message : "Erro ao carregar lista") : "";
-
-  useScrollLock();
-
-  return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center overflow-hidden" style={{ background: "rgba(0,0,0,0.5)" }}
-      onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="w-full sm:max-w-sm rounded-2xl hooda-modal-sheet overflow-hidden flex flex-col" style={{ maxHeight: "75vh" }}>
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-[var(--border-subtle)] shrink-0">
-          <p className="font-extrabold text-base text-black">{mode === "followers" ? t("profile.followers") : t("profile.following")}</p>
-          <button onClick={onClose} className="p-1.5 rounded-full hover:bg-[var(--s2)]">
-            <X className="h-5 w-5 text-[var(--text-muted)]" />
-          </button>
-        </div>
-        <div className="overflow-y-auto flex-1">
-          {loading ? (
-            <div className="flex justify-center py-10">
-              <div className="h-6 w-6 rounded-full border-2 animate-spin" style={{ borderColor: ACCENT, borderTopColor: "transparent" }} />
-            </div>
-          ) : err ? (
-            <p className="text-sm text-red-500 text-center py-10 px-5">{err}</p>
-          ) : users.length === 0 ? (
-            <p className="text-sm text-[var(--text-muted)] text-center py-10">
-              {mode === "followers" ? "Ainda sem seguidores" : "Ainda não segue ninguém"}
-            </p>
-          ) : (
-            <div className="divide-y divide-neutral-50">
-              {users.map(u => (
-                <div key={u.id} className="flex items-center gap-3 px-5 py-3">
-                  <ProfileAvatarLink userId={u.id} username={u.username}>
-                    <div className="w-11 h-11 rounded-full flex items-center justify-center text-white font-bold text-sm overflow-hidden flex-shrink-0"
-                      style={{ background: u.color }}>
-                      {u.avatarUrl
-                        ? <img src={u.avatarUrl} alt={u.username} className="w-full h-full object-cover" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
-                        : (u.username?.[0] ?? "?").toUpperCase()}
-                    </div>
-                  </ProfileAvatarLink>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-black truncate">{u.fullName}</p>
-                    <p className="text-xs text-[var(--text-muted)]">@{u.username}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
+/* ─── Lista de Seguidores / Seguindo — ver src/components/FollowList.tsx ─── */
 
 
 function PostsFeed({ posts, loading, name, username, avatarUrl, onDelete, myUserId }: {
@@ -1706,8 +1614,10 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
 
       const { data } = await (supabase as any)
         .from("posts")
-        .select("id, content, kind, created_at, photo_url, image_url, video_url, photos, clip_title, clip_thumb_url, clip_video_id, clip_start, clip_end, poll, poll_ends_at")
+        .select("id, content, kind, created_at, photo_url, image_url, video_url, photos, clip_title, clip_thumb_url, clip_video_id, clip_start, clip_end, poll, poll_ends_at, is_draft, scheduled_at")
         .eq("author_id", session.user.id)
+        .eq("is_draft", false)
+        .or(`scheduled_at.is.null,scheduled_at.lte.${new Date().toISOString()}`)
         .order("created_at", { ascending: false });
       if (data && data.length > 0) {
         const postIds = data.map((p: any) => p.id);

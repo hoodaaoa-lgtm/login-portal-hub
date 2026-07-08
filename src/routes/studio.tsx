@@ -8,6 +8,8 @@ import {
   Search, Filter, Trash2, Edit2, Clock,
 } from "lucide-react";
 import { toast } from "sonner";
+import { FollowListSection } from "@/components/FollowList";
+import { UniversalPostCard, normalizePost } from "@/components/UniversalPostCard";
 
 export const Route = createFileRoute("/studio")({
   head: () => ({ meta: [{ title: "Hooda Studio" }] }),
@@ -18,7 +20,7 @@ const P    = "#5B3FCF";
 const GRAD = "linear-gradient(135deg,#5B3FCF,#E94B8A)";
 const MAX_VIDEO_DURATION = 480; // 8 min
 
-type Tab = "criar" | "conteudo";
+type Tab = "criar" | "conteudo" | "comunidade";
 type Kind = "text" | "image" | "video" | "poll";
 type Visibility = "public" | "private" | "unlisted";
 type Filt = "all" | "published" | "draft" | "scheduled" | "video" | "image" | "text";
@@ -62,10 +64,15 @@ function StudioPage() {
             style={{ background: tab === "criar" ? P : "transparent", color: tab === "criar" ? "#fff" : "var(--text-secondary)" }}>
             Criar
           </button>
+          <button onClick={() => setTab("comunidade")}
+            className="px-4 py-1.5 rounded-full text-xs font-bold transition"
+            style={{ background: tab === "comunidade" ? P : "transparent", color: tab === "comunidade" ? "#fff" : "var(--text-secondary)" }}>
+            Comunidade
+          </button>
         </div>
       </header>
 
-      {tab === "criar" ? <CriarTab onDone={() => setTab("conteudo")} /> : <ConteudoTab onCriar={() => setTab("criar")} />}
+      {tab === "criar" ? <CriarTab onDone={() => setTab("conteudo")} /> : tab === "comunidade" ? <ComunidadeTab /> : <ConteudoTab onCriar={() => setTab("criar")} />}
     </div>
   );
 }
@@ -542,9 +549,11 @@ function CriarTab({ onDone }: { onDone: () => void }) {
 function ConteudoTab({ onCriar }: { onCriar: () => void }) {
   const navigate = useNavigate();
   const [posts, setPosts] = useState<any[]>([]);
+  const [author, setAuthor] = useState<{ id: string; username: string; name: string; color: string; avatarUrl: string | null } | null>(null);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
   const [filt, setFilt] = useState<Filt>("all");
+  const [view, setView] = useState<"grade" | "feed">("grade");
   const [reschedId, setReschedId] = useState<string | null>(null);
   const [newDate, setNewDate] = useState("");
   const [newTime, setNewTime] = useState("");
@@ -554,8 +563,18 @@ function ConteudoTab({ onCriar }: { onCriar: () => void }) {
     const { data: sess } = await supabase.auth.getSession();
     const uid = sess.session?.user?.id;
     if (!uid) { setLoading(false); return; }
+    const { data: prof } = await supabase.from("profiles").select("username,full_name,avatar_url").eq("id", uid).maybeSingle();
+    if (prof) {
+      setAuthor({
+        id: uid,
+        username: (prof as any).username ?? "",
+        name: (prof as any).full_name || (prof as any).username || "Utilizador",
+        color: "#5B3FCF",
+        avatarUrl: (prof as any).avatar_url ?? null,
+      });
+    }
     const { data } = await (supabase as any).from("posts")
-      .select("id,title,content,kind,scheduled_at,is_draft,thumbnail_url,photo_url,photos,video_url,created_at,views,likes_count")
+      .select("id,title,content,kind,scheduled_at,is_draft,thumbnail_url,photo_url,photos,video_url,created_at,views_count,likes_count,comments_count,author_id,author_username,author_name,author_color")
       .eq("author_id", uid)
       .order("created_at", { ascending: false })
       .limit(200);
@@ -635,18 +654,32 @@ function ConteudoTab({ onCriar }: { onCriar: () => void }) {
           className="flex-1 bg-transparent text-sm outline-none" style={{ color: "var(--text-primary)" }} />
       </div>
 
-      <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-1 px-1 pb-1">
-        {chips.map(c => (
-          <button key={c.k} onClick={() => setFilt(c.k)}
-            className="shrink-0 px-3 py-1.5 rounded-full text-xs font-bold border transition"
-            style={{
-              background: filt === c.k ? P : "var(--s0)",
-              color: filt === c.k ? "#fff" : "var(--text-secondary)",
-              borderColor: filt === c.k ? P : "var(--border-subtle)",
-            }}>
-            {c.label}
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-1 px-1 pb-1">
+          {chips.map(c => (
+            <button key={c.k} onClick={() => setFilt(c.k)}
+              className="shrink-0 px-3 py-1.5 rounded-full text-xs font-bold border transition"
+              style={{
+                background: filt === c.k ? P : "var(--s0)",
+                color: filt === c.k ? "#fff" : "var(--text-secondary)",
+                borderColor: filt === c.k ? P : "var(--border-subtle)",
+              }}>
+              {c.label}
+            </button>
+          ))}
+        </div>
+        <div className="flex gap-1 p-1 rounded-full shrink-0" style={{ background: "var(--s2)" }}>
+          <button onClick={() => setView("grade")}
+            className="px-3 py-1.5 rounded-full text-xs font-bold transition"
+            style={{ background: view === "grade" ? P : "transparent", color: view === "grade" ? "#fff" : "var(--text-secondary)" }}>
+            Grade
           </button>
-        ))}
+          <button onClick={() => setView("feed")}
+            className="px-3 py-1.5 rounded-full text-xs font-bold transition"
+            style={{ background: view === "feed" ? P : "transparent", color: view === "feed" ? "#fff" : "var(--text-secondary)" }}>
+            Feed
+          </button>
+        </div>
       </div>
 
       {loading ? (
@@ -658,6 +691,17 @@ function ConteudoTab({ onCriar }: { onCriar: () => void }) {
           style={{ background: "var(--s0)", border: "1px solid var(--border-subtle)" }}>
           <Filter className="h-10 w-10 mx-auto mb-3" style={{ color: P }} />
           <p className="text-sm" style={{ color: "var(--text-muted)" }}>Nada encontrado.</p>
+        </div>
+      ) : view === "feed" ? (
+        <div className="max-w-xl mx-auto space-y-3">
+          {filtered.map(p => (
+            <UniversalPostCard key={p.id}
+              post={normalizePost(
+                { ...p, likes: p.likes_count ?? 0, comments: p.comments_count ?? 0 },
+                "single",
+                author ? { name: author.name, username: author.username, avatarUrl: author.avatarUrl, authorId: author.id } : undefined,
+              )} />
+          ))}
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -683,7 +727,7 @@ function ConteudoTab({ onCriar }: { onCriar: () => void }) {
                   {!p.is_draft && !scheduled && (
                     <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded-full text-[10px] font-bold text-white"
                       style={{ background: "rgba(0,0,0,.6)" }}>
-                      {Number(p.views ?? 0).toLocaleString("pt-PT")} vistas
+                      {Number(p.views_count ?? 0).toLocaleString("pt-PT")} vistas
                     </div>
                   )}
                 </div>
@@ -742,6 +786,86 @@ function ConteudoTab({ onCriar }: { onCriar: () => void }) {
           })}
         </div>
       )}
+    </div>
+  );
+}
+
+/* ══════════════════════════ COMUNIDADE ══════════════════════════ */
+
+type ComunidadeStats = { views: number; likes: number; publications: number };
+
+function ComunidadeTab() {
+  const [uid, setUid] = useState<string | null>(null);
+  const [username, setUsername] = useState<string>("");
+  const [followerCount, setFollowerCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
+  const [stats, setStats] = useState<ComunidadeStats>({ views: 0, likes: 0, publications: 0 });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      const { data: sess } = await supabase.auth.getSession();
+      const id = sess.session?.user?.id;
+      if (!id) { setLoading(false); return; }
+      setUid(id);
+
+      const { data: prof } = await supabase.from("profiles").select("username").eq("id", id).maybeSingle();
+      const uname = (prof as any)?.username ?? "";
+      setUsername(uname);
+
+      const [{ count: fc }, { count: foc }, { data: postsAgg }] = await Promise.all([
+        supabase.from("follows").select("*", { count: "exact", head: true }).eq("target_username", uname),
+        supabase.from("follows").select("*", { count: "exact", head: true }).eq("follower_id", id),
+        (supabase as any).from("posts").select("views_count,likes_count").eq("author_id", id),
+      ]);
+      setFollowerCount(fc ?? 0);
+      setFollowingCount(foc ?? 0);
+
+      const rows = (postsAgg as any[] | null) ?? [];
+      setStats({
+        publications: rows.length,
+        views: rows.reduce((s, r) => s + (r.views_count ?? 0), 0),
+        likes: rows.reduce((s, r) => s + (r.likes_count ?? 0), 0),
+      });
+      setLoading(false);
+    })();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-8 w-8 animate-spin" style={{ color: P }} />
+      </div>
+    );
+  }
+
+  const statCards: { label: string; value: number }[] = [
+    { label: "Publicações", value: stats.publications },
+    { label: "Vistas", value: stats.views },
+    { label: "Curtidas", value: stats.likes },
+  ];
+
+  return (
+    <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-5">
+      <div>
+        <h1 className="text-2xl sm:text-3xl font-black" style={{ color: "var(--text-primary)" }}>Comunidade</h1>
+        <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>Seguidores, quem segues, e o desempenho geral do teu conteúdo.</p>
+      </div>
+
+      <div className="grid grid-cols-3 gap-3">
+        {statCards.map(s => (
+          <div key={s.label} className="rounded-2xl p-4 text-center"
+            style={{ background: "var(--s0)", border: "1px solid var(--border-subtle)" }}>
+            <p className="text-xl sm:text-2xl font-black" style={{ color: P }}>{s.value.toLocaleString("pt-PT")}</p>
+            <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>{s.label}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <FollowListSection mode="followers" targetUsername={username} targetUserId={uid ?? ""} title="Seguidores" count={followerCount} />
+        <FollowListSection mode="following" targetUsername={username} targetUserId={uid ?? ""} title="A seguir" count={followingCount} />
+      </div>
     </div>
   );
 }

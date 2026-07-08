@@ -216,6 +216,8 @@ function ExplorePage() {
       const { data } = await (supabase as any).from("posts")
         .select("id,content,kind,photo_url,image_url,likes_count,author_username,author_color,author_id,created_at")
         .in("kind",["photo","post"])
+        .eq("is_draft", false)
+        .or(`scheduled_at.is.null,scheduled_at.lte.${new Date().toISOString()}`)
         .order("created_at", { ascending: false }).limit(500);
       return data ?? [];
     },
@@ -244,6 +246,8 @@ function ExplorePage() {
       const { data } = await (supabase as any).from("posts")
         .select("id,author_id,author_username,author_name,author_color,content,kind,created_at,video_url,thumbnail_url,views_count,reposts_count")
         .eq("kind","video")
+        .eq("is_draft", false)
+        .or(`scheduled_at.is.null,scheduled_at.lte.${new Date().toISOString()}`)
         .ilike("content",`%${search}%`).limit(10);
       return data ?? [];
     },
@@ -320,6 +324,8 @@ function ExplorePage() {
       const { data } = await (supabase as any).from("posts")
         .select("id,content,kind,photo_url,image_url,likes_count,author_username,author_color")
         .in("kind",["photo","post"])
+        .eq("is_draft", false)
+        .or(`scheduled_at.is.null,scheduled_at.lte.${new Date().toISOString()}`)
         .ilike("content",`%${search}%`).limit(10);
       return data ?? [];
     },

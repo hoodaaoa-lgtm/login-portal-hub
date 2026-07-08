@@ -291,6 +291,8 @@ function HomePage() {
       const { data } = await supabase
         .from("posts")
         .select("id,author_id,author_username,author_name,author_color,content,kind,is_ad,created_at,photo_url,photos,video_url,thumbnail_url,clip_video_id,clip_start,clip_end,clip_title,clip_thumb_url,poll,poll_ends_at,moderation_status,is_sensitive")
+        .eq("is_draft", false)
+        .or(`scheduled_at.is.null,scheduled_at.lte.${new Date().toISOString()}`)
         .order("created_at", { ascending: false })
         .limit(50);
       return (data ?? []).map((p: any) => {
@@ -358,6 +360,8 @@ function HomePage() {
     if (rankErr || !rankedRows) {
       console.error("get_personalized_feed falhou, a usar ordem cronológica:", rankErr);
       let fallbackQuery = supabase.from("posts").select(POST_SELECT_FIELDS)
+        .eq("is_draft", false)
+        .or(`scheduled_at.is.null,scheduled_at.lte.${new Date().toISOString()}`)
         .order("created_at", { ascending: false }).limit(FEED_CHUNK_SIZE);
       if (cursor) fallbackQuery = fallbackQuery.lt("created_at", cursor);
       const { data } = await fallbackQuery;
