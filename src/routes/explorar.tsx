@@ -2,11 +2,10 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { BottomNav, SideNav, PageWrapper, FeedLayout } from "@/components/AppShell";
 import { RightSidebar } from "@/components/RightSidebar";
 import { UniversalPostCard } from "@/components/UniversalPostCard";
-import { RichText } from "@/components/RichText";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect, useMemo } from "react";
-import { Search, X, Heart, TrendingUp, Users, FileText, UserPlus, UserCheck, BookOpen, Download, Bookmark } from "lucide-react";
+import { Search, X, TrendingUp, Users, FileText, UserPlus, UserCheck, BookOpen, Download, Bookmark, Hash } from "lucide-react";
 import { t } from "@/lib/useT";
 import { getHoodaOfficialId } from "@/lib/hoodaOfficial";
 import { toast } from "sonner";
@@ -37,7 +36,8 @@ const TABS = [
 ] as const;
 type Tab = typeof TABS[number]["key"];
 
-const TRENDING_TAGS: string[] = []; // hashtags reais vêm da DB
+/* Hashtags em tendência agora vêm de get_trending_hashtags (DB), ver query
+   "explore-trending-hashtags" mais abaixo — antes era um array vazio fixo. */
 
 /* ── Avatar ── */
 const BOOK_COLORS = ["#5B3FCF","#E94B8A","#F26B3A","#1FAFA6","#6BA547","#FFC93C"];
@@ -188,7 +188,7 @@ function ExplorePage() {
       // A conta "Hooda Oficial" nunca aparece em pesquisas de pessoas.
       return (data ?? []).filter((p: any) => p.id !== officialId);
     },
-    enabled: searchActive && tab === "trending",
+    enabled: searchActive,
     staleTime: 30_000,
   });
 
@@ -208,6 +208,46 @@ function ExplorePage() {
     staleTime: 60_000,
   });
 
+  /* ── Hashtags em tendência (14 dias), extraídas de verdade do conteúdo
+     dos posts — antes era um array vazio fixo no frontend. ── */
+  const { data: trendingHashtags = [] } = useQuery({
+    queryKey: ["explore-trending-hashtags"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any).rpc("get_trending_hashtags", { p_limit: 12 });
+      if (error) throw error;
+      return (data ?? []) as { tag: string; uses: number }[];
+    },
+    enabled: tab === "trending" && !searchActive,
+    staleTime: 60_000,
+  });
+
+  /* ── Hashtags que batem com o termo pesquisado — alimenta a secção
+     "Relacionado com sua pesquisa" e a pesquisa global por hashtag. ── */
+  const { data: searchHashtags = [] } = useQuery({
+    queryKey: ["explore-search-hashtags", search],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any).rpc("search_hashtags", {
+        p_query: search.replace(/^#/, ""), p_limit: 10,
+      });
+      if (error) throw error;
+      return (data ?? []) as { tag: string; uses: number }[];
+    },
+    enabled: searchActive,
+    staleTime: 30_000,
+  });
+
+  /* ── Regista o termo pesquisado (histórico usado para melhorar
+     recomendações futuras) — silencioso, não bloqueia nada, com debounce
+     de 1.2s para não gravar a cada tecla premida. ── */
+  useEffect(() => {
+    if (!searchActive || !myId) return;
+    const term = search.trim();
+    const timer = setTimeout(() => {
+      (supabase as any).from("search_history").insert({ user_id: myId, query: term }).then(() => {});
+    }, 1200);
+    return () => clearTimeout(timer);
+  }, [search, searchActive, myId]);
+
   /* ── Query: posts (aba Mídia + trending) — nunca inclui vídeos; vídeos só
      aparecem quando o utilizador pesquisa (ver searchVideos/searchVideoPosts
      mais abaixo), nunca na navegação normal. ── */
@@ -215,7 +255,7 @@ function ExplorePage() {
     queryKey: ["explore-posts"],
     queryFn: async () => {
       const { data } = await (supabase as any).from("posts")
-        .select("id,content,kind,photo_url,image_url,likes_count,author_username,author_color,author_id,created_at")
+        .select("id,content,kind,photo_url,image_url,likes_count,comments_count,author_username,author_color,author_id,created_at")
         .in("kind",["photo","post"])
         .eq("is_draft", false)
         .or(`scheduled_at.is.null,scheduled_at.lte.${new Date().toISOString()}`)
@@ -323,7 +363,7 @@ function ExplorePage() {
     queryKey: ["explore-search-posts", search],
     queryFn: async () => {
       const { data } = await (supabase as any).from("posts")
-        .select("id,content,kind,photo_url,image_url,likes_count,author_username,author_color")
+        .select("id,content,kind,photo_url,image_url,likes_count,comments_count,author_username,author_color,author_id,created_at")
         .in("kind",["photo","post"])
         .eq("is_draft", false)
         .or(`scheduled_at.is.null,scheduled_at.lte.${new Date().toISOString()}`)
@@ -334,7 +374,79 @@ function ExplorePage() {
     staleTime: 30_000,
   });
 
+  /* ── Avatares dos autores de posts (foto/texto), para o UniversalPostCard
+     mostrar foto de perfil em vez de ficar sempre com a inicial. ── */
+  const postAuthorIds = useMemo(() => {
+    const ids = new Set<string>();
+    (popularPosts ?? []).forEach((p: any) => { if (p.author_id) ids.add(p.author_id); });
+    (searchPosts ?? []).forEach((p: any) => { if (p.author_id) ids.add(p.author_id); });
+    return [...ids];
+  }, [popularPosts, searchPosts]);
+
+  const { data: postAuthorProfiles = [] } = useQuery({
+    queryKey: ["explore-post-authors", postAuthorIds],
+    queryFn: async () => {
+      if (postAuthorIds.length === 0) return [];
+      const { data } = await (supabase as any).from("profiles")
+        .select("id,avatar_url").in("id", postAuthorIds);
+      return data ?? [];
+    },
+    enabled: postAuthorIds.length > 0,
+    staleTime: 60_000,
+  });
+
+  const postAvatarMap = useMemo(() => {
+    const m: Record<string, string | null> = {};
+    (postAuthorProfiles ?? []).forEach((a: any) => { m[a.id] = a.avatar_url ?? null; });
+    return m;
+  }, [postAuthorProfiles]);
+
+  /* Converte uma linha crua de "posts" (foto/texto) no formato canónico do
+     UniversalPostCard — antes estes resultados usavam um PostThumb próprio
+     (grelha estática, sem player, sem ações de gostar/comentar/partilhar). */
+  function toCanonicalPost(p: any) {
+    const name = p.author_username || "hooda";
+    return {
+      id: p.id, author_id: p.author_id ?? null, author_username: p.author_username ?? null,
+      user: name, name: `@${p.author_username || "?"}`,
+      color: p.author_color || colorFor(name), avatar_url: postAvatarMap[p.author_id] ?? null,
+      text: p.content, photo: p.photo_url || p.image_url || null, photos: null, video: null, video_thumb: null,
+      bg_color: null, created_at: p.created_at, kind: p.kind, is_ad: false,
+      likes: p.likes_count ?? 0, liked_by_me: false, comments: p.comments_count ?? 0,
+      views_count: 0, reposts_count: 0,
+    };
+  }
+
+  const popularPostCards = useMemo(() => (popularPosts ?? []).map(toCanonicalPost), [popularPosts, postAvatarMap]);
+  const searchPostCards  = useMemo(() => (searchPosts ?? []).map(toCanonicalPost),  [searchPosts, postAvatarMap]);
+
   const myFollowsSet = useMemo(() => new Set(myFollowsData ?? []), [myFollowsData]);
+
+  /* ── Contagem de seguidores em lote para as pessoas visíveis (pesquisa +
+     sugeridas) — 1 pedido só, em vez de 1 por cartão. ── */
+  const visiblePeopleUsernames = useMemo(() => {
+    const set = new Set<string>();
+    (searchPeople ?? []).forEach((p: any) => p.username && set.add(p.username));
+    (suggestedPeople ?? []).slice(0, 60).forEach((p: any) => p.username && set.add(p.username));
+    return [...set];
+  }, [searchPeople, suggestedPeople]);
+
+  const { data: followerCountsRaw = [] } = useQuery({
+    queryKey: ["explore-follower-counts", visiblePeopleUsernames],
+    queryFn: async () => {
+      if (visiblePeopleUsernames.length === 0) return [];
+      const { data, error } = await (supabase as any).rpc("get_follower_counts", { p_usernames: visiblePeopleUsernames });
+      if (error) throw error;
+      return (data ?? []) as { username: string; followers: number }[];
+    },
+    enabled: visiblePeopleUsernames.length > 0,
+    staleTime: 30_000,
+  });
+  const followerCounts = useMemo(() => {
+    const m: Record<string, number> = {};
+    (followerCountsRaw ?? []).forEach((r: any) => { m[r.username] = Number(r.followers) || 0; });
+    return m;
+  }, [followerCountsRaw]);
 
   async function toggleFollow(userId: string, username: string) {
     if (!myId) { toast.error("Inicia sessão para acompanhar."); return; }
@@ -369,6 +481,7 @@ function ExplorePage() {
   /* ── Render helpers ── */
   function PersonCard({ p }: { p: any }) {
     const isF = followMap[p.id] ?? myFollowsSet.has(p.username);
+    const followers = followerCounts[p.username];
     return (
       <div className="flex items-center gap-3 p-3 rounded-2xl border transition hover:bg-[var(--s1)]"
         style={{ borderColor: "var(--border-subtle)", background: "var(--s0)" }}>
@@ -377,7 +490,9 @@ function ExplorePage() {
         </button>
         <div className="flex-1 min-w-0" onClick={() => navigate({ to: "/u/$username", params: { username: p.username } })} style={{ cursor: "pointer" }}>
           <p className="font-bold text-sm truncate" style={{ color: "var(--text-primary)" }}>{p.full_name || p.username}</p>
-          <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>@{p.username}</p>
+          <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
+            @{p.username}{followers !== undefined && <> · {fmtNum(followers)} acompanhante{followers === 1 ? "" : "s"}</>}
+          </p>
         </div>
         {myId && myId !== p.id && (
           <button onClick={() => toggleFollow(p.id, p.username)}
@@ -388,26 +503,6 @@ function ExplorePage() {
             {isF ? <><UserCheck className="h-3.5 w-3.5" />Acompanhando</> : <><UserPlus className="h-3.5 w-3.5" />Acompanhar</>}
           </button>
         )}
-      </div>
-    );
-  }
-
-  function PostThumb({ p }: { p: any }) {
-    const photo = p.photo_url || p.image_url;
-    return (
-      <div className="rounded-xl overflow-hidden border" style={{ borderColor: "var(--border-subtle)" }}>
-        <div className="relative" style={{ aspectRatio: "1/1", background: "var(--s2)" }}>
-          {photo
-            ? <img src={photo} alt="" className="w-full h-full object-cover" />
-            : <div className="w-full h-full flex items-center justify-center p-2">
-                <p className="text-[10px] text-center line-clamp-4 leading-relaxed"
-                  style={{ color: "var(--text-muted)" }}><RichText text={p.content} /></p>
-              </div>}
-        </div>
-        <div className="flex items-center gap-1.5 px-2 py-1.5">
-          <Heart className="h-3.5 w-3.5" style={{ color: PINK }} />
-          <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>{fmtNum(p.likes_count ?? 0)}</span>
-        </div>
       </div>
     );
   }
@@ -470,6 +565,22 @@ function ExplorePage() {
         <div className="w-full">
         {searchActive ? (
           <div className="px-4 py-4 space-y-6">
+            {/* Hashtags */}
+            {searchHashtags.length > 0 && (
+              <section>
+                <p className="text-[11px] font-bold uppercase tracking-wider mb-2.5" style={{ color: "var(--text-muted)" }}>Hashtags</p>
+                <div className="flex flex-wrap gap-2">
+                  {searchHashtags.map((h: any) => (
+                    <button key={h.tag} onClick={() => setSearch(h.tag)}
+                      className="flex items-center gap-1 px-3.5 py-1.5 rounded-full text-sm font-semibold transition active:scale-95"
+                      style={{ background: "var(--s2)", border: "1px solid var(--border-subtle)", color: "var(--text-primary)" }}>
+                      <Hash className="w-3.5 h-3.5" style={{ color: P }} />{h.tag}
+                      <span style={{ color: "var(--text-muted)" }}>· {fmtNum(h.uses)}</span>
+                    </button>
+                  ))}
+                </div>
+              </section>
+            )}
             {/* Pessoas */}
             {searchPeople.length > 0 && (
               <section>
@@ -488,21 +599,40 @@ function ExplorePage() {
                 </div>
               </section>
             )}
-            {/* Posts */}
-            {searchPosts.length > 0 && (
+            {/* Posts — agora com o mesmo cartão universal (foto/texto/vídeo),
+                nunca mais um thumbnail estático à parte. */}
+            {searchPostCards.length > 0 && (
               <section>
-                <p className="text-[11px] font-bold uppercase tracking-wider mb-2.5" style={{ color: "var(--text-muted)" }}>Posts</p>
-                <div className="grid grid-cols-2 gap-2">
-                  {searchPosts.map((p: any) => <PostThumb key={p.id} p={p} />)}
+                <p className="text-[11px] font-bold uppercase tracking-wider mb-2.5" style={{ color: "var(--text-muted)" }}>Publicações</p>
+                <div className="space-y-4 -mx-4">
+                  {searchPostCards.map((p: any) => <UniversalPostCard key={p.id} post={p} />)}
                 </div>
               </section>
             )}
-            {searchPeople.length === 0 && searchVideos.length === 0 && searchPosts.length === 0 && (
+            {searchPeople.length === 0 && searchVideos.length === 0 && searchPostCards.length === 0 && searchHashtags.length === 0 && (
               <div className="py-20 text-center">
                 <p className="text-4xl mb-3">🔍</p>
                 <p className="font-bold" style={{ color: "var(--text-primary)" }}>Sem resultados</p>
                 <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>Tenta pesquisar algo diferente</p>
               </div>
+            )}
+            {/* Relacionado com a pesquisa — hashtags parecidas que ainda não
+                apareceram em cima, para continuar a explorar o mesmo tema. */}
+            {searchHashtags.length > 1 && (
+              <section className="pt-2 border-t" style={{ borderColor: "var(--border-subtle)" }}>
+                <p className="text-sm font-bold mb-2.5 pt-4" style={{ color: "var(--text-primary)" }}>
+                  Relacionado com "{search}"
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {searchHashtags.slice(1).map((h: any) => (
+                    <button key={h.tag} onClick={() => setSearch(h.tag)}
+                      className="px-3 py-1.5 rounded-full text-xs font-semibold transition active:scale-95"
+                      style={{ background: "var(--s2)", border: "1px solid var(--border-subtle)", color: P }}>
+                      #{h.tag}
+                    </button>
+                  ))}
+                </div>
+              </section>
             )}
           </div>
 
@@ -510,23 +640,25 @@ function ExplorePage() {
         ) : tab === "trending" ? (
           <div className="py-3 space-y-5">
 
-            {/* Tags em tendência */}
+            {/* Tags em tendência — extraídas de verdade dos posts recentes */}
+            {trendingHashtags.length > 0 && (
             <section className="px-4">
               <p className="text-[11px] font-bold uppercase tracking-wider mb-2.5" style={{ color: "var(--text-muted)" }}>
                 Em tendência
               </p>
               <div className="flex flex-wrap gap-2">
-                {TRENDING_TAGS.map((tag, i) => (
-                  <button key={tag} onClick={() => setSearch(tag.replace("#",""))}
+                {trendingHashtags.map((h: any, i: number) => (
+                  <button key={h.tag} onClick={() => setSearch(h.tag)}
                     className="px-3.5 py-1.5 rounded-full text-sm font-semibold transition active:scale-95"
                     style={i === 0
                       ? { background: GRAD, color: "#fff" }
                       : { background: "var(--s2)", border: "1px solid var(--border-subtle)", color: "var(--text-primary)" }}>
-                    {tag}
+                    #{h.tag}
                   </button>
                 ))}
               </div>
             </section>
+            )}
 
             {/* Pessoas para seguir */}
             <section className="px-4">
@@ -540,14 +672,14 @@ function ExplorePage() {
             </section>
 
             {/* Posts */}
-            {popularPosts.length > 0 && (
+            {popularPostCards.length > 0 && (
               <section className="px-4">
                 <div className="flex items-center justify-between mb-2.5">
                   <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>Posts</p>
                   <button onClick={() => setTab("posts")} className="text-xs font-semibold" style={{ color: P }}>Ver mais →</button>
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  {popularPosts.slice(0, 4).map((p: any) => <PostThumb key={p.id} p={p} />)}
+                <div className="space-y-4 -mx-4">
+                  {popularPostCards.slice(0, 4).map((p: any) => <UniversalPostCard key={p.id} post={p} />)}
                 </div>
               </section>
             )}
@@ -564,18 +696,18 @@ function ExplorePage() {
 
         /* ══════════ MÍDIA (posts de qualquer pessoa; vídeos só na pesquisa) ══════════ */
         ) : tab === "posts" ? (
-          <div className="px-4 py-4 space-y-6">
-            {popularPosts.length > 0 && (
+          <div className="px-4 py-4">
+            {popularPostCards.length > 0 && (
               <section>
-                <p className="text-[11px] font-bold uppercase tracking-wider mb-3" style={{ color: "var(--text-muted)" }}>
+                <p className="text-[11px] font-bold uppercase tracking-wider mb-3 px-0" style={{ color: "var(--text-muted)" }}>
                   Posts
                 </p>
-                <div className="grid grid-cols-2 gap-2">
-                  {popularPosts.map((p: any) => <PostThumb key={p.id} p={p} />)}
+                <div className="space-y-4 -mx-4">
+                  {popularPostCards.map((p: any) => <UniversalPostCard key={p.id} post={p} />)}
                 </div>
               </section>
             )}
-            {popularPosts.length === 0 && (
+            {popularPostCards.length === 0 && (
               <div className="py-20 text-center">
                 <p className="font-bold" style={{ color: "var(--text-primary)" }}>Ainda não há mídia</p>
               </div>
