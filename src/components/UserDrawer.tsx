@@ -347,7 +347,7 @@ export function UserDrawer({ userId: _userId, onClose }: UserDrawerProps) {
                     {stats && (
                       <div className="flex items-center gap-3 mt-1">
                         <span className="text-xs" style={{ color: "var(--text-muted)" }}>
-                          <b style={{ color: "var(--text-primary)" }}>{stats.followers}</b> seguidores
+                          <b style={{ color: "var(--text-primary)" }}>{stats.followers}</b> acompanhantes
                         </span>
                         <span className="text-xs" style={{ color: "var(--text-muted)" }}>
                           <b style={{ color: "var(--text-primary)" }}>{stats.posts}</b> posts

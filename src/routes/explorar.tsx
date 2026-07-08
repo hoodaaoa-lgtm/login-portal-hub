@@ -336,7 +336,7 @@ function ExplorePage() {
   const myFollowsSet = useMemo(() => new Set(myFollowsData ?? []), [myFollowsData]);
 
   async function toggleFollow(userId: string, username: string) {
-    if (!myId) { toast.error("Inicia sessão para seguir."); return; }
+    if (!myId) { toast.error("Inicia sessão para acompanhar."); return; }
     const isF = followMap[userId] ?? myFollowsSet.has(username);
     setFollowMap(prev => ({ ...prev, [userId]: !isF }));
     try {
@@ -351,7 +351,7 @@ function ExplorePage() {
         p_target_id: userId,
       });
       if (error) throw error;
-      toast.success(data?.following ? `Estás a seguir @${username}!` : `Deixaste de seguir @${username}`);
+      toast.success(data?.following ? `Estás a acompanhar @${username}!` : `Deixaste de acompanhar @${username}`);
       // Sincroniza a cache partilhada do sistema social — sem isto, o
       // botão "Seguir" no feed/perfil desta pessoa só atualizava depois
       // de expirar o staleTime (60s) ou de um reload manual.
@@ -384,7 +384,7 @@ function ExplorePage() {
             style={isF
               ? { background: "var(--s2)", color: "var(--text-secondary)", border: "1px solid var(--border-default)" }
               : { background: P, color: "#fff" }}>
-            {isF ? <><UserCheck className="h-3.5 w-3.5" />Seguindo</> : <><UserPlus className="h-3.5 w-3.5" />Seguir</>}
+            {isF ? <><UserCheck className="h-3.5 w-3.5" />Acompanhando</> : <><UserPlus className="h-3.5 w-3.5" />Acompanhar</>}
           </button>
         )}
       </div>
@@ -530,7 +530,7 @@ function ExplorePage() {
             {/* Pessoas para seguir */}
             <section className="px-4">
               <div className="flex items-center justify-between mb-2.5">
-                <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>Pessoas para seguir</p>
+                <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>Pessoas para acompanhar</p>
                 <button onClick={() => setTab("people")} className="text-xs font-semibold" style={{ color: P }}>Ver mais →</button>
               </div>
               <div className="space-y-2">

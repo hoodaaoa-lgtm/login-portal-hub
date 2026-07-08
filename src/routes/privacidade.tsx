@@ -59,7 +59,7 @@ function PrivacidadePage() {
 
         <Section icon={Users} title="Quem pode ver os teus dados">
           <p className="font-semibold" style={{ color: "var(--text-primary)" }}>Dados públicos:</p>
-          <p>Nome, username, foto de perfil, biografia, posts, vídeos, seguidores e quem segues.</p>
+          <p>Nome, username, foto de perfil, biografia, posts, vídeos, acompanhantes e quem acompanhas.</p>
           <p className="font-semibold mt-3" style={{ color: "var(--text-primary)" }}>Dados privados — só tu vês:</p>
           <p>Email, número de telefone, histórico de downloads, conteúdo guardado e mensagens privadas.</p>
         </Section>

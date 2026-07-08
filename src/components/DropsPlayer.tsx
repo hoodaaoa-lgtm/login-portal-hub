@@ -94,7 +94,7 @@ export function DropsPlayer({ drop, isVisible, onLike }: DropsPlayerProps) {
               <p className="text-xs opacity-80">🔒 Drop exclusivo • Expira em {drop.duration}</p>
             </div>
             <button className="ml-auto px-3 py-1 bg-white/20 hover:bg-white/40 rounded-full text-xs font-bold transition">
-              Seguir
+              Acompanhar
             </button>
           </div>
         </div>

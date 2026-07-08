@@ -136,7 +136,7 @@ function WhoToFollowCard({ myUserId, onDismiss, offset = 0 }: { myUserId: string
       {/* Header */}
       <div className="flex items-center justify-between px-4 pt-4 pb-3">
         <div>
-          <p className="font-extrabold text-[15px]" style={{ color: "var(--text-primary)" }}>Quem seguir</p>
+          <p className="font-extrabold text-[15px]" style={{ color: "var(--text-primary)" }}>Quem acompanhar</p>
           <p className="text-[12px] mt-0.5" style={{ color: "var(--text-muted)" }}>Pessoas que talvez conheças</p>
         </div>
         <button onClick={onDismiss}
@@ -196,7 +196,7 @@ function WhoToFollowCard({ myUserId, onDismiss, offset = 0 }: { myUserId: string
                 style={isFollowing
                   ? { background: "var(--s3)", color: "var(--text-secondary)", border: "1.5px solid var(--border-default)" }
                   : { background: ACCENT, color: "#fff", border: "none" }}>
-                {isFollowing ? "A seguir" : "Seguir"}
+                {isFollowing ? "A acompanhar" : "Acompanhar"}
               </button>
             </div>
           );

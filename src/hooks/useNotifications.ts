@@ -15,7 +15,7 @@ function colorFor(seed: string): string {
 
 function textFor(type: NotifType): string {
   switch (type) {
-    case "follow":        return "começou a seguir-te";
+    case "follow":        return "começou a acompanhar-te";
     case "like":          return "gostou da tua publicação";
     case "comment":       return "comentou a tua publicação";
     case "mention":       return "mencionou-te";

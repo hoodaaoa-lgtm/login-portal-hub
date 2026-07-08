@@ -264,7 +264,7 @@ function FollowListModal({ userId, kind, onClose }:
         <div className="flex items-center justify-between px-5 py-4 border-b shrink-0"
           style={{borderColor:"var(--border-subtle)"}}>
           <span className="font-bold text-base" style={{color:"var(--text-primary)"}}>
-            {kind==="followers"?"Seguidores":"Seguindo"}
+            {kind==="followers"?"Acompanhantes":"Acompanhando"}
           </span>
           <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-[var(--s2)]">
             <X className="h-4 w-4" style={{color:"var(--text-muted)"}} />
@@ -283,7 +283,7 @@ function FollowListModal({ userId, kind, onClose }:
             ))
           ) : data.length===0 ? (
             <p className="text-center py-12 text-sm" style={{color:"var(--text-muted)"}}>
-              {kind==="followers"?"Ainda sem seguidores":"Não segue ninguém"}
+              {kind==="followers"?"Ainda sem acompanhantes":"Não acompanha ninguém"}
             </p>
           ) : data.map((u:any)=>(
             <div key={u.id} className="flex items-center gap-3 px-4 py-3 hover:bg-[var(--s1)] transition">
@@ -301,7 +301,7 @@ function FollowListModal({ userId, kind, onClose }:
                     style={following.has(u.username)
                       ?{background:"var(--s2)",color:"var(--text-secondary)",border:"1px solid var(--border-default)"}
                       :{background:P,color:"#fff"}}>
-                    {following.has(u.username)?"Seguindo":"Seguir"}
+                    {following.has(u.username)?"Acompanhando":"Acompanhar"}
                   </button>
                 )
               )}
@@ -758,7 +758,7 @@ function UserProfilePage() {
                 style={following
                   ?{background:"var(--s2)",border:"1px solid var(--border-default)",color:"var(--text-secondary)"}
                   :{background:P,color:"#fff"}}>
-                {following ? <><UserCheck className="h-4 w-4"/>Seguindo</> : <><UserPlus className="h-4 w-4"/>Seguir</>}
+                {following ? <><UserCheck className="h-4 w-4"/>Acompanhando</> : <><UserPlus className="h-4 w-4"/>Acompanhar</>}
               </button>
             )}
           </div>
@@ -794,8 +794,8 @@ function UserProfilePage() {
           {/* ── Stats ── */}
           <div className="flex items-center gap-5 px-4 pb-4">
             {[
-              {n:followingCount, l:"Seguindo", action:()=>setShowFollowing(true)},
-              {n:followerCount, l:"Seguidores", action:()=>setShowFollowers(true)},
+              {n:followingCount, l:"Acompanhando", action:()=>setShowFollowing(true)},
+              {n:followerCount, l:"Acompanhantes", action:()=>setShowFollowers(true)},
             ].map(s=>(
               <button key={s.l} onClick={s.action} disabled={!s.action}
                 className="flex items-center gap-1.5 text-sm transition active:opacity-70">
@@ -882,7 +882,7 @@ function UserProfilePage() {
             onClick={e=>e.stopPropagation()}>
             <p className="font-extrabold text-base mb-1" style={{color:"var(--text-primary)"}}>Bloquear @{profile.username}?</p>
             <p className="text-sm mb-4" style={{color:"var(--text-muted)"}}>
-              @{profile.username} deixa de poder seguir-te, enviar-te mensagens ou ver o teu perfil.
+              @{profile.username} deixa de poder acompanhar-te, enviar-te mensagens ou ver o teu perfil.
             </p>
             <div className="flex gap-2">
               <button onClick={()=>setShowBlockConfirm(false)}

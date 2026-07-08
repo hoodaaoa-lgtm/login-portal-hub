@@ -85,7 +85,7 @@ export function WelcomeInstallPrompt({ userId }: { userId: string | null }) {
             </div>
             <p className="font-extrabold text-[17px] text-black mb-1">Bem-vindo à Hooda! 🎉</p>
             <p className="text-[13px] text-neutral-500 leading-snug mb-4">
-              Instala a app e ativa as notificações para nunca perderes uma mensagem, like ou seguidor novo — mesmo com o telemóvel fechado.
+              Instala a app e ativa as notificações para nunca perderes uma mensagem, like ou acompanhante novo — mesmo com o telemóvel fechado.
             </p>
             <button
               onClick={handleInstall}

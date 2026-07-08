@@ -1077,7 +1077,7 @@ export function NotificationsPanel({ onBack }: { onBack: () => void }) {
   const ITEMS: { key: keyof typeof prefs; icon: React.ElementType; color: string; label: string; desc: string }[] = [
     { key: "likes",    icon: Heart,         color: "#E94B8A", label: "Gostos",           desc: "Quando alguém gosta das tuas publicações" },
     { key: "comments", icon: MessageCircle, color: "#1FAFA6", label: t("post.comments"),      desc: "Quando alguém comenta as tuas publicações" },
-    { key: "follows",  icon: Users,         color: "#6BA547", label: "Novos seguidores", desc: "Quando alguém começa a seguir-te" },
+    { key: "follows",  icon: Users,         color: "#6BA547", label: "Novos acompanhantes", desc: "Quando alguém começa a acompanhar-te" },
     { key: "messages", icon: Bell,          color: "#F26B3A", label: t("nav.messages"),        desc: "Quando recebes uma nova mensagem" },
     { key: "mentions", icon: Type,          color: ACCENT,    label: "Menções",          desc: "Quando alguém te menciona numa publicação" },
   ];
@@ -1135,7 +1135,7 @@ export function ActivityPanel({ onBack }: { onBack: () => void }) {
 
       (followsRes.data ?? []).forEach((f: any, i: number) => list.push({
         id: `f-${i}`, type: "follow",
-        text: `Estás a seguir @${f.target_username || "utilizador"}`,
+        text: `Estás a acompanhar @${f.target_username || "utilizador"}`,
         time: new Date(Date.now() - i * 60000).toISOString(),
       }));
 
@@ -1233,12 +1233,12 @@ export function PrivacyPanel({ onBack }: { onBack: () => void }) {
           <p className="px-5 pb-1.5 text-[11px] font-bold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Visibilidade do perfil</p>
           <div className="mx-3 rounded-2xl overflow-hidden border shadow-sm" style={{ background: "var(--s2)", borderColor: "var(--border-default)" }}>
             <ToggleRow icon={Lock} color="#6BA547" label={t("settings.private_account", { defaultValue: "Conta privada" })}
-              desc={t("settings.private_account_desc", { defaultValue: "Apenas seguidores aprovados veem as tuas publicações" })}
+              desc={t("settings.private_account_desc", { defaultValue: "Apenas acompanhantes aprovados veem as tuas publicações" })}
               checked={isPrivate} onChange={toggle} />
           </div>
           {err && <p className="px-5 pt-2 text-xs text-red-500">{err}</p>}
           <p className="px-5 pt-3 text-xs leading-relaxed" style={{ color: "var(--text-muted)" }}>
-            Com a conta privada, os novos seguidores precisam da tua aprovação e o teu conteúdo não aparecerá nas pesquisas públicas.
+            Com a conta privada, os novos acompanhantes precisam da tua aprovação e o teu conteúdo não aparecerá nas pesquisas públicas.
           </p>
         </div>
       )}
@@ -1308,8 +1308,8 @@ export function MsgPrivacyPanel({ onBack, msgPermission, onMsgPermissionChange }
   // Valores que a constraint da DB aceita: todos, seguidores, mutuos, aprovados
   const OPTIONS = [
     { value: "todos",      label: "Toda a gente",     desc: "Qualquer utilizador pode escrever-te" },
-    { value: "seguidores", label: t("profile.followers"),        desc: "Apenas quem te segue" },
-    { value: "mutuos",     label: "Seguimento mútuo", desc: "Quem segues e te segue" },
+    { value: "seguidores", label: t("profile.followers"),        desc: "Apenas quem te acompanha" },
+    { value: "mutuos",     label: "Acompanhamento mútuo", desc: "Quem acompanhas e te acompanha" },
     { value: "aprovados",  label: "Apenas aprovados", desc: "Tens de aceitar cada pedido" },
   ];
 
@@ -1398,7 +1398,7 @@ export function HelpPanel({ onBack }: { onBack: () => void }) {
   const faqs = [
     { q: "Como altero a minha foto de perfil?", a: "Vai ao teu perfil e clica na foto de perfil para fazer upload de uma nova imagem." },
     { q: "Como publico um vídeo?", a: "Vai ao HoodaStudio e clica em 'Novo vídeo'. Podes fazer upload e definir título, descrição e visibilidade." },
-    { q: "Como sigo um canal?", a: "Na HoodaTV, clica no canal que queres seguir e depois no botão 'Seguir'." },
+    { q: "Como acompanho um canal?", a: "Na HoodaTV, clica no canal que queres acompanhar e depois no botão 'Acompanhar'." },
     { q: "Como altero a minha palavra-passe?", a: "Vai a Configurações → Segurança → Alterar palavra-passe." },
     { q: "Como torno o meu perfil privado?", a: "Vai a Configurações → Privacidade e ativa 'Conta privada'." },
     { q: "Como envio mensagens?", a: "Usa o separador Mensagens na barra de navegação. Podes enviar mensagens a outros utilizadores." },

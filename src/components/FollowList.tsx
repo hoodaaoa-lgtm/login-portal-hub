@@ -108,7 +108,7 @@ export function FollowListModal({ mode, targetUsername, targetUserId, onClose }:
         </div>
         <div className="overflow-y-auto flex-1">
           <FollowListRows users={users} loading={loading} error={err}
-            emptyMessage={mode === "followers" ? "Ainda sem seguidores" : "Ainda não segue ninguém"} />
+            emptyMessage={mode === "followers" ? "Ainda sem acompanhantes" : "Ainda não acompanha ninguém"} />
         </div>
       </div>
     </div>
@@ -138,7 +138,7 @@ export function FollowListSection({ mode, targetUsername, targetUserId, title, c
       </div>
       <div className="max-h-80 overflow-y-auto">
         <FollowListRows users={users} loading={loading} error={err}
-          emptyMessage={mode === "followers" ? "Ainda sem seguidores" : "Ainda não segue ninguém"} />
+          emptyMessage={mode === "followers" ? "Ainda sem acompanhantes" : "Ainda não acompanha ninguém"} />
       </div>
     </div>
   );

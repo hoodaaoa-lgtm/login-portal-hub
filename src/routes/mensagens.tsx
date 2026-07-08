@@ -3037,7 +3037,7 @@ function ChatPanel({ myId, contact, onBack }: {
           .eq("follower_id", contact.id).eq("target_username", myUsername).maybeSingle();
         if (!follows) {
           setMsgPermBlocked(true);
-          setMsgPermReason(`@${contact.username} só aceita mensagens de seguidores.`);
+          setMsgPermReason(`@${contact.username} só aceita mensagens de acompanhantes.`);
         } else {
           setMsgPermBlocked(false);
         }
@@ -3050,7 +3050,7 @@ function ChatPanel({ myId, contact, onBack }: {
         ]);
         if (!iFollow || !theyFollow) {
           setMsgPermBlocked(true);
-          setMsgPermReason(`@${contact.username} só aceita mensagens de utilizadores com seguimento mútuo.`);
+          setMsgPermReason(`@${contact.username} só aceita mensagens de utilizadores com acompanhamento mútuo.`);
         } else {
           setMsgPermBlocked(false);
         }

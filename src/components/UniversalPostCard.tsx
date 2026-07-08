@@ -367,7 +367,7 @@ function RepostModal({ post, me, onClose, onReposted }: {
                   <Repeat2 className="w-5 h-5" />
                   <div className="text-left">
                     <p className="font-bold">Desfazer repost</p>
-                    <p className="text-xs opacity-70">Remove do teu feed e dos teus seguidores</p>
+                    <p className="text-xs opacity-70">Remove do teu feed e dos teus acompanhantes</p>
                   </div>
                 </button>
               ) : (
@@ -382,7 +382,7 @@ function RepostModal({ post, me, onClose, onReposted }: {
                     </div>
                     <div className="text-left">
                       <p className="font-bold" style={{ color: "var(--text-primary)" }}>Repostar</p>
-                      <p className="text-xs" style={{ color: "var(--text-muted)" }}>Partilha imediatamente com os teus seguidores</p>
+                      <p className="text-xs" style={{ color: "var(--text-muted)" }}>Partilha imediatamente com os teus acompanhantes</p>
                     </div>
                   </button>
 
@@ -479,7 +479,7 @@ function RepostModal({ post, me, onClose, onReposted }: {
               {alreadyReposted ? "Repost removido" : "Repostado!"}
             </p>
             <p className="text-sm text-center" style={{ color: "var(--text-muted)" }}>
-              {alreadyReposted ? "A publicação foi removida do teu feed." : "Os teus seguidores já podem ver esta publicação."}
+              {alreadyReposted ? "A publicação foi removida do teu feed." : "Os teus acompanhantes já podem ver esta publicação."}
             </p>
           </div>
         )}
@@ -1015,7 +1015,7 @@ export function UniversalPostCard({ post: p, onDeleted, onBookmarkChange }: {
                 style={following
                   ? { background: "var(--s2)", color: "var(--text-secondary)", border: "1.5px solid var(--border-default)" }
                   : { background: "#5B3FCF", color: "#fff", boxShadow: "0 2px 8px rgba(91,63,207,0.35)" }}>
-                {following ? "A seguir ✓" : "+ Seguir"}
+                {following ? "A acompanhar ✓" : "+ Acompanhar"}
               </button>
             )
           )}

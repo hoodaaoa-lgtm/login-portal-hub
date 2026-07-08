@@ -51,7 +51,7 @@ export function RightSidebar() {
       p_target_username: username,
       p_target_id: userId,
     });
-    if (error) { console.error("Erro ao seguir:", error); toast.error(`Não foi possível seguir: ${error.message}`); return; }
+    if (error) { console.error("Erro ao seguir:", error); toast.error(`Não foi possível acompanhar: ${error.message}`); return; }
     // Sincroniza a cache partilhada — se o perfil desta pessoa já estiver
     // aberto noutro sítio, passa a mostrar "A seguir" sem precisar de reload.
     qc.setQueryData(FOLLOW_KEYS.status(myId, username), !!data?.following);
@@ -119,7 +119,7 @@ export function RightSidebar() {
                 <button onClick={() => follow(u.id, u.username)}
                   className="shrink-0 px-3 py-1.5 rounded-full text-xs font-bold text-white transition active:scale-90"
                   style={{ background: ACCENT }}>
-                  Seguir
+                  Acompanhar
                 </button>
               </div>
             ))}

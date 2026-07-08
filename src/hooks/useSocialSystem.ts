@@ -179,7 +179,7 @@ export function useFollowState(myId: string | null | undefined, targetUsername: 
       qc.invalidateQueries({ queryKey: ["profile"], exact: false });
     } catch (err: any) {
       console.error("[hooda:social] falha ao seguir/deixar de seguir:", err);
-      toast.error(err?.message ? `Não foi possível seguir: ${err.message}` : "Não foi possível seguir. Tenta novamente.");
+      toast.error(err?.message ? `Não foi possível acompanhar: ${err.message}` : "Não foi possível acompanhar. Tenta novamente.");
       // reverter otimismo
       qc.setQueryData(FOLLOW_KEYS.status(myId, targetUsername), prevFollowing);
       qc.setQueryData(FOLLOW_KEYS.counts(targetUsername), prevCounts);
