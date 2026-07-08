@@ -10,6 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { ProfileAvatarLink } from "@/components/ProfileAvatarLink";
 import { PostCommentsModal } from "@/components/PostCommentsModal";
 import { UniversalPostCard } from "@/components/UniversalPostCard";
+import { HoodaTipCard } from "@/components/HoodaTipCard";
 import { registerVideo, notifyVideoPlaying, pauseAllVideos } from "@/lib/mediaManager";
 import { useNetworkInfo } from "@/hooks/useNetworkInfo";
 import { fetchPostComments, sendPostComment, replyToPostComment, toggleCommentLike, notifyMentions } from "@/lib/comments";
@@ -800,6 +801,14 @@ function HomePage() {
               {/* Após o 5º post */}
               {showWhoToFollow && myUserId && idx === 4 && (
                 <WhoToFollowCard myUserId={myUserId} onDismiss={() => setShowWhoToFollow(false)} offset={0} />
+              )}
+              {/* Após o 8º post — dica/sugestão rotativa. Só no telemóvel/tablet
+                  (abaixo de xl), porque no computador largo a mesma dica já
+                  aparece fixa na sidebar direita (RightSidebar). */}
+              {idx === 7 && (
+                <div className="xl:hidden">
+                  <HoodaTipCard variant="feed" />
+                </div>
               )}
               {/* Após o 12º post */}
               {showWhoToFollow2 && myUserId && idx === 11 && (

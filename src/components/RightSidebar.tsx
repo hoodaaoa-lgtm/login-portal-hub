@@ -6,6 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { getHoodaOfficialId } from "@/lib/hoodaOfficial";
 import { FOLLOW_KEYS } from "@/hooks/useSocialSystem";
+import { HoodaTipCard } from "@/components/HoodaTipCard";
 
 const ACCENT = "#5B3FCF";
 
@@ -131,6 +132,8 @@ export function RightSidebar() {
           </>
         )}
       </div>
+
+      <HoodaTipCard variant="sidebar" />
 
       <p className="text-[11px] text-center" style={{ color: "var(--text-muted)" }}>© 2025 Hooda</p>
     </div>
