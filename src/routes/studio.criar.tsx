@@ -150,7 +150,6 @@ function CreatePage() {
         visibility,
         is_draft: mode === "draft",
         scheduled_at: schedISO,
-        channel_id: channel?.id ?? null,
         channel_handle: channel?.handle ?? null,
         channel_name: channel?.name ?? null,
         channel_avatar: channel?.avatar_url ?? null,
