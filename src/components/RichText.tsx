@@ -16,6 +16,16 @@ interface RichTextProps {
  * - telefones (+244..., ou números com 8+ dígitos) → abrem o discador (tel:)
  */
 
+// Lista de TLDs comuns — usada para reconhecer domínios "nus" (sem
+// http/www/caminho, ex: "instagram.com", "hooda.ao") sem disparar falsos
+// positivos em texto normal (ex: frases com pontos entre palavras).
+const COMMON_TLDS = [
+  "com", "net", "org", "io", "co", "ao", "pt", "br", "info", "biz", "app",
+  "dev", "me", "tv", "gg", "xyz", "live", "shop", "online", "site", "club",
+  "store", "blog", "edu", "gov", "mil", "us", "uk", "ca", "de", "fr", "es",
+  "it", "nl", "ru", "cn", "jp", "kr", "au", "za", "ng", "ke", "mz", "cv",
+].join("|");
+
 // Um único regex combinado, para que os tokens nunca se sobreponham
 // (ex.: um número de telefone dentro de um link não é apanhado duas vezes).
 const TOKEN_RE = new RegExp(
@@ -26,7 +36,7 @@ const TOKEN_RE = new RegExp(
     "(\\+?\\d[\\d\\s()-]{7,}\\d)",                       // 4: telefone (+244..., ou nacional)
     "(@[a-zA-Z0-9_.]{2,30})",                            // 5: menção
     "(#[a-zA-Z0-9_\\u00C0-\\u024F]{2,50})",              // 6: hashtag
-    "((?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,}\\/[^\\s<]*)",   // 7: domínio nu + caminho (sem protocolo/www), ex: youtube.com/watch?v=...
+    `((?:[a-zA-Z0-9-]+\\.)+(?:${COMMON_TLDS})(?:\\/[^\\s<]*)?)\\b`, // 7: domínio nu (com ou sem caminho), ex: instagram.com, hooda.ao, youtube.com/watch?v=...
   ].join("|"),
   "g"
 );

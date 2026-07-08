@@ -8,10 +8,16 @@
 import { supabase } from "@/integrations/supabase/client";
 
 // Reconhece: link completo (http/https), link começado por "www.", e
-// domínio "nu" com caminho (ex: "youtube.com/watch?v=...",
-// "youtu.be/xxxx") — o formato mais comum quando se cola um link direto
-// da barra de endereço do telemóvel, sem protocolo.
-const URL_REGEX = /https?:\/\/[^\s<>"']+|www\.[a-zA-Z0-9-]+\.[a-zA-Z]{2,}[^\s<>"']*|(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}\/[^\s<>"']*/gi;
+// domínio "nu" com ou sem caminho (ex: "youtube.com/watch?v=...",
+// "youtu.be/xxxx", ou simplesmente "instagram.com") — os formatos mais
+// comuns quando se cola um link direto da barra de endereço do telemóvel,
+// sem protocolo. A lista de TLDs evita apanhar "palavra.palavra" comum em
+// texto normal como se fosse um domínio.
+const COMMON_TLDS = "com|net|org|io|co|ao|pt|br|info|biz|app|dev|me|tv|gg|xyz|live|shop|online|site|club|store|blog|edu|gov|mil|us|uk|ca|de|fr|es|it|nl|ru|cn|jp|kr|au|za|ng|ke|mz|cv";
+const URL_REGEX = new RegExp(
+  `https?:\\/\\/[^\\s<>"']+|www\\.[a-zA-Z0-9-]+\\.[a-zA-Z]{2,}[^\\s<>"']*|(?:[a-zA-Z0-9-]+\\.)+(?:${COMMON_TLDS})(?:\\/[^\\s<>"']*)?\\b`,
+  "gi"
+);
 
 export function extractUrl(text: string): string | null {
   const m = text.match(URL_REGEX);

@@ -5,6 +5,8 @@ import { Image, Film, Droplet, BarChart3, X, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { uploadImageToCloudinary, uploadToCloudinary } from "@/lib/cloudinary";
 import { useScrollLock } from "@/hooks/useScrollLock";
+import { extractUrl } from "@/lib/linkPreview";
+import { LinkPreview } from "@/components/LinkPreview";
 
 const ACCENT = "#5B3FCF";
 
@@ -254,6 +256,10 @@ export function QuickPostModal({ name, username, avatarUrl, onClose, onPublished
             placeholder={pollActive ? "Adiciona um comentário (opcional)" : "O que queres publicar?"} rows={pollActive ? 2 : 4}
             className="w-full outline-none resize-none bg-transparent leading-relaxed text-[15px]"
             style={{ color: "var(--text-primary)" }} />
+
+          {!pollActive && photos.length === 0 && !videoPreview && extractUrl(text) && (
+            <LinkPreview url={extractUrl(text)!} variant="post" />
+          )}
 
           {pollActive && (
             <div className="mt-2 mb-3 p-3 rounded-2xl" style={{ background: "var(--s2)", border: "1px solid var(--border-subtle)" }}>
