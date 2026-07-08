@@ -145,16 +145,3 @@ $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 GRANT EXECUTE ON FUNCTION public.mark_notifications_read(UUID[]) TO authenticated;
 
--- 9) Webhook: a cada nova notificação, chama a edge function send-push
---    (usa o mecanismo nativo do Supabase para Database Webhooks — não
---    precisa de pg_net nem de guardar chaves na trigger)
-DROP TRIGGER IF EXISTS on_notification_dispatch_push ON public.notifications;
-CREATE TRIGGER on_notification_dispatch_push
-  AFTER INSERT ON public.notifications
-  FOR EACH ROW EXECUTE FUNCTION supabase_functions.http_request(
-    'https://noespkhtwerarazwozqv.supabase.co/functions/v1/send-push',
-    'POST',
-    '{"Content-type":"application/json"}',
-    '{}',
-    '5000'
-  );
