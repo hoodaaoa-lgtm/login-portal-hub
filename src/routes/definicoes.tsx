@@ -6,12 +6,13 @@ import { BottomNav, SideNav, PageWrapper } from "@/components/AppShell";
 import {
   ChevronRight, Bell, Lock, Shield, HelpCircle,
   Info, Globe, MessageSquare, Activity, ArrowLeft,
-  Trash2, LogOut, AlertTriangle,
+  Trash2, LogOut, AlertTriangle, MonitorPlay,
 } from "lucide-react";
 import {
   NotificationsPanel, ActivityPanel, PrivacyPanel,
   SecurityPanel, MsgPrivacyPanel, AboutPanel, HelpPanel,
 } from "@/routes/perfil";
+import { VideoQualityPanel } from "@/components/VideoQualityPanel";
 import { LanguagePanel } from "@/components/LanguageSwitcher";
 import { LANGUAGES, getCurrentLang } from "@/lib/i18n";
 
@@ -96,6 +97,12 @@ function DefinicoesPage() {
         { icon: <Lock className="w-5 h-5"/>, color: "#6BA547", label: "Privacidade", desc: "Quem pode ver o teu perfil", action: () => setPanel("privacy") },
         { icon: <Shield className="w-5 h-5"/>, color: ACCENT, label: "Segurança", desc: "Palavra-passe e autenticação", action: () => setPanel("security") },
         { icon: <MessageSquare className="w-5 h-5"/>, color: "#1FAFA6", label: "Privacidade de Mensagens", desc: "Quem pode enviar-te mensagens?", action: () => setPanel("msgprivacy") },
+      ],
+    },
+    {
+      title: "Reprodução",
+      items: [
+        { icon: <MonitorPlay className="w-5 h-5"/>, color: "#3A8DDE", label: "Vídeo e dados", desc: "Qualidade automática, economia de dados ou fixa", action: () => setPanel("video-quality") },
       ],
     },
     {
@@ -236,6 +243,7 @@ function DefinicoesPage() {
       {panel === "help"          && <HelpPanel          onBack={() => setPanel(null)} />}
       {panel === "about"         && <AboutPanel         onBack={() => setPanel(null)} />}
       {panel === "language"      && <LanguagePanel      onBack={() => setPanel(null)} />}
+      {panel === "video-quality" && <VideoQualityPanel   onBack={() => setPanel(null)} />}
       {panel === "msgprivacy"    && (
         <MsgPrivacyPanel
           onBack={() => setPanel(null)}

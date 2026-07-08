@@ -29,9 +29,17 @@
  *   rounded?    — e.g. "rounded-2xl"
  */
 import { useRef, useState, useEffect, useCallback, forwardRef } from "react";
-import { Play, Pause, Volume2, VolumeX, Maximize, Minimize, RotateCcw } from "lucide-react";
+import { Play, Pause, Volume2, VolumeX, Maximize, Minimize, RotateCcw, Settings } from "lucide-react";
 import { useVideoInView } from "@/hooks/useVideoInView";
 import { registerVideo, notifyVideoPlaying, getGlobalMuted, setGlobalMuted } from "@/lib/mediaManager";
+import { getCachedVideoPreference, useVideoPreferences } from "@/hooks/useVideoPreferences";
+import {
+  pickStartingHeight,
+  resolutionFromHeight,
+  labelWithSuffix,
+  recordQualityChoice,
+  type ResolutionLabel,
+} from "@/lib/videoQuality";
 
 const BRAND = "#5B3FCF";
 const CONTROLS_HIDE_DELAY_MS = 2800;
@@ -264,6 +272,48 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
     return registerVideo(mediaIdRef.current, vid);
   }, []);
 
+  /* ─── Sistema de qualidade adaptativa (auto quality) ───
+     A Hooda serve vídeos via Cloudflare Stream, que já gera várias
+     resoluções e expõe um manifesto HLS. O hls.js já sabe subir/descer
+     de qualidade sozinho consoante buffer e largura de banda (ABR
+     nativo) — aqui só decidimos o PONTO DE PARTIDA e os limites,
+     consoante a preferência global do utilizador (video_preferences),
+     e expomos os níveis disponíveis para o seletor manual de qualidade. */
+  const { preference, setPreference } = useVideoPreferences();
+  const hlsRef = useRef<any>(null);
+  const [qualityLevels, setQualityLevels] = useState<{ index: number; height: number }[]>([]);
+  const [activeLevel, setActiveLevel] = useState<number>(-1); // -1 = automático
+  const [showQualityMenu, setShowQualityMenu] = useState(false);
+  const [currentResLabel, setCurrentResLabel] = useState<ResolutionLabel | null>(null);
+
+  const applyQualityMode = useCallback(
+    (mode: "auto" | ResolutionLabel, persist: boolean) => {
+      const hls = hlsRef.current;
+      if (!hls) return;
+
+      if (mode === "auto") {
+        hls.currentLevel = -1; // devolve o controlo ao ABR do hls.js
+        setActiveLevel(-1);
+        if (persist) setPreference("auto");
+        return;
+      }
+
+      const targetHeight = { "144p":144,"240p":240,"360p":360,"480p":480,"720p":720,"1080p":1080,"1440p":1440,"4k":2160 }[mode];
+      const levels: { height: number }[] = hls.levels ?? [];
+      let bestIdx = 0;
+      let bestDiff = Infinity;
+      levels.forEach((l, i) => {
+        const diff = Math.abs(l.height - targetHeight);
+        if (diff < bestDiff) { bestDiff = diff; bestIdx = i; }
+      });
+      hls.currentLevel = bestIdx;
+      setActiveLevel(bestIdx);
+      recordQualityChoice(levels[bestIdx]?.height ?? targetHeight);
+      if (persist) setPreference("manual", mode);
+    },
+    [setPreference],
+  );
+
   /* ─── Lazy load real: só atribui a fonte quando o vídeo se aproxima
      da tela (rootMargin no hook já pré-carrega um pouco antes). Antes
      disso mostramos apenas a miniatura, sem gastar rede. ─── */
@@ -272,22 +322,72 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
     if (!vid || !src || !hasEnteredOnce) return;
 
     const isHls = src.includes(".m3u8");
-    let hlsInstance: { destroy: () => void } | null = null;
+    let hlsInstance: any = null;
 
     if (isHls && !vid.canPlayType("application/vnd.apple.mpegurl")) {
       import("hls.js").then(({ default: Hls }) => {
         if (!Hls.isSupported()) return;
-        const hls = new Hls({ enableWorker: false });
+        const hls = new Hls({ enableWorker: false, capLevelToPlayerSize: true });
         hls.loadSource(src);
         hls.attachMedia(vid);
         hlsInstance = hls;
+        hlsRef.current = hls;
+
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          const levels = (hls.levels ?? []).map((l: any, i: number) => ({ index: i, height: l.height }));
+          setQualityLevels(levels);
+
+          // Decide o nível inicial pela preferência global + rede atual,
+          // sem interromper (aplicado antes do primeiro frame).
+          const pref = getCachedVideoPreference();
+          const screenH = typeof window !== "undefined" ? window.innerHeight : 720;
+          const targetHeight = pickStartingHeight(pref, screenH);
+
+          if (pref.quality_mode === "manual" && pref.preferred_resolution) {
+            applyQualityMode(pref.preferred_resolution, false);
+          } else if (pref.quality_mode === "high_quality") {
+            hls.currentLevel = -1;
+            hls.autoLevelCapping = -1;
+            setActiveLevel(-1);
+          } else {
+            // auto / economia de dados: define um teto e deixa o ABR trabalhar
+            // dentro dele — troca de qualidade acontece sem cortar o vídeo.
+            let capIdx = -1;
+            let bestDiff = Infinity;
+            levels.forEach((l) => {
+              const diff = Math.abs(l.height - targetHeight);
+              if (diff < bestDiff) { bestDiff = diff; capIdx = l.index; }
+            });
+            hls.autoLevelCapping = pref.quality_mode === "data_saver" ? capIdx : -1;
+            hls.startLevel = capIdx;
+            hls.currentLevel = -1;
+            setActiveLevel(-1);
+          }
+        });
+
+        hls.on(Hls.Events.LEVEL_SWITCHED, (_evt: any, data: any) => {
+          const h = hls.levels?.[data.level]?.height;
+          if (h) setCurrentResLabel(resolutionFromHeight(h));
+        });
+
+        // Adaptação durante o vídeo (ponto 4): se o hls.js detetar
+        // travamentos/erro de buffer, tenta recuperar reduzindo qualidade
+        // em vez de reiniciar o vídeo.
+        hls.on(Hls.Events.ERROR, (_evt: any, data: any) => {
+          if (!data?.fatal) return;
+          if (data.type === Hls.ErrorTypes.NETWORK_ERROR) hls.startLoad();
+          else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) hls.recoverMediaError();
+        });
       });
     } else {
       vid.src = src;
     }
 
-    return () => hlsInstance?.destroy();
-  }, [src, hasEnteredOnce]);
+    return () => {
+      hlsInstance?.destroy();
+      hlsRef.current = null;
+    };
+  }, [src, hasEnteredOnce, applyQualityMode]);
 
   useEffect(() => {
     setNaturalRatio(null);
@@ -788,6 +888,50 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
                 <Volume2 className={isMobile ? "w-[18px] h-[18px] text-white" : "w-3 h-3 text-white"} />
               )}
             </button>
+
+            {qualityLevels.length > 0 && (
+              <div className="relative shrink-0" onClick={(e) => e.stopPropagation()}>
+                <button
+                  onClick={() => setShowQualityMenu((v) => !v)}
+                  className={`flex items-center gap-1 rounded-full transition hover:bg-white/15 px-1.5 ${isMobile ? "h-9" : "h-[22px]"}`}
+                >
+                  <Settings className={isMobile ? "w-[16px] h-[16px] text-white" : "w-3 h-3 text-white"} />
+                  <span className={`text-white font-semibold select-none ${isMobile ? "text-[11px]" : "text-[9px]"}`}>
+                    {activeLevel === -1 ? "Auto" : (currentResLabel ? labelWithSuffix(currentResLabel) : "Auto")}
+                  </span>
+                </button>
+
+                {showQualityMenu && (
+                  <div
+                    className="absolute bottom-full right-0 mb-2 rounded-xl overflow-hidden py-1 min-w-[150px] shadow-xl"
+                    style={{ background: "rgba(20,20,20,0.95)", backdropFilter: "blur(8px)" }}
+                  >
+                    <button
+                      onClick={() => { applyQualityMode("auto", true); setShowQualityMenu(false); }}
+                      className="w-full text-left px-3 py-2 text-[12px] text-white hover:bg-white/10 flex items-center justify-between"
+                    >
+                      Automático (recomendado)
+                      {activeLevel === -1 && <span style={{ color: BRAND }}>✓</span>}
+                    </button>
+                    {[...qualityLevels]
+                      .sort((a, b) => b.height - a.height)
+                      .map((lvl) => {
+                        const label = resolutionFromHeight(lvl.height);
+                        return (
+                          <button
+                            key={lvl.index}
+                            onClick={() => { applyQualityMode(label, true); setShowQualityMenu(false); }}
+                            className="w-full text-left px-3 py-2 text-[12px] text-white hover:bg-white/10 flex items-center justify-between"
+                          >
+                            {labelWithSuffix(label)}
+                            {activeLevel === lvl.index && <span style={{ color: BRAND }}>✓</span>}
+                          </button>
+                        );
+                      })}
+                  </div>
+                )}
+              </div>
+            )}
 
             <button
               onClick={(e) => {

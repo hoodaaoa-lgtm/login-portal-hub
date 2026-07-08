@@ -979,7 +979,7 @@ export function SettingsDrawer({
 
 
 /* ─── Painel genérico — ocupa a página inteira (estilo Instagram) ─── */
-function SettingsSubPanel({ title, onBack, children }: { title: string; onBack: () => void; children: React.ReactNode }) {
+export function SettingsSubPanel({ title, onBack, children }: { title: string; onBack: () => void; children: React.ReactNode }) {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
