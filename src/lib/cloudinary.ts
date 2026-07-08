@@ -91,7 +91,24 @@ export function getVideoThumbnail(publicId: string, timeOffset = "0"): string {
 
 /** URL de stream HLS do Cloudinary */
 export function getVideoStreamUrl(publicId: string): string {
-  return `https://res.cloudinary.com/${CLOUD_NAME}/video/upload/sp_hd/${publicId}.m3u8`;
+  return `https://res.cloudinary.com/${CLOUD_NAME}/video/upload/sp_auto/${publicId}.m3u8`;
+}
+
+/**
+ * Deriva o URL de streaming adaptativo (HLS, várias resoluções via o
+ * perfil "sp_auto" do Cloudinary) a partir de QUALQUER URL de reprodução
+ * mp4 já existente do Cloudinary — incluindo vídeos publicados antes do
+ * sistema de qualidade adaptativa existir. Não precisa de re-upload nem
+ * de migração de dados: o public_id já está codificado no próprio URL.
+ * Devolve null se o URL não for do Cloudinary (ex.: outro CDN).
+ */
+export function toCloudinaryHlsUrl(mp4Url: string): string | null {
+  const match = mp4Url.match(
+    /res\.cloudinary\.com\/([^/]+)\/video\/upload\/[^/]+\/(.+?)(?:\.[a-zA-Z0-9]+)?$/,
+  );
+  if (!match) return null;
+  const [, cloud, publicId] = match;
+  return `https://res.cloudinary.com/${cloud}/video/upload/sp_auto/${publicId}.m3u8`;
 }
 
 /** URL de reprodução directa (mp4 optimizado).

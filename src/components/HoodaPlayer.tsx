@@ -32,6 +32,7 @@ import { useRef, useState, useEffect, useCallback, forwardRef } from "react";
 import { Play, Pause, Volume2, VolumeX, Maximize, Minimize, RotateCcw, Settings, ChevronRight, ChevronLeft } from "lucide-react";
 import { useVideoInView } from "@/hooks/useVideoInView";
 import { registerVideo, notifyVideoPlaying, getGlobalMuted, setGlobalMuted } from "@/lib/mediaManager";
+import { toCloudinaryHlsUrl } from "@/lib/cloudinary";
 import { getCachedVideoPreference, useVideoPreferences } from "@/hooks/useVideoPreferences";
 import {
   pickStartingHeight,
@@ -322,14 +323,36 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
     const vid = videoRef.current;
     if (!vid || !src || !hasEnteredOnce) return;
 
-    const isHls = src.includes(".m3u8");
-    let hlsInstance: any = null;
+    // Se o vídeo já vier como .m3u8 (Cloudflare Stream), usa-o directamente.
+    // Caso contrário, se for um mp4 do Cloudinary, deriva o URL de streaming
+    // adaptativo (várias resoluções) a partir do mesmo public_id — funciona
+    // mesmo em vídeos publicados antes deste sistema existir, sem re-upload.
+    const nativeHls = src.includes(".m3u8");
+    const derivedHls = nativeHls ? null : toCloudinaryHlsUrl(src);
+    const hlsSrc = nativeHls ? src : derivedHls;
 
-    if (isHls && !vid.canPlayType("application/vnd.apple.mpegurl")) {
+    let hlsInstance: any = null;
+    let fellBack = false;
+
+    function fallbackToMp4() {
+      if (fellBack) return;
+      fellBack = true;
+      hlsInstance?.destroy();
+      hlsInstance = null;
+      hlsRef.current = null;
+      setQualityLevels([]);
+      vid!.src = src;
+    }
+
+    if (hlsSrc && !vid.canPlayType("application/vnd.apple.mpegurl")) {
       import("hls.js").then(({ default: Hls }) => {
-        if (!Hls.isSupported()) return;
+        if (fellBack) return;
+        if (!Hls.isSupported()) {
+          fallbackToMp4();
+          return;
+        }
         const hls = new Hls({ enableWorker: false, capLevelToPlayerSize: true });
-        hls.loadSource(src);
+        hls.loadSource(hlsSrc);
         hls.attachMedia(vid);
         hlsInstance = hls;
         hlsRef.current = hls;
@@ -373,11 +396,19 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
 
         // Adaptação durante o vídeo (ponto 4): se o hls.js detetar
         // travamentos/erro de buffer, tenta recuperar reduzindo qualidade
-        // em vez de reiniciar o vídeo.
+        // em vez de reiniciar o vídeo. Se o manifesto HLS nem sequer
+        // existir (vídeo antigo/streaming profile ainda não gerado pelo
+        // Cloudinary), cai de volta para o mp4 original em vez de mostrar
+        // erro — o utilizador nunca vê o vídeo falhar por causa disto.
         hls.on(Hls.Events.ERROR, (_evt: any, data: any) => {
           if (!data?.fatal) return;
+          if (derivedHls && data.details === "manifestLoadError") {
+            fallbackToMp4();
+            return;
+          }
           if (data.type === Hls.ErrorTypes.NETWORK_ERROR) hls.startLoad();
           else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) hls.recoverMediaError();
+          else fallbackToMp4();
         });
       });
     } else {
