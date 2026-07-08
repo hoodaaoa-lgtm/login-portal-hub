@@ -97,6 +97,3 @@ export function getStreamPlaybackUrl(uid: string): string {
   return `https://${CF_STREAM_DOMAIN}/${uid}/manifest/video.m3u8`;
 }
 
-export async function deleteFromCloudflareStream(_uid: string): Promise<void> {
-  throw new Error("Delete não implementado ainda.");
-}

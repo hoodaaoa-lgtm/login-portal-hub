@@ -96,22 +96,6 @@ export const myChannelQuery = () =>
     },
   });
 
-/* ── Os meus vídeos (por owner_id) ──────────────────────── */
-export const myVideosQuery = (ownerId: string | undefined) =>
-  queryOptions({
-    queryKey: ["my-videos", ownerId],
-    queryFn: async (): Promise<Video[]> => {
-      if (!ownerId) return [];
-      const { data } = await supabase
-        .from("videos")
-        .select("*")
-        .eq("owner_id", ownerId)
-        .order("created_at", { ascending: false });
-      return (data as Video[] | null) ?? [];
-    },
-    enabled: !!ownerId,
-  });
-
 /* ── Estatísticas (real — videos por owner_id + follows) ── */
 export const channelStatsQuery = (ownerId: string | undefined) =>
   queryOptions({
