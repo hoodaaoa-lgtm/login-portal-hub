@@ -13,10 +13,11 @@ import { UniversalPostCard } from "@/components/UniversalPostCard";
 import { registerVideo, notifyVideoPlaying, pauseAllVideos } from "@/lib/mediaManager";
 import { useNetworkInfo } from "@/hooks/useNetworkInfo";
 import { fetchPostComments, sendPostComment, replyToPostComment, toggleCommentLike, notifyMentions } from "@/lib/comments";
+import { useNotifications } from "@/hooks/useNotifications";
+import { WelcomeInstallPrompt } from "@/components/WelcomeInstallPrompt";
 import {
   NotificationToast,
   NotificationCenter,
-  SAMPLE_NOTIFICATIONS,
   type Notif,
 } from "@/components/Notifications";
 import {
@@ -230,9 +231,12 @@ function HomePage() {
   const [ready, setReady] = useState(false);
   const { avatarUrl: userAvatarUrl, name: myDisplayName } = useAvatar();
 
-  /* ── Notifications ── */
-  const [notifications, setNotifications] = useState<Notif[]>([]);
+  /* ── Notifications (dados reais do Supabase + realtime + som + push) ── */
   const [showNotifCenter, setShowNotifCenter] = useState(false);
+  const {
+    notifications, unreadCount, loading: notifLoading,
+    toast, dismissToast, markAllRead, markOneRead,
+  } = useNotifications(session?.user?.id ?? null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -246,13 +250,17 @@ function HomePage() {
   }, []);
 
   useEffect(() => {
-    function openFromEvent() { setShowNotifCenter(true); setToast(null); }
+    function openFromEvent() { setShowNotifCenter(true); dismissToast(); }
     window.addEventListener("hooda:open-notifications", openFromEvent);
     return () => window.removeEventListener("hooda:open-notifications", openFromEvent);
-  }, []);
-  const [toast, setToast] = useState<Notif | null>(null);
+  }, [dismissToast]);
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  function handleNotifClick(notif: Notif) {
+    markOneRead(notif.id);
+    setShowNotifCenter(false);
+    if (notif.type === "message") navigate({ to: "/mensagens" });
+    else if (notif.type === "follow") navigate({ to: `/u/${notif.user}` } as any);
+  }
 
   const feedSentinelRef = useRef<HTMLDivElement>(null);
   const [showWhoToFollow, setShowWhoToFollow] = React.useState(true);
@@ -603,10 +611,6 @@ function HomePage() {
     return () => obs.disconnect();
   }, [feedVisible, realPosts.length]);
 
-  function markAllRead() {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-  }
-
   // Final defensive dedupe right before render: even though loadFeed()
   // already dedupes by id, this guarantees the feed can NEVER render the
   // same post id twice — regardless of how realPosts got populated — and
@@ -623,9 +627,6 @@ function HomePage() {
     });
     return unique.slice(0, feedVisible);
   }, [realPosts, feedVisible]);
-
-  const notifIdRef = useRef(1);
-
 
     // ── Carregar mais publicações (scroll infinito) — mesma busca fundida ──
     async function loadMoreFeed() {
@@ -657,106 +658,21 @@ function HomePage() {
     }, [hasMorePosts, loadingMore, feedCursor, myUserId]);
 
   
-  function pushNotif(notif: Omit<Notif, "id">) {
-    const full: Notif = { ...notif, id: notifIdRef.current++ };
-    setNotifications((prev) => [full, ...prev].slice(0, 50));
-    setToast(full);
-    setTimeout(() => setToast((t) => (t?.id === full.id ? null : t)), 4500);
-  }
 
   useEffect(() => {
     if (!myUserId || !myUsername) return;
 
-    const COLORS = ["#5B3FCF","#E94B8A","#F26B3A","#1FAFA6","#6BA547","#FFC93C"];
-    function hashColor(s: string) { let h=0; for(const c of s) h=(h*31+c.charCodeAt(0))&0xffff; return COLORS[h%COLORS.length]; }
+    async function insertNotif(type: string, actorId: string, actorUsername: string | null, postId?: string) {
+      if (actorId === myUserId) return;
+      try {
+        await (supabase as any).from("notifications").insert({
+          user_id: myUserId, type, actor_id: actorId, actor_username: actorUsername, post_id: postId ?? null,
+        });
+      } catch { /* silencioso */ }
+    }
 
     const channel = supabase
-      .channel(`notifs-${myUserId}`)
-      .on(
-        "postgres_changes" as any,
-        { event: "INSERT", schema: "public", table: "post_likes" },
-        async (payload: any) => {
-          const like = payload.new as { post_id: string; user_id: string };
-          if (like.user_id === myUserId) return;
-          const { data: post } = await supabase
-            .from("posts")
-            .select("author_id, content, kind, author_username")
-            .eq("id", like.post_id)
-            .eq("author_id", myUserId)
-            .maybeSingle();
-          if (!post) return;
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("username, full_name")
-            .eq("id", like.user_id)
-            .maybeSingle();
-          const name = profile?.username ?? "alguém";
-          let detail: string | undefined;
-          if ((post as any).kind !== "bg") detail = ((post as any).content ?? "").slice(0, 60) || undefined;
-          pushNotif({ type: "like", user: name, name, color: hashColor(name), text: "curtiu o teu post", detail, time: "agora", read: false });
-        }
-      )
-      .on(
-        "postgres_changes" as any,
-        { event: "INSERT", schema: "public", table: "post_comments" },
-        async (payload: any) => {
-          const comment = payload.new as { post_id: string; user_id: string; author_username: string; author_color: string | null; content: string };
-          if (comment.user_id === myUserId) return;
-          const { data: post } = await supabase
-            .from("posts")
-            .select("author_id")
-            .eq("id", comment.post_id)
-            .eq("author_id", myUserId)
-            .maybeSingle();
-          if (!post) return;
-          pushNotif({
-            type: "comment",
-            user: comment.author_username,
-            name: comment.author_username,
-            color: comment.author_color ?? hashColor(comment.author_username),
-            text: "comentou no teu post",
-            detail: comment.content.slice(0, 80) || undefined,
-            time: "agora",
-            read: false,
-          });
-        }
-      )
-      .on(
-        "postgres_changes" as any,
-        { event: "INSERT", schema: "public", table: "follows", filter: `target_username=eq.${myUsername}` },
-        async (payload: any) => {
-          const follow = payload.new as { follower_id: string; target_username: string };
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("username, full_name")
-            .eq("id", follow.follower_id)
-            .maybeSingle();
-          const name = profile?.username ?? follow.follower_id.slice(0, 8);
-          pushNotif({ type: "follow", user: name, name, color: hashColor(name), text: "começou a seguir-te", time: "agora", read: false });
-        }
-      )
-      // ── Mensagens novas ──
-      .on(
-        "postgres_changes" as any,
-        { event: "INSERT", schema: "public", table: "messages" },
-        async (payload: any) => {
-          const msg = payload.new;
-          if (msg.sender_id === myUserId) return;
-          // Verificar se é para mim (conversa onde participo)
-          const { data: conv } = await supabase
-            .from("conversation_participants")
-            .select("conversation_id")
-            .eq("conversation_id", msg.conversation_id)
-            .eq("user_id", myUserId)
-            .maybeSingle();
-          if (!conv) return;
-          const { data: sender } = await supabase
-            .from("profiles").select("username, full_name").eq("id", msg.sender_id).maybeSingle();
-          const name = sender?.full_name || sender?.username || "alguém";
-          const preview = msg.content?.slice(0, 60) || (msg.type === "image" ? "📷 Imagem" : msg.type === "video" ? "🎥 Vídeo" : "Mensagem");
-          pushNotif({ type: "message", user: name, name, color: hashColor(name), text: "enviou-te uma mensagem", detail: preview, time: "agora", read: false });
-        }
-      )
+      .channel(`notifs-videos-${myUserId}`)
       // ── Vídeos novos de canais seguidos ──
       .on(
         "postgres_changes" as any,
@@ -764,14 +680,13 @@ function HomePage() {
         async (payload: any) => {
           const video = payload.new;
           if (video.owner_id === myUserId) return;
-          // Verificar se sigo o canal
           const { data: channelData } = await supabase
             .from("channels").select("id, name, handle").eq("id", video.channel_id).maybeSingle();
           if (!channelData) return;
           const { data: followRow } = await (supabase as any)
             .from("follows").select("id").eq("follower_id", myUserId).eq("following_id", video.channel_id).maybeSingle();
           if (!followRow) return;
-          pushNotif({ type: "video_new", user: channelData.name, name: channelData.name, color: "#5B3FCF", text: "publicou um vídeo novo", detail: video.title?.slice(0, 60), time: "agora", read: false });
+          insertNotif("video_new", video.owner_id, (channelData as any).name);
         }
       )
       // ── Likes nos meus vídeos ──
@@ -784,8 +699,7 @@ function HomePage() {
           const { data: video } = await supabase.from("videos").select("owner_id, title").eq("id", vl.video_id).eq("owner_id", myUserId).maybeSingle();
           if (!video) return;
           const { data: liker } = await supabase.from("profiles").select("username").eq("id", vl.user_id).maybeSingle();
-          const name = liker?.username || "alguém";
-          pushNotif({ type: "video_like", user: name, name, color: hashColor(name), text: "gostou do teu vídeo", detail: (video as any).title?.slice(0, 60), time: "agora", read: false });
+          insertNotif("video_like", vl.user_id, liker?.username ?? null);
         }
       )
       // ── Comentários nos meus vídeos ──
@@ -798,8 +712,7 @@ function HomePage() {
           const { data: video } = await supabase.from("videos").select("owner_id, title").eq("id", vc.video_id).eq("owner_id", myUserId).maybeSingle();
           if (!video) return;
           const { data: commenter } = await supabase.from("profiles").select("username").eq("id", vc.user_id).maybeSingle();
-          const name = commenter?.username || "alguém";
-          pushNotif({ type: "video_comment", user: name, name, color: hashColor(name), text: "comentou no teu vídeo", detail: vc.content?.slice(0, 60), time: "agora", read: false });
+          insertNotif("video_comment", vc.user_id, commenter?.username ?? null);
         }
       )
       .subscribe();
@@ -908,15 +821,19 @@ function HomePage() {
 
       {/* Notification toast popup */}
       {toast && (
-        <NotificationToast notif={toast} onClose={() => setToast(null)} />
+        <NotificationToast notif={toast} onClose={dismissToast} onClick={() => handleNotifClick(toast)} />
       )}
+
+      <WelcomeInstallPrompt userId={session?.user?.id ?? null} />
 
       {/* Notification center */}
       {showNotifCenter && (
         <NotificationCenter
           notifications={notifications}
+          loading={notifLoading}
           onClose={() => { setShowNotifCenter(false); markAllRead(); }}
           onMarkAll={markAllRead}
+          onItemClick={handleNotifClick}
         />
       )}
           </>

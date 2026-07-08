@@ -6,18 +6,37 @@ const db = supabase as any;
 interface BadgeContextValue {
   /** Total de mensagens não lidas em todas as conversas */
   unreadMessages: number;
+  /** Total de notificações não lidas (seguidores, likes, comentários, etc.) */
+  unreadNotifications: number;
   /** Chamar quando o utilizador abre/lê uma conversa específica */
   markMessagesRead: (conversationId: string) => void;
 }
 
 const BadgeContext = createContext<BadgeContextValue>({
   unreadMessages: 0,
+  unreadNotifications: 0,
   markMessagesRead: () => {},
 });
 
 export function BadgeProvider({ children }: { children: React.ReactNode }) {
   const [userId, setUserId] = useState<string | null>(null);
   const [unreadMessages, setUnreadMessages] = useState(0);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
+
+  /* ─── Notificações: total de não lidas ─── */
+  const refreshUnreadNotifications = useCallback(async (uid: string) => {
+    try {
+      const { count, error } = await db
+        .from("notifications")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", uid)
+        .eq("read", false);
+      if (error) throw error;
+      setUnreadNotifications(count || 0);
+    } catch (err) {
+      console.error("[badges] Erro ao calcular notificações não lidas:", err);
+    }
+  }, []);
 
   // IDs das conversas do utilizador — usados para filtrar eventos realtime
   const conversationIdsRef = useRef<Set<string>>(new Set());
@@ -65,11 +84,25 @@ export function BadgeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!userId) {
       setUnreadMessages(0);
+      setUnreadNotifications(0);
       conversationIdsRef.current = new Set();
       return;
     }
     refreshUnreadMessages(userId);
-  }, [userId, refreshUnreadMessages]);
+    refreshUnreadNotifications(userId);
+  }, [userId, refreshUnreadMessages, refreshUnreadNotifications]);
+
+  /* ─── Realtime: notificações ─── */
+  useEffect(() => {
+    if (!userId) return;
+    const channel = supabase
+      .channel(`badges-notifications-${userId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` }, () => {
+        refreshUnreadNotifications(userId);
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [userId, refreshUnreadNotifications]);
 
   /* ─── Realtime: mensagens ─── */
   useEffect(() => {
@@ -97,7 +130,7 @@ export function BadgeProvider({ children }: { children: React.ReactNode }) {
   }, [userId, refreshUnreadMessages]);
 
   return (
-    <BadgeContext.Provider value={{ unreadMessages, markMessagesRead }}>
+    <BadgeContext.Provider value={{ unreadMessages, unreadNotifications, markMessagesRead }}>
       {children}
     </BadgeContext.Provider>
   );

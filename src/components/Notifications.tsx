@@ -13,7 +13,7 @@ export type NotifType =
   | "video_comment";
 
 export interface Notif {
-  id: number;
+  id: number | string;
   type: NotifType;
   user: string;
   name: string;
@@ -51,6 +51,10 @@ function notifBg(type: NotifType) {
     case "message":      return "#5B3FCF";
     case "share":        return "#F26B3A";
     case "system":       return "#5B3FCF";
+    case "video_new":    return "#1FAFA6";
+    case "video_like":   return "#E94B8A";
+    case "video_comment": return "#F26B3A";
+    default:             return "#5B3FCF";
   }
 }
 
@@ -77,9 +81,10 @@ function Avatar({ name, color, size = 38 }: { name: string; color: string; size?
 }
 
 /* ─── Toast popup ─── */
-export function NotificationToast({ notif, onClose }: { notif: Notif; onClose: () => void }) {
+export function NotificationToast({ notif, onClose, onClick }: { notif: Notif; onClose: () => void; onClick?: () => void }) {
   return (
     <div
+      onClick={onClick}
       className="fixed z-[999] flex items-start gap-3 p-3 rounded-2xl shadow-2xl max-w-[calc(100vw-32px)] w-80"
       style={{
         bottom: 80,
@@ -88,6 +93,7 @@ export function NotificationToast({ notif, onClose }: { notif: Notif; onClose: (
         backdropFilter: "blur(20px)",
         border: "1px solid rgba(91,63,207,0.12)",
         animation: "slideInRight 0.3s ease",
+        cursor: onClick ? "pointer" : "default",
       }}
     >
       <style>{`
@@ -116,7 +122,7 @@ export function NotificationToast({ notif, onClose }: { notif: Notif; onClose: (
       </div>
 
       <button
-        onClick={onClose}
+        onClick={(e) => { e.stopPropagation(); onClose(); }}
         className="w-6 h-6 rounded-full bg-neutral-100 flex items-center justify-center hover:bg-neutral-200 transition flex-shrink-0 mt-0.5"
       >
         <X className="h-3 w-3 text-neutral-500" />
@@ -130,11 +136,13 @@ export function NotificationCenter({
   notifications,
   onClose,
   onMarkAll,
+  onItemClick,
   loading = false,
 }: {
   notifications: Notif[];
   onClose: () => void;
   onMarkAll: () => void;
+  onItemClick?: (notif: Notif) => void;
   loading?: boolean;
 }) {
   const [tab, setTab] = useState<"todas" | "nao_lidas">("todas");
@@ -263,6 +271,7 @@ export function NotificationCenter({
               {list.map((notif, i) => (
                 <li key={notif.id} className={i < list.length - 1 ? "border-b border-neutral-50" : ""}>
                   <button
+                    onClick={() => onItemClick?.(notif)}
                     className="notif-item w-full flex items-start gap-3 px-4 py-3 text-left transition-colors"
                     style={{ background: notif.read ? "transparent" : ACCENT + "07" }}
                   >
