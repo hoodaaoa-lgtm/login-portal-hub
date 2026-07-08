@@ -5,7 +5,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   FileText, Image as ImageIcon, Video as VideoIcon, BarChart3,
   Upload, X, Calendar, Send, Save, Loader2, Hash, Globe, ArrowLeft,
-  Search, Filter, Trash2, Edit2, Clock,
+  Search, Filter, Trash2, Edit2, Clock, LayoutGrid, PlusCircle, Users,
+  Heart, MessageCircle, Share2, Eye, Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 import { FollowListSection } from "@/components/FollowList";
@@ -40,39 +41,71 @@ function StudioPage() {
   const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>("conteudo");
 
+  const navItems: { k: Tab; label: string; icon: any }[] = [
+    { k: "conteudo", label: "Conteúdo", icon: LayoutGrid },
+    { k: "criar", label: "Criar", icon: PlusCircle },
+    { k: "comunidade", label: "Comunidade", icon: Users },
+  ];
+
   return (
-    <div className="min-h-screen" style={{ background: "var(--s1)" }}>
-      <header className="h-14 sticky top-0 z-40 flex items-center px-3 sm:px-4 gap-2 border-b"
+    <div className="min-h-screen lg:flex" style={{ background: "var(--s1)" }}>
+      {/* Navegação lateral — tablets grandes e PC */}
+      <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:shrink-0 lg:sticky lg:top-0 lg:h-screen lg:overflow-y-auto border-r px-4 py-6"
         style={{ background: "var(--s0)", borderColor: "var(--border-default)" }}>
         <button onClick={() => navigate({ to: "/home" as any })}
-          className="p-2 -ml-1 rounded-full hover:bg-[var(--s2)] transition"
-          aria-label="Voltar">
+          className="flex items-center gap-2 mb-8 px-2 py-1.5 -ml-2 rounded-xl transition self-start hover:bg-[var(--s2)]"
+          style={{ color: "var(--text-secondary)" }}>
           <ArrowLeft className="h-4 w-4" />
+          <span className="text-xs font-semibold">Voltar</span>
         </button>
-        <span className="font-bold text-base" style={{ color: "var(--text-primary)" }}>
+        <span className="px-2 mb-8 font-black text-xl tracking-tight" style={{ color: "var(--text-primary)" }}>
           Hooda <span style={{ color: P }}>Studio</span>
         </span>
+        <nav className="flex flex-col gap-1">
+          {navItems.map(({ k, label, icon: Icon }) => {
+            const active = tab === k;
+            return (
+              <button key={k} onClick={() => setTab(k)}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition text-left active:scale-[0.98]"
+                style={{ background: active ? GRAD : "transparent", color: active ? "#fff" : "var(--text-secondary)" }}>
+                <Icon className="h-4 w-4 shrink-0" />
+                {label}
+              </button>
+            );
+          })}
+        </nav>
         <div className="flex-1" />
-        <div className="flex gap-1 p-1 rounded-full" style={{ background: "var(--s2)" }}>
-          <button onClick={() => setTab("conteudo")}
-            className="px-4 py-1.5 rounded-full text-xs font-bold transition"
-            style={{ background: tab === "conteudo" ? P : "transparent", color: tab === "conteudo" ? "#fff" : "var(--text-secondary)" }}>
-            Conteúdo
-          </button>
-          <button onClick={() => setTab("criar")}
-            className="px-4 py-1.5 rounded-full text-xs font-bold transition"
-            style={{ background: tab === "criar" ? P : "transparent", color: tab === "criar" ? "#fff" : "var(--text-secondary)" }}>
-            Criar
-          </button>
-          <button onClick={() => setTab("comunidade")}
-            className="px-4 py-1.5 rounded-full text-xs font-bold transition"
-            style={{ background: tab === "comunidade" ? P : "transparent", color: tab === "comunidade" ? "#fff" : "var(--text-secondary)" }}>
-            Comunidade
-          </button>
+        <div className="px-2 pt-4 mt-4 border-t text-[11px] leading-relaxed" style={{ borderColor: "var(--border-subtle)", color: "var(--text-muted)" }}>
+          Cria, agenda e acompanha o desempenho do teu conteúdo num só sítio.
         </div>
-      </header>
+      </aside>
 
-      {tab === "criar" ? <CriarTab onDone={() => setTab("conteudo")} /> : tab === "comunidade" ? <ComunidadeTab /> : <ConteudoTab onCriar={() => setTab("criar")} />}
+      <div className="flex-1 min-w-0">
+        {/* Cabeçalho — telemóvel e tablet estreito */}
+        <header className="h-14 sticky top-0 z-40 flex items-center px-3 sm:px-4 gap-2 border-b lg:hidden"
+          style={{ background: "var(--s0)", borderColor: "var(--border-default)" }}>
+          <button onClick={() => navigate({ to: "/home" as any })}
+            className="p-2 -ml-1 rounded-full hover:bg-[var(--s2)] transition"
+            aria-label="Voltar">
+            <ArrowLeft className="h-4 w-4" />
+          </button>
+          <span className="font-bold text-base shrink-0" style={{ color: "var(--text-primary)" }}>
+            Hooda <span style={{ color: P }}>Studio</span>
+          </span>
+          <div className="flex-1" />
+          <div className="flex gap-1 p-1 rounded-full" style={{ background: "var(--s2)" }}>
+            {navItems.map(({ k, label }) => (
+              <button key={k} onClick={() => setTab(k)}
+                className="px-3 sm:px-4 py-1.5 rounded-full text-xs font-bold transition"
+                style={{ background: tab === k ? P : "transparent", color: tab === k ? "#fff" : "var(--text-secondary)" }}>
+                {label}
+              </button>
+            ))}
+          </div>
+        </header>
+
+        {tab === "criar" ? <CriarTab onDone={() => setTab("conteudo")} /> : tab === "comunidade" ? <ComunidadeTab /> : <ConteudoTab onCriar={() => setTab("criar")} />}
+      </div>
     </div>
   );
 }
@@ -88,6 +121,21 @@ function CriarTab({ onDone }: { onDone: () => void }) {
   const [hashtagInput, setHashtagInput] = useState("");
   const [hashtags, setHashtags] = useState<string[]>([]);
   const [visibility, setVisibility] = useState<Visibility>("public");
+  const [previewAuthor, setPreviewAuthor] = useState<{ name: string; username: string; avatarUrl: string | null } | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      const { data: sess } = await supabase.auth.getSession();
+      const uid = sess.session?.user?.id;
+      if (!uid) return;
+      const { data: prof } = await supabase.from("profiles").select("username,full_name,avatar_url").eq("id", uid).maybeSingle();
+      if (prof) setPreviewAuthor({
+        name: (prof as any).full_name || (prof as any).username || "Tu",
+        username: (prof as any).username ?? "",
+        avatarUrl: (prof as any).avatar_url ?? null,
+      });
+    })();
+  }, []);
 
   const MAX_PHOTOS = 10;
   const [imageFiles, setImageFiles] = useState<File[]>([]);
@@ -265,27 +313,34 @@ function CriarTab({ onDone }: { onDone: () => void }) {
   ];
 
   return (
-    <div className="max-w-3xl mx-auto p-4 sm:p-6 space-y-5">
-      <div className="grid grid-cols-4 gap-2">
-        {kinds.map(({ k, label, icon: Icon }) => {
-          const active = kind === k;
-          return (
-            <button key={k} onClick={() => setKind(k)}
-              className="flex flex-col items-center gap-2 py-3 rounded-2xl text-xs font-semibold transition active:scale-95"
-              style={{
-                background: active ? GRAD : "var(--s0)",
-                border: active ? "none" : "1px solid var(--border-subtle)",
-                color: active ? "#fff" : "var(--text-secondary)",
-              }}>
-              <Icon className="h-5 w-5" />
-              {label}
-            </button>
-          );
-        })}
+    <div className="max-w-3xl lg:max-w-6xl mx-auto p-4 sm:p-6 lg:p-8 pb-28 lg:pb-8">
+      <div className="mb-5 hidden sm:block">
+        <h1 className="text-2xl lg:text-3xl font-black" style={{ color: "var(--text-primary)" }}>Criar</h1>
+        <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>Publica agora, guarda um rascunho ou agenda para mais tarde.</p>
       </div>
 
-      <div className="rounded-2xl p-5 space-y-4"
-        style={{ background: "var(--s0)", border: "1px solid var(--border-subtle)" }}>
+      <div className="lg:grid lg:grid-cols-[1fr_380px] lg:gap-6 lg:items-start">
+        <div className="space-y-5 min-w-0">
+          <div className="grid grid-cols-4 gap-2">
+            {kinds.map(({ k, label, icon: Icon }) => {
+              const active = kind === k;
+              return (
+                <button key={k} onClick={() => setKind(k)}
+                  className="flex flex-col items-center gap-2 py-3 rounded-2xl text-xs font-semibold transition active:scale-95"
+                  style={{
+                    background: active ? GRAD : "var(--s0)",
+                    border: active ? "none" : "1px solid var(--border-subtle)",
+                    color: active ? "#fff" : "var(--text-secondary)",
+                  }}>
+                  <Icon className="h-5 w-5" />
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="rounded-2xl p-5 space-y-4"
+            style={{ background: "var(--s0)", border: "1px solid var(--border-subtle)" }}>
 
         <div>
           <label className="text-xs font-semibold" style={{ color: "var(--text-muted)" }}>TÍTULO</label>
@@ -510,35 +565,156 @@ function CriarTab({ onDone }: { onDone: () => void }) {
                 style={{ background: "var(--s2)", borderColor: "var(--border-default)", color: "var(--text-primary)" }} />
             </div>
           )}
+          </div>
+        </div>
+        </div>
+
+        {/* Pré-visualização ao vivo — só em ecrãs grandes, onde há espaço de sobra */}
+        <div className="hidden lg:block lg:sticky lg:top-6">
+          <p className="text-xs font-bold uppercase tracking-wider mb-2 px-1 flex items-center gap-1.5" style={{ color: "var(--text-muted)" }}>
+            <Sparkles className="h-3.5 w-3.5" /> Pré-visualização
+          </p>
+          <LivePreviewCard
+            author={previewAuthor}
+            kind={kind}
+            title={title}
+            description={description}
+            hashtags={hashtags}
+            imagePreviews={imagePreviews}
+            videoPreview={videoPreview}
+            pollQuestion={pollQuestion}
+            pollOptions={pollOptions}
+          />
         </div>
       </div>
 
-      {busy && progress > 0 && (
-        <div className="rounded-2xl overflow-hidden" style={{ background: "var(--s2)" }}>
-          <div className="h-2 transition-all" style={{ width: `${progress}%`, background: GRAD }} />
+      {/* Barra de ações — fixa no fundo em telemóvel/tablet para nunca ficar fora de alcance */}
+      <div className="fixed lg:static bottom-0 inset-x-0 lg:mt-5 z-30 px-4 sm:px-6 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] lg:p-0"
+        style={{ background: "var(--s1)", boxShadow: "0 -8px 24px -12px rgba(0,0,0,0.15)" }}>
+        <div className="max-w-3xl lg:max-w-none mx-auto space-y-2">
+          {busy && progress > 0 && (
+            <div className="rounded-2xl overflow-hidden" style={{ background: "var(--s2)" }}>
+              <div className="h-2 transition-all" style={{ width: `${progress}%`, background: GRAD }} />
+            </div>
+          )}
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+            <button onClick={() => handleSubmit("draft")} disabled={busy}
+              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-bold transition active:scale-95 disabled:opacity-50"
+              style={{ background: "var(--s2)", color: "var(--text-secondary)" }}>
+              <Save className="h-4 w-4" /> Guardar rascunho
+            </button>
+            {scheduleEnabled ? (
+              <button onClick={() => handleSubmit("schedule")} disabled={busy}
+                className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-bold text-white transition active:scale-95 disabled:opacity-50"
+                style={{ background: GRAD }}>
+                {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Calendar className="h-4 w-4" />}
+                {busy ? "A agendar…" : "Agendar"}
+              </button>
+            ) : (
+              <button onClick={() => handleSubmit("publish")} disabled={busy}
+                className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-bold text-white transition active:scale-95 disabled:opacity-50"
+                style={{ background: GRAD }}>
+                {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                {busy ? "A publicar…" : "Publicar agora"}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Cartão de pré-visualização ao vivo (Criar → coluna direita em ecrãs grandes) ── */
+function LivePreviewCard({ author, kind, title, description, hashtags, imagePreviews, videoPreview, pollQuestion, pollOptions }: {
+  author: { name: string; username: string; avatarUrl: string | null } | null;
+  kind: Kind;
+  title: string;
+  description: string;
+  hashtags: string[];
+  imagePreviews: string[];
+  videoPreview: string;
+  pollQuestion: string;
+  pollOptions: string[];
+}) {
+  const displayName = author?.name || "Tu";
+  const initial = (displayName[0] ?? "?").toUpperCase();
+  const hasContent = title.trim() || description.trim() || imagePreviews.length > 0 || videoPreview || pollQuestion.trim();
+
+  return (
+    <div className="rounded-3xl overflow-hidden" style={{ background: "var(--s0)", border: "1px solid var(--border-subtle)" }}>
+      <div className="flex items-center gap-2.5 px-4 pt-4 pb-3">
+        <div className="w-9 h-9 rounded-full overflow-hidden shrink-0 flex items-center justify-center text-white font-bold text-sm"
+          style={{ background: author?.avatarUrl ? "transparent" : P }}>
+          {author?.avatarUrl ? <img src={author.avatarUrl} className="w-full h-full object-cover" alt="" /> : initial}
+        </div>
+        <div className="min-w-0">
+          <p className="text-sm font-bold truncate" style={{ color: "var(--text-primary)" }}>{displayName}</p>
+          <p className="text-xs" style={{ color: "var(--text-muted)" }}>agora mesmo</p>
+        </div>
+      </div>
+
+      {!hasContent ? (
+        <div className="px-4 pb-6 text-sm" style={{ color: "var(--text-muted)" }}>
+          Começa a escrever para veres aqui o aspeto da tua publicação.
+        </div>
+      ) : (
+        <div className="px-4 pb-3 space-y-2.5">
+          {title.trim() && <p className="font-bold text-sm" style={{ color: "var(--text-primary)" }}>{title}</p>}
+          {(kind === "poll" ? pollQuestion : description).trim() && (
+            <p className="text-sm whitespace-pre-wrap" style={{ color: "var(--text-secondary)" }}>
+              {kind === "poll" ? pollQuestion : description}
+            </p>
+          )}
+
+          {kind === "image" && imagePreviews.length > 0 && (
+            <div className={`grid gap-1 rounded-2xl overflow-hidden ${imagePreviews.length === 1 ? "grid-cols-1" : "grid-cols-2"}`}>
+              {imagePreviews.slice(0, 4).map((src, i) => (
+                <div key={i} className="relative" style={{ aspectRatio: imagePreviews.length === 1 ? "16/10" : "1/1", background: "var(--s2)" }}>
+                  <img src={src} className="w-full h-full object-cover" alt="" />
+                  {i === 3 && imagePreviews.length > 4 && (
+                    <div className="absolute inset-0 flex items-center justify-center text-white font-bold text-sm" style={{ background: "rgba(0,0,0,0.5)" }}>
+                      +{imagePreviews.length - 4}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {kind === "video" && videoPreview && (
+            <div className="rounded-2xl overflow-hidden" style={{ background: "#000" }}>
+              <video src={videoPreview} muted controls className="w-full max-h-56 object-contain" />
+            </div>
+          )}
+
+          {kind === "poll" && pollOptions.some(o => o.trim()) && (
+            <div className="space-y-1.5">
+              {pollOptions.filter(o => o.trim()).map((o, i) => (
+                <div key={i} className="relative rounded-xl px-3 py-2 text-xs font-semibold overflow-hidden"
+                  style={{ background: "var(--s2)", color: "var(--text-secondary)" }}>
+                  {o}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {hashtags.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 pt-1">
+              {hashtags.map(h => (
+                <span key={h} className="text-xs font-semibold" style={{ color: P }}>#{h}</span>
+              ))}
+            </div>
+          )}
         </div>
       )}
-      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-        <button onClick={() => handleSubmit("draft")} disabled={busy}
-          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-bold transition active:scale-95 disabled:opacity-50"
-          style={{ background: "var(--s2)", color: "var(--text-secondary)" }}>
-          <Save className="h-4 w-4" /> Guardar rascunho
-        </button>
-        {scheduleEnabled ? (
-          <button onClick={() => handleSubmit("schedule")} disabled={busy}
-            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-bold text-white transition active:scale-95 disabled:opacity-50"
-            style={{ background: GRAD }}>
-            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Calendar className="h-4 w-4" />}
-            {busy ? "A agendar…" : "Agendar"}
-          </button>
-        ) : (
-          <button onClick={() => handleSubmit("publish")} disabled={busy}
-            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-bold text-white transition active:scale-95 disabled:opacity-50"
-            style={{ background: GRAD }}>
-            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-            {busy ? "A publicar…" : "Publicar agora"}
-          </button>
-        )}
+
+      <div className="flex items-center gap-5 px-4 py-3 border-t" style={{ borderColor: "var(--border-subtle)" }}>
+        {[Heart, MessageCircle, Share2].map((Icon, i) => (
+          <span key={i} className="flex items-center gap-1.5 text-xs font-semibold" style={{ color: "var(--text-muted)" }}>
+            <Icon className="h-4 w-4" /> 0
+          </span>
+        ))}
       </div>
     </div>
   );
@@ -634,51 +810,53 @@ function ConteudoTab({ onCriar }: { onCriar: () => void }) {
   ];
 
   return (
-    <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-4">
+    <div className="max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-5">
       <div className="flex items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl sm:text-3xl font-black" style={{ color: "var(--text-primary)" }}>Conteúdo</h1>
           <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>Gere tudo o que publicaste, agendaste ou guardaste.</p>
         </div>
         <button onClick={onCriar}
-          className="px-4 py-2.5 rounded-2xl text-sm font-bold text-white active:scale-95 transition shrink-0"
+          className="px-4 py-2.5 rounded-2xl text-sm font-bold text-white active:scale-95 transition shrink-0 flex items-center gap-1.5"
           style={{ background: GRAD }}>
-          + Criar
+          <PlusCircle className="h-4 w-4" /> Criar
         </button>
       </div>
 
-      <div className="flex items-center gap-2 px-3 py-2 rounded-2xl border"
-        style={{ background: "var(--s0)", borderColor: "var(--border-subtle)" }}>
-        <Search className="h-4 w-4" style={{ color: "var(--text-muted)" }} />
-        <input value={q} onChange={e => setQ(e.target.value)} placeholder="Pesquisar…"
-          className="flex-1 bg-transparent text-sm outline-none" style={{ color: "var(--text-primary)" }} />
-      </div>
-
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-1 px-1 pb-1">
-          {chips.map(c => (
-            <button key={c.k} onClick={() => setFilt(c.k)}
-              className="shrink-0 px-3 py-1.5 rounded-full text-xs font-bold border transition"
-              style={{
-                background: filt === c.k ? P : "var(--s0)",
-                color: filt === c.k ? "#fff" : "var(--text-secondary)",
-                borderColor: filt === c.k ? P : "var(--border-subtle)",
-              }}>
-              {c.label}
-            </button>
-          ))}
+      <div className="flex flex-col lg:flex-row lg:items-center gap-3">
+        <div className="flex items-center gap-2 px-3 py-2 rounded-2xl border lg:w-72 shrink-0"
+          style={{ background: "var(--s0)", borderColor: "var(--border-subtle)" }}>
+          <Search className="h-4 w-4 shrink-0" style={{ color: "var(--text-muted)" }} />
+          <input value={q} onChange={e => setQ(e.target.value)} placeholder="Pesquisar…"
+            className="flex-1 bg-transparent text-sm outline-none min-w-0" style={{ color: "var(--text-primary)" }} />
         </div>
-        <div className="flex gap-1 p-1 rounded-full shrink-0" style={{ background: "var(--s2)" }}>
-          <button onClick={() => setView("grade")}
-            className="px-3 py-1.5 rounded-full text-xs font-bold transition"
-            style={{ background: view === "grade" ? P : "transparent", color: view === "grade" ? "#fff" : "var(--text-secondary)" }}>
-            Grade
-          </button>
-          <button onClick={() => setView("feed")}
-            className="px-3 py-1.5 rounded-full text-xs font-bold transition"
-            style={{ background: view === "feed" ? P : "transparent", color: view === "feed" ? "#fff" : "var(--text-secondary)" }}>
-            Feed
-          </button>
+
+        <div className="flex items-center justify-between gap-2 min-w-0">
+          <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-1 px-1 py-1 min-w-0">
+            {chips.map(c => (
+              <button key={c.k} onClick={() => setFilt(c.k)}
+                className="shrink-0 px-3 py-1.5 rounded-full text-xs font-bold border transition"
+                style={{
+                  background: filt === c.k ? P : "var(--s0)",
+                  color: filt === c.k ? "#fff" : "var(--text-secondary)",
+                  borderColor: filt === c.k ? P : "var(--border-subtle)",
+                }}>
+                {c.label}
+              </button>
+            ))}
+          </div>
+          <div className="flex gap-1 p-1 rounded-full shrink-0" style={{ background: "var(--s2)" }}>
+            <button onClick={() => setView("grade")}
+              className="px-3 py-1.5 rounded-full text-xs font-bold transition"
+              style={{ background: view === "grade" ? P : "transparent", color: view === "grade" ? "#fff" : "var(--text-secondary)" }}>
+              Grade
+            </button>
+            <button onClick={() => setView("feed")}
+              className="px-3 py-1.5 rounded-full text-xs font-bold transition"
+              style={{ background: view === "feed" ? P : "transparent", color: view === "feed" ? "#fff" : "var(--text-secondary)" }}>
+              Feed
+            </button>
+          </div>
         </div>
       </div>
 
@@ -704,13 +882,13 @@ function ConteudoTab({ onCriar }: { onCriar: () => void }) {
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 lg:gap-4">
           {filtered.map(p => {
             const thumb = p.thumbnail_url || p.photo_url || (Array.isArray(p.photos) && p.photos[0]);
             const scheduled = p.scheduled_at && new Date(p.scheduled_at).getTime() > Date.now();
             const Icon = p.kind === "video" ? VideoIcon : (thumb ? ImageIcon : FileText);
             return (
-              <div key={p.id} className="rounded-2xl overflow-hidden group"
+              <div key={p.id} className="rounded-2xl overflow-hidden group transition hover:shadow-lg hover:-translate-y-0.5"
                 style={{ background: "var(--s0)", border: "1px solid var(--border-subtle)" }}>
                 <div className="aspect-square relative cursor-pointer"
                   style={{ background: "var(--s2)" }}
@@ -839,25 +1017,26 @@ function ComunidadeTab() {
     );
   }
 
-  const statCards: { label: string; value: number }[] = [
-    { label: "Publicações", value: stats.publications },
-    { label: "Vistas", value: stats.views },
-    { label: "Curtidas", value: stats.likes },
+  const statCards: { label: string; value: number; icon: any }[] = [
+    { label: "Publicações", value: stats.publications, icon: FileText },
+    { label: "Vistas", value: stats.views, icon: Eye },
+    { label: "Curtidas", value: stats.likes, icon: Heart },
   ];
 
   return (
-    <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-5">
+    <div className="max-w-5xl lg:max-w-6xl mx-auto p-4 sm:p-6 lg:p-8 space-y-5">
       <div>
         <h1 className="text-2xl sm:text-3xl font-black" style={{ color: "var(--text-primary)" }}>Comunidade</h1>
         <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>Seguidores, quem segues, e o desempenho geral do teu conteúdo.</p>
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-3 gap-3 lg:gap-4">
         {statCards.map(s => (
-          <div key={s.label} className="rounded-2xl p-4 text-center"
+          <div key={s.label} className="rounded-2xl p-4 lg:p-5 flex flex-col items-center text-center gap-1"
             style={{ background: "var(--s0)", border: "1px solid var(--border-subtle)" }}>
+            <s.icon className="h-4 w-4 mb-1" style={{ color: P }} />
             <p className="text-xl sm:text-2xl font-black" style={{ color: P }}>{s.value.toLocaleString("pt-PT")}</p>
-            <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>{s.label}</p>
+            <p className="text-xs" style={{ color: "var(--text-muted)" }}>{s.label}</p>
           </div>
         ))}
       </div>
