@@ -4865,7 +4865,7 @@ function ContactList({ contacts, loading, refreshing, search, setSearch, active,
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex justify-between items-baseline gap-2">
-                <p className="font-semibold text-sm truncate flex items-center gap-1" style={{ color: "var(--text-primary,#111)" }}>
+                <p className={`text-sm truncate flex items-center gap-1 ${c.unread > 0 ? "font-extrabold" : "font-semibold"}`} style={{ color: "var(--text-primary,#111)" }}>
                   <span className="truncate">{c.full_name || c.username}</span>
                   {c.isOfficial && <VerifiedBadge />}
                 </p>
@@ -4874,7 +4874,10 @@ function ContactList({ contacts, loading, refreshing, search, setSearch, active,
                 </p>
               </div>
               <div className="flex items-center justify-between gap-2 mt-0.5">
-                <p className="text-[13px] truncate flex-1" style={{ color: "var(--text-muted,#888)" }}>
+                <p
+                  className={`text-[13px] truncate flex-1 ${c.unread > 0 ? "font-bold" : "font-normal"}`}
+                  style={{ color: c.unread > 0 ? "var(--text-primary,#111)" : "var(--text-muted,#888)" }}
+                >
                   {c.lastMsg || "@" + c.username}
                 </p>
                 {c.unread > 0 && (
