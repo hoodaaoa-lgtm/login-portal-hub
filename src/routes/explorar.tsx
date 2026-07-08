@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { BottomNav, SideNav, PageWrapper, FeedLayout } from "@/components/AppShell";
 import { RightSidebar } from "@/components/RightSidebar";
 import { UniversalPostCard } from "@/components/UniversalPostCard";
+import { RichText } from "@/components/RichText";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect, useMemo } from "react";
@@ -400,7 +401,7 @@ function ExplorePage() {
             ? <img src={photo} alt="" className="w-full h-full object-cover" />
             : <div className="w-full h-full flex items-center justify-center p-2">
                 <p className="text-[10px] text-center line-clamp-4 leading-relaxed"
-                  style={{ color: "var(--text-muted)" }}>{p.content}</p>
+                  style={{ color: "var(--text-muted)" }}><RichText text={p.content} /></p>
               </div>}
         </div>
         <div className="flex items-center gap-1.5 px-2 py-1.5">

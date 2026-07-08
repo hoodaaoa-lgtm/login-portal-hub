@@ -5,6 +5,7 @@ import { CommentsListSkeleton } from "@/components/Skeletons";
 import { createPortal } from "react-dom";
 import { X, Send, Loader, Smile, Heart } from "lucide-react";
 import { pauseAllVideos, incrementModalDepth, decrementModalDepth } from "@/lib/mediaManager";
+import { RichText } from "@/components/RichText";
 
 /**
  * Sabe se estamos no breakpoint desktop (lg, 1024px+) — usado para só
@@ -188,7 +189,7 @@ function CommentRow({
                 </span>
               )}
             </div>
-            <p className="text-sm text-neutral-800 whitespace-pre-line break-words">{c.text}</p>
+            <p className="text-sm text-neutral-800 whitespace-pre-line break-words"><RichText text={c.text} /></p>
           </div>
           {/* Linha de ações: Gostei · Responder · tempo · curtidas, como o Facebook */}
           <div className="flex items-center gap-3 mt-1 px-1">
