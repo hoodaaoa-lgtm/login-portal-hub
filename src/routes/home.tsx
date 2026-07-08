@@ -40,6 +40,7 @@ import { useTranslation } from "react-i18next";
 import i18n from "@/lib/i18n";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { ComposeBox } from "@/components/QuickComposer";
+import { getSeenPostIds, addSeenPostIds, diversifyByAuthor } from "@/lib/feedSeen";
 function t(key: string, opts?: Record<string, unknown>) { return i18n.t(key, opts) as string; }
 
 export const Route = createFileRoute("/home")({
@@ -296,7 +297,7 @@ function HomePage() {
         .or(`scheduled_at.is.null,scheduled_at.lte.${new Date().toISOString()}`)
         .order("created_at", { ascending: false })
         .limit(50);
-      return (data ?? []).map((p: any) => {
+      return diversifyByAuthor((data ?? []).map((p: any) => {
         let text = p.content;
         let bg_color = null;
         if (p.kind === "bg") { try { const j = JSON.parse(p.content); text = j.text; bg_color = j.bgColor; } catch {} }
@@ -318,7 +319,7 @@ function HomePage() {
           poll: p.poll ?? null, poll_ends_at: p.poll_ends_at ?? null,
           moderation_status: p.moderation_status ?? null, is_sensitive: !!p.is_sensitive,
         };
-      });
+      }));
     }
   }
 
@@ -350,6 +351,11 @@ function HomePage() {
     const [{ data: rankedRows, error: rankErr }, { data: videosData }] = await Promise.all([
       (supabase as any).rpc("get_personalized_feed", {
         p_user_id: uid, p_cursor: rpcCursor, p_limit: FEED_CHUNK_SIZE,
+        // Publicações já mostradas neste dispositivo (mesmo sem terem sido
+        // "vistas" a sério) — para nunca repetir a mesma ao atualizar a
+        // página. Cruzado no servidor com post_impressions para um sinal
+        // mais forte e persistente entre sessões/dispositivos.
+        p_exclude_ids: getSeenPostIds(uid),
       }),
       videosQuery,
     ]);
@@ -502,7 +508,20 @@ function HomePage() {
       (a, b) => (b.rank_score ?? 0) - (a.rank_score ?? 0)
     );
 
-    const page = merged.slice(0, FEED_CHUNK_SIZE);
+    // Nunca dois seguidos do mesmo autor — reordena mantendo a pontuação
+    // como critério principal, só troca posições quando há repetição.
+    const diversified = diversifyByAuthor(merged);
+
+    const page = diversified.slice(0, FEED_CHUNK_SIZE);
+
+    // Marca já estas publicações como "mostradas" neste dispositivo — para
+    // a próxima busca (scroll infinito ou atualizar a página) não as trazer
+    // outra vez. Só publicações reais (não os "vidfeed_" sintéticos, que
+    // vêm de outra tabela e já têm a sua própria paginação por cursor).
+    if (uid) {
+      addSeenPostIds(uid, page.filter((it: any) => typeof it.id === "string" && !it.id.startsWith("vidfeed_")).map((it: any) => it.id));
+    }
+
     // O cursor da próxima página é o created_at mais ANTIGO desta página
     // (não o último da lista, já que a ordem agora é por score, não por
     // tempo) — garante que a janela de candidatos avança sem repetir.
@@ -574,11 +593,12 @@ function HomePage() {
   const realPosts = useMemo(() => {
     const seen = new Set<string>();
     const base = firstPagePosts.length > 0 ? firstPagePosts : (forcedPublicFeed ?? []);
-    return [...base, ...extraPosts].filter((p: any) => {
+    const combined = [...base, ...extraPosts].filter((p: any) => {
       if (!p?.id || seen.has(p.id)) return false;
       seen.add(p.id);
       return true;
     });
+    return diversifyByAuthor(combined);
   }, [firstPagePosts, extraPosts, forcedPublicFeed]);
 
   // Só mostra o skeleton enquanto NENHuma das duas fontes (feed personalizado
