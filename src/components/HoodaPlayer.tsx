@@ -848,7 +848,7 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
               src={poster}
               alt=""
               decoding="async"
-              className="absolute inset-0 w-full h-full object-cover transition-[filter] duration-300"
+              className="absolute inset-0 w-full h-full object-contain transition-[filter] duration-300"
               style={{ filter: "blur(6px)", transform: "scale(1.02)" }}
             />
           )}
@@ -868,7 +868,7 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
               src={poster}
               alt=""
               decoding="async"
-              className="absolute inset-0 w-full h-full object-cover"
+              className="absolute inset-0 w-full h-full object-contain"
             />
           )}
           <button
