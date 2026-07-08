@@ -12,6 +12,7 @@ import { deletePostForEveryone } from "@/lib/posts";
 import { FeedVideoPlayer } from "@/components/FeedVideoPlayer";
 import { PollCard } from "@/components/PollCard";
 import { SensitiveContentOverlay } from "@/components/SensitiveContentOverlay";
+import { appealPostModeration } from "@/lib/moderationPrefs";
 import { useTimeAgo } from "@/hooks/useTimeAgo";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { useFollowState, usePostLikeState, usePostCommentCount, useBookmarkState, useVideoLikeState, getViewerFingerprint } from "@/hooks/useSocialSystem";
@@ -870,6 +871,20 @@ export function UniversalPostCard({ post: p, onDeleted, onBookmarkChange }: {
   const [viewCount, setViewCount] = useState(Number(p.views_count ?? 0));
   const isAd = !!p.ad || !!p.is_ad;
   const isOwnPost = !!myUserId && myUserId === p.author_id;
+  const [appealState, setAppealState] = useState<"idle" | "sending" | "sent">("idle");
+
+  async function handleAppeal() {
+    if (appealState !== "idle") return;
+    setAppealState("sending");
+    try {
+      await appealPostModeration(p.id);
+      setAppealState("sent");
+      toast.success("Recurso enviado. Um moderador vai rever a classificação.");
+    } catch (err: any) {
+      setAppealState("idle");
+      toast.error(err?.message ?? "Não foi possível enviar o recurso.");
+    }
+  }
   const navigate = useNavigate();
   const timeLabel = useTimeAgo((p as any).created_at);
 
@@ -1051,6 +1066,25 @@ export function UniversalPostCard({ post: p, onDeleted, onBookmarkChange }: {
           )}
         </div>
       </div>
+
+      {/* Etiqueta "Sensível" + recurso — só visível para o autor do post,
+          quando a IA classificou a publicação como sensível/nudez/violência/assédio. */}
+      {isOwnPost && p.is_sensitive && p.moderation_status && p.moderation_status !== "safe" && (
+        <div className="px-4 pb-2 flex items-center gap-2 flex-wrap">
+          <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-full"
+            style={{ background: "#fff7ed", color: "#c2410c", border: "1px solid #fed7aa" }}>
+            ⚠️ Etiquetado como sensível
+          </span>
+          <button
+            onClick={handleAppeal}
+            disabled={appealState !== "idle"}
+            className="text-[11px] font-bold underline decoration-dotted disabled:opacity-60"
+            style={{ color: "var(--text-muted)" }}
+          >
+            {appealState === "sent" ? "Recurso enviado" : appealState === "sending" ? "A enviar…" : "A classificação está errada? Recorrer"}
+          </button>
+        </div>
+      )}
 
       {/* Vídeo */}
       {p.video && (

@@ -17,6 +17,8 @@ type RawComment = {
   author_color: string | null;
   content: string;
   created_at: string | null;
+  moderation_status?: string | null;
+  is_sensitive?: boolean | null;
 };
 
 function timeAgo(iso: string | null): string {
@@ -30,7 +32,7 @@ function timeAgo(iso: string | null): string {
 export async function fetchPostComments(postId: string, myUserId?: string): Promise<PostComment[]> {
   const { data: rows, error } = await (supabase as any)
     .from("post_comments")
-    .select("id,post_id,user_id,parent_comment_id,author_username,author_color,content,created_at")
+    .select("id,post_id,user_id,parent_comment_id,author_username,author_color,content,created_at,moderation_status,is_sensitive")
     .eq("post_id", postId)
     .order("created_at", { ascending: true });
   if (error) console.error("[hooda:comments] falha ao carregar comentários:", error);
@@ -73,6 +75,8 @@ export async function fetchPostComments(postId: string, myUserId?: string): Prom
       likeCount: likeCountMap[c.id] || 0,
       likedByMe: likedByMeSet.has(c.id),
       replies: [],
+      moderationStatus: c.moderation_status ?? null,
+      isSensitive: c.is_sensitive ?? false,
     };
   }
 
@@ -113,6 +117,11 @@ export async function sendPostComment(opts: {
     return null;
   }
   const row = data as RawComment;
+
+  // Moderação em segundo plano — nunca bloqueia o envio do comentário.
+  supabase.functions.invoke("moderate-comment", { body: { commentId: row.id } })
+    .catch((err) => console.error("[hooda:comments] erro na moderação automática:", err));
+
   return {
     id: row.id,
     authorName: `@${opts.username}`,
@@ -147,6 +156,10 @@ export async function replyToPostComment(opts: {
     return null;
   }
   const row = data as RawComment;
+
+  supabase.functions.invoke("moderate-comment", { body: { commentId: row.id } })
+    .catch((err) => console.error("[hooda:comments] erro na moderação automática:", err));
+
   return {
     id: row.id,
     authorName: `@${opts.username}`,

@@ -74,6 +74,43 @@ Deno.serve(async (req) => {
       return Response.json({ ok: true }, { headers: CORS });
     }
 
+    /* ── FILA DE MODERAÇÃO — recursos pendentes de posts sinalizados ── */
+    if (action === "moderation_queue") {
+      const { data, error } = await db
+        .from("content_moderation_appeals")
+        .select("id,post_id,user_id,reason,status,original_status,created_at,posts(content,title,moderation_status,is_sensitive,photo_url,thumbnail_url)")
+        .eq("status", "pending")
+        .order("created_at", { ascending: true })
+        .limit(100);
+      if (error) throw error;
+      return Response.json({ data }, { headers: CORS });
+    }
+
+    /* ── RESOLVER RECURSO — aprovar (volta a 'safe') ou rejeitar (mantém) ── */
+    if (action === "resolve_appeal") {
+      const { appealId, approve, note } = body;
+      if (!appealId || typeof approve !== "boolean") {
+        return Response.json({ error: "appealId e approve (boolean) obrigatórios" }, { status: 400, headers: CORS });
+      }
+      const { error } = await db.rpc("resolve_moderation_appeal", {
+        p_appeal_id: appealId, p_approve: approve, p_note: note ?? null,
+      });
+      if (error) throw error;
+      return Response.json({ ok: true }, { headers: CORS });
+    }
+
+    /* ── LOG DE MODERAÇÃO — auditoria recente (posts sinalizados pela IA) ── */
+    if (action === "moderation_log") {
+      const limit = Number(body.limit ?? 50);
+      const { data, error } = await db
+        .from("content_moderation_log")
+        .select("id,post_id,category,confidence,raw_result,created_at")
+        .order("created_at", { ascending: false })
+        .limit(limit);
+      if (error) throw error;
+      return Response.json({ data }, { headers: CORS });
+    }
+
     return Response.json({ error: "Acção desconhecida" }, { status: 400, headers: CORS });
 
   } catch (e: any) {
