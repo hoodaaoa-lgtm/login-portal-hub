@@ -1,6 +1,4 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { myChannelQuery } from "@/lib/channel-queries";
 import { supabase } from "@/integrations/supabase/client";
 import { uploadToCloudinary, uploadImageToCloudinary } from "@/lib/cloudinary";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -76,7 +74,6 @@ function StudioPage() {
 
 function CriarTab({ onDone }: { onDone: () => void }) {
   const navigate = useNavigate();
-  const { data: channel } = useQuery(myChannelQuery());
 
   const [kind, setKind] = useState<Kind>("text");
   const [title, setTitle] = useState("");
@@ -191,9 +188,6 @@ function CriarTab({ onDone }: { onDone: () => void }) {
         visibility,
         is_draft: mode === "draft",
         scheduled_at: schedISO,
-        channel_handle: channel?.handle ?? null,
-        channel_name: channel?.name ?? null,
-        channel_avatar: channel?.avatar_url ?? null,
       };
 
       if (kind === "image" && imageFiles.length > 0) {
@@ -212,7 +206,7 @@ function CriarTab({ onDone }: { onDone: () => void }) {
       }
       if (kind === "video" && videoFile) {
         const res = await uploadToCloudinary(videoFile, {
-          title: title || "video", channelId: channel?.id ?? "", userId: uid,
+          title: title || "video", channelId: uid, userId: uid,
         }, p => setProgress(p));
         payload.video_url = res.playbackUrl;
         payload.thumbnail_url = thumbPreview ? undefined : res.thumbnailUrl;

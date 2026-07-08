@@ -74,7 +74,6 @@ type PostRow = {
   video_stream_url: string | null;
   clip_video_id: string | null;
   clip_thumb_url: string | null;
-  channel_name: string | null;
   views_count: number | null;
   likes_count: number | null;
   replies_count: number | null;
@@ -529,7 +528,7 @@ function AdminDashboard({ adminId }: { adminId: string }) {
     setPostsLoading(true);
     const { data, error } = await db
       .from("posts")
-      .select("id,author_id,author_username,author_name,author_color,content,kind,created_at,photo_url,photos,video_url,video_stream_url,clip_video_id,clip_thumb_url,channel_name,views_count,likes_count,replies_count,reposts_count")
+      .select("id,author_id,author_username,author_name,author_color,content,kind,created_at,photo_url,photos,video_url,video_stream_url,clip_video_id,clip_thumb_url,views_count,likes_count,replies_count,reposts_count")
       .order("created_at", { ascending: false })
       .limit(200);
     if (error) { console.error("[admin] erro a carregar publicações:", error); toast.error("Erro ao carregar publicações: " + error.message); setPostsList([]); setPostsLoading(false); return; }
@@ -1182,7 +1181,6 @@ function AdminDashboard({ adminId }: { adminId: string }) {
                           <span className="text-[11px] text-neutral-400">❤ {fmtCount(p.likes_count)}</span>
                           <span className="text-[11px] text-neutral-400">💬 {fmtCount(p.replies_count)}</span>
                           <span className="text-[11px] text-neutral-400">🔁 {fmtCount(p.reposts_count)}</span>
-                          {p.channel_name && <span className="text-[11px] text-neutral-400">Canal: {p.channel_name}</span>}
                           <span className="text-[11px] text-neutral-300">{new Date(p.created_at).toLocaleString("pt-PT")}</span>
                         </div>
                       </div>

@@ -291,8 +291,6 @@ function ExplorePage() {
         views_count: v.views_count ?? 0, reposts_count: 0,
         clip_video_id: v.id, clip_start: 0, clip_end: v.duration_seconds ?? 0,
         clip_title: v.title, clip_thumb_url: v.thumbnail_url,
-        channel_id: v.owner_id, channel_handle: author?.username ?? null,
-        channel_name: author?.full_name ?? null, channel_avatar: author?.avatar_url ?? null,
       };
     });
 

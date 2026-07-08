@@ -69,10 +69,6 @@ export type NormalizedPost = {
   clip_title?: string | null;
   clip_thumb_url?: string | null;
   video_stream_url?: string | null;
-  channel_id?: string | null;
-  channel_handle?: string | null;
-  channel_name?: string | null;
-  channel_avatar?: string | null;
   // Fase 6 — moderação de conteúdo
   moderation_status?: string | null;
   is_sensitive?: boolean | null;
@@ -141,9 +137,6 @@ export function normalizePost(
       clip_thumb_url: raw.clipThumb ?? null,
       clip_start: raw.clipStart ?? 0,
       clip_end: raw.clipEnd ?? 0,
-      channel_name: raw.channelName ?? null,
-      channel_handle: raw.channelHandle ?? null,
-      channel_avatar: raw.channelAvatar ?? null,
       video_stream_url: raw.videoStreamUrl ?? null,
     };
   }
@@ -671,23 +664,23 @@ function ClipCard({ p, liked, likeCount, viewCount, onLike, onComment }: {
   return (
     <article className="hooda-card overflow-hidden animate-fade-in-up">
       <button
-        onClick={() => p.channel_handle && navigate({ to: `/hoodatv/canal/${p.channel_handle}` })}
+        onClick={() => p.author_username && navigate({ to: `/u/$username`, params: { username: p.author_username } })}
         className="flex items-center gap-2.5 px-3 py-3 w-full text-left transition active:scale-[0.99]"
         style={{ borderBottom: "1px solid var(--border-subtle)" }}>
         <div className="w-10 h-10 rounded-full overflow-hidden shrink-0 flex items-center justify-center"
           style={{ background: "#5B3FCF20" }}>
-          {p.channel_avatar
-            ? <img src={p.channel_avatar} alt="" className="w-full h-full object-cover" />
+          {p.avatar_url
+            ? <img src={p.avatar_url} alt="" className="w-full h-full object-cover" />
             : <span className="font-bold" style={{ color: "#5B3FCF" }}>
-                {p.channel_name?.[0]?.toUpperCase() ?? "?"}
+                {p.user?.[0]?.toUpperCase() ?? "?"}
               </span>}
         </div>
         <div className="flex-1 min-w-0">
           <p className="font-bold text-sm leading-tight truncate" style={{ color: "var(--text-primary)" }}>
-            {p.channel_name ?? "Canal"}
+            {p.user ?? "Hooda"}
           </p>
           <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
-            @{p.channel_handle} · HoodaTV
+            @{p.author_username} · HoodaTV
           </p>
         </div>
         <span className="text-[10px] px-2.5 py-0.5 rounded-full font-bold shrink-0"

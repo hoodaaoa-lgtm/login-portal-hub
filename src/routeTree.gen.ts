@@ -23,21 +23,8 @@ import { Route as ExplorarRouteImport } from './routes/explorar'
 import { Route as DropsRouteImport } from './routes/drops'
 import { Route as DefinicoesRouteImport } from './routes/definicoes'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as StudioIndexRouteImport } from './routes/studio.index'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
-import { Route as StudioUploadRouteImport } from './routes/studio.upload'
-import { Route as StudioPlaylistsRouteImport } from './routes/studio.playlists'
-import { Route as StudioPersonalizacaoRouteImport } from './routes/studio.personalizacao'
-import { Route as StudioOnboardingRouteImport } from './routes/studio.onboarding'
-import { Route as StudioEstatisticasRouteImport } from './routes/studio.estatisticas'
-import { Route as StudioDefinicoesRouteImport } from './routes/studio.definicoes'
-import { Route as StudioCriarRouteImport } from './routes/studio.criar'
-import { Route as StudioContentRouteImport } from './routes/studio.content'
-import { Route as StudioBibliotecaRouteImport } from './routes/studio.biblioteca'
-import { Route as StudioAnalyticsRouteImport } from './routes/studio.analytics'
-import { Route as StudioAgendaRouteImport } from './routes/studio.agenda'
 import { Route as PostIdRouteImport } from './routes/post.$id'
-import { Route as CanalHandleRouteImport } from './routes/canal.$handle'
 import { Route as AuthBridgeRouteImport } from './routes/auth.bridge'
 
 const UsoRoute = UsoRouteImport.update({
@@ -110,79 +97,14 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const StudioIndexRoute = StudioIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => StudioRoute,
-} as any)
 const UUsernameRoute = UUsernameRouteImport.update({
   id: '/u/$username',
   path: '/u/$username',
   getParentRoute: () => rootRouteImport,
 } as any)
-const StudioUploadRoute = StudioUploadRouteImport.update({
-  id: '/upload',
-  path: '/upload',
-  getParentRoute: () => StudioRoute,
-} as any)
-const StudioPlaylistsRoute = StudioPlaylistsRouteImport.update({
-  id: '/playlists',
-  path: '/playlists',
-  getParentRoute: () => StudioRoute,
-} as any)
-const StudioPersonalizacaoRoute = StudioPersonalizacaoRouteImport.update({
-  id: '/personalizacao',
-  path: '/personalizacao',
-  getParentRoute: () => StudioRoute,
-} as any)
-const StudioOnboardingRoute = StudioOnboardingRouteImport.update({
-  id: '/onboarding',
-  path: '/onboarding',
-  getParentRoute: () => StudioRoute,
-} as any)
-const StudioEstatisticasRoute = StudioEstatisticasRouteImport.update({
-  id: '/estatisticas',
-  path: '/estatisticas',
-  getParentRoute: () => StudioRoute,
-} as any)
-const StudioDefinicoesRoute = StudioDefinicoesRouteImport.update({
-  id: '/definicoes',
-  path: '/definicoes',
-  getParentRoute: () => StudioRoute,
-} as any)
-const StudioCriarRoute = StudioCriarRouteImport.update({
-  id: '/criar',
-  path: '/criar',
-  getParentRoute: () => StudioRoute,
-} as any)
-const StudioContentRoute = StudioContentRouteImport.update({
-  id: '/content',
-  path: '/content',
-  getParentRoute: () => StudioRoute,
-} as any)
-const StudioBibliotecaRoute = StudioBibliotecaRouteImport.update({
-  id: '/biblioteca',
-  path: '/biblioteca',
-  getParentRoute: () => StudioRoute,
-} as any)
-const StudioAnalyticsRoute = StudioAnalyticsRouteImport.update({
-  id: '/analytics',
-  path: '/analytics',
-  getParentRoute: () => StudioRoute,
-} as any)
-const StudioAgendaRoute = StudioAgendaRouteImport.update({
-  id: '/agenda',
-  path: '/agenda',
-  getParentRoute: () => StudioRoute,
-} as any)
 const PostIdRoute = PostIdRouteImport.update({
   id: '/post/$id',
   path: '/post/$id',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CanalHandleRoute = CanalHandleRouteImport.update({
-  id: '/canal/$handle',
-  path: '/canal/$handle',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthBridgeRoute = AuthBridgeRouteImport.update({
@@ -204,24 +126,11 @@ export interface FileRoutesByFullPath {
   '/privacidade': typeof PrivacidadeRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
-  '/studio': typeof StudioRouteWithChildren
+  '/studio': typeof StudioRoute
   '/uso': typeof UsoRoute
   '/auth/bridge': typeof AuthBridgeRoute
-  '/canal/$handle': typeof CanalHandleRoute
   '/post/$id': typeof PostIdRoute
-  '/studio/agenda': typeof StudioAgendaRoute
-  '/studio/analytics': typeof StudioAnalyticsRoute
-  '/studio/biblioteca': typeof StudioBibliotecaRoute
-  '/studio/content': typeof StudioContentRoute
-  '/studio/criar': typeof StudioCriarRoute
-  '/studio/definicoes': typeof StudioDefinicoesRoute
-  '/studio/estatisticas': typeof StudioEstatisticasRoute
-  '/studio/onboarding': typeof StudioOnboardingRoute
-  '/studio/personalizacao': typeof StudioPersonalizacaoRoute
-  '/studio/playlists': typeof StudioPlaylistsRoute
-  '/studio/upload': typeof StudioUploadRoute
   '/u/$username': typeof UUsernameRoute
-  '/studio/': typeof StudioIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -236,23 +145,11 @@ export interface FileRoutesByTo {
   '/privacidade': typeof PrivacidadeRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
+  '/studio': typeof StudioRoute
   '/uso': typeof UsoRoute
   '/auth/bridge': typeof AuthBridgeRoute
-  '/canal/$handle': typeof CanalHandleRoute
   '/post/$id': typeof PostIdRoute
-  '/studio/agenda': typeof StudioAgendaRoute
-  '/studio/analytics': typeof StudioAnalyticsRoute
-  '/studio/biblioteca': typeof StudioBibliotecaRoute
-  '/studio/content': typeof StudioContentRoute
-  '/studio/criar': typeof StudioCriarRoute
-  '/studio/definicoes': typeof StudioDefinicoesRoute
-  '/studio/estatisticas': typeof StudioEstatisticasRoute
-  '/studio/onboarding': typeof StudioOnboardingRoute
-  '/studio/personalizacao': typeof StudioPersonalizacaoRoute
-  '/studio/playlists': typeof StudioPlaylistsRoute
-  '/studio/upload': typeof StudioUploadRoute
   '/u/$username': typeof UUsernameRoute
-  '/studio': typeof StudioIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -268,24 +165,11 @@ export interface FileRoutesById {
   '/privacidade': typeof PrivacidadeRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
-  '/studio': typeof StudioRouteWithChildren
+  '/studio': typeof StudioRoute
   '/uso': typeof UsoRoute
   '/auth/bridge': typeof AuthBridgeRoute
-  '/canal/$handle': typeof CanalHandleRoute
   '/post/$id': typeof PostIdRoute
-  '/studio/agenda': typeof StudioAgendaRoute
-  '/studio/analytics': typeof StudioAnalyticsRoute
-  '/studio/biblioteca': typeof StudioBibliotecaRoute
-  '/studio/content': typeof StudioContentRoute
-  '/studio/criar': typeof StudioCriarRoute
-  '/studio/definicoes': typeof StudioDefinicoesRoute
-  '/studio/estatisticas': typeof StudioEstatisticasRoute
-  '/studio/onboarding': typeof StudioOnboardingRoute
-  '/studio/personalizacao': typeof StudioPersonalizacaoRoute
-  '/studio/playlists': typeof StudioPlaylistsRoute
-  '/studio/upload': typeof StudioUploadRoute
   '/u/$username': typeof UUsernameRoute
-  '/studio/': typeof StudioIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -305,21 +189,8 @@ export interface FileRouteTypes {
     | '/studio'
     | '/uso'
     | '/auth/bridge'
-    | '/canal/$handle'
     | '/post/$id'
-    | '/studio/agenda'
-    | '/studio/analytics'
-    | '/studio/biblioteca'
-    | '/studio/content'
-    | '/studio/criar'
-    | '/studio/definicoes'
-    | '/studio/estatisticas'
-    | '/studio/onboarding'
-    | '/studio/personalizacao'
-    | '/studio/playlists'
-    | '/studio/upload'
     | '/u/$username'
-    | '/studio/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -334,23 +205,11 @@ export interface FileRouteTypes {
     | '/privacidade'
     | '/reset-password'
     | '/signup'
+    | '/studio'
     | '/uso'
     | '/auth/bridge'
-    | '/canal/$handle'
     | '/post/$id'
-    | '/studio/agenda'
-    | '/studio/analytics'
-    | '/studio/biblioteca'
-    | '/studio/content'
-    | '/studio/criar'
-    | '/studio/definicoes'
-    | '/studio/estatisticas'
-    | '/studio/onboarding'
-    | '/studio/personalizacao'
-    | '/studio/playlists'
-    | '/studio/upload'
     | '/u/$username'
-    | '/studio'
   id:
     | '__root__'
     | '/'
@@ -368,21 +227,8 @@ export interface FileRouteTypes {
     | '/studio'
     | '/uso'
     | '/auth/bridge'
-    | '/canal/$handle'
     | '/post/$id'
-    | '/studio/agenda'
-    | '/studio/analytics'
-    | '/studio/biblioteca'
-    | '/studio/content'
-    | '/studio/criar'
-    | '/studio/definicoes'
-    | '/studio/estatisticas'
-    | '/studio/onboarding'
-    | '/studio/personalizacao'
-    | '/studio/playlists'
-    | '/studio/upload'
     | '/u/$username'
-    | '/studio/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -398,10 +244,9 @@ export interface RootRouteChildren {
   PrivacidadeRoute: typeof PrivacidadeRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SignupRoute: typeof SignupRoute
-  StudioRoute: typeof StudioRouteWithChildren
+  StudioRoute: typeof StudioRoute
   UsoRoute: typeof UsoRoute
   AuthBridgeRoute: typeof AuthBridgeRoute
-  CanalHandleRoute: typeof CanalHandleRoute
   PostIdRoute: typeof PostIdRoute
   UUsernameRoute: typeof UUsernameRoute
 }
@@ -506,13 +351,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/studio/': {
-      id: '/studio/'
-      path: '/'
-      fullPath: '/studio/'
-      preLoaderRoute: typeof StudioIndexRouteImport
-      parentRoute: typeof StudioRoute
-    }
     '/u/$username': {
       id: '/u/$username'
       path: '/u/$username'
@@ -520,95 +358,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UUsernameRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/studio/upload': {
-      id: '/studio/upload'
-      path: '/upload'
-      fullPath: '/studio/upload'
-      preLoaderRoute: typeof StudioUploadRouteImport
-      parentRoute: typeof StudioRoute
-    }
-    '/studio/playlists': {
-      id: '/studio/playlists'
-      path: '/playlists'
-      fullPath: '/studio/playlists'
-      preLoaderRoute: typeof StudioPlaylistsRouteImport
-      parentRoute: typeof StudioRoute
-    }
-    '/studio/personalizacao': {
-      id: '/studio/personalizacao'
-      path: '/personalizacao'
-      fullPath: '/studio/personalizacao'
-      preLoaderRoute: typeof StudioPersonalizacaoRouteImport
-      parentRoute: typeof StudioRoute
-    }
-    '/studio/onboarding': {
-      id: '/studio/onboarding'
-      path: '/onboarding'
-      fullPath: '/studio/onboarding'
-      preLoaderRoute: typeof StudioOnboardingRouteImport
-      parentRoute: typeof StudioRoute
-    }
-    '/studio/estatisticas': {
-      id: '/studio/estatisticas'
-      path: '/estatisticas'
-      fullPath: '/studio/estatisticas'
-      preLoaderRoute: typeof StudioEstatisticasRouteImport
-      parentRoute: typeof StudioRoute
-    }
-    '/studio/definicoes': {
-      id: '/studio/definicoes'
-      path: '/definicoes'
-      fullPath: '/studio/definicoes'
-      preLoaderRoute: typeof StudioDefinicoesRouteImport
-      parentRoute: typeof StudioRoute
-    }
-    '/studio/criar': {
-      id: '/studio/criar'
-      path: '/criar'
-      fullPath: '/studio/criar'
-      preLoaderRoute: typeof StudioCriarRouteImport
-      parentRoute: typeof StudioRoute
-    }
-    '/studio/content': {
-      id: '/studio/content'
-      path: '/content'
-      fullPath: '/studio/content'
-      preLoaderRoute: typeof StudioContentRouteImport
-      parentRoute: typeof StudioRoute
-    }
-    '/studio/biblioteca': {
-      id: '/studio/biblioteca'
-      path: '/biblioteca'
-      fullPath: '/studio/biblioteca'
-      preLoaderRoute: typeof StudioBibliotecaRouteImport
-      parentRoute: typeof StudioRoute
-    }
-    '/studio/analytics': {
-      id: '/studio/analytics'
-      path: '/analytics'
-      fullPath: '/studio/analytics'
-      preLoaderRoute: typeof StudioAnalyticsRouteImport
-      parentRoute: typeof StudioRoute
-    }
-    '/studio/agenda': {
-      id: '/studio/agenda'
-      path: '/agenda'
-      fullPath: '/studio/agenda'
-      preLoaderRoute: typeof StudioAgendaRouteImport
-      parentRoute: typeof StudioRoute
-    }
     '/post/$id': {
       id: '/post/$id'
       path: '/post/$id'
       fullPath: '/post/$id'
       preLoaderRoute: typeof PostIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/canal/$handle': {
-      id: '/canal/$handle'
-      path: '/canal/$handle'
-      fullPath: '/canal/$handle'
-      preLoaderRoute: typeof CanalHandleRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth/bridge': {
@@ -620,39 +374,6 @@ declare module '@tanstack/react-router' {
     }
   }
 }
-
-interface StudioRouteChildren {
-  StudioAgendaRoute: typeof StudioAgendaRoute
-  StudioAnalyticsRoute: typeof StudioAnalyticsRoute
-  StudioBibliotecaRoute: typeof StudioBibliotecaRoute
-  StudioContentRoute: typeof StudioContentRoute
-  StudioCriarRoute: typeof StudioCriarRoute
-  StudioDefinicoesRoute: typeof StudioDefinicoesRoute
-  StudioEstatisticasRoute: typeof StudioEstatisticasRoute
-  StudioOnboardingRoute: typeof StudioOnboardingRoute
-  StudioPersonalizacaoRoute: typeof StudioPersonalizacaoRoute
-  StudioPlaylistsRoute: typeof StudioPlaylistsRoute
-  StudioUploadRoute: typeof StudioUploadRoute
-  StudioIndexRoute: typeof StudioIndexRoute
-}
-
-const StudioRouteChildren: StudioRouteChildren = {
-  StudioAgendaRoute: StudioAgendaRoute,
-  StudioAnalyticsRoute: StudioAnalyticsRoute,
-  StudioBibliotecaRoute: StudioBibliotecaRoute,
-  StudioContentRoute: StudioContentRoute,
-  StudioCriarRoute: StudioCriarRoute,
-  StudioDefinicoesRoute: StudioDefinicoesRoute,
-  StudioEstatisticasRoute: StudioEstatisticasRoute,
-  StudioOnboardingRoute: StudioOnboardingRoute,
-  StudioPersonalizacaoRoute: StudioPersonalizacaoRoute,
-  StudioPlaylistsRoute: StudioPlaylistsRoute,
-  StudioUploadRoute: StudioUploadRoute,
-  StudioIndexRoute: StudioIndexRoute,
-}
-
-const StudioRouteWithChildren =
-  StudioRoute._addFileChildren(StudioRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -667,10 +388,9 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacidadeRoute: PrivacidadeRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SignupRoute: SignupRoute,
-  StudioRoute: StudioRouteWithChildren,
+  StudioRoute: StudioRoute,
   UsoRoute: UsoRoute,
   AuthBridgeRoute: AuthBridgeRoute,
-  CanalHandleRoute: CanalHandleRoute,
   PostIdRoute: PostIdRoute,
   UUsernameRoute: UUsernameRoute,
 }

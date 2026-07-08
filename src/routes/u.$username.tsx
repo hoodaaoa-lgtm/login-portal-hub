@@ -508,7 +508,7 @@ function UserProfilePage() {
     queryKey:["profilePosts2", profileId],
     queryFn: async ()=>{
       const {data}=await (supabase as any).from("posts")
-        .select("id,author_id,content,kind,created_at,photo_url,image_url,video_url,clip_title,clip_thumb_url,channel_name,channel_handle,channel_avatar,clip_video_id,clip_start,clip_end,likes_count,views_count")
+        .select("id,author_id,content,kind,created_at,photo_url,image_url,video_url,clip_title,clip_thumb_url,clip_video_id,clip_start,clip_end,likes_count,views_count")
         .eq("author_id",profileId)
         .order("created_at",{ascending:false})
         .limit(30);
@@ -549,9 +549,6 @@ function UserProfilePage() {
           clipThumb:p.clip_thumb_url||null,
           clipVideoId:p.clip_video_id||null,
           clipStart:p.clip_start??0, clipEnd:p.clip_end??0,
-          channelName:p.channel_name||null,
-          channelHandle:p.channel_handle||null,
-          channelAvatar:p.channel_avatar||null,
           videoStreamUrl: p.clip_video_id ? (streamMap[p.clip_video_id]||null) : null,
           likesCount:p.likes_count??0,
           viewsCount:(p as any).views_count??0,
