@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Notif, NotifType } from "@/components/Notifications";
-import { playMessageSound, playNotificationSound } from "@/lib/notificationSound";
+import { playNotificationSound } from "@/lib/notificationSound";
 
 const db = supabase as any;
 
@@ -81,6 +81,7 @@ export function useNotifications(userId: string | null) {
         .from("notifications")
         .select("*")
         .eq("user_id", userId)
+        .neq("type", "message") // mensagens ficam só na aba Mensagens, não aparecem no sino
         .order("created_at", { ascending: false })
         .limit(60);
       if (error) throw error;
@@ -110,13 +111,13 @@ export function useNotifications(userId: string | null) {
         { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` },
         async (payload: any) => {
           const row = payload.new;
+          if (row.type === "message") return; // mensagens ficam só na aba Mensagens
           const profilesCache = await loadProfiles([row.actor_id]);
           const notif = await mapRow(row, profilesCache);
 
           setNotifications((prev) => [notif, ...prev]);
 
-          if (notif.type === "message") playMessageSound();
-          else playNotificationSound();
+          playNotificationSound();
 
           setToast(notif);
           if (toastTimerRef.current) clearTimeout(toastTimerRef.current);

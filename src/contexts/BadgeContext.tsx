@@ -30,7 +30,8 @@ export function BadgeProvider({ children }: { children: React.ReactNode }) {
         .from("notifications")
         .select("*", { count: "exact", head: true })
         .eq("user_id", uid)
-        .eq("read", false);
+        .eq("read", false)
+        .neq("type", "message"); // mensagens têm o seu próprio contador (unreadMessages), não contam para o sino
       if (error) throw error;
       setUnreadNotifications(count || 0);
     } catch (err) {
