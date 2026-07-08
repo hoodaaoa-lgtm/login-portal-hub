@@ -53,9 +53,9 @@ function SettingsPage() {
   async function save() {
     if (!channel) return;
     setSaving(true);
-    const { error } = await (supabase as any).from("channels").update({
-      name: name.trim(),
-      description,
+    const { error } = await (supabase as any).from("profiles").update({
+      full_name: name.trim(),
+      bio: description,
       category,
       avatar_url: avatar,
       banner_url: banner,
@@ -67,13 +67,10 @@ function SettingsPage() {
   }
 
   async function deleteChannel() {
-    if (!channel) return;
-    setDeleting(true);
-    const { error } = await (supabase as any).from("channels").delete().eq("id", channel.id);
-    setDeleting(false);
-    if (error) { toast.error(error.message); return; }
-    toast.success("Canal eliminado.");
-    navigate({ to: "/studio" as any });
+    // Já não existe um "canal" separado da conta — apagar isto apagaria o
+    // teu perfil inteiro. Desativado por segurança até esta página ser
+    // substituída por "eliminar conta" nas definições normais do perfil.
+    toast.error("Eliminar conta ainda não está disponível por aqui. Fala com o suporte.");
   }
 
   if (!channel) return (

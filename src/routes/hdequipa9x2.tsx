@@ -81,17 +81,6 @@ type PostRow = {
   reposts_count: number | null;
 };
 
-type ChannelRow = {
-  id: string;
-  owner_id: string;
-  name: string;
-  handle: string;
-  avatar_url: string | null;
-  category: string | null;
-  created_at: string;
-  owner_username?: string | null;
-};
-
 type PresenceRow = {
   id: string;
   username: string;
@@ -107,7 +96,7 @@ type DashboardStats = {
   newWeek: number;
   totalPosts: number;
   postsToday: number;
-  totalChannels: number;
+  totalVideos: number;
   pendingReports: number;
 };
 
@@ -351,7 +340,7 @@ function AdminPage() {
 
 function AdminDashboard({ adminId }: { adminId: string }) {
   const navigate = useNavigate();
-  const [section, setSection] = useState<"dashboard" | "reports" | "users" | "messages" | "posts" | "channels" | "presence" | "broadcast" | "audit">("dashboard");
+  const [section, setSection] = useState<"dashboard" | "reports" | "users" | "messages" | "posts" | "presence" | "broadcast" | "audit">("dashboard");
   const [search, setSearch] = useState("");
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
@@ -376,11 +365,6 @@ function AdminDashboard({ adminId }: { adminId: string }) {
   const [postsList, setPostsList] = useState<PostRow[]>([]);
   const [postsLoading, setPostsLoading] = useState(true);
   const [postsSearch, setPostsSearch] = useState("");
-
-  // ── Canais ──
-  const [channelsList, setChannelsList] = useState<ChannelRow[]>([]);
-  const [channelsLoading, setChannelsLoading] = useState(true);
-  const [channelsSearch, setChannelsSearch] = useState("");
 
   // ── Presença (utilizadores online / última vez visto / tempo no site) ──
   const [presenceList, setPresenceList] = useState<PresenceRow[]>([]);
@@ -407,7 +391,7 @@ function AdminDashboard({ adminId }: { adminId: string }) {
       const startWeek = new Date(now.getTime() - 7 * 86400000).toISOString();
       const [
         totalUsersRes, newTodayRes, newWeekRes,
-        totalPostsRes, postsTodayRes, totalChannelsRes, pendingReportsRes,
+        totalPostsRes, postsTodayRes, totalVideosRes, pendingReportsRes,
       ] = await Promise.all([
         // NOTA: "profiles" só tem GRANT SELECT em colunas específicas (ver
         // migração 20260627085510) — nunca em todas ("*"). Pedir select("*")
@@ -420,16 +404,16 @@ function AdminDashboard({ adminId }: { adminId: string }) {
         db.from("profiles").select("id", { count: "exact", head: true }).gte("created_at", startWeek),
         db.from("posts").select("id", { count: "exact", head: true }),
         db.from("posts").select("id", { count: "exact", head: true }).gte("created_at", startToday),
-        db.from("channels").select("id", { count: "exact", head: true }),
+        db.from("videos").select("id", { count: "exact", head: true }),
         db.from("user_reports").select("id", { count: "exact", head: true }).eq("status", "pending"),
       ]);
-      [totalUsersRes, newTodayRes, newWeekRes, totalPostsRes, postsTodayRes, totalChannelsRes, pendingReportsRes]
+      [totalUsersRes, newTodayRes, newWeekRes, totalPostsRes, postsTodayRes, totalVideosRes, pendingReportsRes]
         .forEach((r, i) => {
           if (r.error) console.error(`[admin] erro ao contar estatística #${i}:`, r.error);
         });
       setStats({
         totalUsers: totalUsersRes.count ?? 0, newToday: newTodayRes.count ?? 0, newWeek: newWeekRes.count ?? 0,
-        totalPosts: totalPostsRes.count ?? 0, postsToday: postsTodayRes.count ?? 0, totalChannels: totalChannelsRes.count ?? 0,
+        totalPosts: totalPostsRes.count ?? 0, postsToday: postsTodayRes.count ?? 0, totalVideos: totalVideosRes.count ?? 0,
         pendingReports: pendingReportsRes.count ?? 0,
       });
       setStatsLoading(false);
@@ -569,43 +553,6 @@ function AdminDashboard({ adminId }: { adminId: string }) {
       notifyUserOfficial(p.author_id, reason.trim() || "A tua publicação foi removida por violar os nossos termos de utilização.");
     }
     logAudit("delete_post", "post", `@${p.author_username ?? "?"}`, reason.trim() || undefined);
-  }
-
-  // ── Canais: lista real + eliminar com aviso ao dono ──
-  const loadChannels = useCallback(async () => {
-    setChannelsLoading(true);
-    const { data, error } = await db
-      .from("channels")
-      .select("id,owner_id,name,handle,avatar_url,category,created_at")
-      .order("created_at", { ascending: false })
-      .limit(200);
-    if (error) { console.error("[admin] erro a carregar canais:", error); toast.error("Erro ao carregar canais: " + error.message); setChannelsList([]); setChannelsLoading(false); return; }
-    const ownerIds = Array.from(new Set((data ?? []).map((c: any) => c.owner_id)));
-    const ownerMap: Record<string, string> = {};
-    if (ownerIds.length > 0) {
-      const { data: profs } = await db.from("profiles").select("id,username").in("id", ownerIds);
-      (profs ?? []).forEach((p: any) => { ownerMap[p.id] = p.username; });
-    }
-    setChannelsList((data ?? []).map((c: any) => ({ ...c, owner_username: ownerMap[c.owner_id] ?? null })));
-    setChannelsLoading(false);
-  }, []);
-
-  useEffect(() => { if (section === "channels") loadChannels(); }, [section, loadChannels]);
-
-  async function deleteChannel(c: ChannelRow) {
-    const reason = window.prompt(
-      "Motivo da remoção (fica registado e é enviado ao dono do canal):",
-      "O teu canal foi removido por violar os nossos termos de utilização."
-    );
-    if (reason === null) return;
-    const { error } = await db.from("channels").delete().eq("id", c.id);
-    if (error) { toast.error("Não foi possível eliminar o canal."); return; }
-    setChannelsList((prev) => prev.filter((x) => x.id !== c.id));
-    toast.success("Canal eliminado.");
-    if (c.owner_id) {
-      notifyUserOfficial(c.owner_id, reason.trim() || "O teu canal foi removido por violar os nossos termos de utilização.");
-    }
-    logAudit("delete_channel", "channel", `@${c.handle}`, reason.trim() || undefined);
   }
 
   // ── Presença: lista real de last_seen/total_time_seconds, com atualização
@@ -944,7 +891,6 @@ function AdminDashboard({ adminId }: { adminId: string }) {
           { key: "dashboard" as const, Icon: LayoutDashboard, label: "Dashboard" },
           { key: "reports" as const, Icon: Flag, label: "Denúncias", badge: stats?.pendingReports },
           { key: "posts" as const, Icon: FileText, label: "Publicações" },
-          { key: "channels" as const, Icon: Radio, label: "Canais" },
           { key: "presence" as const, Icon: Activity, label: "Em Linha", badge: onlineCount || undefined },
           { key: "users" as const, Icon: UsersIcon, label: "Utilizadores" },
           { key: "messages" as const, Icon: MessageSquare, label: "Mensagens" },
@@ -995,7 +941,7 @@ function AdminDashboard({ adminId }: { adminId: string }) {
                 { label: "Novos esta semana", value: stats.newWeek, Icon: TrendingUp, color: "#1FAFA6" },
                 { label: "Publicações totais", value: stats.totalPosts, Icon: FileText, color: "#F26B3A" },
                 { label: "Publicações hoje", value: stats.postsToday, Icon: FileText, color: "#FFC93C" },
-                { label: "Canais no Studio", value: stats.totalChannels, Icon: Radio, color: "#E94B8A" },
+                { label: "Vídeos publicados", value: stats.totalVideos, Icon: Radio, color: "#E94B8A" },
                 { label: "Denúncias pendentes", value: stats.pendingReports, Icon: Flag, color: "#F87171" },
               ].map((c) => (
                 <div key={c.label} className="rounded-2xl p-5 flex flex-col gap-3"
@@ -1253,68 +1199,6 @@ function AdminDashboard({ adminId }: { adminId: string }) {
       )}
 
       {/* ── Canais ── */}
-      {section === "channels" && (
-        <div className="flex-1 overflow-y-auto p-6 md:p-10">
-          <h1 className="text-2xl font-extrabold text-neutral-900 mb-1">Canais</h1>
-          <p className="text-neutral-400 text-sm mb-6">Todos os canais criados no Hooda Studio. Eliminar avisa automaticamente o dono.</p>
-          <div className="flex items-center gap-2 rounded-2xl px-3 py-2 mb-6 max-w-sm"
-            style={{ background: "#f5f5f7" }}>
-            <Search className="h-4 w-4 text-neutral-400 shrink-0" />
-            <input value={channelsSearch} onChange={(e) => setChannelsSearch(e.target.value)}
-              placeholder="Pesquisar canal ou dono..."
-              className="flex-1 bg-transparent text-sm text-neutral-900 outline-none placeholder:text-neutral-400" />
-          </div>
-          {channelsLoading ? (
-            <div className="flex items-center justify-center py-16"><Loader className="h-5 w-5 animate-spin text-neutral-400" /></div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {channelsList
-                .filter((c) => {
-                  const q = channelsSearch.trim().toLowerCase();
-                  if (!q) return true;
-                  return c.name?.toLowerCase().includes(q) || c.handle?.toLowerCase().includes(q) || c.owner_username?.toLowerCase().includes(q);
-                })
-                .length === 0 ? (
-                <div className="col-span-full flex flex-col items-center justify-center py-16 gap-2">
-                  <Radio className="h-8 w-8 text-neutral-300" />
-                  <p className="text-neutral-400 text-sm">Nenhum canal encontrado.</p>
-                </div>
-              ) : channelsList
-                .filter((c) => {
-                  const q = channelsSearch.trim().toLowerCase();
-                  if (!q) return true;
-                  return c.name?.toLowerCase().includes(q) || c.handle?.toLowerCase().includes(q) || c.owner_username?.toLowerCase().includes(q);
-                })
-                .map((c) => (
-                  <div key={c.id} className="rounded-2xl p-4 flex items-start gap-3"
-                    style={{ background: "#ffffff", border: "1px solid #ececf1" }}>
-                    <div className="w-11 h-11 rounded-2xl overflow-hidden flex items-center justify-center text-white font-bold shrink-0"
-                      style={{ background: "#5B3FCF" }}>
-                      {c.avatar_url ? <img src={c.avatar_url} alt="" className="w-full h-full object-cover" /> : c.name?.[0]?.toUpperCase()}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-neutral-900 truncate">{c.name}</p>
-                      <p className="text-[12px] text-neutral-400 truncate">@{c.handle}</p>
-                      <p className="text-[11px] text-neutral-400 truncate mt-0.5">Dono: @{c.owner_username ?? "?"}</p>
-                      {c.category && <span className="inline-block mt-1.5 text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: "rgba(91,63,207,0.18)", color: "#5B3FCF" }}>{c.category}</span>}
-                    </div>
-                    <div className="flex flex-col items-center gap-1.5 shrink-0">
-                      <a href={`/canal/${c.handle}`} target="_blank" rel="noreferrer" title="Ver canal"
-                        className="p-2 rounded-full transition active:scale-90" style={{ background: "rgba(0,0,0,0.05)" }}>
-                        <ExternalLink className="h-4 w-4 text-neutral-500" />
-                      </a>
-                      <button onClick={() => deleteChannel(c)} title="Eliminar canal e avisar dono"
-                        className="p-2 rounded-full transition active:scale-90" style={{ background: "rgba(239,68,68,0.15)" }}>
-                        <Trash2 className="h-4 w-4" style={{ color: "#F87171" }} />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-            </div>
-          )}
-        </div>
-      )}
-
       {/* ── Em Linha (presença) ── */}
       {section === "presence" && (
         <div className="flex-1 overflow-y-auto p-6 md:p-10">

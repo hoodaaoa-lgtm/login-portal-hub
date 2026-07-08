@@ -136,7 +136,6 @@ function PlaylistModal({
         const { data, error } = await (supabase as any)
           .from("playlists")
           .insert({
-            channel_id: channelId,
             owner_id: session.user.id,
             title: title.trim(),
             description: desc.trim() || null,

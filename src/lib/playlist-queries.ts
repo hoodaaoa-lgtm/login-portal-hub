@@ -3,7 +3,6 @@ import { supabase } from "@/integrations/supabase/client";
 
 export type Playlist = {
   id: string;
-  channel_id: string;
   owner_id: string;
   title: string;
   description: string | null;
@@ -47,7 +46,7 @@ export const myPlaylistsQuery = (channelId: string | undefined) =>
           cover_video:cover_video_id ( thumbnail_url ),
           playlist_videos ( id )
         `)
-        .eq("channel_id", channelId)
+        .eq("owner_id", channelId)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return ((data as any[]) ?? []).map((p: any) => ({
@@ -74,7 +73,7 @@ export const channelPlaylistsQuery = (channelId: string | undefined) =>
           cover_video:cover_video_id ( thumbnail_url ),
           playlist_videos ( id )
         `)
-        .eq("channel_id", channelId)
+        .eq("owner_id", channelId)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return ((data as any[]) ?? []).map((p: any) => ({

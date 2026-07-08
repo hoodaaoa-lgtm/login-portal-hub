@@ -195,7 +195,6 @@ function UploadPage() {
 
       const { error: iErr } = await (supabase as any).from("videos").insert({
         id:               videoId,
-        channel_id:       channel.id,
         owner_id:         uid,
         title:            title.trim(),
         description:      description.trim() || null,

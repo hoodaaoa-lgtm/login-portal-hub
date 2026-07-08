@@ -1,12 +1,21 @@
+/**
+ * NOTA: este arquivo já não fala com uma tabela "channels" — ela foi
+ * eliminada (ver supabase/migrations/20260708140000_remove_channels_use_profiles.sql).
+ * "Channel" aqui é só um apelido de compatibilidade para o perfil do próprio
+ * usuário (profiles), para não obrigar a reescrever de uma vez todos os
+ * arquivos do Studio que ainda leem `channel.id/name/handle/avatar_url`.
+ * O rename definitivo para `profile-queries.ts` (e eliminar a palavra
+ * "channel" de vez) é a fase final do plano de limpeza.
+ */
 import { queryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export type Channel = {
-  id: string;
+  id: string;            // = profiles.id (também é o owner_id em videos/posts/playlists)
   owner_id: string;
-  name: string;
-  handle: string;
-  description: string | null;
+  name: string;           // profiles.full_name
+  handle: string;         // profiles.username
+  description: string | null; // profiles.bio
   category: string | null;
   country: string | null;
   avatar_url: string | null;
@@ -17,7 +26,6 @@ export type Channel = {
 
 export type Video = {
   id: string;
-  channel_id: string;
   owner_id: string;
   title: string;
   description: string | null;
@@ -56,43 +64,58 @@ export type ChannelStats = {
 export type DailyViewRow = { day: string; views: number };
 export type CountryRow   = { country: string; views: number };
 
-/* ── My Channel ─────────────────────────────────────────── */
+function mapProfileToChannel(p: any): Channel {
+  return {
+    id: p.id,
+    owner_id: p.id,
+    name: p.full_name,
+    handle: p.username,
+    description: p.bio ?? null,
+    category: p.category ?? null,
+    country: p.country ?? null,
+    avatar_url: p.avatar_url ?? null,
+    banner_url: p.banner_url ?? null,
+    created_at: p.created_at,
+    updated_at: p.updated_at,
+  };
+}
+
+/* ── O meu perfil (ex-"O meu canal") ────────────────────── */
 export const myChannelQuery = () =>
   queryOptions({
     queryKey: ["my-channel"],
     queryFn: async (): Promise<Channel | null> => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return null;
-      const { data } = await supabase
-        .from("channels")
-        .select("*")
-        .eq("owner_id", session.user.id)
+      const { data } = await (supabase as any)
+        .from("profiles")
+        .select("id, username, full_name, bio, avatar_url, banner_url, category, country, created_at, updated_at")
+        .eq("id", session.user.id)
         .maybeSingle();
-      return (data as Channel | null) ?? null;
+      return data ? mapProfileToChannel(data) : null;
     },
   });
 
-/* ── My Videos ──────────────────────────────────────────── */
-export const myVideosQuery = (channelId: string | undefined) =>
+/* ── Os meus vídeos (por owner_id) ──────────────────────── */
+export const myVideosQuery = (ownerId: string | undefined) =>
   queryOptions({
-    queryKey: ["my-videos", channelId],
+    queryKey: ["my-videos", ownerId],
     queryFn: async (): Promise<Video[]> => {
-      if (!channelId) return [];
+      if (!ownerId) return [];
       const { data } = await supabase
         .from("videos")
         .select("*")
-        .eq("channel_id", channelId)
+        .eq("owner_id", ownerId)
         .order("created_at", { ascending: false });
       return (data as Video[] | null) ?? [];
     },
-    enabled: !!channelId,
+    enabled: !!ownerId,
   });
 
-/* ── Channel Stats (real — usa channel_stats_view se existir,
-      fallback para query directa) ─────────────────────── */
-export const channelStatsQuery = (channelId: string | undefined) =>
+/* ── Estatísticas (real — videos por owner_id + follows) ── */
+export const channelStatsQuery = (ownerId: string | undefined) =>
   queryOptions({
-    queryKey: ["channel-stats", channelId],
+    queryKey: ["channel-stats", ownerId],
     queryFn: async (): Promise<ChannelStats> => {
       const empty: ChannelStats = {
         total: 0, published: 0, views: 0,
@@ -100,13 +123,12 @@ export const channelStatsQuery = (channelId: string | undefined) =>
         subs: 0, subs_gained_28d: 0, avg_watch_pct: 0,
         total_duration_seconds: 0, lastActivity: null,
       };
-      if (!channelId) return empty;
+      if (!ownerId) return empty;
 
-      /* Contar views directamente da tabela videos — evita erros da channel_stats_view */
       const { data } = await supabase
         .from("videos")
         .select("status,visibility,views_count,duration_seconds,created_at")
-        .eq("channel_id", channelId);
+        .eq("owner_id", ownerId);
       const rows = (data as any[] | null) ?? [];
       const total    = rows.length;
       const published = rows.filter(r => r.status === "published" && r.visibility === "public").length;
@@ -115,30 +137,32 @@ export const channelStatsQuery = (channelId: string | undefined) =>
       const lastActivity = rows.length
         ? rows.map(r => r.created_at).sort().reverse()[0] : null;
 
-      /* Follows reais */
-      const { count: subsCount } = await (supabase as any)
-        .from("channel_follows")
-        .select("id", { count: "exact", head: true })
-        .eq("channel_id", channelId);
+      /* Seguidores reais — já mantidos em profiles.followers_count pelo
+         RPC toggle_follow, evita ter de saber o @username aqui */
+      const { data: prof } = await (supabase as any)
+        .from("profiles")
+        .select("followers_count")
+        .eq("id", ownerId)
+        .maybeSingle();
 
-      return { ...empty, total, published, views, subs: subsCount ?? 0,
+      return { ...empty, total, published, views, subs: prof?.followers_count ?? 0,
                total_duration_seconds: duration, lastActivity };
     },
-    enabled: !!channelId,
+    enabled: !!ownerId,
     refetchInterval: 30_000,
   });
 
 /* ── Vistas diárias (últimos 28 dias) ───────────────────── */
-export const dailyViewsQuery = (channelId: string | undefined) =>
+export const dailyViewsQuery = (ownerId: string | undefined) =>
   queryOptions({
-    queryKey: ["daily-views", channelId],
+    queryKey: ["daily-views", ownerId],
     queryFn: async (): Promise<DailyViewRow[]> => {
-      if (!channelId) return [];
+      if (!ownerId) return [];
       try {
         const { data } = await (supabase as any)
           .from("video_views")
           .select("viewed_at")
-          .eq("channel_id", channelId)
+          .eq("profile_id", ownerId)
           .gte("viewed_at", new Date(Date.now() - 28 * 86400_000).toISOString());
         const rows = (data as any[] | null) ?? [];
         const map: Record<string, number> = {};
@@ -146,7 +170,6 @@ export const dailyViewsQuery = (channelId: string | undefined) =>
           const day = r.viewed_at?.slice(0, 10) ?? "";
           if (day) map[day] = (map[day] ?? 0) + 1;
         });
-        /* Preenche todos os 28 dias */
         const result: DailyViewRow[] = [];
         for (let i = 27; i >= 0; i--) {
           const d = new Date(Date.now() - i * 86400_000);
@@ -156,20 +179,20 @@ export const dailyViewsQuery = (channelId: string | undefined) =>
         return result;
       } catch (_) { return []; }
     },
-    enabled: !!channelId,
+    enabled: !!ownerId,
   });
 
 /* ── Vistas por país ─────────────────────────────────────── */
-export const viewsByCountryQuery = (channelId: string | undefined) =>
+export const viewsByCountryQuery = (ownerId: string | undefined) =>
   queryOptions({
-    queryKey: ["views-by-country", channelId],
+    queryKey: ["views-by-country", ownerId],
     queryFn: async (): Promise<CountryRow[]> => {
-      if (!channelId) return [];
+      if (!ownerId) return [];
       try {
         const { data } = await (supabase as any)
           .from("video_views")
           .select("country, country_code")
-          .eq("channel_id", channelId)
+          .eq("profile_id", ownerId)
           .not("country_code", "is", null);
         const rows = (data as any[] | null) ?? [];
         const map: Record<string, { views: number; name: string }> = {};
@@ -186,23 +209,23 @@ export const viewsByCountryQuery = (channelId: string | undefined) =>
           .slice(0, 10);
       } catch (_) { return []; }
     },
-    enabled: !!channelId,
+    enabled: !!ownerId,
   });
 
 /* ── Top vídeos ─────────────────────────────────────────── */
-export const topVideosQuery = (channelId: string | undefined) =>
+export const topVideosQuery = (ownerId: string | undefined) =>
   queryOptions({
-    queryKey: ["top-videos", channelId],
+    queryKey: ["top-videos", ownerId],
     queryFn: async (): Promise<Video[]> => {
-      if (!channelId) return [];
+      if (!ownerId) return [];
       const { data } = await supabase
         .from("videos")
         .select("*")
-        .eq("channel_id", channelId)
+        .eq("owner_id", ownerId)
         .eq("visibility", "public")
         .order("views_count", { ascending: false })
         .limit(5);
       return (data as Video[] | null) ?? [];
     },
-    enabled: !!channelId,
+    enabled: !!ownerId,
   });
