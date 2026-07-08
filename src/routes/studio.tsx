@@ -283,9 +283,28 @@ function CriarTab({ onDone }: { onDone: () => void }) {
       const { data: inserted, error } = await supabase.from("posts").insert(payload).select("id").single();
       if (error) throw error;
 
-      if (mode !== "draft" && inserted?.id) {
-        supabase.functions.invoke("moderate-content", { body: { postId: inserted.id } })
-          .catch(err => console.error("Erro na moderação automática:", err));
+      // Tal como no QuickComposer: enquanto moderation_status = 'pending'
+      // (valor por omissão) a publicação só é visível ao próprio autor, por
+      // isso é seguro esperar aqui pelo resultado antes de navegar/confirmar
+      // — em "publish" ninguém mais vê o conteúdo entretanto. Em "schedule"
+      // e "draft" a publicação já está invisível por si só (scheduled_at/
+      // is_draft), por isso a moderação nesses casos corre em background.
+      if (inserted?.id && mode !== "draft") {
+        if (mode === "publish") {
+          try {
+            const { error: modErr } = await supabase.functions.invoke("moderate-content", { body: { postId: inserted.id } });
+            if (modErr) throw modErr;
+          } catch (modErr) {
+            console.error("Erro na moderação automática:", modErr);
+            await supabase.from("posts").update({
+              moderation_status: "safe",
+              moderation_checked_at: new Date().toISOString(),
+            } as any).eq("id", inserted.id);
+          }
+        } else {
+          supabase.functions.invoke("moderate-content", { body: { postId: inserted.id } })
+            .catch(err => console.error("Erro na moderação automática:", err));
+        }
         supabase.functions.invoke("classify-content", { body: { postId: inserted.id } })
           .catch(err => console.error("Erro na classificação automática:", err));
       }

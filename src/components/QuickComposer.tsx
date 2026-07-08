@@ -41,7 +41,7 @@ export function QuickPostModal({ name, username, avatarUrl, onClose, onPublished
   const [videoPreview, setVideoPreview] = useState<string | null>(null);
   const [publishing, setPublishing] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [stage, setStage] = useState<"idle" | "upload" | "saving" | "done">("idle");
+  const [stage, setStage] = useState<"idle" | "upload" | "saving" | "moderating" | "done">("idle");
   const [err, setErr] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLInputElement>(null);
@@ -119,6 +119,49 @@ export function QuickPostModal({ name, username, avatarUrl, onClose, onPublished
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { setErr("É preciso iniciar sessão para publicar."); return; }
 
+      const { data: prof } = await supabase.from("profiles").select("username, full_name").eq("id", session.user.id).maybeSingle();
+
+      const basePayload: Record<string, any> = {
+        author_id: session.user.id,
+        author_username: prof?.username ?? session.user.email?.split("@")[0] ?? "",
+        author_name: prof?.full_name ?? session.user.email ?? "",
+        author_color: ACCENT,
+        content: text,
+        kind: !pollActive && videoFile ? "video" : !pollActive && photoFiles.length > 0 ? "photo" : "post",
+      };
+
+      if (pollActive) {
+        basePayload.poll = {
+          question: pollQuestion.trim(),
+          options: pollOptions.filter((o) => o.trim()).map((o) => o.trim()),
+        };
+        basePayload.poll_ends_at = new Date(Date.now() + pollDurationDays * 86400000).toISOString();
+        basePayload.content = text.trim() || pollQuestion.trim();
+      }
+
+      // A publicação entra na BD já — com moderation_status = 'pending' (valor
+      // por omissão da coluna). Nesse estado a RLS só deixa o próprio autor
+      // vê-la, por isso é seguro disparar a verificação já aqui, ao mesmo
+      // tempo que os ficheiros ainda estão a ser enviados: ninguém mais
+      // consegue ver o conteúdo entretanto, venha ele a demorar o que
+      // demorar. Isto poupa tempo — a IA já está a analisar o texto
+      // enquanto a foto/vídeo ainda sobe.
+      setStage("saving");
+      const { data: inserted, error } = await (supabase as any).from("posts").insert(basePayload).select("id").single();
+
+      if (error) {
+        setErr(error.message ?? "Não foi possível publicar. Tenta novamente.");
+        return;
+      }
+      const postId = inserted.id as string;
+
+      const hasMedia = !pollActive && (photoFiles.length > 0 || !!videoFile);
+      const earlyModeration = hasMedia
+        ? supabase.functions.invoke("moderate-content", { body: { postId } }).catch(err => {
+            console.error("Erro na verificação inicial (texto):", err);
+          })
+        : null;
+
       let imageUrls: string[] = [];
       let videoUrl: string | null = null;
       let videoThumbUrl: string | null = null;
@@ -148,46 +191,43 @@ export function QuickPostModal({ name, username, avatarUrl, onClose, onPublished
         setProgress(100);
       }
 
-      setStage("saving");
-      const { data: prof } = await supabase.from("profiles").select("username, full_name").eq("id", session.user.id).maybeSingle();
-
-      const payload: Record<string, any> = {
-        author_id: session.user.id,
-        author_username: prof?.username ?? session.user.email?.split("@")[0] ?? "",
-        author_name: prof?.full_name ?? session.user.email ?? "",
-        author_color: ACCENT,
-        content: text,
-        kind: videoUrl ? "video" : imageUrls.length > 0 ? "photo" : "post",
-        photo_url: imageUrls[0] ?? null,
-        image_url: imageUrls[0] ?? null,
-        photos: imageUrls.length > 0 ? imageUrls : null,
-        video_url: videoUrl,
-        thumbnail_url: videoThumbUrl,
-      };
-
-      if (pollActive) {
-        payload.poll = {
-          question: pollQuestion.trim(),
-          options: pollOptions.filter((o) => o.trim()).map((o) => o.trim()),
-        };
-        payload.poll_ends_at = new Date(Date.now() + pollDurationDays * 86400000).toISOString();
-        payload.content = text.trim() || pollQuestion.trim();
+      if (hasMedia) {
+        // Espera a verificação inicial (texto) ter, pelo menos, arrancado
+        // antes de anexarmos a imagem/vídeo e voltarmos a analisar — evita
+        // duas invocações a correr desalinhadas.
+        await earlyModeration;
+        setStage("saving");
+        const { error: updErr } = await (supabase as any).from("posts").update({
+          photo_url: imageUrls[0] ?? null,
+          image_url: imageUrls[0] ?? null,
+          photos: imageUrls.length > 0 ? imageUrls : null,
+          video_url: videoUrl,
+          thumbnail_url: videoThumbUrl,
+          // Limpa o "carimbo" da 1ª verificação (só texto) para a IA voltar
+          // a analisar, desta vez já com a imagem/miniatura do vídeo.
+          moderation_checked_at: null,
+        }).eq("id", postId);
+        if (updErr) console.error("Erro ao anexar media à publicação:", updErr);
       }
 
-      const { data: inserted, error } = await (supabase as any).from("posts").insert(payload).select("id").single();
-
-      if (error) {
-        setErr(error.message ?? "Não foi possível publicar. Tenta novamente.");
-        return;
+      // Verificação final — com a imagem/vídeo já anexado (quando existir).
+      // Enquanto isto não terminar a publicação continua só visível para ti.
+      setStage("moderating");
+      try {
+        const { error: modErr } = await supabase.functions.invoke("moderate-content", { body: { postId } });
+        if (modErr) throw modErr;
+      } catch (modErr) {
+        console.error("Erro na moderação automática:", modErr);
+        // Rede em baixo / função falhou — não deixar a publicação presa em
+        // "pending" (e por isso invisível) para sempre. Cai no lado seguro
+        // marcando como "safe"; o painel de admin continua a poder rever.
+        await (supabase as any).from("posts").update({
+          moderation_status: "safe",
+          moderation_checked_at: new Date().toISOString(),
+        }).eq("id", postId);
       }
-
-      // Fase 2 e 6 — Classificação de conteúdo e moderação automática em background.
-      if (inserted?.id) {
-        supabase.functions.invoke("moderate-content", { body: { postId: inserted.id } })
-          .catch(err => console.error("Erro na moderação automática:", err));
-        supabase.functions.invoke("classify-content", { body: { postId: inserted.id } })
-          .catch(err => console.error("Erro na classificação automática:", err));
-      }
+      supabase.functions.invoke("classify-content", { body: { postId } })
+        .catch(err => console.error("Erro na classificação automática:", err));
 
       setStage("done");
       onPublished();
@@ -341,14 +381,14 @@ export function QuickPostModal({ name, username, avatarUrl, onClose, onPublished
               <div className="flex justify-between text-xs font-semibold mb-1.5" style={{ color: "var(--text-muted)" }}>
                 <span>
                   {stage === "upload" && "A enviar…"}
-                  {stage === "saving" && "A guardar publicação…"}
+                  {(stage === "saving" || stage === "moderating") && "A publicar…"}
                   {stage === "done" && "Publicado!"}
                 </span>
                 {stage === "upload" && <span style={{ color: ACCENT }}>{progress}%</span>}
               </div>
               <div className="h-2 rounded-full overflow-hidden" style={{ background: "var(--s3)" }}>
                 <div className="h-full rounded-full transition-all duration-300"
-                  style={{ width: stage === "saving" ? "95%" : stage === "done" ? "100%" : `${progress}%`, background: `linear-gradient(90deg, ${ACCENT}, #E94B8A)` }} />
+                  style={{ width: stage === "saving" ? "90%" : stage === "moderating" ? "97%" : stage === "done" ? "100%" : `${progress}%`, background: `linear-gradient(90deg, ${ACCENT}, #E94B8A)` }} />
               </div>
             </div>
           )}
