@@ -166,6 +166,7 @@ export function normalizePost(
     photo: raw.photo_url ?? null,
     photos: raw.photos ?? null,
     video: raw.video_url ?? null,
+    video_thumb: raw.thumbnail_url ?? null,
     kind: raw.kind ?? null,
     poll: raw.poll ?? null,
     poll_ends_at: raw.poll_ends_at ?? null,

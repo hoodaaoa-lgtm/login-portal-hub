@@ -119,6 +119,7 @@ export function QuickPostModal({ name, username, avatarUrl, onClose, onPublished
 
       let imageUrls: string[] = [];
       let videoUrl: string | null = null;
+      let videoThumbUrl: string | null = null;
 
       if (!pollActive && photoFiles.length > 0) {
         setStage("upload");
@@ -141,6 +142,7 @@ export function QuickPostModal({ name, username, avatarUrl, onClose, onPublished
           setProgress,
         );
         videoUrl = result.playbackUrl;
+        videoThumbUrl = result.thumbnailUrl;
         setProgress(100);
       }
 
@@ -158,6 +160,7 @@ export function QuickPostModal({ name, username, avatarUrl, onClose, onPublished
         image_url: imageUrls[0] ?? null,
         photos: imageUrls.length > 0 ? imageUrls : null,
         video_url: videoUrl,
+        thumbnail_url: videoThumbUrl,
       };
 
       if (pollActive) {

@@ -296,7 +296,7 @@ function ExplorePage() {
     queryKey: ["explore-search-video-posts", search],
     queryFn: async () => {
       const { data } = await (supabase as any).from("posts")
-        .select("id,author_id,author_username,author_name,author_color,content,kind,created_at,video_url,views_count,reposts_count")
+        .select("id,author_id,author_username,author_name,author_color,content,kind,created_at,video_url,thumbnail_url,views_count,reposts_count")
         .eq("kind","video")
         .ilike("content",`%${search}%`).limit(10);
       return data ?? [];
@@ -360,7 +360,7 @@ function ExplorePage() {
         author_username: username || null,
         user: name, name: `@${username || "?"}`,
         color: p.author_color || colorFor(name), avatar_url: author?.avatar_url ?? null,
-        text: p.content, photo: null, photos: null, video: p.video_url ?? null,
+        text: p.content, photo: null, photos: null, video: p.video_url ?? null, video_thumb: p.thumbnail_url ?? null,
         bg_color: null, created_at: p.created_at, kind: p.kind, is_ad: false,
         likes: 0, liked_by_me: false, comments: 0,
         views_count: p.views_count ?? 0, reposts_count: p.reposts_count ?? 0,
