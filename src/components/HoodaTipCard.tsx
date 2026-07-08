@@ -44,7 +44,7 @@ function buildTips(): Tip[] {
     },
     {
       icon: Film,
-      text: "Sabias que podes cortar clipes dos teus vídeos direto no Hooda Studio?",
+      text: "No Hooda Studio podes agendar publicações para saírem na hora certa.",
       cta: { label: "Abrir Studio", action: ({ navigate }) => navigate({ to: "/studio" }) },
     },
     {
