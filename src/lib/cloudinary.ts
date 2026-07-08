@@ -117,9 +117,17 @@ export function getCloudinaryRenditions(mp4Url: string): CloudinaryRendition[] |
   if (!match) return null;
   const [, cloud, publicId] = match;
 
+  // IMPORTANTE: sem f_auto aqui — as eager transformations configuradas no
+  // preset "hooda_videos" da Cloudinary geram exatamente
+  // "q_auto,vc_h264,h_<altura>,c_limit/mp4" (formato mp4 explícito, sem
+  // f_auto, que nem é aceite em eager transformations). Se esta URL não
+  // bater PARÂMETRO A PARÂMETRO com o que já foi pré-gerado no upload, a
+  // Cloudinary trata como uma transformação nova e tenta processá-la na
+  // hora — sujeita ao limite de transformação síncrona (o mesmo bug do
+  // erro 400 que motivou este sistema de fallback em cadeia).
   return RENDITION_LADDER.map((height) => ({
     height,
-    url: `https://res.cloudinary.com/${cloud}/video/upload/q_auto,f_auto,vc_h264,h_${height},c_limit/${publicId}.mp4`,
+    url: `https://res.cloudinary.com/${cloud}/video/upload/q_auto,vc_h264,h_${height},c_limit/${publicId}.mp4`,
   }));
 }
 
