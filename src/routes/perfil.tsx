@@ -234,7 +234,7 @@ function CreatePostModal({
         setUploadStage("upload");
         const result = await uploadToCloudinary(
           videoFile,
-          { title: text.trim().slice(0, 60) || "post-video", channelId: "feed-post", userId: session.user.id },
+          { title: text.trim().slice(0, 60) || "post-video", creatorId: "feed-post", userId: session.user.id },
           (pct) => setUploadProgress(pct),
         );
         videoUrl = result.playbackUrl;

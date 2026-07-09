@@ -261,7 +261,7 @@ function CriarTab({ onDone }: { onDone: () => void }) {
       }
       if (kind === "video" && videoFile) {
         const res = await uploadToCloudinary(videoFile, {
-          title: title || "video", channelId: uid, userId: uid,
+          title: title || "video", creatorId: uid, userId: uid,
         }, p => setProgress(p));
         payload.video_url = res.playbackUrl;
         payload.thumbnail_url = thumbPreview ? undefined : res.thumbnailUrl;

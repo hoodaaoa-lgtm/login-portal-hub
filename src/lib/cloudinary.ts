@@ -22,7 +22,7 @@ export interface CloudinaryUploadResult {
  */
 export function uploadToCloudinary(
   file: File,
-  meta: { title: string; channelId: string; userId: string },
+  meta: { title: string; creatorId: string; userId: string },
   onProgress: (pct: number) => void,
 ): Promise<CloudinaryUploadResult> {
   return new Promise((resolve, reject) => {
@@ -30,7 +30,7 @@ export function uploadToCloudinary(
     formData.append("file", file);
     formData.append("upload_preset", UPLOAD_PRESET_VIDEO);
     formData.append("folder", `hooda/videos/${meta.userId}`);
-    formData.append("context", `title=${meta.title}|channel_id=${meta.channelId}`);
+    formData.append("context", `title=${meta.title}|creator_id=${meta.creatorId}`);
     formData.append("resource_type", "video");
 
     const xhr = new XMLHttpRequest();

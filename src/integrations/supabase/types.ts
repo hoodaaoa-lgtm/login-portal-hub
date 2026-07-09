@@ -200,114 +200,6 @@ export type Database = {
         }
         Relationships: []
       }
-      channel_follows: {
-        Row: {
-          channel_id: string
-          created_at: string
-          id: string
-          user_id: string
-        }
-        Insert: {
-          channel_id: string
-          created_at?: string
-          id?: string
-          user_id: string
-        }
-        Update: {
-          channel_id?: string
-          created_at?: string
-          id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "channel_follows_channel_id_fkey"
-            columns: ["channel_id"]
-            isOneToOne: false
-            referencedRelation: "channel_stats_view"
-            referencedColumns: ["channel_id"]
-          },
-          {
-            foreignKeyName: "channel_follows_channel_id_fkey"
-            columns: ["channel_id"]
-            isOneToOne: false
-            referencedRelation: "channels"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      channels: {
-        Row: {
-          avatar_url: string | null
-          banner_url: string | null
-          category: string | null
-          country: string | null
-          created_at: string
-          description: string | null
-          handle: string
-          id: string
-          name: string
-          owner_id: string
-          signature_enabled: boolean | null
-          signature_position: string | null
-          signature_style: string | null
-          updated_at: string
-          watermark_enabled: boolean | null
-          watermark_image_url: string | null
-          watermark_opacity: number | null
-          watermark_position: string | null
-          watermark_size: string | null
-          watermark_text: string | null
-          watermark_type: string | null
-        }
-        Insert: {
-          avatar_url?: string | null
-          banner_url?: string | null
-          category?: string | null
-          country?: string | null
-          created_at?: string
-          description?: string | null
-          handle: string
-          id?: string
-          name: string
-          owner_id: string
-          signature_enabled?: boolean | null
-          signature_position?: string | null
-          signature_style?: string | null
-          updated_at?: string
-          watermark_enabled?: boolean | null
-          watermark_image_url?: string | null
-          watermark_opacity?: number | null
-          watermark_position?: string | null
-          watermark_size?: string | null
-          watermark_text?: string | null
-          watermark_type?: string | null
-        }
-        Update: {
-          avatar_url?: string | null
-          banner_url?: string | null
-          category?: string | null
-          country?: string | null
-          created_at?: string
-          description?: string | null
-          handle?: string
-          id?: string
-          name?: string
-          owner_id?: string
-          signature_enabled?: boolean | null
-          signature_position?: string | null
-          signature_style?: string | null
-          updated_at?: string
-          watermark_enabled?: boolean | null
-          watermark_image_url?: string | null
-          watermark_opacity?: number | null
-          watermark_position?: string | null
-          watermark_size?: string | null
-          watermark_text?: string | null
-          watermark_type?: string | null
-        }
-        Relationships: []
-      }
       content_moderation_log: {
         Row: {
           category: string
@@ -872,7 +764,6 @@ export type Database = {
       }
       playlists: {
         Row: {
-          channel_id: string
           cover_image_url: string | null
           cover_video_id: string | null
           created_at: string
@@ -883,7 +774,6 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          channel_id: string
           cover_image_url?: string | null
           cover_video_id?: string | null
           created_at?: string
@@ -894,7 +784,6 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          channel_id?: string
           cover_image_url?: string | null
           cover_video_id?: string | null
           created_at?: string
@@ -905,20 +794,6 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "playlists_channel_id_fkey"
-            columns: ["channel_id"]
-            isOneToOne: false
-            referencedRelation: "channel_stats_view"
-            referencedColumns: ["channel_id"]
-          },
-          {
-            foreignKeyName: "playlists_channel_id_fkey"
-            columns: ["channel_id"]
-            isOneToOne: false
-            referencedRelation: "channels"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "playlists_cover_video_id_fkey"
             columns: ["cover_video_id"]
@@ -1313,7 +1188,6 @@ export type Database = {
           category: string | null
           channel_avatar: string | null
           channel_handle: string | null
-          channel_id: string | null
           channel_name: string | null
           clip_end: number | null
           clip_start: number | null
@@ -1365,7 +1239,6 @@ export type Database = {
           category?: string | null
           channel_avatar?: string | null
           channel_handle?: string | null
-          channel_id?: string | null
           channel_name?: string | null
           clip_end?: number | null
           clip_start?: number | null
@@ -1417,7 +1290,6 @@ export type Database = {
           category?: string | null
           channel_avatar?: string | null
           channel_handle?: string | null
-          channel_id?: string | null
           channel_name?: string | null
           clip_end?: number | null
           clip_start?: number | null
@@ -1462,20 +1334,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "posts_channel_id_fkey"
-            columns: ["channel_id"]
-            isOneToOne: false
-            referencedRelation: "channel_stats_view"
-            referencedColumns: ["channel_id"]
-          },
-          {
-            foreignKeyName: "posts_channel_id_fkey"
-            columns: ["channel_id"]
-            isOneToOne: false
-            referencedRelation: "channels"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "posts_clip_video_id_fkey"
             columns: ["clip_video_id"]
             isOneToOne: false
@@ -1497,7 +1355,10 @@ export type Database = {
           avatar_color: string | null
           avatar_url: string | null
           ban_reason: string | null
+          banner_url: string | null
           bio: string | null
+          category: string | null
+          country: string | null
           cover_url: string | null
           created_at: string
           e2ee_public_key: string | null
@@ -1527,7 +1388,10 @@ export type Database = {
           avatar_color?: string | null
           avatar_url?: string | null
           ban_reason?: string | null
+          banner_url?: string | null
           bio?: string | null
+          category?: string | null
+          country?: string | null
           cover_url?: string | null
           created_at?: string
           e2ee_public_key?: string | null
@@ -1557,7 +1421,10 @@ export type Database = {
           avatar_color?: string | null
           avatar_url?: string | null
           ban_reason?: string | null
+          banner_url?: string | null
           bio?: string | null
+          category?: string | null
+          country?: string | null
           cover_url?: string | null
           created_at?: string
           e2ee_public_key?: string | null
@@ -2049,10 +1916,10 @@ export type Database = {
       }
       video_views: {
         Row: {
-          channel_id: string
           country: string | null
           country_code: string | null
           id: string
+          profile_id: string
           user_id: string | null
           video_id: string
           viewed_at: string
@@ -2061,10 +1928,10 @@ export type Database = {
           watch_seconds: number | null
         }
         Insert: {
-          channel_id: string
           country?: string | null
           country_code?: string | null
           id?: string
+          profile_id: string
           user_id?: string | null
           video_id: string
           viewed_at?: string
@@ -2073,10 +1940,10 @@ export type Database = {
           watch_seconds?: number | null
         }
         Update: {
-          channel_id?: string
           country?: string | null
           country_code?: string | null
           id?: string
+          profile_id?: string
           user_id?: string | null
           video_id?: string
           viewed_at?: string
@@ -2100,7 +1967,6 @@ export type Database = {
           cf_embed_url: string | null
           cf_stream_uid: string | null
           cf_stream_url: string | null
-          channel_id: string
           comments_count: number
           created_at: string
           description: string | null
@@ -2126,7 +1992,6 @@ export type Database = {
           cf_embed_url?: string | null
           cf_stream_uid?: string | null
           cf_stream_url?: string | null
-          channel_id: string
           comments_count?: number
           created_at?: string
           description?: string | null
@@ -2152,7 +2017,6 @@ export type Database = {
           cf_embed_url?: string | null
           cf_stream_uid?: string | null
           cf_stream_url?: string | null
-          channel_id?: string
           comments_count?: number
           created_at?: string
           description?: string | null
@@ -2173,41 +2037,11 @@ export type Database = {
           views_count?: number
           visibility?: Database["public"]["Enums"]["video_visibility"]
         }
-        Relationships: [
-          {
-            foreignKeyName: "videos_channel_id_fkey"
-            columns: ["channel_id"]
-            isOneToOne: false
-            referencedRelation: "channel_stats_view"
-            referencedColumns: ["channel_id"]
-          },
-          {
-            foreignKeyName: "videos_channel_id_fkey"
-            columns: ["channel_id"]
-            isOneToOne: false
-            referencedRelation: "channels"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
     }
     Views: {
-      channel_stats_view: {
-        Row: {
-          avg_watch_pct: number | null
-          channel_id: string | null
-          followers: number | null
-          followers_gained_28d: number | null
-          published_videos: number | null
-          total_duration_seconds: number | null
-          total_videos: number | null
-          total_views: number | null
-          views_24h: number | null
-          views_28d: number | null
-          views_7d: number | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       admin_delete_account: { Args: { target_id: string }; Returns: undefined }
@@ -2245,30 +2079,6 @@ export type Database = {
         Returns: {
           is_online: boolean
           last_seen: string
-        }[]
-      }
-      get_feed_clips: {
-        Args: { p_limit?: number; p_offset?: number }
-        Returns: {
-          author_color: string
-          author_id: string
-          author_name: string
-          author_username: string
-          channel_avatar: string
-          channel_handle: string
-          channel_id: string
-          channel_name: string
-          clip_end: number
-          clip_start: number
-          clip_thumb_url: string
-          clip_title: string
-          clip_video_id: string
-          created_at: string
-          id: string
-          kind: string
-          likes_count: number
-          video_embed_url: string
-          video_stream_url: string
         }[]
       }
       get_hooda_official_id: { Args: never; Returns: string }

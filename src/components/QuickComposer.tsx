@@ -183,7 +183,7 @@ export function QuickPostModal({ name, username, avatarUrl, onClose, onPublished
         setStage("upload");
         const result = await uploadToCloudinary(
           videoFile,
-          { title: text.trim().slice(0, 60) || "post-video", channelId: "feed-post", userId: session.user.id },
+          { title: text.trim().slice(0, 60) || "post-video", creatorId: "feed-post", userId: session.user.id },
           setProgress,
         );
         videoUrl = result.playbackUrl;

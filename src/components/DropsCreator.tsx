@@ -99,7 +99,7 @@ export function DropsCreator({ onClose, onPublish }: DropsCreatorProps) {
       if (isVideo) {
         const result = await uploadToCloudinaryVideo(
           videoFile,
-          { title: textOverlay || "Drop", channelId: "", userId: "" },
+          { title: textOverlay || "Drop", creatorId: "", userId: "" },
           (pct) => setProgress(Math.round(pct * 0.9)),
         );
         cloudinaryVideoUrl = result.playbackUrl;
