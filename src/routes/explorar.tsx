@@ -387,14 +387,52 @@ function ExplorePage() {
     staleTime: 30_000,
   });
 
+  /* ── Publicações de quem bateu na pesquisa por nome/username — antes,
+     pesquisar "joão" só encontrava o perfil dele; as publicações dele só
+     apareciam se o TEXTO da publicação também contivesse "joão". Agora,
+     assim que uma pessoa aparece em "Pessoas", trazemos também as
+     publicações mais recentes dela, mesmo que o conteúdo não mencione o
+     termo pesquisado. ── */
+  const searchPeopleIds = useMemo(
+    () => (searchPeople ?? []).map((p: any) => p.id).filter(Boolean),
+    [searchPeople],
+  );
+
+  const { data: searchPostsByAuthor = [] } = useQuery({
+    queryKey: ["explore-search-posts-by-author", searchPeopleIds],
+    queryFn: async () => {
+      const { data } = await (supabase as any).from("posts")
+        .select("id,content,title,kind,photo_url,image_url,likes_count,comments_count,author_username,author_color,author_id,created_at")
+        .in("kind",["photo","post"])
+        .eq("is_draft", false)
+        .or(`scheduled_at.is.null,scheduled_at.lte.${new Date().toISOString()}`)
+        .in("author_id", searchPeopleIds)
+        .order("created_at", { ascending: false })
+        .limit(25);
+      return data ?? [];
+    },
+    enabled: searchActive && searchPeopleIds.length > 0,
+    staleTime: 30_000,
+  });
+
+  /* Junta os dois grupos (conteúdo + autor), sem repetir a mesma publicação. */
+  const mergedSearchPosts = useMemo(() => {
+    const byId = new Map<string, any>();
+    (searchPosts ?? []).forEach((p: any) => byId.set(p.id, p));
+    (searchPostsByAuthor ?? []).forEach((p: any) => byId.set(p.id, p));
+    return [...byId.values()]
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  }, [searchPosts, searchPostsByAuthor]);
+
   /* ── Avatares dos autores de posts (foto/texto), para o UniversalPostCard
      mostrar foto de perfil em vez de ficar sempre com a inicial. ── */
   const postAuthorIds = useMemo(() => {
     const ids = new Set<string>();
     (popularPosts ?? []).forEach((p: any) => { if (p.author_id) ids.add(p.author_id); });
-    (searchPosts ?? []).forEach((p: any) => { if (p.author_id) ids.add(p.author_id); });
+    (mergedSearchPosts ?? []).forEach((p: any) => { if (p.author_id) ids.add(p.author_id); });
     return [...ids];
-  }, [popularPosts, searchPosts]);
+  }, [popularPosts, mergedSearchPosts]);
+
 
   const { data: postAuthorProfiles = [] } = useQuery({
     queryKey: ["explore-post-authors", postAuthorIds],
@@ -431,7 +469,7 @@ function ExplorePage() {
   }
 
   const popularPostCards = useMemo(() => (popularPosts ?? []).map(toCanonicalPost), [popularPosts, postAvatarMap]);
-  const searchPostCards  = useMemo(() => (searchPosts ?? []).map(toCanonicalPost),  [searchPosts, postAvatarMap]);
+  const searchPostCards  = useMemo(() => (mergedSearchPosts ?? []).map(toCanonicalPost),  [mergedSearchPosts, postAvatarMap]);
 
   /* ── Pesquisa inteligente: em vez de só confiar no ILIKE (que só bate
      palavra exata), manda os candidatos já encontrados a um modelo de IA
