@@ -22,6 +22,7 @@ import { Route as Hdequipa9x2RouteImport } from './routes/hdequipa9x2'
 import { Route as ExplorarRouteImport } from './routes/explorar'
 import { Route as DropsRouteImport } from './routes/drops'
 import { Route as DefinicoesRouteImport } from './routes/definicoes'
+import { Route as AcessibilidadeRouteImport } from './routes/acessibilidade'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
 import { Route as PostIdRouteImport } from './routes/post.$id'
@@ -92,6 +93,11 @@ const DefinicoesRoute = DefinicoesRouteImport.update({
   path: '/definicoes',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AcessibilidadeRoute = AcessibilidadeRouteImport.update({
+  id: '/acessibilidade',
+  path: '/acessibilidade',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -115,6 +121,7 @@ const AuthBridgeRoute = AuthBridgeRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/acessibilidade': typeof AcessibilidadeRoute
   '/definicoes': typeof DefinicoesRoute
   '/drops': typeof DropsRoute
   '/explorar': typeof ExplorarRoute
@@ -134,6 +141,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/acessibilidade': typeof AcessibilidadeRoute
   '/definicoes': typeof DefinicoesRoute
   '/drops': typeof DropsRoute
   '/explorar': typeof ExplorarRoute
@@ -154,6 +162,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/acessibilidade': typeof AcessibilidadeRoute
   '/definicoes': typeof DefinicoesRoute
   '/drops': typeof DropsRoute
   '/explorar': typeof ExplorarRoute
@@ -175,6 +184,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/acessibilidade'
     | '/definicoes'
     | '/drops'
     | '/explorar'
@@ -194,6 +204,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/acessibilidade'
     | '/definicoes'
     | '/drops'
     | '/explorar'
@@ -213,6 +224,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/acessibilidade'
     | '/definicoes'
     | '/drops'
     | '/explorar'
@@ -233,6 +245,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AcessibilidadeRoute: typeof AcessibilidadeRoute
   DefinicoesRoute: typeof DefinicoesRoute
   DropsRoute: typeof DropsRoute
   ExplorarRoute: typeof ExplorarRoute
@@ -344,6 +357,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DefinicoesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/acessibilidade': {
+      id: '/acessibilidade'
+      path: '/acessibilidade'
+      fullPath: '/acessibilidade'
+      preLoaderRoute: typeof AcessibilidadeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -377,6 +397,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AcessibilidadeRoute: AcessibilidadeRoute,
   DefinicoesRoute: DefinicoesRoute,
   DropsRoute: DropsRoute,
   ExplorarRoute: ExplorarRoute,

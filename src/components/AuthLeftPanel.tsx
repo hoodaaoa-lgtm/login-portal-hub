@@ -177,7 +177,7 @@ export function AuthLeftPanel() {
         </div>
 
         {/* Bottom copyright */}
-        <p className="text-[11px] text-neutral-400">© 2025 Hooda · Todos os direitos reservados</p>
+        <p className="text-[11px] text-neutral-400">© 2026 Hooda · Todos os direitos reservados</p>
       </div>
     </div>
   );

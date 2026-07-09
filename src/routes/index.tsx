@@ -173,9 +173,9 @@ function LoginPage() {
               {/* Terms */}
               <p className="mt-8 text-center text-[12px] text-[var(--text-muted)] leading-relaxed">
                 Ao continuar, você concorda com os{" "}
-                <span className="text-[#5B3FCF] font-medium cursor-pointer hover:underline">Termos</span>{" "}
+                <a href="/uso" target="_blank" rel="noopener noreferrer" className="text-[#5B3FCF] font-medium hover:underline">Termos</a>{" "}
                 e a{" "}
-                <span className="text-[#5B3FCF] font-medium cursor-pointer hover:underline">Política de Privacidade</span>{" "}
+                <a href="/privacidade" target="_blank" rel="noopener noreferrer" className="text-[#5B3FCF] font-medium hover:underline">Política de Privacidade</a>{" "}
                 da hooda.
               </p>
             </>

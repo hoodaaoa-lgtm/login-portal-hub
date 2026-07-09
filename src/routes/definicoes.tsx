@@ -204,7 +204,7 @@ function DefinicoesPage() {
             ))}
 
             <p className="text-center text-[11px] pb-2" style={{ color: "var(--text-muted)" }}>
-              © 2025 Hooda · v1.0.0
+              © 2026 Hooda · v1.0.0
             </p>
 
             {/* Zona Perigosa */}

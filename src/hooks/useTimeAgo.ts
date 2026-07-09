@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 
 /**
- * Converte um timestamp ISO em tempo relativo (agora, 5m, 2h, 3d, 15/06/2025…)
+ * Converte um timestamp ISO em tempo relativo (agora, 5m, 2h, 3d, 15/06/2026…)
  * e atualiza automaticamente a cada minuto para nunca ficar desatualizado.
  */
 export function timeAgo(dateStr: string | null | undefined): string {
@@ -21,7 +21,7 @@ export function timeAgo(dateStr: string | null | undefined): string {
  *
  * @example
  *   const time = useTimeAgo(post.created_at);
- *   // → "agora" / "5m" / "2h" / "3d" / "15/06/2025"
+ *   // → "agora" / "5m" / "2h" / "3d" / "15/06/2026"
  */
 export function useTimeAgo(dateStr: string | null | undefined): string {
   const [label, setLabel] = useState(() => timeAgo(dateStr));

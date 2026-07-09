@@ -135,7 +135,14 @@ export function RightSidebar() {
 
       <HoodaTipCard variant="sidebar" />
 
-      <p className="text-[11px] text-center" style={{ color: "var(--text-muted)" }}>© 2025 Hooda</p>
+      <div className="flex items-center justify-center flex-wrap gap-x-1.5 text-[11px]" style={{ color: "var(--text-muted)" }}>
+        <a href="/uso" target="_blank" rel="noopener noreferrer" className="hover:underline">Termos</a>
+        <span>·</span>
+        <a href="/privacidade" target="_blank" rel="noopener noreferrer" className="hover:underline">Privacidade</a>
+        <span>·</span>
+        <a href="/acessibilidade" target="_blank" rel="noopener noreferrer" className="hover:underline">Acessibilidade</a>
+      </div>
+      <p className="text-[11px] text-center" style={{ color: "var(--text-muted)" }}>© 2026 Hooda</p>
     </div>
   );
 }
