@@ -187,8 +187,8 @@ export function PhotoGrid({ photos }: { photos: string[] }) {
           onClick={() => setFullscreen(true)}>
           <img loading="lazy" decoding="async" src={photos[idx]}
             alt=""
-            className="block"
-            style={{ maxWidth: "100%", maxHeight: "min(70vh, 620px)", width: "auto", height: "auto", objectFit: "contain" }}
+            className="block w-full h-full"
+            style={{ maxHeight: "min(70vh, 620px)", objectFit: "cover" }}
             onError={(e) => { e.currentTarget.style.display = "none"; }} />
 
           {n > 1 && (
