@@ -670,7 +670,13 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
   }
 
   const progress = duration ? (currentTime / duration) * 100 : 0;
-  const showSkeleton = !metadataLoaded && !hasStarted && !loadError;
+  // Só mostra o skeleton com shimmer quando NÃO há miniatura nenhuma para
+  // mostrar — antes, isto ficava visível até "metadataLoaded" ser true, e em
+  // muitos navegadores móveis isso só acontece depois de um toque do
+  // utilizador (restrição de autoplay/carregamento de media), deixando o
+  // vídeo preso num estado desfocado/escuro em quem entra pela primeira vez,
+  // até tocarem no ecrã "às cegas".
+  const showSkeleton = !hasStarted && !loadError && !poster;
   const preload: "none" | "metadata" = hasEnteredOnce ? "metadata" : "none";
 
   function retryLoad() {
@@ -857,8 +863,13 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
         </div>
       )}
 
-      {/* Poster nítido + botão de play, antes de o utilizador iniciar */}
-      {!hasStarted && metadataLoaded && (
+      {/* Poster nítido + botão de play, antes de o utilizador iniciar.
+          Não depende de "metadataLoaded" — em muitos navegadores móveis
+          esse evento só dispara depois de um toque do utilizador, o que
+          deixava o vídeo preso na camada borrada (showSkeleton) até
+          alguém tocar "às cegas" no ecrã. Mostrando já aqui a miniatura
+          nítida, quem entra pela primeira vez vê logo uma imagem clara. */}
+      {!hasStarted && poster && (
         <div
           className="absolute inset-0 flex items-center justify-center hooda-fade-in"
           style={{ background: "rgba(0,0,0,0.35)" }}
