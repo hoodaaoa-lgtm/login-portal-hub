@@ -2265,6 +2265,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
 /* ─── Perfil público ─── */
 function PublicProfile({ profile, email }: { profile: Profile | null; email: string }) {
   const [myUserId, setMyUserId] = useState("");
+  const [sessionChecked, setSessionChecked] = useState(false);
   const [followListMode, setFollowListMode] = useState<"followers" | "following" | null>(null);
   const navigate = useNavigate();
   const name = profile?.full_name || profile?.username || email?.split("@")[0] || "?";
@@ -2273,6 +2274,7 @@ function PublicProfile({ profile, email }: { profile: Profile | null; email: str
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) setMyUserId(session.user.id);
+      setSessionChecked(true);
     })();
   }, []);
 
@@ -2314,8 +2316,10 @@ function PublicProfile({ profile, email }: { profile: Profile | null; email: str
           >
             <MessageCircle className="h-4 w-4" style={{ color: "#5B3FCF" }} /> Mensagem
           </button>
-          {followLoading ? (
-            <div className="h-[30px] w-[92px] rounded-full animate-pulse" style={{ background: "var(--s2)" }} />
+          {(!sessionChecked || (!!myUserId && followLoading)) ? (
+            <div className="relative overflow-hidden h-[30px] w-[92px] rounded-full" style={{ background: "var(--s2)" }}>
+              <div className="skeleton-shimmer absolute inset-0" />
+            </div>
           ) : (
             <button onClick={toggleFollow} disabled={followTogglePending}
               className={`text-sm font-bold rounded-full px-5 py-1.5 transition shadow-sm disabled:opacity-60 ${following ? "border border-neutral-300 bg-[var(--s2)] text-black" : "text-white"}`}

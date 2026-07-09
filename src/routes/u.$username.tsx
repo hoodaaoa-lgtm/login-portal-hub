@@ -744,8 +744,10 @@ function UserProfilePage() {
 
           {/* ── Botões de ação ── */}
           <div className="flex justify-end gap-2 px-4 pt-3 pb-2">
-            {followLoading ? (
-              <div className="h-[30px] w-[104px] rounded-full animate-pulse" style={{background:"var(--s2)"}} />
+            {(!sessionChecked || (!!myId && followLoading)) ? (
+              <div className="relative overflow-hidden h-[30px] w-[104px] rounded-full" style={{background:"var(--s2)"}}>
+                <div className="skeleton-shimmer absolute inset-0" />
+              </div>
             ) : (
               <button onClick={toggleFollow} disabled={followTogglePending}
                 className="flex items-center gap-1.5 px-5 py-1.5 rounded-full text-sm font-bold transition active:scale-95 shadow-sm disabled:opacity-60"

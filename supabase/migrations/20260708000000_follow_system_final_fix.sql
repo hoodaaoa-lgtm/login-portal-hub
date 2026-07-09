@@ -122,23 +122,32 @@ GRANT ALL ON public.follows TO service_role;
 
 -- 8. Mesma garantia de RLS para "channel_follows" (seguir CANAIS — tabela
 --    separada de propósito, para não colidir com usernames de pessoas).
-ALTER TABLE public.channel_follows ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "cf public read" ON public.channel_follows;
-CREATE POLICY "cf public read" ON public.channel_follows FOR SELECT USING (true);
-DROP POLICY IF EXISTS "cf self insert" ON public.channel_follows;
-CREATE POLICY "cf self insert" ON public.channel_follows FOR INSERT WITH CHECK (auth.uid() = user_id);
-DROP POLICY IF EXISTS "cf self delete" ON public.channel_follows;
-CREATE POLICY "cf self delete" ON public.channel_follows FOR DELETE USING (auth.uid() = user_id);
-GRANT SELECT, INSERT, DELETE ON public.channel_follows TO authenticated;
-GRANT SELECT ON public.channel_follows TO anon;
-GRANT ALL ON public.channel_follows TO service_role;
+--    Só corre se a tabela ainda existir (pode já ter sido removida quando
+--    os canais foram unificados nos perfis).
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='channel_follows') THEN
+    ALTER TABLE public.channel_follows ENABLE ROW LEVEL SECURITY;
+    DROP POLICY IF EXISTS "cf public read" ON public.channel_follows;
+    CREATE POLICY "cf public read" ON public.channel_follows FOR SELECT USING (true);
+    DROP POLICY IF EXISTS "cf self insert" ON public.channel_follows;
+    CREATE POLICY "cf self insert" ON public.channel_follows FOR INSERT WITH CHECK (auth.uid() = user_id);
+    DROP POLICY IF EXISTS "cf self delete" ON public.channel_follows;
+    CREATE POLICY "cf self delete" ON public.channel_follows FOR DELETE USING (auth.uid() = user_id);
+    GRANT SELECT, INSERT, DELETE ON public.channel_follows TO authenticated;
+    GRANT SELECT ON public.channel_follows TO anon;
+    GRANT ALL ON public.channel_follows TO service_role;
+  END IF;
+END $$;
 
 -- 9. Realtime em follows, profiles e channel_follows — seguir num
 --    dispositivo/aba reflete automaticamente nos outros.
 DO $$ BEGIN
   BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.follows; EXCEPTION WHEN duplicate_object THEN NULL; END;
   BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.profiles; EXCEPTION WHEN duplicate_object THEN NULL; END;
-  BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.channel_follows; EXCEPTION WHEN duplicate_object THEN NULL; END;
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='channel_follows') THEN
+    BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.channel_follows; EXCEPTION WHEN duplicate_object THEN NULL; END;
+  END IF;
 END $$;
 
 COMMIT;

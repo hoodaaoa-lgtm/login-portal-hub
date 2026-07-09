@@ -917,14 +917,16 @@ export function UniversalPostCard({ post: p, onDeleted, onBookmarkChange }: {
   }
   const navigate = useNavigate();
   const timeLabel = useTimeAgo((p as any).created_at);
+  const [sessionChecked, setSessionChecked] = useState(false);
 
   useEffect(() => {
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
+      if (!session) { setSessionChecked(true); return; }
       const { data: prof } = await supabase.from("profiles").select("username").eq("id", session.user.id).maybeSingle();
       meRef.current = { id: session.user.id, username: (prof as any)?.username || "eu" };
       setMyUserId(session.user.id);
+      setSessionChecked(true);
     })();
   }, [p.id]);
 
@@ -1052,8 +1054,10 @@ export function UniversalPostCard({ post: p, onDeleted, onBookmarkChange }: {
         </div>
         <div className="flex items-center gap-1.5">
           {!isAd && p.author_id && !isOwnPost && (
-            followLoading ? (
-              <div className="h-[26px] w-[68px] rounded-full animate-pulse" style={{ background: "var(--s2)" }} />
+            (!sessionChecked || (!!myUserId && followLoading)) ? (
+              <div className="relative overflow-hidden h-[26px] w-[68px] rounded-full" style={{ background: "var(--s2)" }}>
+                <div className="skeleton-shimmer absolute inset-0" />
+              </div>
             ) : (
               <button onClick={toggleFollow}
                 className="text-xs font-bold px-3 py-1.5 rounded-full transition-all active:scale-95"
