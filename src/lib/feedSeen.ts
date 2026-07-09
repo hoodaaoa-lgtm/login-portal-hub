@@ -88,3 +88,55 @@ export function diversifyByAuthor<T extends { author_id?: string | null; user_id
   }
   return arr;
 }
+
+/**
+ * Como diversifyByAuthor, mas também evita 2+ seguidos do mesmo tópico
+ * (top_category, vindo de get_personalized_feed_v2 / post_classifications).
+ * Usado no feed principal, onde posts (já diversificados no servidor por
+ * get_personalized_feed_v2) se misturam com vídeos de canal (que não
+ * passam por esse re-rank) — este é o "cinto e suspensórios" do lado do
+ * cliente para o resultado final, depois do merge.
+ */
+export function diversifyByAuthorAndTopic<
+  T extends { author_id?: string | null; user_id?: string | null; top_category?: string | null },
+>(items: T[]): T[] {
+  const arr = [...items];
+  const authorOf = (it: T) => it.author_id || it.user_id || "";
+  const topicOf = (it: T) => it.top_category || "";
+
+  for (let i = 1; i < arr.length; i++) {
+    const prevAuthor = authorOf(arr[i - 1]);
+    const prevTopic = topicOf(arr[i - 1]);
+    const breaksAuthorRule = !!prevAuthor && authorOf(arr[i]) === prevAuthor;
+    const breaksTopicRule = !!prevTopic && topicOf(arr[i]) === prevTopic;
+    if (!breaksAuthorRule && !breaksTopicRule) continue;
+
+    const nextAuthor = i + 1 < arr.length ? authorOf(arr[i + 1]) : "";
+    const nextTopic = i + 1 < arr.length ? topicOf(arr[i + 1]) : "";
+    let swapIdx = -1;
+    for (let j = i + 1; j < arr.length; j++) {
+      const candAuthor = authorOf(arr[j]);
+      const candTopic = topicOf(arr[j]);
+      const okAuthor = candAuthor !== prevAuthor && candAuthor !== nextAuthor;
+      const okTopic = candTopic !== prevTopic && candTopic !== nextTopic;
+      if (okAuthor && okTopic) { swapIdx = j; break; }
+    }
+    // Sem candidato perfeito? Aceita um que resolva pelo menos a regra que
+    // foi quebrada (mais vale ceder no tópico do que empilhar o mesmo autor,
+    // e vice-versa, do que não ceder em nada).
+    if (swapIdx === -1) {
+      for (let j = i + 1; j < arr.length; j++) {
+        const candAuthor = authorOf(arr[j]);
+        const candTopic = topicOf(arr[j]);
+        if (breaksAuthorRule && candAuthor !== prevAuthor && candAuthor !== nextAuthor) { swapIdx = j; break; }
+        if (breaksTopicRule && candTopic !== prevTopic && candTopic !== nextTopic) { swapIdx = j; break; }
+      }
+    }
+    if (swapIdx !== -1) {
+      const tmp = arr[i];
+      arr[i] = arr[swapIdx];
+      arr[swapIdx] = tmp;
+    }
+  }
+  return arr;
+}

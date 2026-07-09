@@ -41,7 +41,7 @@ import { useTranslation } from "react-i18next";
 import i18n from "@/lib/i18n";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { ComposeBox } from "@/components/QuickComposer";
-import { getSeenPostIds, addSeenPostIds, diversifyByAuthor } from "@/lib/feedSeen";
+import { getSeenPostIds, addSeenPostIds, diversifyByAuthor, diversifyByAuthorAndTopic } from "@/lib/feedSeen";
 function t(key: string, opts?: Record<string, unknown>) { return i18n.t(key, opts) as string; }
 
 export const Route = createFileRoute("/home")({
@@ -321,13 +321,16 @@ function HomePage() {
   const POST_SELECT_FIELDS = "id,author_id,author_username,author_name,author_color,content,kind,is_ad,created_at,photo_url,photos,video_url,thumbnail_url,clip_video_id,clip_start,clip_end,clip_title,clip_thumb_url,views_count,reposts_count,poll,poll_ends_at,moderation_status,is_sensitive";
   const VIDEO_SELECT_FIELDS = "id,title,thumbnail_url,duration_seconds,views_count,likes_count,comments_count,created_at,owner_id";
 
-  // ─── FEED COM RANKING (Fase 4) — busca posts via get_personalized_feed ────
+  // ─── FEED COM RANKING (Fase 6) — busca posts via get_personalized_feed_v2 ─
   //
-  // Os posts já não são só cronológicos: vêm ordenados pela RPC
-  // get_personalized_feed (afinidade + qualidade + frescura + descoberta,
-  // 40/30/20/10 adaptativo). Os vídeos publicados nos canais continuam por
-  // agora só por frescura (ainda não têm content_quality/user_interests),
-  // e entram no mesmo merge final por uma pontuação comparável (0-100).
+  // v2 acrescenta à v1 (afinidade por autor + qualidade + frescura +
+  // descoberta + tendências): similaridade semântica por embedding
+  // (pgvector, vetor de interesse calculado em user_taste_vectors) e
+  // anti-fadiga por autor E por tópico já resolvido no servidor (nunca mais
+  // de 2 seguidos do mesmo autor/tópico, mesmo entre páginas). Os vídeos
+  // publicados nos canais continuam por agora só por frescura (ainda não
+  // têm embedding/content_quality), e entram no mesmo merge final por uma
+  // pontuação comparável (0-100).
   // `cursor` (created_at ISO) delimita a janela de candidatos "mais antigos
   // que X", para o scroll infinito continuar de onde a página anterior parou.
   async function fetchFeedChunk(uid: string, cursor: string | null) {
@@ -342,12 +345,13 @@ function HomePage() {
     if (cursor) videosQuery = videosQuery.lt("created_at", cursor);
 
     const [{ data: rankedRows, error: rankErr }, { data: videosData }] = await Promise.all([
-      (supabase as any).rpc("get_personalized_feed", {
+      (supabase as any).rpc("get_personalized_feed_v2", {
         p_user_id: uid, p_cursor: rpcCursor, p_limit: FEED_CHUNK_SIZE,
         // Publicações já mostradas neste dispositivo (mesmo sem terem sido
         // "vistas" a sério) — para nunca repetir a mesma ao atualizar a
-        // página. Cruzado no servidor com post_impressions para um sinal
-        // mais forte e persistente entre sessões/dispositivos.
+        // página. Cruzado no servidor com post_impressions (janela de
+        // p_hard_exclude_hours, default 24h) para um sinal mais forte e
+        // persistente entre sessões/dispositivos.
         p_exclude_ids: getSeenPostIds(uid),
       }),
       videosQuery,
@@ -357,8 +361,9 @@ function HomePage() {
     // cronológica simples de posts — nunca deixa o feed vazio por causa disto.
     let rawPosts: any[] = [];
     let rankByPostId: Record<string, number> = {};
+    let topicByPostId: Record<string, string | null> = {};
     if (rankErr || !rankedRows) {
-      console.error("get_personalized_feed falhou, a usar ordem cronológica:", rankErr);
+      console.error("get_personalized_feed_v2 falhou, a usar ordem cronológica:", rankErr);
       let fallbackQuery = supabase.from("posts").select(POST_SELECT_FIELDS)
         .eq("is_draft", false)
         .or(`scheduled_at.is.null,scheduled_at.lte.${new Date().toISOString()}`)
@@ -368,10 +373,23 @@ function HomePage() {
       rawPosts = data ?? [];
     } else {
       const postIds = rankedRows.map((r: any) => r.post_id);
-      rankedRows.forEach((r: any) => { rankByPostId[r.post_id] = Number(r.rank_score) || 0; });
+      // IMPORTANTE: a v2 já devolve os posts na sequência anti-fadiga
+      // (nunca 2+ seguidos do mesmo autor/tópico) — usar o rank_score CRU
+      // no merge final com vídeos (que também ordena por rank_score, ver
+      // mais abaixo) anularia essa sequência, porque itens trocados de
+      // posição pelo re-rank mantêm o rank_score original. Por isso aqui
+      // convertemos a POSIÇÃO na lista (já diversificada) num score
+      // ordinal decrescente na mesma escala 0-100 dos vídeos — preserva a
+      // ordem exata entre posts, e ainda deixa os vídeos entrarem no ponto
+      // certo por frescura.
+      rankedRows.forEach((r: any, i: number) => {
+        rankByPostId[r.post_id] = postIds.length > 1 ? 100 - (i * (100 / (postIds.length - 1))) : 100;
+        topicByPostId[r.post_id] = r.top_category ?? null;
+      });
       if (postIds.length > 0) {
         const { data } = await supabase.from("posts").select(POST_SELECT_FIELDS).in("id", postIds);
-        rawPosts = (data ?? []).sort((a: any, b: any) => (rankByPostId[b.id] ?? 0) - (rankByPostId[a.id] ?? 0));
+        const byId = new Map((data ?? []).map((p: any) => [p.id, p]));
+        rawPosts = postIds.map((id: string) => byId.get(id)).filter(Boolean);
       }
     }
 
@@ -469,6 +487,7 @@ function HomePage() {
         moderation_status: p.moderation_status ?? null, is_sensitive: !!p.is_sensitive,
         poll: p.poll ?? null, poll_ends_at: p.poll_ends_at ?? null,
         rank_score: rankByPostId[p.id] ?? 0,
+        top_category: topicByPostId[p.id] ?? null,
       };
     });
 
@@ -501,9 +520,10 @@ function HomePage() {
       (a, b) => (b.rank_score ?? 0) - (a.rank_score ?? 0)
     );
 
-    // Nunca dois seguidos do mesmo autor — reordena mantendo a pontuação
-    // como critério principal, só troca posições quando há repetição.
-    const diversified = diversifyByAuthor(merged);
+    // Nunca dois seguidos do mesmo autor NEM do mesmo tópico — reordena
+    // mantendo a pontuação como critério principal, só troca posições
+    // quando há repetição.
+    const diversified = diversifyByAuthorAndTopic(merged);
 
     const page = diversified.slice(0, FEED_CHUNK_SIZE);
 
