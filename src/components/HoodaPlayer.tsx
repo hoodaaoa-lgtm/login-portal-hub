@@ -405,7 +405,6 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
     if (hideTimer.current) clearTimeout(hideTimer.current);
     hideTimer.current = setTimeout(() => {
       setShowControls(false);
-      setShowQualityMenu(false);
     }, CONTROLS_HIDE_DELAY_MS);
   }, []);
 
