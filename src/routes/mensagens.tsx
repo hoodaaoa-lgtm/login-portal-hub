@@ -39,7 +39,7 @@ import { HoodaPlayer } from "@/components/HoodaPlayer";
 import { FeedVideoPlayer } from "@/components/FeedVideoPlayer";
 import { extractUrl } from "@/lib/linkPreview";
 import { LinkPreview as SharedLinkPreview } from "@/components/LinkPreview";
-import { uploadImageToCloudinary } from "@/lib/cloudinary";
+import { uploadImageToCloudinary, getCloudinaryPosterFromUrl } from "@/lib/cloudinary";
 import { getHoodaOfficialId } from "@/lib/hoodaOfficial";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -2030,7 +2030,7 @@ function ChatMediaLightbox({ items, index, onIndexChange, onClose, onReact, cont
               <EditedMediaDisplay src={displayItem.mediaUrl!} type="video" edit={displayItem.editState} maxH={(typeof window !== "undefined" ? window.innerHeight : 600) * 0.7} />
             ) : (
               <div className="max-w-full w-full" style={{ maxHeight: "72vh" }}>
-                <HoodaPlayer src={displayItem.mediaUrl!} autoPlay forceLoad rounded="rounded-xl" aspectRatio="auto" />
+                <HoodaPlayer src={displayItem.mediaUrl!} poster={getCloudinaryPosterFromUrl(displayItem.mediaUrl!) ?? undefined} autoPlay forceLoad rounded="rounded-xl" aspectRatio="auto" />
               </div>
             )
           )}
@@ -2597,7 +2597,7 @@ function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit
               <div className="relative w-full max-w-xs">
                 {m.editState
                   ? <EditedMediaDisplay src={m.mediaUrl} type="video" edit={m.editState} maxH={280} />
-                  : <FeedVideoPlayer src={m.mediaUrl} rounded="rounded-xl" maxHeightRatio={0.4} />}
+                  : <FeedVideoPlayer src={m.mediaUrl} poster={getCloudinaryPosterFromUrl(m.mediaUrl) ?? undefined} rounded="rounded-xl" maxHeightRatio={0.4} />}
                 {/* Botão para abrir em ecrã cheio, igual ao lightbox das fotos */}
                 <button
                   type="button"

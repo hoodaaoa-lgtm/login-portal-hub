@@ -150,6 +150,23 @@ export function getCloudinaryRawUrl(mp4Url: string): string | null {
   return `https://res.cloudinary.com/${cloud}/video/upload/${publicId}.mp4`;
 }
 
+/**
+ * Deriva a URL de miniatura (thumbnail) a partir de QUALQUER URL de
+ * reprodução Cloudinary já existente (mesmo princípio do
+ * getCloudinaryRenditions) — usada para gerar o "poster" do HoodaPlayer
+ * quando não há uma coluna dedicada de thumbnail (ex.: vídeos de chat),
+ * para que o fundo desfocado (em vez de barra preta) tenha uma imagem
+ * para desfocar. Devolve null se o URL não for do Cloudinary.
+ */
+export function getCloudinaryPosterFromUrl(mp4Url: string, timeOffset = "0"): string | null {
+  const match = mp4Url.match(
+    /res\.cloudinary\.com\/([^/]+)\/video\/upload\/[^/]+\/(.+?)(?:\.[a-zA-Z0-9]+)?$/,
+  );
+  if (!match) return null;
+  const [, cloud, publicId] = match;
+  return `https://res.cloudinary.com/${cloud}/video/upload/so_${timeOffset},w_1280,h_720,c_fill,f_jpg/${publicId}.jpg`;
+}
+
 /** URL de reprodução directa (mp4 optimizado).
  *  vc_h264 força um recodifica para H.264/SDR — sem isto, vídeos HDR
  *  (comuns em iPhones — Dolby Vision/HDR10) tocavam com o URL original
