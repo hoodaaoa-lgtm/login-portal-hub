@@ -204,7 +204,95 @@ export function normalizePost(
   };
 }
 
-/* ── Instagram-style photo carousel ── */
+/* ── Instagram-style photo carousel (com slide suave + swipe) ── */
+function useSwipeSlider(n: number, idx: number, setIdx: (fn: (i: number) => number) => void) {
+  const startX = useRef(0);
+  const startY = useRef(0);
+  const dx = useRef(0);
+  const dragging = useRef(false);
+  const [drag, setDrag] = useState(0); // px de deslocamento durante o gesto
+  const [animate, setAnimate] = useState(true);
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    if (n <= 1) return;
+    startX.current = e.touches[0].clientX;
+    startY.current = e.touches[0].clientY;
+    dx.current = 0;
+    dragging.current = false;
+    setAnimate(false);
+  };
+  const onTouchMove = (e: React.TouchEvent) => {
+    if (n <= 1) return;
+    const cx = e.touches[0].clientX;
+    const cy = e.touches[0].clientY;
+    const deltaX = cx - startX.current;
+    const deltaY = cy - startY.current;
+    if (!dragging.current) {
+      if (Math.abs(deltaX) < 6 && Math.abs(deltaY) < 6) return;
+      dragging.current = Math.abs(deltaX) > Math.abs(deltaY);
+      if (!dragging.current) return;
+    }
+    dx.current = deltaX;
+    setDrag(deltaX);
+  };
+  const onTouchEnd = (e: React.TouchEvent, width: number) => {
+    if (n <= 1) return;
+    setAnimate(true);
+    const threshold = Math.min(80, width * 0.18);
+    if (dx.current > threshold && idx > 0) setIdx(i => i - 1);
+    else if (dx.current < -threshold && idx < n - 1) setIdx(i => i + 1);
+    dx.current = 0;
+    setDrag(0);
+    dragging.current = false;
+  };
+
+  return { drag, animate, onTouchStart, onTouchMove, onTouchEnd, isDragging: dragging };
+}
+
+function SlideTrack({ photos, idx, setIdx, fit, onClickImage }: {
+  photos: string[]; idx: number; setIdx: (fn: (i: number) => number) => void;
+  fit: "cover" | "contain"; onClickImage?: () => void;
+}) {
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const n = photos.length;
+  const { drag, animate, onTouchStart, onTouchMove, onTouchEnd, isDragging } = useSwipeSlider(n, idx, setIdx);
+
+  return (
+    <div
+      ref={wrapRef}
+      className="absolute inset-0 overflow-hidden"
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={(e) => onTouchEnd(e, wrapRef.current?.clientWidth || 1)}
+      onClick={(e) => { if (!isDragging.current) onClickImage?.(); }}
+    >
+      <div
+        className="flex h-full will-change-transform"
+        style={{
+          width: `${n * 100}%`,
+          transform: `translate3d(calc(${-idx * (100 / n)}% + ${drag}px), 0, 0)`,
+          transition: animate ? "transform 320ms cubic-bezier(0.22, 1, 0.36, 1)" : "none",
+        }}
+      >
+        {photos.map((p, i) => (
+          <div key={i} className="h-full shrink-0" style={{ width: `${100 / n}%` }}>
+            <img
+              loading={Math.abs(i - idx) <= 1 ? "eager" : "lazy"}
+              decoding="async"
+              src={p}
+              alt=""
+              draggable={false}
+              className="block w-full h-full pointer-events-none"
+              style={{ objectFit: fit }}
+              onError={(e) => { e.currentTarget.style.display = "none"; }}
+            />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function PhotoGrid({ photos }: { photos: string[] }) {
   const [idx, setIdx] = useState(0);
   const [fullscreen, setFullscreen] = useState(false);
@@ -215,16 +303,12 @@ export function PhotoGrid({ photos }: { photos: string[] }) {
     <>
       <div className="relative w-full select-none px-4 pb-3 max-w-[520px] mx-auto">
         <div className="relative w-full cursor-pointer rounded-2xl overflow-hidden"
-          style={{ aspectRatio: "4 / 5", maxHeight: "min(70vh, 620px)", background: "var(--s1)" }}
-          onClick={() => setFullscreen(true)}>
-          <img loading="lazy" decoding="async" src={photos[idx]}
-            alt=""
-            className="absolute inset-0 block w-full h-full"
-            style={{ objectFit: "cover" }}
-            onError={(e) => { e.currentTarget.style.display = "none"; }} />
+          style={{ aspectRatio: "4 / 5", maxHeight: "min(70vh, 620px)", background: "var(--s1)" }}>
+
+          <SlideTrack photos={photos} idx={idx} setIdx={setIdx} fit="cover" onClickImage={() => setFullscreen(true)} />
 
           {n > 1 && (
-            <div className="absolute top-3 right-3 px-2.5 py-1 rounded-full text-white text-xs font-bold z-10"
+            <div className="absolute top-3 right-3 px-2.5 py-1 rounded-full text-white text-xs font-bold z-10 transition-opacity"
               style={{ background: "rgba(0,0,0,0.6)" }}>
               {idx + 1} / {n}
             </div>
@@ -232,7 +316,7 @@ export function PhotoGrid({ photos }: { photos: string[] }) {
 
           {idx > 0 && (
             <button
-              className="absolute left-3 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full flex items-center justify-center z-10 shadow-lg transition active:scale-90"
+              className="absolute left-3 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full flex items-center justify-center z-10 shadow-lg transition duration-200 active:scale-90 hover:scale-105"
               style={{ background: "rgba(255,255,255,0.88)" }}
               onClick={e => { e.stopPropagation(); setIdx(i => i - 1); }}>
               <ChevronLeft className="h-5 w-5 text-black" />
@@ -241,7 +325,7 @@ export function PhotoGrid({ photos }: { photos: string[] }) {
 
           {idx < n - 1 && (
             <button
-              className="absolute right-3 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full flex items-center justify-center z-10 shadow-lg transition active:scale-90"
+              className="absolute right-3 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full flex items-center justify-center z-10 shadow-lg transition duration-200 active:scale-90 hover:scale-105"
               style={{ background: "rgba(255,255,255,0.88)" }}
               onClick={e => { e.stopPropagation(); setIdx(i => i + 1); }}>
               <ChevronRight className="h-5 w-5 text-black" />
@@ -252,10 +336,10 @@ export function PhotoGrid({ photos }: { photos: string[] }) {
             <div className="absolute bottom-3 left-0 right-0 flex items-center justify-center gap-1.5 z-10 pointer-events-none">
               {photos.map((_, i) => (
                 <div key={i}
-                  className="rounded-full transition-all duration-200"
+                  className="rounded-full transition-all duration-300 ease-out"
                   style={{
-                    width: i === idx ? 6 : 5,
-                    height: i === idx ? 6 : 5,
+                    width: i === idx ? 16 : 5,
+                    height: 5,
                     background: i === idx ? "#fff" : "rgba(255,255,255,0.5)",
                     boxShadow: "0 0 2px rgba(0,0,0,0.5)"
                   }} />
@@ -266,29 +350,27 @@ export function PhotoGrid({ photos }: { photos: string[] }) {
       </div>
 
       {fullscreen && (
-        <div className="fixed inset-0 z-[90] flex flex-col" style={{ background: "#000" }}>
+        <div className="fixed inset-0 z-[90] flex flex-col animate-in fade-in duration-200" style={{ background: "#000" }}>
           <div className="flex items-center justify-between px-4 py-3 shrink-0">
             <span className="text-white/60 text-sm font-semibold">{idx + 1} / {n}</span>
             <button onClick={() => setFullscreen(false)}
-              className="h-9 w-9 rounded-full flex items-center justify-center"
+              className="h-9 w-9 rounded-full flex items-center justify-center transition active:scale-90"
               style={{ background: "rgba(255,255,255,0.12)" }}>
               <X className="h-5 w-5 text-white" />
             </button>
           </div>
-          <div className="flex-1 flex items-center justify-center relative">
-            <img loading="lazy" decoding="async" src={photos[idx]} alt=""
-              className="w-full h-full"
-              style={{ objectFit: "cover", maxHeight: "80vh" }} onError={(e) => { e.currentTarget.style.display = "none"; }} />
+          <div className="flex-1 relative">
+            <SlideTrack photos={photos} idx={idx} setIdx={setIdx} fit="contain" />
             {idx > 0 && (
               <button onClick={() => setIdx(i => i - 1)}
-                className="absolute left-3 h-11 w-11 rounded-full flex items-center justify-center"
+                className="absolute left-3 top-1/2 -translate-y-1/2 h-11 w-11 rounded-full flex items-center justify-center z-10 transition duration-200 active:scale-90"
                 style={{ background: "rgba(255,255,255,0.15)" }}>
                 <ChevronLeft className="h-6 w-6 text-white" />
               </button>
             )}
             {idx < n - 1 && (
               <button onClick={() => setIdx(i => i + 1)}
-                className="absolute right-3 h-11 w-11 rounded-full flex items-center justify-center"
+                className="absolute right-3 top-1/2 -translate-y-1/2 h-11 w-11 rounded-full flex items-center justify-center z-10 transition duration-200 active:scale-90"
                 style={{ background: "rgba(255,255,255,0.15)" }}>
                 <ChevronRight className="h-6 w-6 text-white" />
               </button>
@@ -296,12 +378,13 @@ export function PhotoGrid({ photos }: { photos: string[] }) {
           </div>
           <div className="flex gap-2 justify-center overflow-x-auto px-4 py-3 shrink-0">
             {photos.map((p, i) => (
-              <button key={i} onClick={() => setIdx(i)}
-                className="shrink-0 rounded-xl overflow-hidden transition"
+              <button key={i} onClick={() => setIdx(() => i)}
+                className="shrink-0 rounded-xl overflow-hidden transition-all duration-200"
                 style={{
                   width: 56, height: 56,
                   outline: i === idx ? "2.5px solid white" : "2px solid transparent",
-                  opacity: i === idx ? 1 : 0.5
+                  opacity: i === idx ? 1 : 0.5,
+                  transform: i === idx ? "scale(1.05)" : "scale(1)",
                 }}>
                 <img loading="lazy" decoding="async" src={p} alt="" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = "none"; }} />
               </button>
