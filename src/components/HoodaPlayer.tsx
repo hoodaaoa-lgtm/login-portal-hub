@@ -7,9 +7,12 @@
  *    (600px em mobile, 700px em desktop) quando aspectRatio="auto".
  *  - Detecta a proporção real do vídeo (16:9, 1:1, 4:5, 9:16, 21:9, ...)
  *    a partir do próprio ficheiro — nunca estica nem deforma.
- *  - object-fit: contain, sempre. Nunca corta o vídeo (nem laterais nem
- *    cima/baixo) — mostra o vídeo inteiro na proporção real dele; se o
- *    cap de altura entrar em ação, aparece barra preta em vez de cortar.
+ *  - object-fit: contain, sempre, no VÍDEO em reprodução. Nunca corta o
+ *    vídeo (nem laterais nem cima/baixo) — mostra o vídeo inteiro na
+ *    proporção real dele; se o cap de altura entrar em ação, aparece barra
+ *    preta em vez de cortar. A MINIATURA (antes de dar play) usa
+ *    object-fit: cover, para preencher a largura toda sem barras pretas,
+ *    igual ao TikTok/Instagram — só o vídeo em si preserva a proporção.
  *  - Reserva o espaço final antes do vídeo carregar (sem CLS): skeleton
  *    escuro com shimmer + miniatura, do tamanho exato do player final.
  *  - Lazy load real via IntersectionObserver: só começa a carregar dados
@@ -854,7 +857,7 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
               src={poster}
               alt=""
               decoding="async"
-              className="absolute inset-0 w-full h-full object-contain transition-[filter] duration-300"
+              className="absolute inset-0 w-full h-full object-cover transition-[filter] duration-300"
               style={{ filter: "blur(6px)", transform: "scale(1.02)" }}
             />
           )}
@@ -879,7 +882,7 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
               src={poster}
               alt=""
               decoding="async"
-              className="absolute inset-0 w-full h-full object-contain"
+              className="absolute inset-0 w-full h-full object-cover"
             />
           )}
           <button
