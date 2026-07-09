@@ -171,6 +171,30 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
   const [naturalRatio, setNaturalRatio] = useState<string | null>(null);
   const effectiveRatio = naturalRatio ?? (aspectRatio !== "auto" ? aspectRatio : "16/9");
 
+  // ─── Pré-carrega o poster (chega muito mais rápido que o vídeo) só
+  // para ler as dimensões dele e adivinhar a proporção real ANTES do
+  // vídeo disparar onLoadedMetadata. Sem isto, um vídeo vertical nascia
+  // numa caixa 16:9 (o palpite acima) e "saltava" de repente para a
+  // proporção certa quando o metadata chegava — feio, principalmente no
+  // chat, onde vários vídeos pequenos saltam de tamanho enquanto a
+  // pessoa faz scroll. Se o metadata do vídeo já tiver chegado primeiro,
+  // isto não faz nada (naturalRatio já não é null).
+  useEffect(() => {
+    if (!poster || naturalRatio) return;
+    let cancelled = false;
+    const img = new Image();
+    img.onload = () => {
+      if (cancelled) return;
+      if (img.naturalWidth > 0 && img.naturalHeight > 0) {
+        setNaturalRatio((prev) => prev ?? `${img.naturalWidth}/${img.naturalHeight}`);
+      }
+    };
+    img.src = poster;
+    return () => {
+      cancelled = true;
+    };
+  }, [poster, naturalRatio]);
+
   // ─── Largura real da caixa, igual ao X: quando o vídeo é vertical e a
   // altura bateria no limite (MAX_HEIGHT_CSS), a CAIXA ENCOLHE EM LARGURA
   // para manter a proporção exata (sem barra preta lateral) — em vez de

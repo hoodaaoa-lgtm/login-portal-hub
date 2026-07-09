@@ -164,7 +164,12 @@ export function getCloudinaryPosterFromUrl(mp4Url: string, timeOffset = "0"): st
   );
   if (!match) return null;
   const [, cloud, publicId] = match;
-  return `https://res.cloudinary.com/${cloud}/video/upload/so_${timeOffset},w_1280,h_720,c_fill,f_jpg/${publicId}.jpg`;
+  // w_1280,c_limit (sem h_/c_fill): mantém a proporção REAL do vídeo em
+  // vez de forçar sempre 16:9 — importante porque o HoodaPlayer usa as
+  // dimensões desta imagem para adivinhar a proporção da caixa antes do
+  // vídeo carregar metadata (evita o "salto" de tamanho em vídeos
+  // verticais, que antes nasciam numa caixa 16:9 errada).
+  return `https://res.cloudinary.com/${cloud}/video/upload/so_${timeOffset},w_1280,c_limit,f_jpg/${publicId}.jpg`;
 }
 
 /** URL de reprodução directa (mp4 optimizado).
