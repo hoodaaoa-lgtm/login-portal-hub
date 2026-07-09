@@ -35,6 +35,7 @@ import { FollowListModal } from "@/components/FollowList";
 import { PhotoViewer } from "@/components/PhotoViewer";
 import { FeedVideoPlayer } from "@/components/FeedVideoPlayer";
 import { PollCard } from "@/components/PollCard";
+import { UniversalSkeleton } from "@/components/Skeletons";
 
 export const Route = createFileRoute("/perfil")({
   head: () => ({ meta: [{ title: "Hooda" }] }),
@@ -1503,8 +1504,8 @@ function ShareProfileModal({ username, name, onClose }: { username: string; name
   );
 }
 
-function MyProfile({ profile: initialProfile, email, onSignOut }: {
-  profile: Profile | null; email: string; onSignOut: () => void;
+function MyProfile({ profile: initialProfile, email, onSignOut, loading: profileLoading }: {
+  profile: Profile | null; email: string; onSignOut: () => void; loading?: boolean;
 }) {
   const navigate = useNavigate();
   const [profile, setProfile] = useState(initialProfile);
@@ -1898,6 +1899,18 @@ function MyProfile({ profile: initialProfile, email, onSignOut }: {
     { key: "info", label: "Info", icon: Info },
     { key: "monetization", label: "Studio", icon: Tv },
   ] as const;
+
+  /* Enquanto o perfil (nome/username) ainda não chegou do Supabase,
+     mostra o skeleton universal — nunca "?" ou vazio a piscar no ecrã. */
+  if (profileLoading && !profile) return (
+    <div className="flex">
+      <SideNav />
+      <PageWrapper className="pb-20 lg:pb-0 flex-1 min-w-0">
+        <UniversalSkeleton variant="profile" />
+        <BottomNav />
+      </PageWrapper>
+    </div>
+  );
 
   return (
     <div className="flex">
@@ -2349,6 +2362,7 @@ function ProfilePage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [email, setEmail] = useState("");
   const [isOwner] = useState(true);
+  const [profileLoading, setProfileLoading] = useState(true);
 
   useEffect(() => {
     (async () => {
@@ -2451,6 +2465,7 @@ function ProfilePage() {
       }
 
       if (data) setProfile(data as Profile);
+      setProfileLoading(false);
     })();
   }, [navigate]);
 
@@ -2459,6 +2474,6 @@ function ProfilePage() {
     navigate({ to: "/", replace: true });
   }
 
-  if (isOwner) return <MyProfile profile={profile} email={email} onSignOut={signOut} />;
+  if (isOwner) return <MyProfile profile={profile} email={email} onSignOut={signOut} loading={profileLoading} />;
   return <PublicProfile profile={profile} email={email} />;
 }

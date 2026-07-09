@@ -11,6 +11,7 @@ import {
 import { toast } from "sonner";
 import { FollowListSection } from "@/components/FollowList";
 import { UniversalPostCard, normalizePost } from "@/components/UniversalPostCard";
+import { UniversalSkeleton } from "@/components/Skeletons";
 
 export const Route = createFileRoute("/studio")({
   head: () => ({ meta: [{ title: "Hooda Studio" }] }),
@@ -19,6 +20,29 @@ export const Route = createFileRoute("/studio")({
 
 const P    = "#5B3FCF";
 const GRAD = "linear-gradient(135deg,#5B3FCF,#E94B8A)";
+
+/* Thumbnail da grade: mostra shimmer até a imagem real (tamanho/pixels
+   verdadeiros) terminar de carregar — evita o "pop" da imagem a meio do ecrã. */
+function GridThumb({ src, alt, icon: Icon }: { src: string; alt: string; icon: any }) {
+  const [loaded, setLoaded] = useState(false);
+  return (
+    <>
+      {!loaded && (
+        <div className="absolute inset-0 animate-pulse" style={{ background: "var(--s2)" }}>
+          <div className="skeleton-shimmer absolute inset-0" />
+        </div>
+      )}
+      <img
+        src={src}
+        alt={alt}
+        className="w-full h-full object-cover"
+        style={{ opacity: loaded ? 1 : 0, transition: "opacity .2s" }}
+        onLoad={() => setLoaded(true)}
+        onError={() => setLoaded(true)}
+      />
+    </>
+  );
+}
 const MAX_VIDEO_DURATION = 480; // 8 min
 
 type Tab = "criar" | "conteudo" | "comunidade";
@@ -880,9 +904,9 @@ function ConteudoTab({ onCriar }: { onCriar: () => void }) {
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="h-8 w-8 animate-spin" style={{ color: P }} />
-        </div>
+        view === "feed"
+          ? <div className="max-w-xl mx-auto"><UniversalSkeleton variant="feed" count={3} /></div>
+          : <UniversalSkeleton variant="video-grid" count={10} />
       ) : filtered.length === 0 ? (
         <div className="rounded-3xl p-10 text-center"
           style={{ background: "var(--s0)", border: "1px solid var(--border-subtle)" }}>
@@ -913,7 +937,7 @@ function ConteudoTab({ onCriar }: { onCriar: () => void }) {
                   style={{ background: "var(--s2)" }}
                   onClick={() => navigate({ to: `/post/${p.id}` as any })}>
                   {thumb
-                    ? <img src={thumb} className="w-full h-full object-cover" alt="" />
+                    ? <GridThumb src={thumb} alt="" icon={Icon} />
                     : <div className="w-full h-full flex items-center justify-center">
                         <Icon className="h-10 w-10" style={{ color: "var(--text-muted)" }} />
                       </div>}
