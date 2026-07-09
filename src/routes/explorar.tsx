@@ -314,13 +314,53 @@ function ExplorePage() {
     staleTime: 30_000,
   });
 
+  /* ── IDs das pessoas que bateram na pesquisa por nome/username — usado
+     para trazer também as publicações delas (foto/vídeo), mesmo que o
+     conteúdo da publicação não mencione o termo pesquisado. ── */
+  const searchPeopleIds = useMemo(
+    () => (searchPeople ?? []).map((p: any) => p.id).filter(Boolean),
+    [searchPeople],
+  );
+
+  /* ── Publicações de VÍDEO de quem bateu na pesquisa por nome/username —
+     mesmo princípio do searchPostsByAuthor (fotos), mas para kind="video":
+     assim que uma pessoa aparece em "Pessoas", os vídeos mais recentes dela
+     também aparecem, mesmo que o conteúdo do vídeo não mencione o termo
+     pesquisado. ── */
+  const { data: searchVideoPostsByAuthor = [] } = useQuery({
+    queryKey: ["explore-search-video-posts-by-author", searchPeopleIds],
+    queryFn: async () => {
+      const { data } = await (supabase as any).from("posts")
+        .select("id,author_id,author_username,author_name,author_color,content,title,kind,created_at,video_url,thumbnail_url,views_count,reposts_count")
+        .eq("kind","video")
+        .eq("is_draft", false)
+        .or(`scheduled_at.is.null,scheduled_at.lte.${new Date().toISOString()}`)
+        .in("author_id", searchPeopleIds)
+        .order("created_at", { ascending: false })
+        .limit(25);
+      return data ?? [];
+    },
+    enabled: searchActive && searchPeopleIds.length > 0,
+    staleTime: 30_000,
+  });
+
+  /* Junta os vídeos encontrados por texto + os vídeos de quem bateu na
+     pesquisa por nome/username, sem repetir a mesma publicação. */
+  const mergedSearchVideoPosts = useMemo(() => {
+    const byId = new Map<string, any>();
+    (searchVideoPostsRaw ?? []).forEach((p: any) => byId.set(p.id, p));
+    (searchVideoPostsByAuthor ?? []).forEach((p: any) => byId.set(p.id, p));
+    return [...byId.values()]
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  }, [searchVideoPostsRaw, searchVideoPostsByAuthor]);
+
   /* ── Autores dos resultados de vídeo, para o PostCard mostrar nome/avatar ── */
   const videoAuthorIds = useMemo(() => {
     const ids = new Set<string>();
     (searchChannelVideos ?? []).forEach((v: any) => { if (v.owner_id) ids.add(v.owner_id); });
-    (searchVideoPostsRaw ?? []).forEach((p: any) => { if (p.author_id) ids.add(p.author_id); });
+    (mergedSearchVideoPosts ?? []).forEach((p: any) => { if (p.author_id) ids.add(p.author_id); });
     return [...ids];
-  }, [searchChannelVideos, searchVideoPostsRaw]);
+  }, [searchChannelVideos, mergedSearchVideoPosts]);
 
   const { data: videoAuthorProfiles = [] } = useQuery({
     queryKey: ["explore-search-video-authors", videoAuthorIds],
@@ -357,7 +397,7 @@ function ExplorePage() {
       };
     });
 
-    const fromVideoPosts = (searchVideoPostsRaw ?? []).map((p: any) => {
+    const fromVideoPosts = (mergedSearchVideoPosts ?? []).map((p: any) => {
       const author = authorMap[p.author_id];
       const name = p.author_name || author?.full_name || author?.username || "hooda";
       const username = p.author_username || author?.username || "";
@@ -375,7 +415,7 @@ function ExplorePage() {
 
     return [...fromChannelVideos, ...fromVideoPosts]
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-  }, [searchChannelVideos, searchVideoPostsRaw, videoAuthorProfiles]);
+  }, [searchChannelVideos, mergedSearchVideoPosts, videoAuthorProfiles]);
 
   const { data: searchPosts = [] } = useQuery({
     queryKey: ["explore-search-posts", search],
@@ -392,17 +432,12 @@ function ExplorePage() {
     staleTime: 30_000,
   });
 
-  /* ── Publicações de quem bateu na pesquisa por nome/username — antes,
-     pesquisar "joão" só encontrava o perfil dele; as publicações dele só
-     apareciam se o TEXTO da publicação também contivesse "joão". Agora,
-     assim que uma pessoa aparece em "Pessoas", trazemos também as
+  /* ── Publicações de FOTO de quem bateu na pesquisa por nome/username —
+     antes, pesquisar "joão" só encontrava o perfil dele; as publicações
+     dele só apareciam se o TEXTO da publicação também contivesse "joão".
+     Agora, assim que uma pessoa aparece em "Pessoas", trazemos também as
      publicações mais recentes dela, mesmo que o conteúdo não mencione o
      termo pesquisado. ── */
-  const searchPeopleIds = useMemo(
-    () => (searchPeople ?? []).map((p: any) => p.id).filter(Boolean),
-    [searchPeople],
-  );
-
   const { data: searchPostsByAuthor = [] } = useQuery({
     queryKey: ["explore-search-posts-by-author", searchPeopleIds],
     queryFn: async () => {
