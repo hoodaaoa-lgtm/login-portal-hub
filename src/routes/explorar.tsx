@@ -290,16 +290,19 @@ function ExplorePage() {
     staleTime: 30_000,
   });
 
-  /* ── Pesquisa: publicações de vídeo (feed) cujo texto bate com o termo ── */
+  /* ── Pesquisa: publicações de vídeo (feed) cujo texto bate com o termo ──
+     Compara também "title" (o campo que o Studio usa para o título do
+     vídeo) — antes só comparava "content" (a descrição), então um vídeo
+     publicado só com título (sem descrição) nunca aparecia na pesquisa. ── */
   const { data: searchVideoPostsRaw = [] } = useQuery({
     queryKey: ["explore-search-video-posts", search],
     queryFn: async () => {
       const { data } = await (supabase as any).from("posts")
-        .select("id,author_id,author_username,author_name,author_color,content,kind,created_at,video_url,thumbnail_url,views_count,reposts_count")
+        .select("id,author_id,author_username,author_name,author_color,content,title,kind,created_at,video_url,thumbnail_url,views_count,reposts_count")
         .eq("kind","video")
         .eq("is_draft", false)
         .or(`scheduled_at.is.null,scheduled_at.lte.${new Date().toISOString()}`)
-        .ilike("content",`%${search}%`).limit(25);
+        .or(`content.ilike.%${search}%,title.ilike.%${search}%`).limit(25);
       return data ?? [];
     },
     enabled: searchActive,
@@ -373,11 +376,11 @@ function ExplorePage() {
     queryKey: ["explore-search-posts", search],
     queryFn: async () => {
       const { data } = await (supabase as any).from("posts")
-        .select("id,content,kind,photo_url,image_url,likes_count,comments_count,author_username,author_color,author_id,created_at")
+        .select("id,content,title,kind,photo_url,image_url,likes_count,comments_count,author_username,author_color,author_id,created_at")
         .in("kind",["photo","post"])
         .eq("is_draft", false)
         .or(`scheduled_at.is.null,scheduled_at.lte.${new Date().toISOString()}`)
-        .ilike("content",`%${search}%`).limit(25);
+        .or(`content.ilike.%${search}%,title.ilike.%${search}%`).limit(25);
       return data ?? [];
     },
     enabled: searchActive,
