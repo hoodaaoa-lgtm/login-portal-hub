@@ -61,7 +61,7 @@ export function WelcomeInstallPrompt({ userId }: { userId: string | null }) {
 
   return (
     <>
-      <div className="fixed inset-0 z-[998] bg-black/40" style={{ backdropFilter: "blur(3px)" }} onClick={dismiss} />
+      <div className="fixed inset-0 z-[998]" onClick={dismiss} />
       <div
         className="fixed z-[999] left-1/2 shadow-2xl rounded-3xl overflow-hidden"
         style={{
