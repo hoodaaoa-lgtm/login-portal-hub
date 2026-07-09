@@ -10,6 +10,7 @@ import { registerVideo, pauseAllVideos } from "@/lib/mediaManager";
 import { fetchPostComments, sendPostComment, replyToPostComment, toggleCommentLike, notifyMentions } from "@/lib/comments";
 import { deletePostForEveryone } from "@/lib/posts";
 import { FeedVideoPlayer } from "@/components/FeedVideoPlayer";
+import { getCloudinaryPosterFromUrl } from "@/lib/cloudinary";
 import { PollCard } from "@/components/PollCard";
 import { SensitiveContentOverlay } from "@/components/SensitiveContentOverlay";
 import { appealPostModeration } from "@/lib/moderationPrefs";
@@ -1141,10 +1142,10 @@ export function UniversalPostCard({ post: p, onDeleted, onBookmarkChange }: {
         <div className="px-4 pb-3 max-w-[520px] mx-auto">
           {p.is_sensitive && p.moderation_status ? (
             <SensitiveContentOverlay category={p.moderation_status} minHeight={260}>
-              <FeedVideoPlayer src={p.video} poster={p.video_thumb || p.photo || undefined} postId={p.id} kind="video" rounded="rounded-2xl" />
+              <FeedVideoPlayer src={p.video} poster={p.video_thumb || p.photo || getCloudinaryPosterFromUrl(p.video) || undefined} postId={p.id} kind="video" rounded="rounded-2xl" />
             </SensitiveContentOverlay>
           ) : (
-            <FeedVideoPlayer src={p.video} poster={p.video_thumb || p.photo || undefined} postId={p.id} kind="video" rounded="rounded-2xl" />
+            <FeedVideoPlayer src={p.video} poster={p.video_thumb || p.photo || getCloudinaryPosterFromUrl(p.video) || undefined} postId={p.id} kind="video" rounded="rounded-2xl" />
           )}
         </div>
       )}
