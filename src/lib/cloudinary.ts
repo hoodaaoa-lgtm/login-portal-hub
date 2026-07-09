@@ -90,48 +90,6 @@ export function getVideoThumbnail(publicId: string, timeOffset = "0"): string {
 }
 
 /**
- * Deriva um "ladder" de resoluções mp4 a partir de QUALQUER URL de
- * reprodução já existente do Cloudinary — incluindo vídeos publicados
- * antes do sistema de qualidade adaptativa existir. Não precisa de
- * re-upload nem migração: o public_id já está codificado no próprio URL.
- *
- * Usa transformações "h_<altura>,c_limit" (redimensiona só para baixo,
- * nunca amplia um vídeo de baixa resolução) — isto funciona em qualquer
- * plano do Cloudinary, ao contrário do streaming HLS (sp_auto), que
- * exige o add-on de Adaptive Bitrate Streaming e não estava disponível.
- *
- * Devolve null se o URL não for do Cloudinary (ex.: outro CDN/Cloudflare
- * Stream, que já trata disto sozinho via HLS nativo).
- */
-export interface CloudinaryRendition {
-  height: number;
-  url: string;
-}
-
-const RENDITION_LADDER = [144, 240, 360, 480, 720, 1080];
-
-export function getCloudinaryRenditions(mp4Url: string): CloudinaryRendition[] | null {
-  const match = mp4Url.match(
-    /res\.cloudinary\.com\/([^/]+)\/video\/upload\/[^/]+\/(.+?)(?:\.[a-zA-Z0-9]+)?$/,
-  );
-  if (!match) return null;
-  const [, cloud, publicId] = match;
-
-  // IMPORTANTE: sem f_auto aqui — as eager transformations configuradas no
-  // preset "hooda_videos" da Cloudinary geram exatamente
-  // "q_auto,vc_h264,h_<altura>,c_limit/mp4" (formato mp4 explícito, sem
-  // f_auto, que nem é aceite em eager transformations). Se esta URL não
-  // bater PARÂMETRO A PARÂMETRO com o que já foi pré-gerado no upload, a
-  // Cloudinary trata como uma transformação nova e tenta processá-la na
-  // hora — sujeita ao limite de transformação síncrona (o mesmo bug do
-  // erro 400 que motivou este sistema de fallback em cadeia).
-  return RENDITION_LADDER.map((height) => ({
-    height,
-    url: `https://res.cloudinary.com/${cloud}/video/upload/q_auto,vc_h264,h_${height},c_limit/${publicId}.mp4`,
-  }));
-}
-
-/**
  * URL de entrega BRUTA, sem nenhuma transformação (nem q_auto, nem
  * f_auto, nem vc_h264, nem redimensionamento). Último recurso quando até
  * a URL "oficial" (getVideoPlaybackUrl) falha com 400 — normalmente
@@ -152,8 +110,7 @@ export function getCloudinaryRawUrl(mp4Url: string): string | null {
 
 /**
  * Deriva a URL de miniatura (thumbnail) a partir de QUALQUER URL de
- * reprodução Cloudinary já existente (mesmo princípio do
- * getCloudinaryRenditions) — usada para gerar o "poster" do HoodaPlayer
+ * reprodução Cloudinary já existente — usada para gerar o "poster" do HoodaPlayer
  * quando não há uma coluna dedicada de thumbnail (ex.: vídeos de chat),
  * para que o fundo desfocado (em vez de barra preta) tenha uma imagem
  * para desfocar. Devolve null se o URL não for do Cloudinary.

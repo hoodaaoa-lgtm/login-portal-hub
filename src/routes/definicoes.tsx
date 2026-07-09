@@ -6,13 +6,12 @@ import { BottomNav, SideNav, PageWrapper } from "@/components/AppShell";
 import {
   ChevronRight, Bell, Lock, Shield, ShieldAlert, HelpCircle,
   Info, Globe, MessageSquare, Activity, ArrowLeft,
-  Trash2, LogOut, AlertTriangle, MonitorPlay,
+  Trash2, LogOut, AlertTriangle,
 } from "lucide-react";
 import {
   NotificationsPanel, ActivityPanel, PrivacyPanel,
   SecurityPanel, MsgPrivacyPanel, AboutPanel, HelpPanel,
 } from "@/routes/perfil";
-import { VideoQualityPanel } from "@/components/VideoQualityPanel";
 import { SensitiveContentPanel } from "@/components/SensitiveContentPanel";
 import { LanguagePanel } from "@/components/LanguageSwitcher";
 import { LANGUAGES, getCurrentLang } from "@/lib/i18n";
@@ -99,12 +98,6 @@ function DefinicoesPage() {
         { icon: <Shield className="w-5 h-5"/>, color: ACCENT, label: "Segurança", desc: "Palavra-passe e autenticação", action: () => setPanel("security") },
         { icon: <MessageSquare className="w-5 h-5"/>, color: "#1FAFA6", label: "Privacidade de Mensagens", desc: "Quem pode enviar-te mensagens?", action: () => setPanel("msgprivacy") },
         { icon: <ShieldAlert className="w-5 h-5"/>, color: "#F26B3A", label: "Conteúdo Sensível", desc: "Como mostrar conteúdo sensível no feed", action: () => setPanel("sensitive-content") },
-      ],
-    },
-    {
-      title: "Reprodução",
-      items: [
-        { icon: <MonitorPlay className="w-5 h-5"/>, color: "#3A8DDE", label: "Vídeo e dados", desc: "Qualidade automática, economia de dados ou fixa", action: () => setPanel("video-quality") },
       ],
     },
     {
@@ -245,7 +238,6 @@ function DefinicoesPage() {
       {panel === "help"          && <HelpPanel          onBack={() => setPanel(null)} />}
       {panel === "about"         && <AboutPanel         onBack={() => setPanel(null)} />}
       {panel === "language"      && <LanguagePanel      onBack={() => setPanel(null)} />}
-      {panel === "video-quality" && <VideoQualityPanel   onBack={() => setPanel(null)} />}
       {panel === "sensitive-content" && <SensitiveContentPanel onBack={() => setPanel(null)} />}
       {panel === "msgprivacy"    && (
         <MsgPrivacyPanel

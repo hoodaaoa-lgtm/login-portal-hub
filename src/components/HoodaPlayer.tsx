@@ -32,18 +32,10 @@
  *   rounded?    — e.g. "rounded-2xl"
  */
 import { useRef, useState, useEffect, useCallback, forwardRef } from "react";
-import { Play, Pause, Volume2, VolumeX, Maximize, Minimize, RotateCcw, Settings, ChevronRight, ChevronLeft } from "lucide-react";
+import { Play, Pause, Volume2, VolumeX, Maximize, Minimize, RotateCcw } from "lucide-react";
 import { useVideoInView } from "@/hooks/useVideoInView";
 import { registerVideo, notifyVideoPlaying, getGlobalMuted, setGlobalMuted } from "@/lib/mediaManager";
-import { getCloudinaryRenditions, getCloudinaryRawUrl } from "@/lib/cloudinary";
-import { getCachedVideoPreference, useVideoPreferences } from "@/hooks/useVideoPreferences";
-import {
-  pickStartingHeight,
-  resolutionFromHeight,
-  labelWithSuffix,
-  recordQualityChoice,
-  type ResolutionLabel,
-} from "@/lib/videoQuality";
+import { getCloudinaryRawUrl } from "@/lib/cloudinary";
 
 const BRAND = "#5B3FCF";
 const CONTROLS_HIDE_DELAY_MS = 2800;
@@ -300,113 +292,24 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
     return registerVideo(mediaIdRef.current, vid);
   }, []);
 
-  /* ─── Sistema de qualidade adaptativa (auto quality) ───
-     A Hooda serve vídeos via Cloudflare Stream, que já gera várias
-     resoluções e expõe um manifesto HLS. O hls.js já sabe subir/descer
-     de qualidade sozinho consoante buffer e largura de banda (ABR
-     nativo) — aqui só decidimos o PONTO DE PARTIDA e os limites,
-     consoante a preferência global do utilizador (video_preferences),
-     e expomos os níveis disponíveis para o seletor manual de qualidade. */
-  const { preference, setPreference } = useVideoPreferences();
   const hlsRef = useRef<any>(null);
-  // Quando o vídeo não tem HLS real (ex.: Cloudinary), guardamos aqui a
-  // lista de URLs mp4 em várias resoluções, e trocamos de fonte nós
-  // mesmos preservando o tempo actual (sem "reiniciar" o vídeo).
-  const mp4RenditionsRef = useRef<{ height: number; url: string }[] | null>(null);
-  const stallCountRef = useRef(0);
-  // Cadeia de fallback quando uma resolução da Cloudinary falha (ex.: 400
-  // por o vídeo original ultrapassar o limite de transformação síncrona
-  // do plano actual): 0 = a tocar a rendition escolhida (ou o src normal,
-  // se não houver ladder), 1 = já caiu para a URL "oficial" sem crop de
-  // resolução, 2 = já caiu para a entrega bruta sem transformação nenhuma
-  // (último recurso — só falha se nem isto carregar).
-  const fallbackStageRef = useRef<0 | 1 | 2>(0);
-  const [qualityLevels, setQualityLevels] = useState<{ index: number; height: number }[]>([]);
-  const [activeLevel, setActiveLevel] = useState<number>(-1); // -1 = automático
-  const [showQualityMenu, setShowQualityMenu] = useState(false);
-  const [settingsView, setSettingsView] = useState<"root" | "quality">("root");
-  const [currentResLabel, setCurrentResLabel] = useState<ResolutionLabel | null>(null);
-
-  const switchMp4Rendition = useCallback((idx: number, persistMode: "auto" | ResolutionLabel | null) => {
-    const vid = videoRef.current;
-    const renditions = mp4RenditionsRef.current;
-    if (!vid || !renditions || !renditions[idx]) return;
-    const wasPlaying = !vid.paused;
-    const t = vid.currentTime;
-    vid.src = renditions[idx].url;
-    vid.currentTime = t;
-    if (wasPlaying) vid.play().catch(() => {});
-    setActiveLevel(idx);
-    setCurrentResLabel(resolutionFromHeight(renditions[idx].height));
-    recordQualityChoice(renditions[idx].height);
-    if (persistMode) setPreference(persistMode === "auto" ? "auto" : "manual", persistMode === "auto" ? null : persistMode);
-  }, [setPreference]);
-
-  const applyQualityMode = useCallback(
-    (mode: "auto" | ResolutionLabel, persist: boolean) => {
-      const hls = hlsRef.current;
-      const renditions = mp4RenditionsRef.current;
-
-      // ─ Fonte HLS real (Cloudflare Stream): usa o ABR nativo do hls.js ─
-      if (hls) {
-        if (mode === "auto") {
-          hls.currentLevel = -1;
-          setActiveLevel(-1);
-          if (persist) setPreference("auto");
-          return;
-        }
-        const targetHeight = { "144p":144,"240p":240,"360p":360,"480p":480,"720p":720,"1080p":1080,"1440p":1440,"4k":2160 }[mode];
-        const levels: { height: number }[] = hls.levels ?? [];
-        let bestIdx = 0;
-        let bestDiff = Infinity;
-        levels.forEach((l, i) => {
-          const diff = Math.abs(l.height - targetHeight);
-          if (diff < bestDiff) { bestDiff = diff; bestIdx = i; }
-        });
-        hls.currentLevel = bestIdx;
-        setActiveLevel(bestIdx);
-        recordQualityChoice(levels[bestIdx]?.height ?? targetHeight);
-        if (persist) setPreference("manual", mode);
-        return;
-      }
-
-      // ─ Fonte mp4 (Cloudinary): trocamos nós mesmos a fonte ─
-      if (renditions) {
-        if (mode === "auto") {
-          const pref = getCachedVideoPreference();
-          const screenH = typeof window !== "undefined" ? window.innerHeight : 720;
-          const targetHeight = pickStartingHeight(pref, screenH);
-          let bestIdx = 0, bestDiff = Infinity;
-          renditions.forEach((r, i) => {
-            const diff = Math.abs(r.height - targetHeight);
-            if (diff < bestDiff) { bestDiff = diff; bestIdx = i; }
-          });
-          switchMp4Rendition(bestIdx, persist ? "auto" : null);
-          return;
-        }
-        const targetHeight = { "144p":144,"240p":240,"360p":360,"480p":480,"720p":720,"1080p":1080,"1440p":1440,"4k":2160 }[mode];
-        let bestIdx = 0, bestDiff = Infinity;
-        renditions.forEach((r, i) => {
-          const diff = Math.abs(r.height - targetHeight);
-          if (diff < bestDiff) { bestDiff = diff; bestIdx = i; }
-        });
-        switchMp4Rendition(bestIdx, persist ? mode : null);
-      }
-    },
-    [setPreference, switchMp4Rendition],
-  );
+  // Cadeia de fallback quando a fonte atual falha a carregar: 0 = a
+  // tocar o src normal, 1 = já caiu para a entrega bruta sem
+  // transformação nenhuma (último recurso — só falha se nem isto
+  // carregar).
+  const fallbackStageRef = useRef<0 | 1>(0);
 
   /* ─── Lazy load real: só atribui a fonte quando o vídeo se aproxima
      da tela (rootMargin no hook já pré-carrega um pouco antes). Antes
-     disso mostramos apenas a miniatura, sem gastar rede. ─── */
+     disso mostramos apenas a miniatura, sem gastar rede. O vídeo toca
+     sempre na qualidade que vem por defeito do HLS/Cloudinary — sem
+     seleção manual nem adaptação automática de resolução. ─── */
   useEffect(() => {
     const vid = videoRef.current;
     if (!vid || !src || !hasEnteredOnce) return;
 
     const nativeHls = src.includes(".m3u8");
     let hlsInstance: any = null;
-    mp4RenditionsRef.current = null;
-    stallCountRef.current = 0;
 
     if (nativeHls && !vid.canPlayType("application/vnd.apple.mpegurl")) {
       import("hls.js").then(({ default: Hls }) => {
@@ -417,83 +320,14 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
         hlsInstance = hls;
         hlsRef.current = hls;
 
-        hls.on(Hls.Events.MANIFEST_PARSED, () => {
-          const levels = (hls.levels ?? []).map((l: any, i: number) => ({ index: i, height: l.height }));
-          setQualityLevels(levels);
-
-          // Decide o nível inicial pela preferência global + rede atual,
-          // sem interromper (aplicado antes do primeiro frame).
-          const pref = getCachedVideoPreference();
-          const screenH = typeof window !== "undefined" ? window.innerHeight : 720;
-          const targetHeight = pickStartingHeight(pref, screenH);
-
-          if (pref.quality_mode === "manual" && pref.preferred_resolution) {
-            applyQualityMode(pref.preferred_resolution, false);
-          } else if (pref.quality_mode === "high_quality") {
-            hls.currentLevel = -1;
-            hls.autoLevelCapping = -1;
-            setActiveLevel(-1);
-          } else {
-            // auto / economia de dados: define um teto e deixa o ABR trabalhar
-            // dentro dele — troca de qualidade acontece sem cortar o vídeo.
-            let capIdx = -1;
-            let bestDiff = Infinity;
-            levels.forEach((l) => {
-              const diff = Math.abs(l.height - targetHeight);
-              if (diff < bestDiff) { bestDiff = diff; capIdx = l.index; }
-            });
-            hls.autoLevelCapping = pref.quality_mode === "data_saver" ? capIdx : -1;
-            hls.startLevel = capIdx;
-            hls.currentLevel = -1;
-            setActiveLevel(-1);
-          }
-        });
-
-        hls.on(Hls.Events.LEVEL_SWITCHED, (_evt: any, data: any) => {
-          const h = hls.levels?.[data.level]?.height;
-          if (h) setCurrentResLabel(resolutionFromHeight(h));
-        });
-
-        // Adaptação durante o vídeo (ponto 4): se o hls.js detetar
-        // travamentos/erro de buffer, tenta recuperar reduzindo qualidade
-        // em vez de reiniciar o vídeo.
+        // Recuperação de erros de rede/media do hls.js — não mexe em
+        // qualidade, só evita que o vídeo fique travado.
         hls.on(Hls.Events.ERROR, (_evt: any, data: any) => {
           if (!data?.fatal) return;
           if (data.type === Hls.ErrorTypes.NETWORK_ERROR) hls.startLoad();
           else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) hls.recoverMediaError();
         });
       });
-    } else if (!nativeHls) {
-      // Cloudinary (ou outra origem mp4): gera um "ladder" de resoluções
-      // via transformação de URL — funciona em qualquer vídeo, mesmo os
-      // publicados antes deste sistema existir, sem re-upload.
-      const renditions = getCloudinaryRenditions(src);
-      if (renditions && renditions.length > 0) {
-        mp4RenditionsRef.current = renditions;
-        setQualityLevels(renditions.map((r, i) => ({ index: i, height: r.height })));
-
-        const pref = getCachedVideoPreference();
-        const screenH = typeof window !== "undefined" ? window.innerHeight : 720;
-        const targetHeight = pickStartingHeight(pref, screenH);
-
-        let startIdx = renditions.length - 1; // default: maior disponível
-        if (pref.quality_mode === "manual" && pref.preferred_resolution) {
-          const target = { "144p":144,"240p":240,"360p":360,"480p":480,"720p":720,"1080p":1080,"1440p":1440,"4k":2160 }[pref.preferred_resolution];
-          let bestDiff = Infinity;
-          renditions.forEach((r, i) => { const d = Math.abs(r.height - target); if (d < bestDiff) { bestDiff = d; startIdx = i; } });
-        } else if (pref.quality_mode !== "high_quality") {
-          let bestDiff = Infinity;
-          renditions.forEach((r, i) => { const d = Math.abs(r.height - targetHeight); if (d < bestDiff) { bestDiff = d; startIdx = i; } });
-        }
-
-        vid.src = renditions[startIdx].url;
-        setActiveLevel(pref.quality_mode === "manual" ? startIdx : -1);
-        setCurrentResLabel(resolutionFromHeight(renditions[startIdx].height));
-        recordQualityChoice(renditions[startIdx].height);
-      } else {
-        setQualityLevels([]);
-        vid.src = src;
-      }
     } else {
       vid.src = src;
     }
@@ -502,38 +336,7 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
       hlsInstance?.destroy();
       hlsRef.current = null;
     };
-  }, [src, hasEnteredOnce, applyQualityMode]);
-
-  /* ─── Adaptação durante o vídeo (ponto 4), para fontes mp4 sem HLS:
-     em modo "Automático", se o vídeo travar repetidamente (buffering),
-     desce um degrau no ladder de resoluções, sem reiniciar — preserva o
-     tempo actual. Não interfere quando o utilizador escolheu manualmente
-     uma resolução fixa. ─── */
-  useEffect(() => {
-    const vid = videoRef.current;
-    if (!vid) return;
-
-    function onWaitingStall() {
-      if (preference.quality_mode === "manual") return;
-      const renditions = mp4RenditionsRef.current;
-      if (!renditions || activeLevel <= 0) return;
-      stallCountRef.current += 1;
-      if (stallCountRef.current >= 2) {
-        stallCountRef.current = 0;
-        switchMp4Rendition(activeLevel - 1, null);
-      }
-    }
-    function onGoodProgress() {
-      stallCountRef.current = 0;
-    }
-
-    vid.addEventListener("waiting", onWaitingStall);
-    vid.addEventListener("playing", onGoodProgress);
-    return () => {
-      vid.removeEventListener("waiting", onWaitingStall);
-      vid.removeEventListener("playing", onGoodProgress);
-    };
-  }, [activeLevel, preference.quality_mode, switchMp4Rendition]);
+  }, [src, hasEnteredOnce]);
 
   useEffect(() => {
     setNaturalRatio(null);
@@ -716,12 +519,12 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
     }
   }
 
-  /** Se a fonte atual falhar a carregar, tenta cair num degrau mais
-   *  "seguro" antes de admitir erro — cobre o caso mais comum na prática:
-   *  a resolução pedida à Cloudinary dá 400 porque o vídeo original
-   *  ultrapassa o limite de transformação síncrona do plano (ex.: 40MB no
-   *  plano free). Nenhum destes fallbacks reinicia o vídeo do zero (o
-   *  currentTime é preservado). */
+  /** Se a fonte atual falhar a carregar, tenta cair para a entrega bruta
+   *  da Cloudinary (sem nenhuma transformação) antes de admitir erro —
+   *  cobre o caso mais comum na prática: a transformação padrão dá 400
+   *  porque o vídeo original ultrapassa o limite de transformação
+   *  síncrona do plano (ex.: 40MB no plano free). O currentTime é
+   *  preservado, sem reiniciar o vídeo do zero. */
   function handleVideoError() {
     const vid = videoRef.current;
     if (!vid) {
@@ -730,29 +533,10 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
     }
     const t = vid.currentTime;
 
-    // Estágio 0 → 1: estávamos a tocar uma rendition da ladder (ou o
-    // próprio src ainda não tentado sem crop) — cai para a URL "oficial"
-    // (q_auto/f_auto/vc_h264, sem redimensionamento), que é a mesma usada
-    // no resto do site e pode já estar em cache.
-    if (fallbackStageRef.current === 0 && mp4RenditionsRef.current) {
-      fallbackStageRef.current = 1;
-      mp4RenditionsRef.current = null;
-      setQualityLevels([]);
-      setActiveLevel(-1);
-      setCurrentResLabel(null);
-      vid.src = src;
-      vid.currentTime = t;
-      vid.play().catch(() => {});
-      return;
-    }
-
-    // Estágio 1 → 2: último recurso — entrega totalmente bruta, sem
-    // nenhuma transformação. Nunca dispara o limite de transformação
-    // síncrona, porque não há nada a processar.
-    if (fallbackStageRef.current <= 1) {
+    if (fallbackStageRef.current === 0) {
       const raw = getCloudinaryRawUrl(src);
       if (raw && raw !== vid.src) {
-        fallbackStageRef.current = 2;
+        fallbackStageRef.current = 1;
         vid.src = raw;
         vid.currentTime = t;
         vid.play().catch(() => {});
@@ -1097,74 +881,6 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
                 <Volume2 className={isMobile ? "w-[18px] h-[18px] text-white" : "w-3 h-3 text-white"} />
               )}
             </button>
-
-            {qualityLevels.length > 0 && (
-              <div className="relative shrink-0" onClick={(e) => e.stopPropagation()}>
-                <button
-                  onClick={() => {
-                    setShowQualityMenu((v) => !v);
-                    setSettingsView("root");
-                  }}
-                  className={`flex items-center justify-center rounded-full transition hover:bg-white/15 ${isMobile ? "w-9 h-9" : "w-[22px] h-[22px]"}`}
-                >
-                  <Settings className={isMobile ? "w-[18px] h-[18px] text-white" : "w-3 h-3 text-white"} />
-                </button>
-
-                {showQualityMenu && (
-                  <div
-                    className="absolute bottom-full right-0 mb-2 rounded-xl overflow-hidden min-w-[190px] shadow-xl"
-                    style={{ background: "rgba(28,28,28,0.96)", backdropFilter: "blur(10px)" }}
-                  >
-                    {settingsView === "root" ? (
-                      <div className="py-1">
-                        <button
-                          onClick={() => setSettingsView("quality")}
-                          className="w-full flex items-center justify-between px-3 py-2.5 text-[12px] text-white hover:bg-white/10"
-                        >
-                          <span>Qualidade</span>
-                          <span className="flex items-center gap-1 text-white/60">
-                            {activeLevel === -1 ? "Auto" : currentResLabel ? labelWithSuffix(currentResLabel) : "Auto"}
-                            <ChevronRight className="w-3.5 h-3.5" />
-                          </span>
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="py-1">
-                        <button
-                          onClick={() => setSettingsView("root")}
-                          className="w-full flex items-center gap-2 px-3 py-2.5 text-[12px] text-white font-semibold border-b border-white/10 hover:bg-white/10"
-                        >
-                          <ChevronLeft className="w-3.5 h-3.5" />
-                          Qualidade
-                        </button>
-                        <button
-                          onClick={() => { applyQualityMode("auto", true); setShowQualityMenu(false); }}
-                          className="w-full text-left px-3 py-2 text-[12px] text-white hover:bg-white/10 flex items-center justify-between"
-                        >
-                          Automático (recomendado)
-                          {activeLevel === -1 && <span style={{ color: BRAND }}>✓</span>}
-                        </button>
-                        {[...qualityLevels]
-                          .sort((a, b) => b.height - a.height)
-                          .map((lvl) => {
-                            const label = resolutionFromHeight(lvl.height);
-                            return (
-                              <button
-                                key={lvl.index}
-                                onClick={() => { applyQualityMode(label, true); setShowQualityMenu(false); }}
-                                className="w-full text-left px-3 py-2 text-[12px] text-white hover:bg-white/10 flex items-center justify-between"
-                              >
-                                {labelWithSuffix(label)}
-                                {activeLevel === lvl.index && <span style={{ color: BRAND }}>✓</span>}
-                              </button>
-                            );
-                          })}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
 
             <button
               onClick={(e) => {
