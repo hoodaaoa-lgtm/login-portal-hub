@@ -244,8 +244,8 @@ export function PhotoGrid({ photos }: { photos: string[] }) {
           </div>
           <div className="flex-1 flex items-center justify-center relative">
             <img loading="lazy" decoding="async" src={photos[idx]} alt=""
-              className="max-w-full max-h-full"
-              style={{ objectFit: "contain", maxHeight: "80vh" }} onError={(e) => { e.currentTarget.style.display = "none"; }} />
+              className="w-full h-full"
+              style={{ objectFit: "cover", maxHeight: "80vh" }} onError={(e) => { e.currentTarget.style.display = "none"; }} />
             {idx > 0 && (
               <button onClick={() => setIdx(i => i - 1)}
                 className="absolute left-3 h-11 w-11 rounded-full flex items-center justify-center"
