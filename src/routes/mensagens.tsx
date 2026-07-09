@@ -2194,12 +2194,12 @@ function UploadProgressOverlay({ progress }: { progress?: number }) {
 // ─────────────────────────────────────────
 // MsgBubble — bolha com menu contexto completo
 // ─────────────────────────────────────────
-function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit, onDeleteForMe, onDeleteForEveryone, onOpenViewOnce, onOpenSurprise, onOpenLightbox, onReact, onRetry, uploadPct, readReceipts }: {
+function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit, onDeleteForMe, onDeleteForEveryone, onOpenViewOnce, onOpenSurprise, onOpenLightbox, onReact, onForward, onRetry, uploadPct, readReceipts }: {
   m: Message; isMe: boolean; replied: Message | null;
   contact: Contact; myId: string; mediaMsgs: Message[];
   onReply: () => void; onEdit: () => void;
   onDeleteForMe: () => void; onDeleteForEveryone: () => void;
-  onReact?: (msgId: string, emoji: string) => void; onRetry?: () => void;
+  onReact?: (msgId: string, emoji: string) => void; onForward?: () => void; onRetry?: () => void;
   onOpenViewOnce: () => void; onOpenSurprise: () => void; onOpenLightbox: () => void;
   uploadPct?: number; readReceipts?: boolean;
 }) {
@@ -2368,15 +2368,8 @@ function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit
       )}
 
       {/* Encaminhar */}
-      {m.mediaUrl && (
-        <button onClick={() => {
-          if (navigator.share && m.mediaUrl) {
-            navigator.share({ url: m.mediaUrl }).catch(() => {});
-          } else if (m.mediaUrl) {
-            navigator.clipboard?.writeText(m.mediaUrl).then(() => toast.success("Link copiado!"));
-          }
-          closeMenu();
-        }}
+      {!m.deletedForAll && !m.viewOnce && (
+        <button onClick={() => { onForward?.(); closeMenu(); }}
           className="w-full flex items-center gap-2.5 px-4 py-3.5 text-sm transition border-t active:opacity-70"
           style={{ borderColor: "var(--border-subtle)" }}
           onMouseOver={e => e.currentTarget.style.background = "var(--s2)"}
@@ -2684,6 +2677,15 @@ function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit
             </div>
           </div>
         </div>
+
+        {/* Reações — visíveis por baixo da bolha, alinhadas ao mesmo lado */}
+        <div className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
+          <ReactionBar
+            reactions={m.reactions}
+            myReaction={m.myReaction}
+            onReact={(emoji) => onReact?.(m.id, emoji)}
+          />
+        </div>
       </div>
 
       {/* Confirm delete */}
@@ -2770,10 +2772,123 @@ function BgPickerModal({ current, onPick, onClose }: {
 // ─────────────────────────────────────────
 // ChatPanel — E2EE + Realtime + Cache + Full features
 // ─────────────────────────────────────────
-function ChatPanel({ myId, contact, onBack }: {
+// ── Modal: Encaminhar mensagem para contactos ──
+const FORWARD_LIMIT = 3;
+
+function ForwardModal({ message, contacts, sending, onClose, onConfirm }: {
+  message: Message;
+  contacts: Contact[];
+  sending: boolean;
+  onClose: () => void;
+  onConfirm: (targets: Contact[]) => void;
+}) {
+  const [search, setSearch] = useState("");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+
+  const filtered = contacts.filter(c => {
+    const q = search.trim().toLowerCase();
+    if (!q) return true;
+    return (c.full_name || "").toLowerCase().includes(q) || (c.username || "").toLowerCase().includes(q);
+  });
+
+  function toggle(id: string) {
+    setSelected(prev => {
+      const n = new Set(prev);
+      if (n.has(id)) {
+        n.delete(id);
+      } else {
+        if (n.size >= FORWARD_LIMIT) {
+          toast.error(`Podes escolher até ${FORWARD_LIMIT} contactos`);
+          return prev;
+        }
+        n.add(id);
+      }
+      return n;
+    });
+  }
+
+  const preview = message.isSurprise ? "🎁 Caixa Surpresa"
+    : message.type === "image" ? "📷 Imagem"
+    : message.type === "video" ? "🎥 Vídeo"
+    : message.type === "audio" ? "🎤 Áudio"
+    : message.type === "file" ? "📎 Ficheiro"
+    : message.text;
+
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4"
+      style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(6px)" }}
+      onClick={onClose}>
+      <div className="w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden flex flex-col"
+        style={{ background: "var(--s0,white)", maxHeight: "80vh" }}
+        onClick={e => e.stopPropagation()}>
+
+        <div className="px-5 pt-5 pb-3 border-b" style={{ borderColor: "var(--border-subtle)" }}>
+          <p className="text-base font-bold mb-1" style={{ color: "var(--text-primary)" }}>Encaminhar mensagem</p>
+          <p className="text-xs truncate" style={{ color: "var(--text-muted)" }}>{preview}</p>
+        </div>
+
+        <div className="px-5 py-3">
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Procurar contacto..."
+            className="w-full px-3 py-2 rounded-xl text-sm outline-none"
+            style={{ background: "var(--s2)", color: "var(--text-primary)" }}
+          />
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-2 pb-2">
+          {filtered.length === 0 && (
+            <p className="text-sm text-center py-6" style={{ color: "var(--text-muted)" }}>Nenhum contacto encontrado</p>
+          )}
+          {filtered.map(c => {
+            const isSelected = selected.has(c.id);
+            return (
+              <button key={c.id} onClick={() => toggle(c.id)}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition"
+                style={{ background: isSelected ? "#5B3FCF15" : "transparent" }}>
+                <Av name={c.full_name || c.username} color={c.color} size={38} src={c.avatar_url} />
+                <div className="flex-1 min-w-0 text-left">
+                  <p className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>{c.full_name || c.username}</p>
+                  <p className="text-xs truncate" style={{ color: "var(--text-muted)" }}>@{c.username}</p>
+                </div>
+                <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
+                  style={{
+                    background: isSelected ? "#5B3FCF" : "transparent",
+                    border: isSelected ? "none" : "2px solid var(--border-default)",
+                  }}>
+                  {isSelected && <Check className="h-3.5 w-3.5 text-white" />}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="flex border-t" style={{ borderColor: "var(--border-default)" }}>
+          <button onClick={onClose}
+            className="flex-1 py-4 text-sm font-semibold transition hover:bg-[var(--s2)]"
+            style={{ color: "var(--text-secondary)" }}>
+            Cancelar
+          </button>
+          <div style={{ width: 1, background: "var(--border-default)" }} />
+          <button
+            disabled={selected.size === 0 || sending}
+            onClick={() => onConfirm(contacts.filter(c => selected.has(c.id)))}
+            className="flex-1 py-4 text-sm font-bold transition disabled:opacity-40"
+            style={{ color: "#5B3FCF" }}>
+            {sending ? "A enviar..." : `Enviar${selected.size ? ` (${selected.size})` : ""}`}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ChatPanel({ myId, contact, onBack, contacts }: {
   myId: string;
   contact: Contact;
   onBack: () => void;
+  contacts: Contact[];
 }) {
   const { markMessagesRead } = useBadges();
   const queryClient = useQueryClient();
@@ -2966,6 +3081,44 @@ function ChatPanel({ myId, contact, onBack }: {
     } catch (e) {
       console.error("[react] erro:", e);
       toast.error("Erro ao reagir");
+    }
+  }
+
+  // ── Encaminhar mensagem para outros contactos ──
+  const [forwardMsg, setForwardMsg] = useState<Message | null>(null);
+  const [forwarding,  setForwarding] = useState(false);
+
+  async function forwardMessageTo(targets: Contact[], message: Message) {
+    if (!myId || targets.length === 0) return;
+    setForwarding(true);
+    let okCount = 0;
+    for (const target of targets) {
+      try {
+        const encrypted = message.text ? await encryptDM(message.text, target.conversationId, myId, target.id) : "";
+        const { error } = await db.from("messages").insert({
+          conversation_id: target.conversationId,
+          sender_id: myId,
+          receiver_id: target.id,
+          content: encrypted || message.text || "📎",
+          status: "sent",
+          media_url: message.mediaUrl ?? null,
+          message_type: message.type,
+          duration: message.duration ?? null,
+          style: message.style ?? null,
+        });
+        if (error) throw error;
+        okCount++;
+      } catch (e) {
+        console.error("[forward] erro ao encaminhar para", target.username, e);
+      }
+    }
+    setForwarding(false);
+    setForwardMsg(null);
+    if (okCount > 0) {
+      toast.success(okCount === 1 ? `Encaminhado para @${targets[0].username}` : `Encaminhado para ${okCount} contactos`);
+    }
+    if (okCount < targets.length) {
+      toast.error("Falha ao encaminhar para alguns contactos");
     }
   }
 
@@ -4247,6 +4400,7 @@ function ChatPanel({ myId, contact, onBack }: {
                 if (idx !== -1) setLightboxIndex(idx);
               }}
               onReact={handleReact}
+              onForward={() => setForwardMsg(merged)}
               onRetry={() => retryMsg(merged)}
               uploadPct={uploadPct}
               readReceipts={readReceipts}
@@ -4479,6 +4633,18 @@ function ChatPanel({ myId, contact, onBack }: {
             </div>
           </div>
         </div>,
+        document.body
+      )}
+
+      {/* ── MODAL DE ENCAMINHAR ── */}
+      {forwardMsg && createPortal(
+        <ForwardModal
+          message={forwardMsg}
+          contacts={contacts}
+          sending={forwarding}
+          onClose={() => setForwardMsg(null)}
+          onConfirm={(targets) => forwardMessageTo(targets, forwardMsg)}
+        />,
         document.body
       )}
 
@@ -5377,7 +5543,7 @@ function MensagensPage() {
           </div>
           <div className="flex-1 flex flex-col">
             {active
-              ? <ChatPanel key={active.conversationId} myId={myId} contact={active} onBack={() => setActive(null)} />
+              ? <ChatPanel key={active.conversationId} myId={myId} contact={active} onBack={() => setActive(null)} contacts={contacts} />
               : <div className="flex items-center justify-center h-full flex-col gap-3" style={{ color: "var(--text-muted,#888)" }}>
                   <MessageSquare className="h-12 w-12" style={{ color: "#d1d1d1" }} />
                   <p>{t("messages.select_conversation", "Seleciona uma conversa")}</p>
@@ -5396,7 +5562,7 @@ function MensagensPage() {
             />
           </div>
           <div className="absolute inset-0 transition-transform duration-300" style={{ transform: active ? "translateX(0)" : "translateX(100%)", overflow: "hidden", pointerEvents: active ? "auto" : "none" }}>
-            {active && <ChatPanel key={active.conversationId} myId={myId} contact={active} onBack={() => setActive(null)} />}
+            {active && <ChatPanel key={active.conversationId} myId={myId} contact={active} onBack={() => setActive(null)} contacts={contacts} />}
           </div>
         </div>
 
