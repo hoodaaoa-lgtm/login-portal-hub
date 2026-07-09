@@ -30,6 +30,36 @@ import { LinkPreview } from "@/components/LinkPreview";
 
 export const ACCENT_COLOR = "#5B3FCF";
 
+/* Legenda de publicação estilo Instagram: nome em negrito à frente do
+   texto, e quando o texto é grande corta com "...ler mais" clicável que
+   expande para o texto completo (e depois "ver menos" para recolher). */
+const CAPTION_LIMIT = 140;
+function PostCaption({ name, text, className = "", textClassName = "", style }: {
+  name?: string | null; text: string; className?: string; textClassName?: string; style?: React.CSSProperties;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const isLong = text.length > CAPTION_LIMIT;
+  const shown = expanded || !isLong ? text : text.slice(0, CAPTION_LIMIT).trimEnd();
+  return (
+    <p className={className} style={{ color: "var(--text-secondary)", ...style }}>
+      {name && <span className="font-bold" style={{ color: "var(--text-primary)" }}>{name}{"  "}</span>}
+      <span className={textClassName}><RichText text={shown} /></span>
+      {isLong && (
+        <>
+          {!expanded && <span style={{ color: "var(--text-secondary)" }}>… </span>}
+          <button
+            onClick={(e) => { e.stopPropagation(); setExpanded(v => !v); }}
+            className="font-semibold"
+            style={{ color: "var(--text-muted)" }}
+          >
+            {expanded ? "ver menos" : "ler mais"}
+          </button>
+        </>
+      )}
+    </p>
+  );
+}
+
 /* ═══════════════════════════════════════════════════════════════
    TIPO CANÓNICO DE PUBLICAÇÃO
    Todas as páginas devem convergir os seus dados para este formato
@@ -1103,9 +1133,7 @@ export function UniversalPostCard({ post: p, onDeleted, onBookmarkChange }: {
       {p.text && !p.video && !p.photo && !(p.photos && p.photos.length > 0) && p.is_sensitive && p.moderation_status ? (
         <div className="px-4 pb-3">
           <SensitiveContentOverlay category={p.moderation_status} minHeight={90}>
-            <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-              <RichText text={p.text} />
-            </p>
+            <PostCaption name={p.user} text={p.text} className="text-sm leading-relaxed" />
           </SensitiveContentOverlay>
         </div>
       ) : p.text && !p.video && (p.bg_color
@@ -1121,16 +1149,14 @@ export function UniversalPostCard({ post: p, onDeleted, onBookmarkChange }: {
               </div>
             </div>
           : <div className="px-4 pb-3">
-              <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-                <RichText text={p.text} />
-              </p>
+              <PostCaption name={p.user} text={p.text} className="text-sm leading-relaxed" textClassName="" />
               {extractUrl(p.text) && <LinkPreview url={extractUrl(p.text)!} variant="post" />}
             </div>
       )}
       {p.text && p.video && (
-        <p className="px-4 py-2 text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-          <RichText text={p.text} />
-        </p>
+        <div className="px-4 py-2">
+          <PostCaption name={p.user} text={p.text} className="text-sm leading-relaxed" />
+        </div>
       )}
 
       {/* Fotos */}
@@ -1249,10 +1275,10 @@ export function UniversalPostCard({ post: p, onDeleted, onBookmarkChange }: {
                       <RichText text={p.text} className="text-white font-bold text-lg text-center leading-snug" />
                     </div>
                   </div>
-                : <div className="px-4 pb-3 text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}><RichText text={p.text} /></div>
+                : <div className="px-4 pb-3"><PostCaption name={p.user} text={p.text} className="text-sm leading-relaxed" /></div>
               )}
               {p.text && p.video && (
-                <div className="px-4 py-2 text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}><RichText text={p.text} /></div>
+                <div className="px-4 py-2"><PostCaption name={p.user} text={p.text} className="text-sm leading-relaxed" /></div>
               )}
               {p.photos && p.photos.length > 0 && <PhotoGrid photos={p.photos} />}
               {p.photo && !p.photos && !p.video && <PhotoGrid photos={[p.photo]} />}
