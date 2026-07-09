@@ -10,8 +10,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     if (typeof window === "undefined") return "light";
     const saved = localStorage.getItem("hooda_theme") as Theme | null;
     if (saved) return saved;
-    // Se não tiver guardado, detectar preferência do sistema
-    if (window.matchMedia?.("(prefers-color-scheme: dark)").matches) return "dark";
+    // Padrão: sempre claro no primeiro acesso, independente do sistema
     return "light";
   });
 
