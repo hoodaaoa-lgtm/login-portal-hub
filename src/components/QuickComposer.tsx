@@ -2,7 +2,8 @@ import React, { useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Image, Film, BarChart3, X, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { uploadImageToCloudinary, uploadToCloudinary } from "@/lib/cloudinary";
+import { uploadImageToCloudinary } from "@/lib/cloudinary";
+import { uploadFeedVideo } from "@/lib/cloudinaryFeedVideo";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { extractUrl } from "@/lib/linkPreview";
 import { LinkPreview } from "@/components/LinkPreview";
@@ -180,7 +181,7 @@ export function QuickPostModal({ name, username, avatarUrl, onClose, onPublished
       }
       if (!pollActive && videoFile) {
         setStage("upload");
-        const result = await uploadToCloudinary(
+        const result = await uploadFeedVideo(
           videoFile,
           { title: text.trim().slice(0, 60) || "post-video", creatorId: "feed-post", userId: session.user.id },
           setProgress,

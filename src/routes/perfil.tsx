@@ -27,7 +27,8 @@ import { PostCommentsModal } from "@/components/PostCommentsModal";
 import { useFollowState } from "@/hooks/useSocialSystem";
 import { LanguagePanel } from "@/components/LanguageSwitcher";
 import { LANGUAGES, getCurrentLang } from "@/lib/i18n";
-import { uploadImageToCloudinary, uploadToCloudinary } from "@/lib/cloudinary";
+import { uploadImageToCloudinary } from "@/lib/cloudinary";
+import { uploadFeedVideo } from "@/lib/cloudinaryFeedVideo";
 import { fetchPostComments, sendPostComment, replyToPostComment, toggleCommentLike } from "@/lib/comments";
 import { deletePostForEveryone } from "@/lib/posts";
 import { UniversalPostCard, normalizePost } from "@/components/UniversalPostCard";
@@ -234,7 +235,7 @@ function CreatePostModal({
 
       if (videoFile) {
         setUploadStage("upload");
-        const result = await uploadToCloudinary(
+        const result = await uploadFeedVideo(
           videoFile,
           { title: text.trim().slice(0, 60) || "post-video", creatorId: "feed-post", userId: session.user.id },
           (pct) => setUploadProgress(pct),

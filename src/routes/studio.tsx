@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
-import { uploadToCloudinary, uploadImageToCloudinary } from "@/lib/cloudinary";
+import { uploadImageToCloudinary } from "@/lib/cloudinary";
+import { uploadFeedVideo } from "@/lib/cloudinaryFeedVideo";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   FileText, Image as ImageIcon, Video as VideoIcon, BarChart3,
@@ -284,7 +285,7 @@ function CriarTab({ onDone }: { onDone: () => void }) {
         payload.photos = urls;
       }
       if (kind === "video" && videoFile) {
-        const res = await uploadToCloudinary(videoFile, {
+        const res = await uploadFeedVideo(videoFile, {
           title: title || "video", creatorId: uid, userId: uid,
         }, p => setProgress(p));
         payload.video_url = res.playbackUrl;
