@@ -182,13 +182,13 @@ export function PhotoGrid({ photos }: { photos: string[] }) {
   return (
     <>
       <div className="relative w-full select-none px-4 pb-3 max-w-[520px] mx-auto">
-        <div className="relative w-full cursor-pointer rounded-2xl overflow-hidden flex items-center justify-center"
-          style={{ minHeight: 200, maxHeight: "min(70vh, 620px)", background: "var(--s1)" }}
+        <div className="relative w-full cursor-pointer rounded-2xl overflow-hidden"
+          style={{ aspectRatio: "4 / 5", maxHeight: "min(70vh, 620px)", background: "var(--s1)" }}
           onClick={() => setFullscreen(true)}>
           <img loading="lazy" decoding="async" src={photos[idx]}
             alt=""
-            className="block w-full h-full"
-            style={{ maxHeight: "min(70vh, 620px)", objectFit: "cover" }}
+            className="absolute inset-0 block w-full h-full"
+            style={{ objectFit: "cover" }}
             onError={(e) => { e.currentTarget.style.display = "none"; }} />
 
           {n > 1 && (
