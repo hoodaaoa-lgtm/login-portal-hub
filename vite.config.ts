@@ -43,6 +43,17 @@
         },
       },
       build: {
+        // Remove console.log/debugger do bundle final de produção — o dev
+        // server (npm run dev) não passa por aqui, então o debug local
+        // continua normal. console.error e console.warn ficam (úteis para
+        // monitorização de erros reais em produção).
+        minify: "terser",
+        terserOptions: {
+          compress: {
+            pure_funcs: ["console.log", "console.debug", "console.info"],
+            drop_debugger: true,
+          },
+        },
         // Split output into smaller chunks — navegadores só descarregam o que precisam
         rollupOptions: {
           output: {
