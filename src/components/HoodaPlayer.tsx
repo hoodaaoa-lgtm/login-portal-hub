@@ -36,6 +36,9 @@ import { Play, Pause, Volume2, VolumeX, Maximize, Minimize, RotateCcw } from "lu
 import { useVideoInView } from "@/hooks/useVideoInView";
 import { registerVideo, notifyVideoPlaying, getGlobalMuted, setGlobalMuted } from "@/lib/mediaManager";
 import { getCloudinaryRawUrl } from "@/lib/cloudinary";
+import { useDataSaverEnabled } from "@/hooks/useDataSaver";
+import { setDataSaverEnabled } from "@/lib/dataSaver";
+import { Zap } from "lucide-react";
 
 const BRAND = "#5B3FCF";
 const CONTROLS_HIDE_DELAY_MS = 2800;
@@ -136,7 +139,17 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
   // forceLoad=true: ignora o IntersectionObserver — carrega e toca imediatamente.
   // Necessário dentro de modais (portal fixed) onde o observer pode nunca disparar.
   const isInView = forceLoad ? true : _isInView;
-  const hasEnteredOnce = forceLoad ? true : _hasEnteredOnce;
+  const hasEnteredOnceRaw = forceLoad ? true : _hasEnteredOnce;
+
+  // ─── Hooda Leve (poupar dados): se estiver ativo, o vídeo NUNCA
+  // carrega/toca sozinho — fica preso na capa até o utilizador tocar
+  // "Ver vídeo" para ESTE vídeo específico (manualUnlock). forceLoad
+  // (modais/watch direto) ignora sempre o modo, porque aí a pessoa já
+  // pediu explicitamente para ver o vídeo. ───
+  const dataSaverOn = useDataSaverEnabled();
+  const [manualUnlock, setManualUnlock] = useState(false);
+  const dataSaverBlocking = dataSaverOn && !forceLoad && !manualUnlock;
+  const hasEnteredOnce = dataSaverBlocking ? false : hasEnteredOnceRaw;
 
   const [isPlaying, setIsPlaying] = useState(false);
   // Nasce com o som que estiver ativo globalmente (Instagram-style): se o
@@ -679,7 +692,7 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
           deixava o vídeo preso na camada borrada (showSkeleton) até
           alguém tocar "às cegas" no ecrã. Mostrando já aqui a miniatura
           nítida, quem entra pela primeira vez vê logo uma imagem clara. */}
-      {!hasStarted && poster && (
+      {!hasStarted && poster && !dataSaverBlocking && (
         <div
           className="absolute inset-0 flex items-center justify-center hooda-fade-in"
           style={{ background: "rgba(0,0,0,0.35)" }}
@@ -703,6 +716,55 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
           >
             <Play className={isMobile ? "w-9 h-9 ml-1" : "w-7 h-7 ml-1"} style={{ color: BRAND }} />
           </button>
+        </div>
+      )}
+
+      {/* Hooda Leve: vídeo bloqueado a poupar dados — capa + cartão a
+          explicar porquê, com botão para ver este vídeo na mesma e um
+          atalho para desativar o modo já ali. */}
+      {dataSaverBlocking && poster && (
+        <div
+          className="absolute inset-0 flex items-center justify-center hooda-fade-in"
+          style={{ background: "rgba(0,0,0,0.45)" }}
+        >
+          <img
+            src={poster}
+            alt=""
+            decoding="async"
+            className="absolute inset-0 w-full h-full object-cover"
+            style={{ filter: "brightness(0.6)" }}
+          />
+          <div className="relative z-10 flex flex-col items-center gap-3 px-6 text-center">
+            <div
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold text-white shadow-lg"
+              style={{ background: BRAND }}
+            >
+              <Zap className="w-3.5 h-3.5" fill="currentColor" />
+              Hooda Leve ativo
+            </div>
+            <p className="text-white/85 text-xs max-w-[220px] leading-snug">
+              Vídeo não carrega sozinho para poupar os teus dados
+            </p>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setManualUnlock(true);
+              }}
+              className={`flex items-center gap-2 rounded-full font-bold shadow-2xl transition active:scale-95 ${isMobile ? "px-6 py-3 text-sm" : "px-5 py-2.5 text-sm"}`}
+              style={{ background: "rgba(255,255,255,0.95)", color: BRAND }}
+            >
+              <Play className="w-4 h-4" /> Ver vídeo
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setDataSaverEnabled(false);
+              }}
+              className="text-white/70 text-[11px] underline underline-offset-2"
+            >
+              Desativar Hooda Leve
+            </button>
+          </div>
         </div>
       )}
 

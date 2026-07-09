@@ -6,8 +6,10 @@ import { BottomNav, SideNav, PageWrapper, PageHeader } from "@/components/AppShe
 import {
   ChevronRight, Bell, Lock, Shield, ShieldAlert, HelpCircle,
   Info, Globe, MessageSquare, Activity,
-  Trash2, LogOut, AlertTriangle,
+  Trash2, LogOut, AlertTriangle, Zap,
 } from "lucide-react";
+import { useDataSaverEnabled } from "@/hooks/useDataSaver";
+import { setDataSaverEnabled } from "@/lib/dataSaver";
 import {
   NotificationsPanel, ActivityPanel, PrivacyPanel,
   SecurityPanel, MsgPrivacyPanel, AboutPanel, HelpPanel,
@@ -31,6 +33,7 @@ function DefinicoesPage() {
   const [email, setEmail]                 = useState("");
   const [msgPermission, setMsgPermission] = useState("todos");
   const [panel, setPanel]                 = useState<string | null>(search?.panel ?? null);
+  const dataSaverOn = useDataSaverEnabled();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteConfirm, setDeleteConfirm]     = useState("");
   const [deleting, setDeleting]               = useState(false);
@@ -184,6 +187,40 @@ function DefinicoesPage() {
                 </div>
               </div>
             ))}
+
+            {/* Hooda Leve — modo de poupar dados. Fica fora do SECTIONS.map
+                porque precisa de um switch em vez do chevron de navegação. */}
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-widest mb-2 px-1"
+                style={{ color: "var(--text-muted)" }}>
+                Dados
+              </p>
+              <div className="rounded-2xl overflow-hidden shadow-sm"
+                style={{ background: "var(--s0)", border: "1px solid var(--border-subtle)" }}>
+                <button
+                  className="w-full flex items-center gap-3 px-4 py-3.5 text-left transition hover:bg-[var(--s2)] active:scale-[0.99]"
+                  onClick={() => setDataSaverEnabled(!dataSaverOn)}
+                >
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                    style={{ background: `${ACCENT}18`, color: ACCENT }}>
+                    <Zap className="w-5 h-5" fill={dataSaverOn ? "currentColor" : "none"} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Hooda Leve</p>
+                    <p className="text-xs" style={{ color: "var(--text-muted)" }}>Vídeos só carregam quando tocas — poupa dados</p>
+                  </div>
+                  <div
+                    className="relative w-11 h-6 rounded-full shrink-0 transition-colors"
+                    style={{ background: dataSaverOn ? ACCENT : "var(--border-subtle)" }}
+                  >
+                    <div
+                      className="absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform"
+                      style={{ transform: dataSaverOn ? "translateX(21px)" : "translateX(2px)" }}
+                    />
+                  </div>
+                </button>
+              </div>
+            </div>
 
             <p className="text-center text-[11px] pb-2" style={{ color: "var(--text-muted)" }}>
               © 2026 Hooda · v1.0.0
