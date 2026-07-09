@@ -18,16 +18,20 @@
 
 const MAX_TRACKED = 400;
 const KEY_PREFIX = "hooda:feed-seen:";
+const VIDEO_KEY_PREFIX = "hooda:feed-seen-video:";
 
 function storageKey(uid: string) {
   return `${KEY_PREFIX}${uid}`;
 }
 
-/** IDs de publicações já mostradas a este utilizador (mais recentes por último). */
-export function getSeenPostIds(uid: string): string[] {
-  if (!uid || typeof window === "undefined") return [];
+function videoStorageKey(uid: string) {
+  return `${VIDEO_KEY_PREFIX}${uid}`;
+}
+
+function readIds(key: string): string[] {
+  if (typeof window === "undefined") return [];
   try {
-    const raw = window.localStorage.getItem(storageKey(uid));
+    const raw = window.localStorage.getItem(key);
     if (!raw) return [];
     const arr = JSON.parse(raw);
     return Array.isArray(arr) ? arr.filter((x) => typeof x === "string") : [];
@@ -36,24 +40,52 @@ export function getSeenPostIds(uid: string): string[] {
   }
 }
 
-/** Regista novas publicações como "já mostradas" (ignora duplicados). */
-export function addSeenPostIds(uid: string, ids: string[]) {
-  if (!uid || typeof window === "undefined") return;
+function writeIds(key: string, current: string[], ids: string[]) {
   const clean = ids.filter((id) => typeof id === "string" && id.length > 0);
   if (clean.length === 0) return;
   try {
-    const current = getSeenPostIds(uid);
     const currentSet = new Set(current);
     const merged = [...current, ...clean.filter((id) => !currentSet.has(id))];
     // Só guarda as MAX_TRACKED mais recentes — as mais antigas "expiram"
     // desta lista local e podem voltar a aparecer (o resgate no servidor
     // trata disso de forma mais inteligente, por ordem de há-quanto-tempo-
     // não-vê; isto aqui é só para não crescer para sempre no dispositivo).
-    window.localStorage.setItem(storageKey(uid), JSON.stringify(merged.slice(-MAX_TRACKED)));
+    window.localStorage.setItem(key, JSON.stringify(merged.slice(-MAX_TRACKED)));
   } catch {
     // localStorage indisponível (modo privado, quota cheia) — sem problema,
     // o feed continua a funcionar, só sem esta camada extra no dispositivo.
   }
+}
+
+/** IDs de publicações já mostradas a este utilizador (mais recentes por último). */
+export function getSeenPostIds(uid: string): string[] {
+  if (!uid) return [];
+  return readIds(storageKey(uid));
+}
+
+/** Regista novas publicações como "já mostradas" (ignora duplicados). */
+export function addSeenPostIds(uid: string, ids: string[]) {
+  if (!uid || typeof window === "undefined") return;
+  writeIds(storageKey(uid), getSeenPostIds(uid), ids);
+}
+
+/**
+ * Igual a getSeenPostIds, mas para vídeos do feed (tabela `videos`,
+ * mostrados como "clipe" com id sintético `vidfeed_<uuid>`). Mantido à
+ * parte porque vídeos e posts vivem em RPCs diferentes no servidor
+ * (get_feed_videos vs. get_personalized_feed_v2), cada uma com o seu
+ * próprio p_exclude_ids — sem isto, o vídeo mais recente aparecia sempre
+ * no topo do feed, igual, de cada vez que a página era atualizada.
+ */
+export function getSeenVideoIds(uid: string): string[] {
+  if (!uid) return [];
+  return readIds(videoStorageKey(uid));
+}
+
+/** Regista novos vídeos do feed como "já mostrados" (ignora duplicados). */
+export function addSeenVideoIds(uid: string, ids: string[]) {
+  if (!uid || typeof window === "undefined") return;
+  writeIds(videoStorageKey(uid), getSeenVideoIds(uid), ids);
 }
 
 /**

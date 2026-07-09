@@ -41,7 +41,7 @@ import { useTranslation } from "react-i18next";
 import i18n from "@/lib/i18n";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { ComposeBox } from "@/components/QuickComposer";
-import { getSeenPostIds, addSeenPostIds, diversifyByAuthor, diversifyByAuthorAndTopic } from "@/lib/feedSeen";
+import { getSeenPostIds, addSeenPostIds, getSeenVideoIds, addSeenVideoIds, diversifyByAuthor, diversifyByAuthorAndTopic } from "@/lib/feedSeen";
 function t(key: string, opts?: Record<string, unknown>) { return i18n.t(key, opts) as string; }
 
 export const Route = createFileRoute("/home")({
@@ -336,15 +336,7 @@ function HomePage() {
   async function fetchFeedChunk(uid: string, cursor: string | null) {
     const rpcCursor = cursor ?? new Date().toISOString();
 
-    let videosQuery = (supabase as any)
-      .from("videos")
-      .select(VIDEO_SELECT_FIELDS)
-      .eq("status", "published").eq("visibility", "public")
-      .order("created_at", { ascending: false })
-      .limit(FEED_CHUNK_SIZE);
-    if (cursor) videosQuery = videosQuery.lt("created_at", cursor);
-
-    const [{ data: rankedRows, error: rankErr }, { data: videosData }] = await Promise.all([
+    const [{ data: rankedRows, error: rankErr }, { data: rankedVideoRows, error: videoRankErr }] = await Promise.all([
       (supabase as any).rpc("get_personalized_feed_v2", {
         p_user_id: uid, p_cursor: rpcCursor, p_limit: FEED_CHUNK_SIZE,
         // Publicações já mostradas neste dispositivo (mesmo sem terem sido
@@ -354,8 +346,41 @@ function HomePage() {
         // persistente entre sessões/dispositivos.
         p_exclude_ids: getSeenPostIds(uid),
       }),
-      videosQuery,
+      // Mesma lógica de "nunca repetir" dos posts, aplicada aos vídeos:
+      // exclui vídeos já vistos a sério (video_views) e já mostrados neste
+      // dispositivo (getSeenVideoIds) — sem isto, o vídeo mais recente
+      // aparecia sempre no topo, igual, a cada atualização da página.
+      (supabase as any).rpc("get_feed_videos", {
+        p_user_id: uid, p_cursor: rpcCursor, p_limit: FEED_CHUNK_SIZE,
+        p_exclude_ids: getSeenVideoIds(uid),
+      }),
     ]);
+
+    // Se a RPC de vídeos falhar por qualquer razão, cai de volta à busca
+    // cronológica simples — nunca deixa o feed sem vídeos por causa disto.
+    let videosData: any[] = [];
+    if (videoRankErr || !rankedVideoRows) {
+      console.error("get_feed_videos falhou, a usar ordem cronológica:", videoRankErr);
+      let fallbackVideosQuery = (supabase as any)
+        .from("videos")
+        .select(VIDEO_SELECT_FIELDS)
+        .eq("status", "published").eq("visibility", "public")
+        .order("created_at", { ascending: false })
+        .limit(FEED_CHUNK_SIZE);
+      if (cursor) fallbackVideosQuery = fallbackVideosQuery.lt("created_at", cursor);
+      const { data } = await fallbackVideosQuery;
+      videosData = data ?? [];
+    } else if (rankedVideoRows.length > 0) {
+      const videoIds = rankedVideoRows.map((r: any) => r.video_id);
+      const { data } = await (supabase as any).from("videos").select(VIDEO_SELECT_FIELDS).in("id", videoIds);
+      const byId = new Map((data ?? []).map((v: any) => [v.id, v]));
+      const scoreByVideoId: Record<string, number> = {};
+      rankedVideoRows.forEach((r: any) => { scoreByVideoId[r.video_id] = r.rank_score; });
+      videosData = videoIds
+        .map((id: string) => byId.get(id))
+        .filter(Boolean)
+        .map((v: any) => ({ ...v, __rank_score: scoreByVideoId[v.id] }));
+    }
 
     // Se a RPC de ranking falhar por qualquer razão, cai de volta à busca
     // cronológica simples de posts — nunca deixa o feed vazio por causa disto.
@@ -508,10 +533,10 @@ function HomePage() {
         views_count: v.views_count ?? 0, reposts_count: 0,
         clip_video_id: v.id, clip_start: 0, clip_end: v.duration_seconds ?? 0,
         clip_title: v.title, clip_thumb_url: v.thumbnail_url,
-        // Vídeos ainda não têm content_quality/user_interests (Fase 4 cobre
-        // só "posts" por agora) — usa só frescura, na mesma escala 0-100 dos
-        // posts, para poder entrar no mesmo merge ordenado com sentido.
-        rank_score: Math.max(0, 100 - ((Date.now() - new Date(v.created_at).getTime()) / 259200000) * 100),
+        // Se veio de get_feed_videos, já tem anti-repetição + jitter
+        // aplicados no score. Só cai para frescura pura no fallback
+        // cronológico (RPC indisponível).
+        rank_score: v.__rank_score ?? Math.max(0, 100 - ((Date.now() - new Date(v.created_at).getTime()) / 259200000) * 100),
       };
     });
 
@@ -527,12 +552,23 @@ function HomePage() {
 
     const page = diversified.slice(0, FEED_CHUNK_SIZE);
 
-    // Marca já estas publicações como "mostradas" neste dispositivo — para
-    // a próxima busca (scroll infinito ou atualizar a página) não as trazer
-    // outra vez. Só publicações reais (não os "vidfeed_" sintéticos, que
-    // vêm de outra tabela e já têm a sua própria paginação por cursor).
+    // Marca já estas publicações/vídeos como "mostrados" neste dispositivo —
+    // para a próxima busca (scroll infinito ou atualizar a página) não os
+    // trazer outra vez. Posts e vídeos vão para listas separadas porque
+    // cada um tem o seu próprio p_exclude_ids na RPC correspondente.
     if (uid) {
-      addSeenPostIds(uid, page.filter((it: any) => typeof it.id === "string" && !it.id.startsWith("vidfeed_")).map((it: any) => it.id));
+      const seenPostIds: string[] = [];
+      const seenVideoIds: string[] = [];
+      page.forEach((it: any) => {
+        if (typeof it.id !== "string") return;
+        if (it.id.startsWith("vidfeed_")) {
+          if (it.clip_video_id) seenVideoIds.push(it.clip_video_id);
+        } else {
+          seenPostIds.push(it.id);
+        }
+      });
+      addSeenPostIds(uid, seenPostIds);
+      addSeenVideoIds(uid, seenVideoIds);
     }
 
     // O cursor da próxima página é o created_at mais ANTIGO desta página
