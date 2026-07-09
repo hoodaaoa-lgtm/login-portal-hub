@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { HoodaLogo } from "@/components/HoodaLogo";
 import { AuthLeftPanel } from "@/components/AuthLeftPanel";
 import {
-  Field, SpinIcon, MailIcon, LockIcon, UserIcon, AtIcon, CalendarIcon, PersonAddIcon, GoogleIcon,
+  Field, SpinIcon, MailIcon, LockIcon, UserIcon, AtIcon, CalendarIcon, PersonAddIcon,
 } from "@/components/AuthField";
 
 export const Route = createFileRoute("/signup")({
@@ -418,22 +418,6 @@ function SignupPage() {
                   <PersonAddIcon /> Criar conta
                 </>
               )}
-            </button>
-
-            {/* Divider */}
-            <div className="flex items-center gap-3 py-1">
-              <div className="flex-1 h-px bg-[var(--s3)]" />
-              <span className="text-xs font-medium text-[var(--text-muted)]">ou</span>
-              <div className="flex-1 h-px bg-[var(--s3)]" />
-            </div>
-
-            {/* Google button */}
-            <button
-              type="button"
-              className="w-full h-[52px] rounded-xl border border-neutral-300 bg-[var(--s2)] text-neutral-800 font-semibold text-[15px] flex items-center justify-center gap-3 transition-all duration-200 hover:bg-[var(--s1)] hover:border-neutral-400 active:scale-[0.99]"
-            >
-              <GoogleIcon />
-              Continuar com Google
             </button>
 
             {/* Login link */}
