@@ -247,21 +247,22 @@ export function PhotoGrid({ photos }: { photos: string[] }) {
               <ChevronRight className="h-5 w-5 text-black" />
             </button>
           )}
-        </div>
 
-        {n > 1 && (
-          <div className="flex items-center justify-center gap-1.5 py-2.5" style={{ background: "var(--surface-0)" }}>
-            {photos.map((_, i) => (
-              <button key={i} onClick={() => setIdx(i)}
-                className="rounded-full transition-all duration-200"
-                style={{
-                  width: i === idx ? 8 : 6,
-                  height: i === idx ? 8 : 6,
-                  background: i === idx ? "#5B3FCF" : "#c8c8d0"
-                }} />
-            ))}
-          </div>
-        )}
+          {n > 1 && (
+            <div className="absolute bottom-3 left-0 right-0 flex items-center justify-center gap-1.5 z-10 pointer-events-none">
+              {photos.map((_, i) => (
+                <div key={i}
+                  className="rounded-full transition-all duration-200"
+                  style={{
+                    width: i === idx ? 6 : 5,
+                    height: i === idx ? 6 : 5,
+                    background: i === idx ? "#fff" : "rgba(255,255,255,0.5)",
+                    boxShadow: "0 0 2px rgba(0,0,0,0.5)"
+                  }} />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {fullscreen && (
