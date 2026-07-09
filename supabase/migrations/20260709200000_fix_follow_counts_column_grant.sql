@@ -1,0 +1,21 @@
+-- ═══════════════════════════════════════════════════════════════════════
+-- FIX: followers_count / following_count sem permissão de leitura.
+-- ---------------------------------------------------------------------
+-- A migração 20260627085510 (fac44c8c) restringiu public.profiles a
+-- GRANT SELECT por coluna (whitelist explícita), em vez de leitura aberta.
+-- A migração 20260707130000 (unified_social_system) criou DEPOIS disso as
+-- colunas followers_count e following_count — mas nunca as adicionou a
+-- essa whitelist. Resultado: qualquer SELECT direto a estas duas colunas
+-- (fora da RPC toggle_follow, que é SECURITY DEFINER e por isso não é
+-- afetada) devolve 403 Forbidden para anon e authenticated.
+--
+-- Impacto real observado: contador de seguidores/a-seguir instável no
+-- perfil e no RightSidebar (useFollowState → fetchFollowCounts), e
+-- sugestões de perfis populares no feed (home.tsx, ordenadas por
+-- followers_count) a falhar silenciosamente.
+--
+-- Corre este ficheiro inteiro no SQL Editor do Supabase. É idempotente
+-- (podes correr mais que uma vez sem problema).
+-- ═══════════════════════════════════════════════════════════════════════
+
+GRANT SELECT (followers_count, following_count) ON public.profiles TO authenticated, anon;
