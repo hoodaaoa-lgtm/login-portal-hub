@@ -16,6 +16,7 @@ import { useNetworkInfo } from "@/hooks/useNetworkInfo";
 import { fetchPostComments, sendPostComment, replyToPostComment, toggleCommentLike, notifyMentions } from "@/lib/comments";
 import { useNotifications } from "@/hooks/useNotifications";
 import { WelcomeInstallPrompt } from "@/components/WelcomeInstallPrompt";
+import { useFollowState } from "@/hooks/useSocialSystem";
 import {
   NotificationToast,
   NotificationCenter,
@@ -57,7 +58,6 @@ const POSTS: any[] = []; // feed carregado do Supabase em HomePage
 function WhoToFollowCard({ myUserId, onDismiss, offset = 0 }: { myUserId: string; onDismiss: () => void; offset?: number }) {
   const navigate = useNavigate();
   const [suggestions, setSuggestions] = React.useState<any[]>([]);
-  const [following, setFollowing] = React.useState<Set<string>>(new Set());
   const [loading, setLoading] = React.useState(true);
   const scrollRef = React.useRef<HTMLDivElement>(null);
 
@@ -108,24 +108,6 @@ function WhoToFollowCard({ myUserId, onDismiss, offset = 0 }: { myUserId: string
     load();
   }, [myUserId, offset]);
 
-  async function handleFollow(userId: string, username: string) {
-    if (following.has(userId)) {
-      await (supabase as any).from("follows").delete()
-        .eq("follower_id", myUserId).eq("following_id", userId);
-      setFollowing(prev => { const s = new Set(prev); s.delete(userId); return s; });
-    } else {
-      // A tabela "follows" exige sempre target_username (coluna obrigatória) —
-      // sem isto o insert falha silenciosamente e o botão parece não fazer nada.
-      const { error } = await (supabase as any).from("follows").upsert({
-        follower_id: myUserId,
-        following_id: userId,
-        target_username: username,
-      }, { onConflict: "follower_id,target_username", ignoreDuplicates: true });
-      if (error) { console.error("Erro ao seguir:", error); return; }
-      setFollowing(prev => new Set([...prev, userId]));
-    }
-  }
-
   if (loading) return null;
   if (!suggestions.length) return null;
 
@@ -153,56 +135,9 @@ function WhoToFollowCard({ myUserId, onDismiss, offset = 0 }: { myUserId: string
       {/* Scroll horizontal */}
       <div ref={scrollRef} className="flex gap-3 px-4 pb-4 overflow-x-auto"
         style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
-        {suggestions.map((user) => {
-          const name = user.full_name || user.username || "Utilizador";
-          const bg   = avatarColor(name);
-          const isFollowing = following.has(user.id);
-
-          return (
-            <div key={user.id}
-              className="shrink-0 flex flex-col items-center rounded-2xl p-3 border transition"
-              style={{
-                width: 148,
-                background: "var(--s2, #f9f9f9)",
-                borderColor: "var(--border-default, #e8e8e8)",
-              }}>
-              {/* Avatar */}
-              <div
-                className="w-14 h-14 rounded-full overflow-hidden flex items-center justify-center text-white font-bold text-xl cursor-pointer mb-2"
-                style={{ background: bg }}
-                onClick={() => navigate({ to: "/u/$username", params: { username: user.username } })}>
-                {user.avatar_url
-                  ? <img src={user.avatar_url} alt={name} className="w-full h-full object-cover" />
-                  : name[0]?.toUpperCase()}
-              </div>
-
-              {/* Nome */}
-              <p className="font-bold text-[13px] text-center leading-tight truncate w-full"
-                style={{ color: "var(--text-primary)" }}>
-                {name.length > 14 ? name.slice(0, 13) + "…" : name}
-              </p>
-              <p className="text-[11px] text-center truncate w-full mb-1"
-                style={{ color: "var(--text-muted)" }}>
-                @{(user.username || "").slice(0, 14)}
-              </p>
-              {user.bio && (
-                <p className="text-[11px] text-center leading-snug mb-2 line-clamp-2 w-full"
-                  style={{ color: "var(--text-secondary)" }}>
-                  {user.bio.slice(0, 40)}
-                </p>
-              )}
-
-              {/* Botão seguir */}
-              <button onClick={() => handleFollow(user.id, user.username)}
-                className="w-full h-8 rounded-full text-[12px] font-bold transition active:scale-95 mt-auto"
-                style={isFollowing
-                  ? { background: "var(--s3)", color: "var(--text-secondary)", border: "1.5px solid var(--border-default)" }
-                  : { background: ACCENT, color: "#fff", border: "none" }}>
-                {isFollowing ? "A acompanhar" : "Acompanhar"}
-              </button>
-            </div>
-          );
-        })}
+        {suggestions.map((user) => (
+          <WhoToFollowSuggestionCard key={user.id} user={user} myUserId={myUserId} navigate={navigate} />
+        ))}
 
         {/* Ver mais */}
         <div className="shrink-0 flex flex-col items-center justify-center rounded-2xl p-3 border cursor-pointer transition hover:bg-[var(--s3)]"
@@ -217,6 +152,64 @@ function WhoToFollowCard({ myUserId, onDismiss, offset = 0 }: { myUserId: string
           <p className="text-[11px] font-bold text-center" style={{ color: "#5B3FCF" }}>Ver mais</p>
         </div>
       </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════
+   Cartão individual de sugestão — usa useFollowState,
+   a mesma fonte de verdade partilhada com o resto da
+   app (post cards, perfil, u/$username...). Sem isto,
+   clicar aqui não sincronizava com os outros sítios.
+══════════════════════════════════════════════ */
+function WhoToFollowSuggestionCard({ user, myUserId, navigate }: { user: any; myUserId: string; navigate: any }) {
+  const ACCENT = "#5B3FCF";
+  const AVATAR_COLORS = [ACCENT, "#F26B3A", "#1FAFA6", "#6BA547", "#E94B8A"];
+  const name = user.full_name || user.username || "Utilizador";
+  const bg = AVATAR_COLORS[(name?.charCodeAt(0) ?? 0) % AVATAR_COLORS.length];
+  const { isFollowing, isPending, toggle } = useFollowState(myUserId, user.username, user.id);
+
+  return (
+    <div className="shrink-0 flex flex-col items-center rounded-2xl p-3 border transition"
+      style={{
+        width: 148,
+        background: "var(--s2, #f9f9f9)",
+        borderColor: "var(--border-default, #e8e8e8)",
+      }}>
+      {/* Avatar */}
+      <div
+        className="w-14 h-14 rounded-full overflow-hidden flex items-center justify-center text-white font-bold text-xl cursor-pointer mb-2"
+        style={{ background: bg }}
+        onClick={() => navigate({ to: "/u/$username", params: { username: user.username } })}>
+        {user.avatar_url
+          ? <img src={user.avatar_url} alt={name} className="w-full h-full object-cover" />
+          : name[0]?.toUpperCase()}
+      </div>
+
+      {/* Nome */}
+      <p className="font-bold text-[13px] text-center leading-tight truncate w-full"
+        style={{ color: "var(--text-primary)" }}>
+        {name.length > 14 ? name.slice(0, 13) + "…" : name}
+      </p>
+      <p className="text-[11px] text-center truncate w-full mb-1"
+        style={{ color: "var(--text-muted)" }}>
+        @{(user.username || "").slice(0, 14)}
+      </p>
+      {user.bio && (
+        <p className="text-[11px] text-center leading-snug mb-2 line-clamp-2 w-full"
+          style={{ color: "var(--text-secondary)" }}>
+          {user.bio.slice(0, 40)}
+        </p>
+      )}
+
+      {/* Botão seguir */}
+      <button onClick={toggle} disabled={isPending}
+        className="w-full h-8 rounded-full text-[12px] font-bold transition active:scale-95 mt-auto disabled:opacity-60"
+        style={isFollowing
+          ? { background: "var(--s3)", color: "var(--text-secondary)", border: "1.5px solid var(--border-default)" }
+          : { background: ACCENT, color: "#fff", border: "none" }}>
+        {isFollowing ? "A acompanhar" : "Acompanhar"}
+      </button>
     </div>
   );
 }
