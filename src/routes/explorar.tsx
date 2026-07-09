@@ -735,18 +735,7 @@ function ExplorePage() {
               </div>
             </section>
 
-            {/* Posts */}
-            {popularPostCards.length > 0 && (
-              <section className="px-4">
-                <div className="flex items-center justify-between mb-2.5">
-                  <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>Posts</p>
-                  <button onClick={() => setTab("posts")} className="text-xs font-semibold" style={{ color: P }}>Ver mais →</button>
-                </div>
-                <div className="space-y-4 -mx-4">
-                  {popularPostCards.slice(0, 4).map((p: any) => <UniversalPostCard key={p.id} post={p} />)}
-                </div>
-              </section>
-            )}
+            {/* Posts — removidos daqui: só devem aparecer quando o usuário pesquisa */}
           </div>
 
         /* ══════════ PESSOAS ══════════ */
@@ -761,7 +750,7 @@ function ExplorePage() {
         /* ══════════ MÍDIA (posts de qualquer pessoa; vídeos só na pesquisa) ══════════ */
         ) : tab === "posts" ? (
           <div className="px-4 py-4">
-            {popularPostCards.length > 0 && (
+            {search && popularPostCards.length > 0 && (
               <section>
                 <p className="text-[11px] font-bold uppercase tracking-wider mb-3 px-0" style={{ color: "var(--text-muted)" }}>
                   Posts
@@ -771,7 +760,13 @@ function ExplorePage() {
                 </div>
               </section>
             )}
-            {popularPostCards.length === 0 && (
+            {!search && (
+              <div className="py-20 text-center">
+                <p className="text-4xl mb-3">🔍</p>
+                <p className="font-bold" style={{ color: "var(--text-primary)" }}>Pesquisa algo para ver publicações</p>
+              </div>
+            )}
+            {search && popularPostCards.length === 0 && (
               <div className="py-20 text-center">
                 <p className="font-bold" style={{ color: "var(--text-primary)" }}>Ainda não há mídia</p>
               </div>
