@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { HoodaLogo } from "@/components/HoodaLogo";
 import { AuthLeftPanel } from "@/components/AuthLeftPanel";
+import { InstallPwaButton } from "@/components/InstallPwaButton";
 import {
   Field, EyeIcon, EyeOffIcon, ArrowLeftIcon, SpinIcon, MailIcon, LockIcon,
 } from "@/components/AuthField";
@@ -81,8 +82,14 @@ function LoginPage() {
         }}
       >
         {/* Mobile logo */}
-        <div className="lg:hidden mb-8">
+        <div className="lg:hidden mb-4">
           <HoodaLogo size="xl" animate={true} />
+        </div>
+
+        {/* Instalar app — funciona mesmo sem sessão, é o que torna o link
+            do site partilhável como "link de instalar" */}
+        <div className="mb-4">
+          <InstallPwaButton />
         </div>
 
         <div className="w-full max-w-[360px]">

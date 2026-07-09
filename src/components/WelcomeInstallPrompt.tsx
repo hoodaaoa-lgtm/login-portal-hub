@@ -1,18 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { Download, Bell, X, Sparkles, Check } from "lucide-react";
 import { enablePushNotifications, isPushSupported } from "@/lib/pushNotifications";
+import { promptInstall, isRunningStandalone } from "@/lib/pwaInstall";
 
 const ACCENT = "#5B3FCF";
 const SEEN_KEY = "hooda_welcome_seen";
 const INSTALLED_KEY = "hooda_app_installed_notice_shown";
-
-let deferredPrompt: any = null;
-if (typeof window !== "undefined") {
-  window.addEventListener("beforeinstallprompt", (e: any) => {
-    e.preventDefault();
-    deferredPrompt = e;
-  });
-}
 
 export function WelcomeInstallPrompt({ userId }: { userId: string | null }) {
   const [step, setStep] = useState<"hidden" | "welcome" | "installed">("hidden");
@@ -20,6 +13,7 @@ export function WelcomeInstallPrompt({ userId }: { userId: string | null }) {
 
   useEffect(() => {
     if (!userId) return;
+    if (isRunningStandalone()) return;
     const seen = localStorage.getItem(SEEN_KEY);
     if (!seen) {
       const t = setTimeout(() => setStep("welcome"), 900);
@@ -39,11 +33,7 @@ export function WelcomeInstallPrompt({ userId }: { userId: string | null }) {
   }, []);
 
   async function handleInstall() {
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-      await deferredPrompt.userChoice;
-      deferredPrompt = null;
-    }
+    await promptInstall();
     if (userId && isPushSupported()) {
       setInstalling(true);
       await enablePushNotifications(userId);
