@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
-import { uploadImageToCloudinary } from "@/lib/cloudinary";
+import { uploadBookCover, uploadBookFile } from "@/lib/cloudinaryBooks";
 
 export const Route = createFileRoute("/livros")({
   head: () => ({ meta: [{ title: "Hooda" }] }),
@@ -16,41 +16,7 @@ export const Route = createFileRoute("/livros")({
 });
 
 const P = "#5B3FCF";
-const CLOUD_NAME = "dy7o7tgmk";
-const UPLOAD_PRESET = "hooda_videos";
 const CATS = ["Romance","Ficção","Negócios","Autoajuda","História","Tecnologia","Religião","Educação","Outro"];
-
-/* Upload de ficheiro raw (PDF/EPUB/DOCX) para Cloudinary */
-function uploadRawToCloudinary(
-  file: File,
-  userId: string,
-  onProgress: (pct: number) => void,
-): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const fd = new FormData();
-    fd.append("file", file);
-    fd.append("upload_preset", UPLOAD_PRESET);
-    fd.append("folder", `hooda/books/${userId}`);
-    fd.append("resource_type", "raw");
-    const xhr = new XMLHttpRequest();
-    xhr.upload.addEventListener("progress", e => {
-      if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
-    });
-    xhr.addEventListener("load", () => {
-      if (xhr.status >= 200 && xhr.status < 300) {
-        try { resolve(JSON.parse(xhr.responseText).secure_url); }
-        catch { reject(new Error("Resposta inválida do Cloudinary.")); }
-      } else {
-        let msg = `Erro ${xhr.status}`;
-        try { msg = JSON.parse(xhr.responseText)?.error?.message ?? msg; } catch {}
-        reject(new Error(msg));
-      }
-    });
-    xhr.addEventListener("error", () => reject(new Error("Falha de rede.")));
-    xhr.open("POST", `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/raw/upload`);
-    xhr.send(fd);
-  });
-}
 
 /* ── Formatar números ── */
 const fmtN = (n: number) => n >= 1000 ? `${(n/1000).toFixed(1)}K` : String(n ?? 0);
@@ -169,13 +135,13 @@ function CreateBookModal({ onClose, onCreated }: { onClose: () => void; onCreate
       let coverUrl: string | null = null;
       if (coverFile) {
         setProgress(20);
-        const res = await uploadImageToCloudinary(coverFile, `hooda/book-covers/${uid}`, p => setProgress(20 + p * 0.3));
+        const res = await uploadBookCover(coverFile, `hooda/book-covers/${uid}`, p => setProgress(20 + p * 0.3));
         coverUrl = res.url;
       }
 
       // Upload ficheiro via Cloudinary (raw)
       setProgress(50);
-      const fileUrl = await uploadRawToCloudinary(bookFile, uid, p => setProgress(50 + p * 0.4));
+      const fileUrl = await uploadBookFile(bookFile, uid, p => setProgress(50 + p * 0.4));
 
       setProgress(92);
       const fext = bookFile.name.split(".").pop()?.toUpperCase() ?? "PDF";
