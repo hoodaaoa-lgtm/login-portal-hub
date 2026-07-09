@@ -2562,7 +2562,7 @@ function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit
 
             {/* Video */}
             {m.type === "video" && m.mediaUrl && !m.viewOnce && (
-              <div className="relative w-full max-w-xs">
+              <div className="relative w-full max-w-xs" style={{ minWidth: 240 }}>
                 {m.editState
                   ? <EditedMediaDisplay src={m.mediaUrl} type="video" edit={m.editState} maxH={280} />
                   : <FeedVideoPlayer src={m.mediaUrl} poster={getCloudinaryPosterFromUrl(m.mediaUrl) ?? undefined} rounded="rounded-xl" maxHeightRatio={0.4} />}

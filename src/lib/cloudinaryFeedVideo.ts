@@ -9,7 +9,7 @@
  */
 
 const FEED_VIDEO_CLOUD_NAME = "eat9omio";
-const FEED_VIDEO_UPLOAD_PRESET = "videosif"; // preset unsigned, criado no dashboard desta conta
+const FEED_VIDEO_UPLOAD_PRESET = "videos if"; // preset unsigned, criado no dashboard desta conta
 
 export interface FeedVideoUploadResult {
   publicId: string;
