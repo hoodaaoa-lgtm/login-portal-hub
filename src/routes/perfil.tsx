@@ -2046,9 +2046,9 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
                 }
                 setTab(tItem.key);
               }}
-              className="flex-1 relative py-4 text-[14px] font-bold transition-colors hover:bg-[var(--s2)]"
+              className="flex-1 min-w-0 relative py-4 px-1 text-[13px] sm:text-[14px] font-bold transition-colors hover:bg-[var(--s2)] truncate"
               style={{ color: tab === tItem.key ? "var(--text-primary)" : "var(--text-muted)" }}>
-              {tItem.label}
+              <span className="truncate">{tItem.label}</span>
               {tab === tItem.key && (
                 <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[3px] w-14 rounded-full" style={{ background: ACCENT }} />
               )}

@@ -2,10 +2,10 @@ import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router"
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { signOutHooda } from "@/contexts/AuthContext";
-import { BottomNav, SideNav, PageWrapper } from "@/components/AppShell";
+import { BottomNav, SideNav, PageWrapper, PageHeader } from "@/components/AppShell";
 import {
   ChevronRight, Bell, Lock, Shield, ShieldAlert, HelpCircle,
-  Info, Globe, MessageSquare, Activity, ArrowLeft,
+  Info, Globe, MessageSquare, Activity,
   Trash2, LogOut, AlertTriangle,
 } from "lucide-react";
 import {
@@ -125,19 +125,8 @@ function DefinicoesPage() {
     <>
       <SideNav />
       <PageWrapper className="pb-20 lg:pb-0">
+        <PageHeader title="Definições de Conta" onBack={() => navigate({ to: "/perfil" })} />
         <div className="px-4 py-6 max-w-[680px] mx-auto">
-
-          {/* Header */}
-          <div className="flex items-center gap-3 mb-6">
-            <button onClick={() => navigate({ to: "/perfil" })}
-              className="w-9 h-9 rounded-full flex items-center justify-center transition hover:opacity-70 lg:hidden"
-              style={{ background: "var(--s2)" }}>
-              <ArrowLeft className="w-4 h-4" style={{ color: "var(--text-secondary)" }} />
-            </button>
-            <h1 className="text-xl font-extrabold" style={{ color: "var(--text-primary)" }}>
-              Definições de Conta
-            </h1>
-          </div>
 
           {/* Card do utilizador */}
           <div className="rounded-3xl overflow-hidden mb-6 shadow-sm"

@@ -235,7 +235,7 @@ export function BottomNav() {
           WebkitBackdropFilter: "blur(24px)",
           paddingBottom: "max(env(safe-area-inset-bottom), 4px)",
         }}>
-        <ul className="grid grid-cols-6 h-[58px]">
+        <ul className="grid h-[58px]" style={{ gridTemplateColumns: `repeat(${MOBILE_ITEMS.length}, minmax(0, 1fr))` }}>
           {MOBILE_ITEMS.map(({ to, label, Icon, search }) => {
             const isMenu = to === null;
             const isNotif = label === "Notificações";
@@ -250,7 +250,7 @@ export function BottomNav() {
               <li key={label}>
                 {isMenu ? (
                   <button onClick={() => setShowDrawer(true)}
-                    className="flex flex-col items-center justify-center gap-1 h-full transition-all duration-150 active:scale-90"
+                    className="flex flex-col items-center justify-center gap-1 h-full w-full min-w-0 px-0.5 transition-all duration-150 active:scale-90"
                     style={{ color: "var(--text-muted)" }}>
                     <div className="relative flex items-center justify-center"
                       style={{
@@ -260,7 +260,7 @@ export function BottomNav() {
                       }}>
                       <Icon className="h-[20px] w-[20px]" strokeWidth={1.8} />
                     </div>
-                    <span className="text-[9.5px] tracking-tight font-400">{label}</span>
+                    <span className="text-[9.5px] tracking-tight font-400 truncate max-w-full">{label}</span>
                   </button>
                 ) : isNotif ? (
                   <button
@@ -272,7 +272,7 @@ export function BottomNav() {
                         setTimeout(() => window.dispatchEvent(new CustomEvent("hooda:open-notifications")), 60);
                       }
                     }}
-                    className="flex flex-col items-center justify-center gap-1 h-full w-full transition-all duration-150 active:scale-90"
+                    className="flex flex-col items-center justify-center gap-1 h-full w-full min-w-0 px-0.5 transition-all duration-150 active:scale-90"
                     style={{ color: "var(--text-muted)" }}>
                     <div className="relative flex items-center justify-center"
                       style={{
@@ -294,11 +294,11 @@ export function BottomNav() {
                         </span>
                       )}
                     </div>
-                    <span className="text-[9.5px] tracking-tight font-400">{label}</span>
+                    <span className="text-[9.5px] tracking-tight font-400 truncate max-w-full">{label}</span>
                   </button>
                 ) : (
                   <Link to={to as string} search={search}
-                    className="flex flex-col items-center justify-center gap-1 h-full transition-all duration-150 active:scale-90"
+                    className="flex flex-col items-center justify-center gap-1 h-full w-full min-w-0 px-0.5 transition-all duration-150 active:scale-90"
                     style={{ color: active ? "#5B3FCF" : "var(--text-muted)" }}>
                     <div className="relative flex items-center justify-center"
                       style={{
@@ -320,7 +320,7 @@ export function BottomNav() {
                         </span>
                       )}
                     </div>
-                    <span className="text-[9.5px] tracking-tight" style={{ fontWeight: active ? 700 : 400 }}>{label}</span>
+                    <span className="text-[9.5px] tracking-tight truncate max-w-full" style={{ fontWeight: active ? 700 : 400 }}>{label}</span>
                   </Link>
                 )}
               </li>
