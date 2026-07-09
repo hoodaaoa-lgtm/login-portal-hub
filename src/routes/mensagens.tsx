@@ -2588,7 +2588,7 @@ function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit
               <button type="button" className="block" onClick={onOpenLightbox}>
                 {m.editState
                   ? <EditedMediaDisplay src={m.mediaUrl} type="image" edit={m.editState} maxH={280} />
-                  : <img src={m.mediaUrl} alt="imagem" className="rounded-xl max-w-full" style={{ maxHeight: 220, objectFit: "cover" }} />}
+                  : <img src={m.mediaUrl} alt="imagem" className="rounded-xl max-w-full" style={{ maxHeight: 260, maxWidth: 240, objectFit: "cover" }} />}
               </button>
             )}
 
@@ -2597,7 +2597,7 @@ function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit
               <div className="relative w-full max-w-xs">
                 {m.editState
                   ? <EditedMediaDisplay src={m.mediaUrl} type="video" edit={m.editState} maxH={280} />
-                  : <FeedVideoPlayer src={m.mediaUrl} rounded="rounded-xl" />}
+                  : <FeedVideoPlayer src={m.mediaUrl} rounded="rounded-xl" maxHeightRatio={0.4} />}
                 {/* Botão para abrir em ecrã cheio, igual ao lightbox das fotos */}
                 <button
                   type="button"
@@ -2827,32 +2827,32 @@ function ForwardModal({ message, contacts, sending, onClose, onConfirm }: {
     : message.text;
 
   const panel = (
-    <div className={`w-full ${isMobile ? "rounded-t-3xl" : "max-w-sm rounded-3xl"} shadow-2xl overflow-hidden flex flex-col`}
-      style={{ background: "var(--s0,white)", maxHeight: isMobile ? "85vh" : "80vh" }}
+    <div className={`w-full ${isMobile ? "rounded-t-2xl" : "max-w-sm rounded-2xl"} ${isMobile ? "shadow-lg" : "shadow-2xl"} overflow-hidden flex flex-col`}
+      style={{ background: "var(--s0,white)", maxHeight: isMobile ? "70vh" : "80vh" }}
       onClick={e => e.stopPropagation()}>
 
       {isMobile && (
-        <div className="flex justify-center pt-2.5 pb-1 shrink-0">
-          <div className="w-10 h-1 rounded-full" style={{ background: "var(--border-default)" }} />
+        <div className="flex justify-center pt-2 pb-0.5 shrink-0">
+          <div className="w-9 h-1 rounded-full" style={{ background: "var(--border-default)" }} />
         </div>
       )}
 
-      <div className="px-5 pt-3 pb-3 border-b shrink-0" style={{ borderColor: "var(--border-subtle)" }}>
-        <p className="text-base font-bold mb-1" style={{ color: "var(--text-primary)" }}>Encaminhar mensagem</p>
+      <div className={`${isMobile ? "px-4 pt-2 pb-2" : "px-5 pt-3 pb-3"} border-b shrink-0`} style={{ borderColor: "var(--border-subtle)" }}>
+        <p className={`${isMobile ? "text-sm" : "text-base"} font-bold mb-0.5`} style={{ color: "var(--text-primary)" }}>Encaminhar mensagem</p>
         <p className="text-xs truncate" style={{ color: "var(--text-muted)" }}>{preview}</p>
       </div>
 
-      <div className="px-5 py-3 shrink-0">
+      <div className={`${isMobile ? "px-4 py-2" : "px-5 py-3"} shrink-0`}>
         <input
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="Procurar contacto..."
-          className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
+          className="w-full px-3 py-2 rounded-xl text-sm outline-none"
           style={{ background: "var(--s2)", color: "var(--text-primary)", fontSize: 16 }}
         />
       </div>
 
-      <div className="flex-1 overflow-y-auto px-2 pb-2 min-h-0">
+      <div className="flex-1 overflow-y-auto px-2 pb-1 min-h-0">
         {filtered.length === 0 && (
           <p className="text-sm text-center py-6" style={{ color: "var(--text-muted)" }}>Nenhum contacto encontrado</p>
         )}
@@ -2860,9 +2860,9 @@ function ForwardModal({ message, contacts, sending, onClose, onConfirm }: {
           const isSelected = selected.has(c.id);
           return (
             <button key={c.id} onClick={() => toggle(c.id)}
-              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition active:scale-[0.99]"
+              className="w-full flex items-center gap-3 px-3 py-2 rounded-xl transition active:scale-[0.99]"
               style={{ background: isSelected ? "#5B3FCF15" : "transparent" }}>
-              <Av name={c.full_name || c.username} color={c.color} size={38} src={c.avatar_url} />
+              <Av name={c.full_name || c.username} color={c.color} size={isMobile ? 34 : 38} src={c.avatar_url} />
               <div className="flex-1 min-w-0 text-left">
                 <p className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>{c.full_name || c.username}</p>
                 <p className="text-xs truncate" style={{ color: "var(--text-muted)" }}>@{c.username}</p>
@@ -2881,7 +2881,7 @@ function ForwardModal({ message, contacts, sending, onClose, onConfirm }: {
 
       <div className="flex border-t shrink-0" style={{ borderColor: "var(--border-default)" }}>
         <button onClick={onClose}
-          className="flex-1 py-4 text-sm font-semibold transition hover:bg-[var(--s2)]"
+          className={`flex-1 ${isMobile ? "py-3" : "py-4"} text-sm font-semibold transition hover:bg-[var(--s2)]`}
           style={{ color: "var(--text-secondary)" }}>
           Cancelar
         </button>
@@ -2889,18 +2889,18 @@ function ForwardModal({ message, contacts, sending, onClose, onConfirm }: {
         <button
           disabled={selected.size === 0 || sending}
           onClick={() => onConfirm(contacts.filter(c => selected.has(c.id)))}
-          className="flex-1 py-4 text-sm font-bold transition disabled:opacity-40"
+          className={`flex-1 ${isMobile ? "py-3" : "py-4"} text-sm font-bold transition disabled:opacity-40`}
           style={{ color: "#5B3FCF" }}>
           {sending ? "A enviar..." : `Enviar${selected.size ? ` (${selected.size})` : ""}`}
         </button>
       </div>
-      {isMobile && <div style={{ height: "env(safe-area-inset-bottom, 12px)" }} />}
+      {isMobile && <div style={{ height: "env(safe-area-inset-bottom, 10px)" }} />}
     </div>
   );
 
   return (
     <div className={`fixed inset-0 z-[200] flex ${isMobile ? "items-end" : "items-center justify-center p-4"}`}
-      style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(6px)" }}
+      style={{ background: "rgba(0,0,0,0.5)" }}
       onClick={onClose}>
       {panel}
     </div>

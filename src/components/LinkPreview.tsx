@@ -43,12 +43,15 @@ export function LinkPreview({ url, isMe = false, variant = "post" }: { url: stri
     }
     if (!hoodaPost) return null;
     const img = hoodaPost.photo_url || hoodaPost.photos?.[0] || null;
+    const mediaMaxH = variant === "message" ? 140 : 256;
     return (
-      <div className={`${marginTop} rounded-xl overflow-hidden`} style={{ border: `1px solid ${border}` }}>
+      <div className={`${marginTop} rounded-xl overflow-hidden`} style={{ border: `1px solid ${border}`, maxWidth: variant === "message" ? 220 : undefined }}>
         {hoodaPost.video_url ? (
-          <FeedVideoPlayer src={hoodaPost.video_url} rounded="rounded-none" />
+          <div style={{ maxHeight: mediaMaxH, overflow: "hidden" }}>
+            <FeedVideoPlayer src={hoodaPost.video_url} rounded="rounded-none" />
+          </div>
         ) : img ? (
-          <img src={img} alt="" className="w-full max-h-64 object-cover"
+          <img src={img} alt="" className="w-full object-cover" style={{ maxHeight: mediaMaxH }}
             onError={e => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
         ) : null}
         <button onClick={() => navigate({ to: "/post/$id", params: { id: hoodaPostId } })}
@@ -101,13 +104,13 @@ export function LinkPreview({ url, isMe = false, variant = "post" }: { url: stri
   return (
     <a href={url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
       className={`${marginTop} rounded-xl overflow-hidden flex gap-0 block transition hover:opacity-90`}
-      style={{ background: bg, border: `1px solid ${border}`, textDecoration: "none" }}>
+      style={{ background: bg, border: `1px solid ${border}`, textDecoration: "none", maxWidth: variant === "message" ? 260 : undefined }}>
       {og.image && (
-        <img src={og.image} alt="" className="w-20 h-full object-cover shrink-0 self-stretch"
-          style={{ minHeight: 64, maxHeight: 100 }}
+        <img src={og.image} alt="" className="w-16 h-full object-cover shrink-0 self-stretch"
+          style={{ minHeight: 56, maxHeight: 80 }}
           onError={e => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
       )}
-      <div className="p-2.5 min-w-0 flex-1">
+      <div className="p-2 min-w-0 flex-1">
         {og.siteName && (
           <p className="text-[10px] font-semibold uppercase tracking-wide truncate" style={{ color: mutedColor }}>{og.siteName}</p>
         )}
