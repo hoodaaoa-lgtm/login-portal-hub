@@ -1248,6 +1248,8 @@ type Message = {
   reactions?: Record<string, number>;
   /** A minha reação */
   myReaction?: string;
+  /** Mensagem encaminhada de outra conversa */
+  forwarded?: boolean;
 };
 
 // Prefixo usado para embutir a edição (filtro/recorte/texto/stickers) aplicada na
@@ -2491,6 +2493,15 @@ function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit
             transition: m.style ? "opacity 0.45s cubic-bezier(.22,1,.36,1), transform 0.45s cubic-bezier(.22,1,.36,1)" : "transform 0.15s, opacity 0.15s",
           }}>
 
+          {/* Etiqueta "Encaminhada" — igual ao WhatsApp, acima do conteúdo */}
+          {m.forwarded && (
+            <div className="px-3 pt-2 flex items-center gap-1"
+              style={{ color: isMe ? "rgba(255,255,255,0.7)" : "var(--text-muted)" }}>
+              <Forward className="h-3 w-3" />
+              <span className="text-[11px] italic">Encaminhada</span>
+            </div>
+          )}
+
           {/* Reply strip */}
           {replied && (
             <div className="px-3 pt-2 pb-0">
@@ -2784,6 +2795,7 @@ function ForwardModal({ message, contacts, sending, onClose, onConfirm }: {
 }) {
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const isMobile = useIsMobile();
 
   const filtered = contacts.filter(c => {
     const q = search.trim().toLowerCase();
@@ -2814,72 +2826,83 @@ function ForwardModal({ message, contacts, sending, onClose, onConfirm }: {
     : message.type === "file" ? "📎 Ficheiro"
     : message.text;
 
+  const panel = (
+    <div className={`w-full ${isMobile ? "rounded-t-3xl" : "max-w-sm rounded-3xl"} shadow-2xl overflow-hidden flex flex-col`}
+      style={{ background: "var(--s0,white)", maxHeight: isMobile ? "85vh" : "80vh" }}
+      onClick={e => e.stopPropagation()}>
+
+      {isMobile && (
+        <div className="flex justify-center pt-2.5 pb-1 shrink-0">
+          <div className="w-10 h-1 rounded-full" style={{ background: "var(--border-default)" }} />
+        </div>
+      )}
+
+      <div className="px-5 pt-3 pb-3 border-b shrink-0" style={{ borderColor: "var(--border-subtle)" }}>
+        <p className="text-base font-bold mb-1" style={{ color: "var(--text-primary)" }}>Encaminhar mensagem</p>
+        <p className="text-xs truncate" style={{ color: "var(--text-muted)" }}>{preview}</p>
+      </div>
+
+      <div className="px-5 py-3 shrink-0">
+        <input
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="Procurar contacto..."
+          className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
+          style={{ background: "var(--s2)", color: "var(--text-primary)", fontSize: 16 }}
+        />
+      </div>
+
+      <div className="flex-1 overflow-y-auto px-2 pb-2 min-h-0">
+        {filtered.length === 0 && (
+          <p className="text-sm text-center py-6" style={{ color: "var(--text-muted)" }}>Nenhum contacto encontrado</p>
+        )}
+        {filtered.map(c => {
+          const isSelected = selected.has(c.id);
+          return (
+            <button key={c.id} onClick={() => toggle(c.id)}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition active:scale-[0.99]"
+              style={{ background: isSelected ? "#5B3FCF15" : "transparent" }}>
+              <Av name={c.full_name || c.username} color={c.color} size={38} src={c.avatar_url} />
+              <div className="flex-1 min-w-0 text-left">
+                <p className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>{c.full_name || c.username}</p>
+                <p className="text-xs truncate" style={{ color: "var(--text-muted)" }}>@{c.username}</p>
+              </div>
+              <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
+                style={{
+                  background: isSelected ? "#5B3FCF" : "transparent",
+                  border: isSelected ? "none" : "2px solid var(--border-default)",
+                }}>
+                {isSelected && <Check className="h-3.5 w-3.5 text-white" />}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="flex border-t shrink-0" style={{ borderColor: "var(--border-default)" }}>
+        <button onClick={onClose}
+          className="flex-1 py-4 text-sm font-semibold transition hover:bg-[var(--s2)]"
+          style={{ color: "var(--text-secondary)" }}>
+          Cancelar
+        </button>
+        <div style={{ width: 1, background: "var(--border-default)" }} />
+        <button
+          disabled={selected.size === 0 || sending}
+          onClick={() => onConfirm(contacts.filter(c => selected.has(c.id)))}
+          className="flex-1 py-4 text-sm font-bold transition disabled:opacity-40"
+          style={{ color: "#5B3FCF" }}>
+          {sending ? "A enviar..." : `Enviar${selected.size ? ` (${selected.size})` : ""}`}
+        </button>
+      </div>
+      {isMobile && <div style={{ height: "env(safe-area-inset-bottom, 12px)" }} />}
+    </div>
+  );
+
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4"
+    <div className={`fixed inset-0 z-[200] flex ${isMobile ? "items-end" : "items-center justify-center p-4"}`}
       style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(6px)" }}
       onClick={onClose}>
-      <div className="w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden flex flex-col"
-        style={{ background: "var(--s0,white)", maxHeight: "80vh" }}
-        onClick={e => e.stopPropagation()}>
-
-        <div className="px-5 pt-5 pb-3 border-b" style={{ borderColor: "var(--border-subtle)" }}>
-          <p className="text-base font-bold mb-1" style={{ color: "var(--text-primary)" }}>Encaminhar mensagem</p>
-          <p className="text-xs truncate" style={{ color: "var(--text-muted)" }}>{preview}</p>
-        </div>
-
-        <div className="px-5 py-3">
-          <input
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Procurar contacto..."
-            className="w-full px-3 py-2 rounded-xl text-sm outline-none"
-            style={{ background: "var(--s2)", color: "var(--text-primary)" }}
-          />
-        </div>
-
-        <div className="flex-1 overflow-y-auto px-2 pb-2">
-          {filtered.length === 0 && (
-            <p className="text-sm text-center py-6" style={{ color: "var(--text-muted)" }}>Nenhum contacto encontrado</p>
-          )}
-          {filtered.map(c => {
-            const isSelected = selected.has(c.id);
-            return (
-              <button key={c.id} onClick={() => toggle(c.id)}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition"
-                style={{ background: isSelected ? "#5B3FCF15" : "transparent" }}>
-                <Av name={c.full_name || c.username} color={c.color} size={38} src={c.avatar_url} />
-                <div className="flex-1 min-w-0 text-left">
-                  <p className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>{c.full_name || c.username}</p>
-                  <p className="text-xs truncate" style={{ color: "var(--text-muted)" }}>@{c.username}</p>
-                </div>
-                <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
-                  style={{
-                    background: isSelected ? "#5B3FCF" : "transparent",
-                    border: isSelected ? "none" : "2px solid var(--border-default)",
-                  }}>
-                  {isSelected && <Check className="h-3.5 w-3.5 text-white" />}
-                </div>
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="flex border-t" style={{ borderColor: "var(--border-default)" }}>
-          <button onClick={onClose}
-            className="flex-1 py-4 text-sm font-semibold transition hover:bg-[var(--s2)]"
-            style={{ color: "var(--text-secondary)" }}>
-            Cancelar
-          </button>
-          <div style={{ width: 1, background: "var(--border-default)" }} />
-          <button
-            disabled={selected.size === 0 || sending}
-            onClick={() => onConfirm(contacts.filter(c => selected.has(c.id)))}
-            className="flex-1 py-4 text-sm font-bold transition disabled:opacity-40"
-            style={{ color: "#5B3FCF" }}>
-            {sending ? "A enviar..." : `Enviar${selected.size ? ` (${selected.size})` : ""}`}
-          </button>
-        </div>
-      </div>
+      {panel}
     </div>
   );
 }
@@ -3105,6 +3128,7 @@ function ChatPanel({ myId, contact, onBack, contacts }: {
           message_type: message.type,
           duration: message.duration ?? null,
           style: message.style ?? null,
+          is_forwarded: true,
         });
         if (error) throw error;
         okCount++;
@@ -3456,6 +3480,7 @@ function ChatPanel({ myId, contact, onBack, contacts }: {
       duration: r.duration ?? undefined,
       reactions: r.reactions ?? {},
       myReaction: (r.reactions ?? {})[myId] ?? undefined,
+      forwarded: !!r.is_forwarded,
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [myId, decrypt]);
