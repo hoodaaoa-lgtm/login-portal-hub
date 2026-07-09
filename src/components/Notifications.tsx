@@ -3,6 +3,7 @@ import {
   X, Bell, Heart, MessageCircle, UserPlus,
   Share2, AtSign, Megaphone, CheckCheck,
 } from "lucide-react";
+import { useScrollLock } from "@/hooks/useScrollLock";
 
 const ACCENT = "#5B3FCF";
 
@@ -146,6 +147,12 @@ export function NotificationCenter({
   loading?: boolean;
 }) {
   const [tab, setTab] = useState<"todas" | "nao_lidas">("todas");
+
+  // Bloqueia o scroll da página por trás enquanto o modal está aberto —
+  // sem isto, arrastar dentro da lista (sobretudo perto do fundo) fazia
+  // a página de fundo deslizar também, dando a sensação de "scroll a mais".
+  // Todos os outros modais do site já usam este mesmo hook.
+  useScrollLock(true);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
   const list = tab === "nao_lidas" ? notifications.filter((n) => !n.read) : notifications;
