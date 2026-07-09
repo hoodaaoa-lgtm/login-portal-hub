@@ -12,7 +12,7 @@ export const Route = createFileRoute("/signup")({
   head: () => ({
     meta: [
       { title: "Hooda" },
-      { name: "description", content: "Cria a tua conta Hooda grátis e começa a partilhar vídeos, fotos e Gotas, e a conversar com amigos." },
+      { name: "description", content: "Cria a tua conta Hooda grátis e começa a partilhar vídeos e fotos, e a conversar com amigos." },
     ],
   }),
   component: SignupPage,

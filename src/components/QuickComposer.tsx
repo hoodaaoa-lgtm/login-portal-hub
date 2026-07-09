@@ -1,7 +1,6 @@
 import React, { useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { useNavigate } from "@tanstack/react-router";
-import { Image, Film, Droplet, BarChart3, X, Plus } from "lucide-react";
+import { Image, Film, BarChart3, X, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { uploadImageToCloudinary, uploadToCloudinary } from "@/lib/cloudinary";
 import { useScrollLock } from "@/hooks/useScrollLock";
@@ -412,12 +411,10 @@ export function ComposeBox({ name, username, avatarUrl, onPublished }: {
 }) {
   const [open, setOpen] = useState(false);
   const [openWithPoll, setOpenWithPoll] = useState(false);
-  const navigate = useNavigate();
 
   const quickActions = [
     { label: "Foto", Icon: Image, color: "#6BA547", onClick: () => { setOpenWithPoll(false); setOpen(true); } },
     { label: "Vídeo", Icon: Film, color: "#E94B8A", onClick: () => { setOpenWithPoll(false); setOpen(true); } },
-    { label: "Drop", Icon: Droplet, color: "#5B3FCF", onClick: () => navigate({ to: "/drops" }) },
     { label: "Enquete", Icon: BarChart3, color: "#F26B3A", onClick: () => { setOpenWithPoll(true); setOpen(true); } },
   ];
 

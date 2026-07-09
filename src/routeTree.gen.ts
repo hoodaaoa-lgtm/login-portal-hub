@@ -20,7 +20,6 @@ import { Route as LivrosRouteImport } from './routes/livros'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as Hdequipa9x2RouteImport } from './routes/hdequipa9x2'
 import { Route as ExplorarRouteImport } from './routes/explorar'
-import { Route as DropsRouteImport } from './routes/drops'
 import { Route as DefinicoesRouteImport } from './routes/definicoes'
 import { Route as AcessibilidadeRouteImport } from './routes/acessibilidade'
 import { Route as IndexRouteImport } from './routes/index'
@@ -83,11 +82,6 @@ const ExplorarRoute = ExplorarRouteImport.update({
   path: '/explorar',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DropsRoute = DropsRouteImport.update({
-  id: '/drops',
-  path: '/drops',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const DefinicoesRoute = DefinicoesRouteImport.update({
   id: '/definicoes',
   path: '/definicoes',
@@ -123,7 +117,6 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/acessibilidade': typeof AcessibilidadeRoute
   '/definicoes': typeof DefinicoesRoute
-  '/drops': typeof DropsRoute
   '/explorar': typeof ExplorarRoute
   '/hdequipa9x2': typeof Hdequipa9x2Route
   '/home': typeof HomeRoute
@@ -143,7 +136,6 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/acessibilidade': typeof AcessibilidadeRoute
   '/definicoes': typeof DefinicoesRoute
-  '/drops': typeof DropsRoute
   '/explorar': typeof ExplorarRoute
   '/hdequipa9x2': typeof Hdequipa9x2Route
   '/home': typeof HomeRoute
@@ -164,7 +156,6 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/acessibilidade': typeof AcessibilidadeRoute
   '/definicoes': typeof DefinicoesRoute
-  '/drops': typeof DropsRoute
   '/explorar': typeof ExplorarRoute
   '/hdequipa9x2': typeof Hdequipa9x2Route
   '/home': typeof HomeRoute
@@ -186,7 +177,6 @@ export interface FileRouteTypes {
     | '/'
     | '/acessibilidade'
     | '/definicoes'
-    | '/drops'
     | '/explorar'
     | '/hdequipa9x2'
     | '/home'
@@ -206,7 +196,6 @@ export interface FileRouteTypes {
     | '/'
     | '/acessibilidade'
     | '/definicoes'
-    | '/drops'
     | '/explorar'
     | '/hdequipa9x2'
     | '/home'
@@ -226,7 +215,6 @@ export interface FileRouteTypes {
     | '/'
     | '/acessibilidade'
     | '/definicoes'
-    | '/drops'
     | '/explorar'
     | '/hdequipa9x2'
     | '/home'
@@ -247,7 +235,6 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AcessibilidadeRoute: typeof AcessibilidadeRoute
   DefinicoesRoute: typeof DefinicoesRoute
-  DropsRoute: typeof DropsRoute
   ExplorarRoute: typeof ExplorarRoute
   Hdequipa9x2Route: typeof Hdequipa9x2Route
   HomeRoute: typeof HomeRoute
@@ -343,13 +330,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ExplorarRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/drops': {
-      id: '/drops'
-      path: '/drops'
-      fullPath: '/drops'
-      preLoaderRoute: typeof DropsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/definicoes': {
       id: '/definicoes'
       path: '/definicoes'
@@ -399,7 +379,6 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AcessibilidadeRoute: AcessibilidadeRoute,
   DefinicoesRoute: DefinicoesRoute,
-  DropsRoute: DropsRoute,
   ExplorarRoute: ExplorarRoute,
   Hdequipa9x2Route: Hdequipa9x2Route,
   HomeRoute: HomeRoute,

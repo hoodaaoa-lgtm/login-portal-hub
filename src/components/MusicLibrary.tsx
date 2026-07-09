@@ -1,8 +1,8 @@
 /**
  * MusicLibrary — biblioteca musical partilhada.
- * Usada no criador de História (home.tsx) e no criador de Drops
- * (DropsCreator.tsx), para que ambos usem exatamente a mesma fonte
- * de músicas em vez de cada um ter a sua própria lógica.
+ * Usada no criador de História (home.tsx), para que futuros criadores de
+ * conteúdo com música possam usar exatamente a mesma fonte de músicas em
+ * vez de cada um ter a sua própria lógica.
  */
 import React, { useEffect, useState } from "react";
 import { Music, Play, Pause, X } from "lucide-react";
