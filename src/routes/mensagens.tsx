@@ -39,43 +39,11 @@ import { HoodaPlayer } from "@/components/HoodaPlayer";
 import { FeedVideoPlayer } from "@/components/FeedVideoPlayer";
 import { extractUrl } from "@/lib/linkPreview";
 import { LinkPreview as SharedLinkPreview } from "@/components/LinkPreview";
-import { uploadImageToCloudinary, getCloudinaryPosterFromUrl } from "@/lib/cloudinary";
+import { getCloudinaryPosterFromUrl } from "@/lib/cloudinary";
+import { uploadMessageImage, uploadMessageMedia } from "@/lib/cloudinaryMessages";
 import { getHoodaOfficialId } from "@/lib/hoodaOfficial";
 import { useIsMobile } from "@/hooks/use-mobile";
 
-// Upload directo para Cloudinary com progresso (suporta audio/video via resource_type=video)
-function cloudinaryUploadMedia(
-  file: File,
-  resourceType: "image" | "video",
-  folder: string,
-  onProgress?: (pct: number) => void,
-): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const fd = new FormData();
-    fd.append("file", file);
-    fd.append("upload_preset", "hooda_videos");
-    fd.append("folder", folder);
-    fd.append("resource_type", resourceType);
-    const xhr = new XMLHttpRequest();
-    xhr.upload.addEventListener("progress", e => {
-      if (e.lengthComputable && onProgress) onProgress(Math.round((e.loaded / e.total) * 100));
-    });
-    xhr.addEventListener("load", () => {
-      if (xhr.status >= 200 && xhr.status < 300) {
-        try { resolve(JSON.parse(xhr.responseText).secure_url); }
-        catch { reject(new Error("Cloudinary: resposta inválida")); }
-      } else {
-        let msg = `Cloudinary erro ${xhr.status}`;
-        try { msg = JSON.parse(xhr.responseText)?.error?.message ?? msg; } catch {}
-        reject(new Error(msg));
-      }
-    });
-    xhr.addEventListener("error", () => reject(new Error("Falha de rede no upload.")));
-    xhr.addEventListener("abort", () => reject(new Error("Upload cancelado.")));
-    xhr.open("POST", `https://api.cloudinary.com/v1_1/dy7o7tgmk/${resourceType}/upload`);
-    xhr.send(fd);
-  });
-}
 
 
 // ── Link Preview inteligente — lógica partilhada com o feed de publicações ──
@@ -3789,10 +3757,10 @@ function ChatPanel({ myId, contact, onBack, contacts }: {
 
       let url: string;
       if (isImage) {
-        const r = await uploadImageToCloudinary(file, cloudFolder, pct => setUploadPct(Math.max(5, pct)));
+        const r = await uploadMessageImage(file, cloudFolder, pct => setUploadPct(Math.max(5, pct)));
         url = r.url;
       } else {
-        url = await cloudinaryUploadMedia(file, resourceType, cloudFolder, pct => setUploadPct(Math.max(5, pct)));
+        url = await uploadMessageMedia(file, resourceType, cloudFolder, pct => setUploadPct(Math.max(5, pct)));
       }
       console.log("[uploadFile] ✅ Cloudinary URL:", url);
       setUploadPct(100);
