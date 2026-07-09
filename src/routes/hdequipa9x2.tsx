@@ -375,6 +375,7 @@ function AdminDashboard({ adminId }: { adminId: string }) {
   const [broadcastText, setBroadcastText] = useState("");
   const [broadcastSending, setBroadcastSending] = useState(false);
   const [broadcastProgress, setBroadcastProgress] = useState<{ sent: number; total: number } | null>(null);
+  const [broadcastNoReply, setBroadcastNoReply] = useState(false);
 
   // ── Auditoria (registo de ações do admin) ──
   const [auditList, setAuditList] = useState<AuditRow[]>([]);
@@ -461,7 +462,7 @@ function AdminDashboard({ adminId }: { adminId: string }) {
    * usado para avisar quando uma publicação/canal dele é removido.
    * Encontra ou cria a conversa oficial, igual à lógica de openUser().
    */
-  const notifyUserOfficial = useCallback(async (userId: string, text: string) => {
+  const notifyUserOfficial = useCallback(async (userId: string, text: string, opts?: { replyAllowed?: boolean }) => {
     try {
       const { data: myConvs } = await db
         .from("conversation_participants").select("conversation_id").eq("user_id", adminId);
@@ -484,6 +485,11 @@ function AdminDashboard({ adminId }: { adminId: string }) {
         });
         if (rpcErr) throw rpcErr;
         foundId = newConvId as string;
+      }
+      // Comunicado global "ninguém pode responder" — sobrepõe qualquer
+      // permissão de resposta que essa conversa já tivesse (manual ou não).
+      if (opts?.replyAllowed !== undefined) {
+        await db.from("conversations").update({ reply_allowed: opts.replyAllowed }).eq("id", foundId);
       }
       const { error: msgErr } = await db.from("messages").insert({
         conversation_id: foundId, sender_id: adminId, receiver_id: userId,
@@ -622,16 +628,17 @@ function AdminDashboard({ adminId }: { adminId: string }) {
   async function sendBroadcast() {
     const text = broadcastText.trim();
     if (!text || broadcastSending) return;
-    const confirmed = window.confirm(
-      `Isto envia esta mensagem, como Hooda Oficial, para TODOS os ${users.length} utilizadores. Confirmas?`
-    );
+    const confirmMsg = broadcastNoReply
+      ? `Isto envia esta mensagem, como Hooda Oficial, para TODOS os ${users.length} utilizadores — e bloqueia respostas para todos eles (mesmo quem já podia responder antes). Confirmas?`
+      : `Isto envia esta mensagem, como Hooda Oficial, para TODOS os ${users.length} utilizadores. Confirmas?`;
+    const confirmed = window.confirm(confirmMsg);
     if (!confirmed) return;
     setBroadcastSending(true);
     setBroadcastProgress({ sent: 0, total: users.length });
     let okCount = 0;
     for (let i = 0; i < users.length; i++) {
       try {
-        await notifyUserOfficial(users[i].id, text);
+        await notifyUserOfficial(users[i].id, text, broadcastNoReply ? { replyAllowed: false } : undefined);
         okCount++;
       } catch (err) {
         console.error("[admin] erro no broadcast para", users[i].username, err);
@@ -640,8 +647,8 @@ function AdminDashboard({ adminId }: { adminId: string }) {
     }
     setBroadcastSending(false);
     setBroadcastText("");
-    toast.success(`Comunicado enviado a ${okCount} de ${users.length} utilizadores.`);
-    logAudit("broadcast", "all_users", `${okCount} utilizadores`, text);
+    toast.success(`Comunicado enviado a ${okCount} de ${users.length} utilizadores.${broadcastNoReply ? " Respostas bloqueadas." : ""}`);
+    logAudit("broadcast", "all_users", `${okCount} utilizadores`, broadcastNoReply ? `${text} [ninguém pode responder]` : text);
   }
 
   async function toggleBan(u: UserRow) {
@@ -1286,6 +1293,20 @@ function AdminDashboard({ adminId }: { adminId: string }) {
               className="w-full rounded-2xl px-4 py-3 text-sm outline-none resize-none text-neutral-900 placeholder:text-neutral-400 disabled:opacity-60"
               style={{ background: "#f5f5f7" }}
             />
+            <button
+              type="button"
+              onClick={() => setBroadcastNoReply(v => !v)}
+              disabled={broadcastSending}
+              className="w-full flex items-center justify-between gap-3 mt-3 px-4 py-3 rounded-2xl transition disabled:opacity-60"
+              style={{ background: broadcastNoReply ? "#5B3FCF12" : "#f5f5f7", border: broadcastNoReply ? "1px solid #5B3FCF40" : "1px solid transparent" }}>
+              <div className="text-left">
+                <p className="text-sm font-bold text-neutral-900">🔒 Ninguém pode responder</p>
+                <p className="text-[11px] text-neutral-400">Bloqueia respostas para todos os utilizadores neste comunicado, mesmo quem já podia responder antes.</p>
+              </div>
+              <div className={`w-10 h-5 rounded-full transition-colors relative shrink-0 ${broadcastNoReply ? "bg-[#5B3FCF]" : "bg-neutral-300"}`}>
+                <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${broadcastNoReply ? "translate-x-5" : "translate-x-0.5"}`} />
+              </div>
+            </button>
             <div className="flex items-center justify-between mt-4 gap-3">
               <p className="text-[11px] text-neutral-400">
                 {broadcastSending && broadcastProgress
