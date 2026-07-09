@@ -41,6 +41,11 @@ type Tab = typeof TABS[number]["key"];
    "explore-trending-hashtags" mais abaixo — antes era um array vazio fixo. */
 
 /* ── Avatar ── */
+/** Número mínimo de hashtags em tendência para a secção aparecer —
+ *  abaixo disto, fica invisível para o utilizador em vez de mostrar
+ *  uma lista curta e esquisita. */
+const MIN_TRENDING_HASHTAGS = 5;
+
 const BOOK_COLORS = ["#5B3FCF","#E94B8A","#F26B3A","#1FAFA6","#6BA547","#FFC93C"];
 const bookColor = (s: string) => BOOK_COLORS[(s?.charCodeAt(0) ?? 0) % BOOK_COLORS.length];
 const fmtB = (n: number) => n >= 1000 ? `${(n/1000).toFixed(1)}K` : String(n ?? 0);
@@ -746,8 +751,11 @@ function ExplorePage() {
         ) : tab === "trending" ? (
           <div className="py-3 space-y-5">
 
-            {/* Tags em tendência — extraídas de verdade dos posts recentes */}
-            {trendingHashtags.length > 0 && (
+            {/* Tags em tendência — extraídas de verdade dos posts recentes.
+                Só aparece com um mínimo de tags (evita mostrar uma secção
+                "Em tendência" com 1-2 hashtags, que fica esquisito/vazio
+                para o utilizador — nesse caso fica invisível). */}
+            {trendingHashtags.length >= MIN_TRENDING_HASHTAGS && (
             <section className="px-4">
               <p className="text-[11px] font-bold uppercase tracking-wider mb-2.5" style={{ color: "var(--text-muted)" }}>
                 Em tendência
