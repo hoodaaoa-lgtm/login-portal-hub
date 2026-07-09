@@ -17,6 +17,7 @@ import { useTimeAgo } from "@/hooks/useTimeAgo";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { useFollowState, usePostLikeState, usePostCommentCount, useBookmarkState, useVideoLikeState, getViewerFingerprint } from "@/hooks/useSocialSystem";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/contexts/AuthContext";
 import { QUERY_KEYS, REALTIME_QUERY_OPTIONS } from "@/lib/queryClient";
 import {
   Search, Bell, Plus, MessageCircle, Share2, Music, X, Heart,
@@ -917,18 +918,33 @@ export function UniversalPostCard({ post: p, onDeleted, onBookmarkChange }: {
   }
   const navigate = useNavigate();
   const timeLabel = useTimeAgo((p as any).created_at);
-  const [sessionChecked, setSessionChecked] = useState(false);
+  // Fonte única de sessão: usa o AuthContext partilhado por toda a app em
+  // vez de cada cartão chamar supabase.auth.getSession() por si (isso
+  // significava N chamadas de rede redundantes num feed com N posts, e se
+  // alguma delas atrasava/falhava — rede lenta, aba em background — o
+  // "sessionChecked" desse cartão específico nunca resolvia, prendendo o
+  // botão "Acompanhar" no skeleton de loading para sempre: parecia que o
+  // clique "não fazia nada" porque o botão real nunca chegava a aparecer).
+  const { status: authStatus, user: authUser } = useAuth();
+  const sessionChecked = authStatus !== "loading";
 
   useEffect(() => {
+    if (!authUser) { setMyUserId(null); meRef.current = null; return; }
+    setMyUserId(authUser.id);
+    let cancelled = false;
     (async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { setSessionChecked(true); return; }
-      const { data: prof } = await supabase.from("profiles").select("username").eq("id", session.user.id).maybeSingle();
-      meRef.current = { id: session.user.id, username: (prof as any)?.username || "eu" };
-      setMyUserId(session.user.id);
-      setSessionChecked(true);
+      try {
+        const { data: prof } = await supabase.from("profiles").select("username").eq("id", authUser.id).maybeSingle();
+        if (cancelled) return;
+        meRef.current = { id: authUser.id, username: (prof as any)?.username || "eu" };
+      } catch {
+        // Best-effort: mesmo que a busca do username falhe, mantém o id —
+        // isso já é suficiente para o botão "Acompanhar" funcionar.
+        if (!cancelled) meRef.current = { id: authUser.id, username: "eu" };
+      }
     })();
-  }, [p.id]);
+    return () => { cancelled = true; };
+  }, [authUser]);
 
   useEffect(() => {
     if (showComments) {
