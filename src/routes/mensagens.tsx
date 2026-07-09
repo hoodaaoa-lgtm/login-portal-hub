@@ -17,7 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { BottomNav, SideNav, PageWrapper } from "@/components/AppShell";
 import { useBadges } from "@/contexts/BadgeContext";
 import { ProfileAvatarLink } from "@/components/ProfileAvatarLink";
-import { ConversationListSkeleton, BackgroundRefreshDot } from "@/components/Skeletons";
+import { UniversalSkeleton, BackgroundRefreshDot } from "@/components/Skeletons";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -4818,7 +4818,7 @@ function ContactList({ contacts, loading, refreshing, search, setSearch, active,
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        {loading && <ConversationListSkeleton count={8} />}
+        {loading && <UniversalSkeleton variant="messages" count={8} />}
         {!loading && filtered.length === 0 && (
           <div className="text-center py-12" style={{ color: "var(--text-muted,#888)" }}>
             <MessageSquare className="h-12 w-12 mx-auto mb-3" style={{ color: "#d1d1d1" }} />

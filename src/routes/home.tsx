@@ -34,7 +34,7 @@ import { MusicLibrary, type Song } from "@/components/MusicLibrary";
 import { useTimeAgo } from "@/hooks/useTimeAgo";
 import { useQuery, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { QUERY_KEYS, FEED_QUERY_OPTIONS, STATIC_QUERY_OPTIONS, REALTIME_QUERY_OPTIONS } from "@/lib/queryClient";
-import { FeedSkeleton, BackgroundRefreshDot } from "@/components/Skeletons";
+import { UniversalSkeleton, BackgroundRefreshDot } from "@/components/Skeletons";
 import { FeedVideoPlayer } from "@/components/FeedVideoPlayer";
 import { PollCard } from "@/components/PollCard";
 import { useTranslation } from "react-i18next";
@@ -807,7 +807,7 @@ function HomePage() {
         </div>
         {/* Feed */}
         <section className="pt-1 pb-6 space-y-1 w-full px-3">
-          {loadingFeed && <FeedSkeleton count={4} />}
+          {loadingFeed && <UniversalSkeleton variant="feed" count={4} />}
 
           {!loadingFeed && realPosts.length === 0 && (
             refreshingFeedInBackground ? (

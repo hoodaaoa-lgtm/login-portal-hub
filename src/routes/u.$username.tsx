@@ -12,6 +12,7 @@ import { FeedVideoPlayer } from "@/components/FeedVideoPlayer";
 import { fetchPostComments, sendPostComment, replyToPostComment, toggleCommentLike } from "@/lib/comments";
 import { BottomNav, SideNav, PageWrapper, FeedLayout } from "@/components/AppShell";
 import { RightSidebar } from "@/components/RightSidebar";
+import { UniversalSkeleton } from "@/components/Skeletons";
 import { useFollowState, FOLLOW_KEYS } from "@/hooks/useSocialSystem";
 import {
   ChevronLeft, Flag, Share2, Ban,
@@ -637,14 +638,7 @@ function UserProfilePage() {
     <>
       <SideNav />
       <PageWrapper className="pb-20 lg:pb-0">
-        <div className="animate-pulse">
-          <div className="h-36" style={{background:"var(--s3)"}}/>
-          <div className="px-4 pt-3 pb-4 space-y-3">
-            <div className="h-5 w-1/3 rounded-full" style={{background:"var(--s3)"}}/>
-            <div className="h-3 w-1/4 rounded-full" style={{background:"var(--s3)"}}/>
-            <div className="h-3 w-2/3 rounded-full" style={{background:"var(--s3)"}}/>
-          </div>
-        </div>
+        <UniversalSkeleton variant="profile" />
         <BottomNav />
       </PageWrapper>
     </>
@@ -812,20 +806,8 @@ function UserProfilePage() {
 
           {/* ── Posts ── */}
           {postsQuery.isLoading ? (
-            <div className="space-y-4 px-4 py-2">
-              {[1,2].map(i=>(
-                <div key={i} className="rounded-2xl border animate-pulse p-4 space-y-3"
-                  style={{borderColor:"var(--border-subtle)"}}>
-                  <div className="flex gap-3">
-                    <div className="w-10 h-10 rounded-full" style={{background:"var(--s3)"}}/>
-                    <div className="flex-1 space-y-2">
-                      <div className="h-3 w-1/3 rounded-full" style={{background:"var(--s3)"}}/>
-                      <div className="h-2.5 w-1/4 rounded-full" style={{background:"var(--s3)"}}/>
-                    </div>
-                  </div>
-                  <div className="h-40 rounded-xl" style={{background:"var(--s3)"}}/>
-                </div>
-              ))}
+            <div className="px-4 py-2">
+              <UniversalSkeleton variant="feed" count={2} />
             </div>
           ) : posts.length===0 ? (
             <div className="py-16 flex flex-col items-center gap-3 text-center px-8">

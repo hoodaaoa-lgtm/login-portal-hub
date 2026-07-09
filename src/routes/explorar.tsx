@@ -10,6 +10,7 @@ import { t } from "@/lib/useT";
 import { getHoodaOfficialId } from "@/lib/hoodaOfficial";
 import { toast } from "sonner";
 import { FOLLOW_KEYS } from "@/hooks/useSocialSystem";
+import { UniversalSkeleton } from "@/components/Skeletons";
 
 export const Route = createFileRoute("/explorar")({
   head: () => ({ meta: [{ title: "Hooda" }] }),
@@ -193,7 +194,7 @@ function ExplorePage() {
   });
 
   /* ── Query: pessoas sugeridas ── */
-  const { data: suggestedPeople = [] } = useQuery({
+  const { data: suggestedPeople = [], isLoading: suggestedPeopleLoading } = useQuery({
     queryKey: ["explore-people", myId],
     queryFn: async () => {
       const officialId = await getHoodaOfficialId();
@@ -731,7 +732,9 @@ function ExplorePage() {
                 <button onClick={() => setTab("people")} className="text-xs font-semibold" style={{ color: P }}>Ver mais →</button>
               </div>
               <div className="space-y-2">
-                {suggestedPeople.slice(0, 3).map((p: any) => <PersonCard key={p.id} p={p} />)}
+                {suggestedPeopleLoading
+                  ? <UniversalSkeleton variant="explorar" count={3} />
+                  : suggestedPeople.slice(0, 3).map((p: any) => <PersonCard key={p.id} p={p} />)}
               </div>
             </section>
 
@@ -744,7 +747,9 @@ function ExplorePage() {
             <p className="text-[11px] font-bold uppercase tracking-wider mb-3" style={{ color: "var(--text-muted)" }}>
               Pessoas sugeridas
             </p>
-            {suggestedPeople.map((p: any) => <PersonCard key={p.id} p={p} />)}
+            {suggestedPeopleLoading
+              ? <UniversalSkeleton variant="explorar" count={8} />
+              : suggestedPeople.map((p: any) => <PersonCard key={p.id} p={p} />)}
           </div>
 
         /* ══════════ MÍDIA (posts de qualquer pessoa; vídeos só na pesquisa) ══════════ */

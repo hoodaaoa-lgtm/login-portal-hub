@@ -1,7 +1,7 @@
 import { t } from "@/lib/useT";
 import React, { useEffect, useRef, useState } from "react";
 import { useScrollLock } from "@/hooks/useScrollLock";
-import { CommentsListSkeleton } from "@/components/Skeletons";
+import { UniversalSkeleton } from "@/components/Skeletons";
 import { createPortal } from "react-dom";
 import { X, Send, Loader, Smile, Heart } from "lucide-react";
 import { pauseAllVideos, incrementModalDepth, decrementModalDepth } from "@/lib/mediaManager";
@@ -509,7 +509,7 @@ function PostCommentsModalInner({
             {/* Lista de comentários */}
             <div className="px-4 py-3 space-y-4">
               {loading ? (
-                <CommentsListSkeleton />
+                <UniversalSkeleton variant="generic" count={5} />
               ) : displayComments.length === 0 ? (
                 <p className="text-xs text-neutral-400 text-center py-8">Sê o primeiro a comentar!</p>
               ) : (
