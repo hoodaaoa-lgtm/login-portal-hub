@@ -2008,7 +2008,7 @@ function ChatMediaLightbox({ items, index, onIndexChange, onClose, onReact, cont
               <EditedMediaDisplay src={displayItem.mediaUrl!} type="image" edit={displayItem.editState} maxH={(typeof window !== "undefined" ? window.innerHeight : 600) * 0.7} />
             ) : (
               <img src={displayItem.mediaUrl} alt="" onClick={handleZoomToggle}
-                className="max-w-full max-h-[72vh] object-contain select-none transition-transform duration-300 cursor-zoom-in"
+                className="w-full max-h-[72vh] object-cover select-none transition-transform duration-300 cursor-zoom-in"
                 style={{ transform: `scale(${zoom})`, cursor: zoom > 1 ? "zoom-out" : "zoom-in" }}
                 draggable={false} />
             )
