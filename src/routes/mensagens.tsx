@@ -1741,6 +1741,12 @@ function ChatMediaSendPreview({ item, onCancel, onSend, sending }: {
   const [edit, setEdit] = useState<MediaEditState | null>(null);
   const [editorOpen, setEditorOpen] = useState(false);
   const [editorTab, setEditorTab] = useState<"recortar" | "filtros" | "ajustes" | "texto" | "stickers">("filtros");
+  // ── Hooks têm de ser chamados sempre, na mesma ordem — nunca depois de um
+  // `return` condicional. Antes este useState vinha depois do `if (editorOpen)
+  // return (...)` abaixo, o que fazia o React perder a contagem de hooks
+  // entre renders (crash "Rendered more hooks than during the previous
+  // render") sempre que o editor de mídia abria/fechava.
+  const [showCaptionEmoji, setShowCaptionEmoji] = useState(false);
 
   function openEditor(tab: typeof editorTab) {
     setEditorTab(tab);
@@ -1772,7 +1778,6 @@ function ChatMediaSendPreview({ item, onCancel, onSend, sending }: {
     { id: "stickers", icon: <Smile className="h-[18px] w-[18px]" />,    title: "Stickers" },
   ];
 
-  const [showCaptionEmoji, setShowCaptionEmoji] = useState(false);
   const captionEmojis = ["😊","❤️","😂","🔥","👍","🙏","😍","✨","💕","🎉","😘","🥰","😭","💯","🤩","👏","🫂","😅","🥳","💪"];
 
   return (
@@ -1900,18 +1905,24 @@ function ChatMediaLightbox({ items, index, onIndexChange, onClose, onReact, cont
     el?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
   }, [index]);
 
+  // ── Hooks têm de ser chamados sempre, na mesma ordem — nunca depois de um
+  // `return` condicional. Antes este useState/useEffect vinham depois do
+  // `if (!displayItem) return null` abaixo, o que fazia o React perder a
+  // contagem de hooks entre renders (crash "Rendered more hooks than during
+  // the previous render") sempre que displayItem passava de null a definido
+  // ou vice-versa (ex: ao navegar entre mídias no lightbox).
+  const [zoom, setZoom] = useState(1);
+
   const displayItem = items[displayIndex];
+
+  // Reset zoom ao mudar imagem
+  useEffect(() => { setZoom(1); }, [displayIndex]);
 
   if (!displayItem) return null;
 
   const senderName = displayItem.senderId === myId ? "Tu" : (contact.full_name || contact.username);
   const senderPhoto = displayItem.senderId === myId ? null : contact.avatar_url;
   const dateLabel = displayItem.time;
-
-  const [zoom, setZoom] = useState(1);
-
-  // Reset zoom ao mudar imagem
-  useEffect(() => { setZoom(1); }, [displayIndex]);
 
   function toggleFavorite() {
     setFavorited((f) => ({ ...f, [displayItem.id]: !f[displayItem.id] }));
@@ -2220,6 +2231,28 @@ function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit
     }
   }, []);
 
+  // ── Hooks têm de ser chamados sempre, na mesma ordem — nunca depois de um
+  // `return` condicional. Antes estes useRef/useState/useEffect vinham
+  // depois do `if (m.viewOnce && m.viewOnceOpened) return (...)` abaixo, o
+  // que fazia o React perder a contagem de hooks entre renders (crash
+  // "Rendered more hooks than during the previous render") sempre que uma
+  // mensagem "ver uma vez" passava a estar aberta/fechada.
+  //
+  // ── Mobile: pressionar e segurar OU deslizar o dedo para o lado na
+  // bolha abre o menu de ações num bottom sheet (estilo WhatsApp/
+  // Instagram) em vez do pequeno dropdown ancorado, que em ecrãs
+  // pequenos podia ficar cortado/fora do ecrã. Um toque curto continua
+  // a funcionar normalmente (abrir imagem/vídeo).
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const actionFired = useRef(false); // long-press OU swipe já abriram o menu
+  const touchStartPos = useRef<{ x: number; y: number } | null>(null);
+  // Feedback visual: a bolha "aperta" ou desliza levemente enquanto o
+  // dedo está pressionado/a arrastar, para confirmar ao utilizador que
+  // a ação está a ser reconhecida (igual ao WhatsApp/Instagram).
+  const [isPressing, setIsPressing] = useState(false);
+  const [swipeDx, setSwipeDx] = useState(0);
+  useEffect(() => () => { if (longPressTimer.current) clearTimeout(longPressTimer.current); }, []);
+
   // Visualização única já aberta
   if (m.viewOnce && m.viewOnceOpened) {
     return (
@@ -2233,23 +2266,10 @@ function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit
     );
   }
 
-  // ── Mobile: pressionar e segurar OU deslizar o dedo para o lado na
-  // bolha abre o menu de ações num bottom sheet (estilo WhatsApp/
-  // Instagram) em vez do pequeno dropdown ancorado, que em ecrãs
-  // pequenos podia ficar cortado/fora do ecrã. Um toque curto continua
-  // a funcionar normalmente (abrir imagem/vídeo).
-  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const actionFired = useRef(false); // long-press OU swipe já abriram o menu
-  const touchStartPos = useRef<{ x: number; y: number } | null>(null);
   const LONG_PRESS_MS = 420;
   const MOVE_CANCEL_PX = 10;
   const SWIPE_OPEN_PX = 40;   // distância horizontal para abrir o menu ao deslizar
   const SWIPE_MAX_DY  = 30;   // tolerância vertical (evita confundir com scroll da lista)
-  // Feedback visual: a bolha "aperta" ou desliza levemente enquanto o
-  // dedo está pressionado/a arrastar, para confirmar ao utilizador que
-  // a ação está a ser reconhecida (igual ao WhatsApp/Instagram).
-  const [isPressing, setIsPressing] = useState(false);
-  const [swipeDx, setSwipeDx] = useState(0);
 
   function handleBubbleTouchStart(e: React.TouchEvent) {
     if (!isMobile) return;
@@ -2309,7 +2329,6 @@ function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit
       e.stopPropagation();
     }
   }
-  useEffect(() => () => { if (longPressTimer.current) clearTimeout(longPressTimer.current); }, []);
 
   function closeMenu() { setShowMenu(false); }
 
