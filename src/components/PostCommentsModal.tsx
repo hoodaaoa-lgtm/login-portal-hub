@@ -133,6 +133,8 @@ export type PostComment = {
   likeCount?: number;
   likedByMe?: boolean;
   replies?: PostComment[];
+  moderationStatus?: string | null;
+  isSensitive?: boolean;
 };
 
 function CommentRow({
