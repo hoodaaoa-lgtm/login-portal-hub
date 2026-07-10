@@ -102,21 +102,29 @@ function ensureFollowRealtimeSync(qc: ReturnType<typeof useQueryClient>) {
 }
 
 async function fetchFollowStatus(myId: string, targetUsername: string): Promise<boolean> {
-  const { data } = await (supabase as any)
+  const { data, error } = await (supabase as any)
     .from("follows")
     .select("id")
     .eq("follower_id", myId)
     .eq("target_username", targetUsername)
     .maybeSingle();
+  // Importante: se a consulta falhar (RLS, rede, etc.), NÃO podemos
+  // devolver "false" como se fosse resposta válida — isso faz o React
+  // Query gravar "não sigo" como sucesso e apagar o "sigo" correto que já
+  // estava em cache (era exatamente isto que fazia o botão "esquecer"
+  // que já se seguia alguém ao fim de um tempo, mesmo com o contador
+  // certo). Lançar o erro faz o React Query manter o último valor bom.
+  if (error) throw error;
   return !!data;
 }
 
 async function fetchFollowCounts(username: string): Promise<{ followers: number; following: number }> {
-  const { data } = await (supabase as any)
+  const { data, error } = await (supabase as any)
     .from("profiles")
     .select("followers_count,following_count")
     .eq("username", username)
     .maybeSingle();
+  if (error) throw error;
   return { followers: data?.followers_count ?? 0, following: data?.following_count ?? 0 };
 }
 
@@ -276,8 +284,9 @@ export function useBookmarkState(postId: string, myId: string | null | undefined
     queryKey: key,
     queryFn: async () => {
       if (!myId) return false;
-      const { data } = await (supabase as any).from("post_saves").select("id")
+      const { data, error } = await (supabase as any).from("post_saves").select("id")
         .eq("post_id", postId).eq("user_id", myId).maybeSingle();
+      if (error) throw error;
       return !!data;
     },
     enabled: !!myId && initial === undefined,
