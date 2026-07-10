@@ -3309,6 +3309,18 @@ function ChatPanel({ myId, contact, onBack, contacts }: {
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const broadcastChRef = useRef<any>(null);
   const realtimeDmSeqRef = useRef(0);
+  const lastTypingSentRef = useRef(0);
+
+  /** Avisa o outro lado que estou a escrever — no máx. 1x/2s, para não
+   * inundar o canal a cada tecla. O "parou de escrever" não precisa de
+   * evento próprio: quem recebe já limpa o estado sozinho 3s depois do
+   * último aviso (ver o "ch.on(broadcast...)" mais abaixo). */
+  function sendTyping() {
+    const now = Date.now();
+    if (now - lastTypingSentRef.current < 2000) return;
+    lastTypingSentRef.current = now;
+    broadcastChRef.current?.send({ type: "broadcast", event: "typing", payload: { userId: myId } });
+  }
 
   // ── Presença do contacto: consulta a RPC segura (respeita hide_last_seen
   // de ambos os lados) ao abrir a conversa e depois a cada 20s. ──
@@ -4810,7 +4822,7 @@ function ChatPanel({ myId, contact, onBack, contacts }: {
             >
               <ComposerHighlightOverlay text={input} />
             </div>
-            <textarea ref={inputRef} value={input} onChange={e => setInput(e.target.value)} rows={1}
+            <textarea ref={inputRef} value={input} onChange={e => { setInput(e.target.value); if (e.target.value) sendTyping(); }} rows={1}
               onKeyDown={e => { if (e.key==="Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
               onScroll={e => { if (composerBackdropRef.current) composerBackdropRef.current.scrollTop = e.currentTarget.scrollTop; }}
               onPaste={handleComposerPaste}
