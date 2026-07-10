@@ -4033,10 +4033,16 @@ function ChatPanel({ myId, contact, onBack, contacts }: {
   // ── GIF search ──
   useEffect(() => {
     if (!gifSearch || pickerTab !== "gif") return;
+    const tenorKey = import.meta.env.VITE_TENOR_API_KEY as string | undefined;
+    if (!tenorKey) {
+      console.warn("[gif] VITE_TENOR_API_KEY não definida — pesquisa de GIFs desativada.");
+      setGifs([]);
+      return;
+    }
     const t = setTimeout(async () => {
       setGifLoading(true);
       try {
-        const r = await fetch(`https://tenor.googleapis.com/v2/search?q=${encodeURIComponent(gifSearch)}&key=AIzaSyAyimkuYQYF_FXVALexPuGQctUWRURdCFY&limit=20&media_filter=gif`);
+        const r = await fetch(`https://tenor.googleapis.com/v2/search?q=${encodeURIComponent(gifSearch)}&key=${tenorKey}&limit=20&media_filter=gif`);
         const j = await r.json();
         setGifs((j.results ?? []).map((x: any) => ({ id: x.id, url: x.media_formats?.gif?.url ?? "" })));
       } catch { setGifs([]); }
