@@ -2,14 +2,13 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { BottomNav, SideNav, PageWrapper, FeedLayout } from "@/components/AppShell";
 import { RightSidebar } from "@/components/RightSidebar";
 import { UniversalPostCard } from "@/components/UniversalPostCard";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect, useMemo } from "react";
 import { Search, X, TrendingUp, Users, FileText, UserPlus, UserCheck, BookOpen, Download, Bookmark, Hash } from "lucide-react";
 import { t } from "@/lib/useT";
 import { getHoodaOfficialId } from "@/lib/hoodaOfficial";
-import { toast } from "sonner";
-import { FOLLOW_KEYS } from "@/hooks/useSocialSystem";
+import { useFollowState } from "@/hooks/useSocialSystem";
 import { UniversalSkeleton } from "@/components/Skeletons";
 
 export const Route = createFileRoute("/explorar")({
@@ -146,12 +145,10 @@ function Av({ name, src, size = 40, color }: { name: string; src?: string | null
 ══════════════════════════════════════════ */
 function ExplorePage() {
   const navigate = useNavigate();
-  const qc = useQueryClient();
   const routeSearch = Route.useSearch();
   const [search, setSearch]     = useState(routeSearch.q ?? "");
   const [tab, setTab]           = useState<Tab>(routeSearch.tab ?? "trending");
   const [myId, setMyId]         = useState("");
-  const [followMap, setFollowMap] = useState<Record<string, boolean>>({});
 
   // Se a URL trouxer uma aba (?tab=people) ou um texto de busca (?q=algo),
   // aplica mesmo se o componente já estiver montado (ex: clicar numa hashtag)
@@ -167,22 +164,6 @@ function ExplorePage() {
       if (session) setMyId(session.user.id);
     });
   }, []);
-
-  /* Carregar quem já sigo, para o botão mostrar o estado certo */
-  const { data: myFollowsData, isLoading: myFollowsLoading } = useQuery({
-    queryKey: ["explore-my-follows", myId],
-    queryFn: async () => {
-      const { data } = await (supabase as any)
-        .from("follows").select("target_username").eq("follower_id", myId);
-      return (data ?? []).map((r: any) => r.target_username).filter(Boolean) as string[];
-    },
-    enabled: !!myId,
-    staleTime: 10_000,
-  });
-  // Enquanto isto ainda não carregou, não sabemos de verdade quem já sigo —
-  // mostrar "Acompanhar" nesse intervalo e depois saltar para "Acompanhando"
-  // é o "piscar" que confunde o utilizador. Skeleton em vez disso.
-  const followStatusLoading = !!myId && myFollowsLoading;
 
   /* ── Query: pesquisa ── */
   const searchActive = search.trim().length >= 2;
@@ -561,8 +542,6 @@ function ExplorePage() {
   const rankedSearchVideos    = useMemo(() => applySmartRank(searchVideos, "video"),    [searchVideos, smartSearch]);
   const rankedSearchPostCards = useMemo(() => applySmartRank(searchPostCards, "post"),  [searchPostCards, smartSearch]);
 
-  const myFollowsSet = useMemo(() => new Set(myFollowsData ?? []), [myFollowsData]);
-
   /* ── Contagem de seguidores em lote para as pessoas visíveis (pesquisa +
      sugeridas) — 1 pedido só, em vez de 1 por cartão. ── */
   const visiblePeopleUsernames = useMemo(() => {
@@ -589,39 +568,19 @@ function ExplorePage() {
     return m;
   }, [followerCountsRaw]);
 
-  async function toggleFollow(userId: string, username: string) {
-    if (!myId) { toast.error("Inicia sessão para acompanhar."); return; }
-    const isF = followMap[userId] ?? myFollowsSet.has(username);
-    setFollowMap(prev => ({ ...prev, [userId]: !isF }));
-    try {
-      // Mesma RPC atómica usada em toda a app (UniversalPostCard, perfil,
-      // RightSidebar...) — antes esta página escrevia direto na tabela
-      // "follows" com upsert/delete, sem passar por aqui. Isso fazia com
-      // que seguir alguém no Explorar nunca aparecesse como "A seguir" no
-      // feed/perfil dessa pessoa sem recarregar a página inteira, e não
-      // preenchia following_id (usado nas permissões de mensagens).
-      const { data, error } = await (supabase as any).rpc("toggle_follow", {
-        p_target_username: username,
-        p_target_id: userId,
-      });
-      if (error) throw error;
-      toast.success(data?.following ? `Estás a acompanhar @${username}!` : `Deixaste de acompanhar @${username}`);
-      // Sincroniza a cache partilhada do sistema social — sem isto, o
-      // botão "Seguir" no feed/perfil desta pessoa só atualizava depois
-      // de expirar o staleTime (60s) ou de um reload manual.
-      qc.setQueryData(FOLLOW_KEYS.status(myId, username), !!data?.following);
-      qc.invalidateQueries({ queryKey: FOLLOW_KEYS.counts(username) });
-      qc.invalidateQueries({ queryKey: ["profile"], exact: false });
-      qc.invalidateQueries({ queryKey: ["explore-my-follows", myId] });
-    } catch (err: any) {
-      setFollowMap(prev => ({ ...prev, [userId]: isF }));
-      toast.error(err?.message ?? "Não foi possível atualizar. Tenta novamente.");
-    }
-  }
-
-  /* ── Render helpers ── */
+  /* ── Render helpers ──
+     PersonCard usa useFollowState — a MESMA fonte de verdade partilhada
+     com o resto da app (post cards, perfil, u/$username, sugestões da
+     home...). Antes, o Explorar tinha a sua própria cópia do estado
+     ("followMap" local + query "explore-my-follows" com staleTime de só
+     10s, sem cobertura do realtime): clicar aqui até acompanhava de
+     verdade na base de dados, mas o botão nesta página específica
+     esquecia isso ao fim de pouco tempo (refetch/remount) porque vivia
+     numa cache totalmente separada da usada nas outras páginas — dava a
+     sensação de "acompanho, mas o botão não guarda" ou "num sítio diz
+     que sigo, no Explorar não". */
   function PersonCard({ p }: { p: any }) {
-    const isF = followMap[p.id] ?? myFollowsSet.has(p.username);
+    const { isFollowing, isPending, isLoading: followLoading, toggle } = useFollowState(myId || null, p.username, p.id);
     const followers = followerCounts[p.username];
     return (
       <div className="flex items-center gap-3 p-3 rounded-2xl border transition hover:bg-[var(--s1)]"
@@ -636,17 +595,17 @@ function ExplorePage() {
           </p>
         </div>
         {myId && myId !== p.id && (
-          followStatusLoading ? (
+          followLoading ? (
             <div className="relative overflow-hidden h-[30px] w-[104px] rounded-full shrink-0" style={{ background: "var(--s2)" }}>
               <div className="skeleton-shimmer absolute inset-0" />
             </div>
           ) : (
-            <button onClick={() => toggleFollow(p.id, p.username)}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold transition active:scale-95 shrink-0"
-              style={isF
+            <button onClick={toggle} disabled={isPending}
+              className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold transition active:scale-95 shrink-0 disabled:opacity-60"
+              style={isFollowing
                 ? { background: "var(--s2)", color: "var(--text-secondary)", border: "1px solid var(--border-default)" }
                 : { background: P, color: "#fff" }}>
-              {isF ? <><UserCheck className="h-3.5 w-3.5" />Acompanhando</> : <><UserPlus className="h-3.5 w-3.5" />Acompanhar</>}
+              {isFollowing ? <><UserCheck className="h-3.5 w-3.5" />Acompanhando</> : <><UserPlus className="h-3.5 w-3.5" />Acompanhar</>}
             </button>
           )
         )}
