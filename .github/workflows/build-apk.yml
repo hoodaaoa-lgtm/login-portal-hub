@@ -36,7 +36,16 @@ jobs:
           echo "<!DOCTYPE html><html><head><title>Hooda</title></head><body>Loading Hooda...</body></html>" > dist/index.html
 
       - name: Sincronizar Capacitor
-        run: npx cap sync android
+        run: |
+          set +e
+          npx cap sync android > sync-log.txt 2>&1
+          code=$?
+          cat sync-log.txt
+          if [ $code -ne 0 ]; then
+            msg=$(tail -c 900 sync-log.txt | tr '\n' ' ')
+            echo "::error::SYNC_FAIL: $msg"
+            exit 1
+          fi
 
       - name: Dar permissão ao gradlew
         run: chmod +x android/gradlew
@@ -44,7 +53,13 @@ jobs:
       - name: Construir APK (debug)
         run: |
           cd android
-          ./gradlew assembleDebug
+          ./gradlew assembleDebug --stacktrace > ../gradle-log.txt 2>&1
+          code=$?
+          if [ $code -ne 0 ]; then
+            msg=$(tail -c 900 ../gradle-log.txt | tr '\n' ' ')
+            echo "::error::GRADLE_FAIL: $msg"
+            exit 1
+          fi
 
       - name: Enviar APK como artefacto
         uses: actions/upload-artifact@v4
