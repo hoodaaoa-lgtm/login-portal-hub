@@ -22,7 +22,6 @@ export const Route = createFileRoute("/hdequipa9x2")({
   component: AdminPage,
 });
 
-const ADMIN_PASSWORD = "141819";
 const UNLOCK_KEY = "hooda_admin_unlocked_v1";
 const LOGO = "/icons/icon-192.png";
 
@@ -264,9 +263,14 @@ function AdminPage() {
     })();
   }, [navigate]);
 
-  function tryUnlock(e: React.FormEvent) {
+  const [pwdChecking, setPwdChecking] = useState(false);
+
+  async function tryUnlock(e: React.FormEvent) {
     e.preventDefault();
-    if (pwd === ADMIN_PASSWORD) {
+    setPwdChecking(true);
+    const { data: ok, error } = await db.rpc("verify_admin_pin", { candidate: pwd });
+    setPwdChecking(false);
+    if (!error && ok) {
       sessionStorage.setItem(UNLOCK_KEY, "1");
       setStage("unlocked");
       setPwdError(false);
@@ -322,10 +326,10 @@ function AdminPage() {
             }}
           />
           {pwdError && <p className="text-xs -mt-3" style={{ color: "#EF4444" }}>Palavra-passe incorreta.</p>}
-          <button type="submit"
-            className="w-full py-3 rounded-2xl font-bold text-white transition active:scale-95"
+          <button type="submit" disabled={pwdChecking}
+            className="w-full py-3 rounded-2xl font-bold text-white transition active:scale-95 disabled:opacity-60"
             style={{ background: "linear-gradient(135deg,#5B3FCF,#7B5CE8)", boxShadow: "0 4px 20px rgba(91,63,207,0.4)" }}>
-            Entrar
+            {pwdChecking ? <Loader className="h-4 w-4 animate-spin mx-auto" /> : "Entrar"}
           </button>
         </form>
       </div>
