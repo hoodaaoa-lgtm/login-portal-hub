@@ -4189,6 +4189,25 @@ function ChatPanel({ myId, contact, onBack, contacts }: {
     msgs.filter(m => (m.type === "image" || m.type === "video") && !m.viewOnce),
   [msgs]);
 
+  // ── Última mensagem minha que o contacto já viu (estilo Instagram: o
+  // avatar dele aparece por baixo dela, e "salta" para a mais recente
+  // sempre que ele vê uma nova). Percorremos do fim para o início e
+  // paramos na primeira mensagem minha com status "lida". ──
+  const lastSeenByContactId = useMemo(() => {
+    if (readReceipts === false) return null; // respeita a mesma privacidade dos vistos
+    for (let i = msgs.length - 1; i >= 0; i--) {
+      const mm = { ...msgs[i], ...(localOverrides[msgs[i].id] ?? {}) } as Message & { deletedForMe?: boolean };
+      if (mm.deletedForMe || mm.deletedForAll) continue;
+      if (mm.senderId !== myId) continue;
+      if (mm.status === "read" || mm.deliveryStatus === "read") return mm.id;
+      // a primeira mensagem minha encontrada (a partir do fim) que ainda
+      // não foi lida corta a busca — não faz sentido "saltar" o avatar
+      // para uma mensagem antiga se a mais recente ainda está por ler.
+      return null;
+    }
+    return null;
+  }, [msgs, localOverrides, myId, readReceipts]);
+
   const msgRef = (m: Message) => msgs.find(x => x.id === m.replyTo);
   const fmtSecs = (s: number) => `${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`;
 
@@ -4380,24 +4399,40 @@ function ChatPanel({ myId, contact, onBack, contacts }: {
           }
           const replied = merged.replyTo ? msgRef(merged) ?? null : null;
           return (
-            <MsgBubble key={merged.id} m={merged as any} isMe={isMe} replied={replied}
-              contact={contact} myId={myId} mediaMsgs={mediaMsgs}
-              onReply={() => setReplyTo(merged)}
-              onEdit={() => startEdit(merged)}
-              onDeleteForMe={() => deleteForMe(merged.id)}
-              onDeleteForEveryone={() => deleteForEveryone(merged.id)}
-              onOpenViewOnce={() => openViewOnce(merged.id)}
-              onOpenSurprise={() => openSurprise(merged.id)}
-              onOpenLightbox={() => {
-                const idx = mediaMsgs.findIndex(x => x.id === merged.id);
-                if (idx !== -1) setLightboxIndex(idx);
-              }}
-              onReact={handleReact}
-              onForward={() => setForwardMsg(merged)}
-              onRetry={() => retryMsg(merged)}
-              uploadPct={uploadPct}
-              readReceipts={readReceipts}
-            />
+            <div key={merged.id}>
+              <MsgBubble m={merged as any} isMe={isMe} replied={replied}
+                contact={contact} myId={myId} mediaMsgs={mediaMsgs}
+                onReply={() => setReplyTo(merged)}
+                onEdit={() => startEdit(merged)}
+                onDeleteForMe={() => deleteForMe(merged.id)}
+                onDeleteForEveryone={() => deleteForEveryone(merged.id)}
+                onOpenViewOnce={() => openViewOnce(merged.id)}
+                onOpenSurprise={() => openSurprise(merged.id)}
+                onOpenLightbox={() => {
+                  const idx = mediaMsgs.findIndex(x => x.id === merged.id);
+                  if (idx !== -1) setLightboxIndex(idx);
+                }}
+                onReact={handleReact}
+                onForward={() => setForwardMsg(merged)}
+                onRetry={() => retryMsg(merged)}
+                uploadPct={uploadPct}
+                readReceipts={readReceipts}
+              />
+              {merged.id === lastSeenByContactId && (
+                <div className="flex justify-end pr-1 pt-0.5">
+                  <div className="w-4 h-4 rounded-full overflow-hidden shrink-0" title={`Visto por @${contact.username}`}>
+                    {contact.avatar_url
+                      ? <img src={contact.avatar_url} alt="" className="w-full h-full object-cover" />
+                      : (
+                        <div className="w-full h-full flex items-center justify-center text-[8px] font-bold text-white"
+                          style={{ background: contact.color || "#5B3FCF" }}>
+                          {(contact.full_name || contact.username || "?")[0]?.toUpperCase()}
+                        </div>
+                      )}
+                  </div>
+                </div>
+              )}
+            </div>
           );
         })}
         <div ref={bottomRef} />
