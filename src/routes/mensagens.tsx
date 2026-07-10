@@ -196,16 +196,18 @@ function ExpandableMessageText({ text, isMe }: { text: string; isMe: boolean }) 
   const toggleColor = isMe ? "rgba(255,255,255,0.85)" : "#5B3FCF";
 
   return (
-    <div
-      style={{
-        maxHeight: expanded ? 4000 : (long ? 220 : undefined),
-        overflow: "hidden",
-        transition: "max-height 0.35s ease",
-      }}
-    >
-      <p className="break-words text-sm leading-relaxed whitespace-pre-wrap">
-        <LinkifiedText text={shown} isMe={isMe} />
-      </p>
+    <div>
+      <div
+        style={{
+          maxHeight: expanded ? 4000 : (long ? 220 : undefined),
+          overflow: "hidden",
+          transition: "max-height 0.35s ease",
+        }}
+      >
+        <p className="break-words text-sm leading-relaxed whitespace-pre-wrap">
+          <LinkifiedText text={shown} isMe={isMe} />
+        </p>
+      </div>
       {long && (
         <button
           onClick={e => { e.stopPropagation(); setExpanded(v => !v); }}
