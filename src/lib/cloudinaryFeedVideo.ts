@@ -35,6 +35,19 @@ export function getFeedVideoThumbnail(publicId: string, timeOffset = "0"): strin
  * vídeos, com progresso. Mesma lógica de src/lib/cloudinary.ts
  * (uploadToCloudinary), só que aponta para a conta/preset novos.
  */
+/** Escapa caracteres que o formato de "context" do Cloudinary usa como
+ *  delimitadores (key=value|key2=value2). Sem isto, uma legenda com "=", "|"
+ *  ou quebras de linha — bastante comum em legendas mais compridas, como as
+ *  de vídeos maiores — parte o parsing do lado do Cloudinary e devolve
+ *  "Invalid encoding in context", travando a publicação. */
+function escapeCloudinaryContextValue(v: string): string {
+  return v
+    .replace(/\\/g, "\\\\")
+    .replace(/=/g, "\\=")
+    .replace(/\|/g, "\\|")
+    .replace(/[\r\n]+/g, " ");
+}
+
 export function uploadFeedVideo(
   file: File,
   meta: { title: string; creatorId: string; userId: string },
@@ -45,7 +58,8 @@ export function uploadFeedVideo(
     formData.append("file", file);
     formData.append("upload_preset", FEED_VIDEO_UPLOAD_PRESET);
     formData.append("folder", `hooda/videos/${meta.userId}`);
-    formData.append("context", `title=${meta.title}|creator_id=${meta.creatorId}`);
+    formData.append("context",
+      `title=${escapeCloudinaryContextValue(meta.title)}|creator_id=${escapeCloudinaryContextValue(meta.creatorId)}`);
     formData.append("resource_type", "video");
 
     const xhr = new XMLHttpRequest();

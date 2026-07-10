@@ -16,6 +16,18 @@ export interface CloudinaryUploadResult {
   bytes: number;
 }
 
+/** Escapa caracteres que o formato de "context" do Cloudinary usa como
+ *  delimitadores (key=value|key2=value2). Sem isto, um título com "=", "|"
+ *  ou quebras de linha parte o parsing do lado do Cloudinary e devolve
+ *  "Invalid encoding in context", travando o upload. */
+function escapeCloudinaryContextValue(v: string): string {
+  return v
+    .replace(/\\/g, "\\\\")
+    .replace(/=/g, "\\=")
+    .replace(/\|/g, "\\|")
+    .replace(/[\r\n]+/g, " ");
+}
+
 /**
  * Faz upload de um vídeo para o Cloudinary com progresso.
  * Usa XMLHttpRequest para suportar onProgress (fetch não suporta).
@@ -30,7 +42,8 @@ export function uploadToCloudinary(
     formData.append("file", file);
     formData.append("upload_preset", UPLOAD_PRESET_VIDEO);
     formData.append("folder", `hooda/videos/${meta.userId}`);
-    formData.append("context", `title=${meta.title}|creator_id=${meta.creatorId}`);
+    formData.append("context",
+      `title=${escapeCloudinaryContextValue(meta.title)}|creator_id=${escapeCloudinaryContextValue(meta.creatorId)}`);
     formData.append("resource_type", "video");
 
     const xhr = new XMLHttpRequest();
