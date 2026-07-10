@@ -28,6 +28,7 @@ import { useFollowState } from "@/hooks/useSocialSystem";
 import { LanguagePanel } from "@/components/LanguageSwitcher";
 import { LANGUAGES, getCurrentLang } from "@/lib/i18n";
 import { uploadImageToCloudinary } from "@/lib/cloudinary";
+import { optimizeAvatar, optimizePostPhoto } from "@/lib/imageOptimize";
 import { uploadFeedVideo } from "@/lib/cloudinaryFeedVideo";
 import { fetchPostComments, sendPostComment, replyToPostComment, toggleCommentLike } from "@/lib/comments";
 import { deletePostForEveryone } from "@/lib/posts";
@@ -90,7 +91,7 @@ function Avatar({ name, size = 72, src }: { name: string; size?: number; src?: s
       color: "white", flexShrink: 0, overflow: "hidden",
     }}>
       {src
-        ? <img src={src} alt={name} style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={(e) => { e.currentTarget.style.display = "none"; }} />
+        ? <img loading="lazy" decoding="async" src={optimizeAvatar(src, size)} alt={name} style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={(e) => { e.currentTarget.style.display = "none"; }} />
         : (name?.[0] ?? "?").toUpperCase()
       }
     </div>
@@ -314,7 +315,7 @@ function CreatePostModal({
         <div className="flex-1 overflow-y-auto px-4 pb-2">
           {photo && (
             <div className="relative mb-3 rounded-xl overflow-hidden">
-              <img src={photo} alt="foto" className="w-full rounded-xl" style={{ display: "block" }} onError={(e) => { e.currentTarget.style.display = "none"; }} />
+              <img src={optimizePostPhoto(photo, 700)} alt="foto" className="w-full rounded-xl" style={{ display: "block" }} onError={(e) => { e.currentTarget.style.display = "none"; }} />
               <button onClick={() => { setPhoto(null); setPhotoFile(null); }}
                 className="absolute top-2 right-2 bg-black/60 text-white rounded-full p-1">
                 <X className="h-4 w-4" />
@@ -875,7 +876,7 @@ export function SettingsDrawer({
             <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-white/50 shrink-0 flex items-center justify-center"
               style={{ background: "rgba(255,255,255,0.2)" }}>
               {avatar
-                ? <img src={avatar} alt={displayName} className="w-full h-full object-cover" />
+                ? <img loading="lazy" decoding="async" src={optimizeAvatar(avatar, 56)} alt={displayName} className="w-full h-full object-cover" />
                 : <span className="text-white font-bold text-xl">{displayName[0]?.toUpperCase()}</span>
               }
             </div>
@@ -1933,7 +1934,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
         <div className="relative">
           <div className="h-52 relative overflow-hidden"
             style={coverUrl ? undefined : { background: "linear-gradient(135deg,#5B3FCF 0%,#8B5CF6 55%,#E94B8A 100%)" }}>
-            {coverUrl && <img src={coverUrl} alt="capa" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = "none"; }} />}
+            {coverUrl && <img src={optimizePostPhoto(coverUrl, 1200)} alt="capa" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = "none"; }} />}
             {/* Botão câmera da capa */}
             <button onClick={() => pickFile(coverInputRef, setCoverUrl, "cover")}
               className="absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center border-2 border-white shadow"
@@ -1954,7 +1955,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
                   cursor: avatarUrl ? "pointer" : "default",
                 }}>
                 {avatarUrl
-                  ? <img src={avatarUrl} alt={name} style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={(e) => { e.currentTarget.style.display = "none"; }} />
+                  ? <img src={optimizeAvatar(avatarUrl, 264)} alt={name} style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={(e) => { e.currentTarget.style.display = "none"; }} />
                   : (name?.[0] ?? "?").toUpperCase()}
               </div>
               <button onClick={() => pickFile(avatarInputRef, setAvatarUrl, "avatar")}
@@ -2083,7 +2084,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
                     <p className="text-sm leading-snug mb-3" style={{ color: "var(--text-primary)" }}>{a.content}</p>
                   )}
                   {a.mediaUrl && (
-                    <img src={a.mediaUrl} alt="" className="w-full rounded-xl mb-3 max-h-72 object-cover" />
+                    <img loading="lazy" decoding="async" src={optimizePostPhoto(a.mediaUrl, 600)} alt="" className="w-full rounded-xl mb-3 max-h-72 object-cover" />
                   )}
 
                   {/* Post original referenciado */}
@@ -2100,7 +2101,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
                           <FeedVideoPlayer src={a.original.videoUrl} postId={a.original.id} kind="video" rounded="rounded-xl" autoPlay={false} />
                         </div>
                       ) : a.original.image && (
-                        <img src={a.original.image} alt="" className="w-full rounded-xl mt-2 max-h-56 object-cover" />
+                        <img loading="lazy" decoding="async" src={optimizePostPhoto(a.original.image, 500)} alt="" className="w-full rounded-xl mt-2 max-h-56 object-cover" />
                       )}
                     </div>
                   ) : (
@@ -2202,7 +2203,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
             style={{background:"rgba(255,255,255,0.15)"}}>
             <X className="h-5 w-5 text-white"/>
           </button>
-          <img src={photoViewing} alt="" className="object-contain"
+          <img src={optimizePostPhoto(photoViewing, 1200)} alt="" className="object-contain"
             style={{maxWidth:"95vw",maxHeight:"92vh",borderRadius:8}}
             onClick={e=>e.stopPropagation()}
             onContextMenu={e=>e.preventDefault()}/>

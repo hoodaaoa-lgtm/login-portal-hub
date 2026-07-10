@@ -11,6 +11,7 @@ import { fetchPostComments, sendPostComment, replyToPostComment, toggleCommentLi
 import { deletePostForEveryone } from "@/lib/posts";
 import { FeedVideoPlayer } from "@/components/FeedVideoPlayer";
 import { getCloudinaryPosterFromUrl } from "@/lib/cloudinary";
+import { optimizeAvatar, optimizePostPhoto, optimizeBlurredBackground, optimizeThumbnail } from "@/lib/imageOptimize";
 import { PollCard } from "@/components/PollCard";
 import { SensitiveContentOverlay } from "@/components/SensitiveContentOverlay";
 import { appealPostModeration } from "@/lib/moderationPrefs";
@@ -273,9 +274,11 @@ function SlideTrack({ photos, idx, setIdx, fit, onClickImage, onNaturalRatio }: 
           usada no player de vídeo) — evita esticar/cortar a imagem real. */}
       {fit === "contain" && photos[idx] && (
         <img
-          src={photos[idx]}
+          src={optimizeBlurredBackground(photos[idx])}
           alt=""
           aria-hidden
+          loading="lazy"
+          decoding="async"
           className="absolute inset-0 w-full h-full object-cover scale-110 pointer-events-none"
           style={{ filter: "blur(30px) brightness(0.55)" }}
         />
@@ -293,7 +296,7 @@ function SlideTrack({ photos, idx, setIdx, fit, onClickImage, onNaturalRatio }: 
             <img
               loading={Math.abs(i - idx) <= 1 ? "eager" : "lazy"}
               decoding="async"
-              src={p}
+              src={optimizePostPhoto(p)}
               alt=""
               draggable={false}
               className="block w-full h-full pointer-events-none relative"
@@ -501,7 +504,7 @@ function RepostModal({ post, me, onClose, onReposted }: {
                 <div className="w-7 h-7 rounded-full overflow-hidden flex items-center justify-center text-white text-xs font-bold shrink-0"
                   style={{ background: avatarColor(post.user) }}>
                   {post.avatar_url
-                    ? <img src={post.avatar_url} alt="" className="w-full h-full object-cover" />
+                    ? <img loading="lazy" decoding="async" src={optimizeAvatar(post.avatar_url, 56)} alt="" className="w-full h-full object-cover" />
                     : (post.user?.[0] ?? "?").toUpperCase()}
                 </div>
                 <div>
@@ -513,7 +516,7 @@ function RepostModal({ post, me, onClose, onReposted }: {
                 <p className="text-sm leading-relaxed line-clamp-3" style={{ color: "var(--text-secondary)" }}>{post.text}</p>
               )}
               {post.photo && (
-                <img src={post.photo} alt="" className="w-full rounded-xl mt-2 object-cover max-h-32" />
+                <img loading="lazy" decoding="async" src={optimizePostPhoto(post.photo, 500)} alt="" className="w-full rounded-xl mt-2 object-cover max-h-32" />
               )}
             </div>
 
@@ -602,7 +605,7 @@ function RepostModal({ post, me, onClose, onReposted }: {
                   <div className="w-6 h-6 rounded-full overflow-hidden flex items-center justify-center text-white text-[10px] font-bold shrink-0"
                     style={{ background: avatarColor(post.user) }}>
                     {post.avatar_url
-                      ? <img src={post.avatar_url} alt="" className="w-full h-full object-cover" />
+                      ? <img loading="lazy" decoding="async" src={optimizeAvatar(post.avatar_url, 48)} alt="" className="w-full h-full object-cover" />
                       : (post.user?.[0] ?? "?").toUpperCase()}
                   </div>
                   <p className="text-xs font-bold" style={{ color: "var(--text-primary)" }}>{post.user}</p>
@@ -614,7 +617,7 @@ function RepostModal({ post, me, onClose, onReposted }: {
                   </p>
                 )}
                 {post.photo && (
-                  <img src={post.photo} alt="" className="w-full object-cover max-h-40" />
+                  <img loading="lazy" decoding="async" src={optimizePostPhoto(post.photo, 500)} alt="" className="w-full object-cover max-h-40" />
                 )}
               </div>
 
@@ -775,7 +778,7 @@ function ForwardModal({ post, me, onClose }: { post: any; me: any; onClose: () =
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl transition hover:bg-[var(--s2)] active:scale-[0.98]">
                 <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center text-white font-bold text-sm shrink-0"
                   style={{ background: "#5B3FCF" }}>
-                  {c.avatar ? <img src={c.avatar} alt="" className="w-full h-full object-cover" /> : (c.otherName?.[0] ?? "?").toUpperCase()}
+                  {c.avatar ? <img loading="lazy" decoding="async" src={optimizeAvatar(c.avatar, 40)} alt="" className="w-full h-full object-cover" /> : (c.otherName?.[0] ?? "?").toUpperCase()}
                 </div>
                 <div className="flex-1 text-left">
                   <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{c.otherName}</p>
@@ -829,7 +832,7 @@ function ClipCard({ p, liked, likeCount, viewCount, onLike, onComment }: {
         <div className="w-10 h-10 rounded-full overflow-hidden shrink-0 flex items-center justify-center"
           style={{ background: "#5B3FCF20" }}>
           {p.avatar_url
-            ? <img src={p.avatar_url} alt="" className="w-full h-full object-cover" />
+            ? <img loading="lazy" decoding="async" src={optimizeAvatar(p.avatar_url, 40)} alt="" className="w-full h-full object-cover" />
             : <span className="font-bold" style={{ color: "#5B3FCF" }}>
                 {p.user?.[0]?.toUpperCase() ?? "?"}
               </span>}
@@ -856,7 +859,7 @@ function ClipCard({ p, liked, likeCount, viewCount, onLike, onComment }: {
           style={{ aspectRatio: "16/9", background: "#000" }}
           onClick={() => p.clip_video_id && navigate({ to: `/hoodatv/watch/${p.clip_video_id}` })}>
           {(p.clip_thumb_url || p.thumbnail_url)
-            ? <img src={p.clip_thumb_url || p.thumbnail_url} alt=""
+            ? <img loading="lazy" decoding="async" src={optimizePostPhoto(p.clip_thumb_url || p.thumbnail_url, 720)} alt=""
                 className="w-full h-full object-cover" />
             : <div className="w-full h-full flex items-center justify-center">
                 <svg className="h-10 w-10 text-white/20" fill="currentColor" viewBox="0 0 24 24">
@@ -891,7 +894,7 @@ function ClipCard({ p, liked, likeCount, viewCount, onLike, onComment }: {
           <div className="w-5 h-5 rounded-full overflow-hidden shrink-0"
             style={{ background: p.author_color || "#5B3FCF" }}>
             {p.avatar_url
-              ? <img src={p.avatar_url} alt="" className="w-full h-full object-cover" />
+              ? <img loading="lazy" decoding="async" src={optimizeAvatar(p.avatar_url, 24)} alt="" className="w-full h-full object-cover" />
               : <span className="text-[8px] font-bold text-white flex items-center justify-center h-full">
                   {p.author_username?.[0]?.toUpperCase()}
                 </span>}
@@ -1180,7 +1183,7 @@ export function UniversalPostCard({ post: p, onDeleted, onBookmarkChange }: {
             <div className="w-10 h-10 rounded-full overflow-hidden shrink-0 flex items-center justify-center font-bold text-white text-sm"
               style={{ background: p.color || "#5B3FCF" }}>
               {p.avatar_url
-                ? <img src={p.avatar_url} alt="" className="w-full h-full object-cover" />
+                ? <img loading="lazy" decoding="async" src={optimizeAvatar(p.avatar_url, 48)} alt="" className="w-full h-full object-cover" />
                 : (p.user?.[0] ?? "?").toUpperCase()}
             </div>
           </ProfileAvatarLink>
@@ -1337,7 +1340,7 @@ export function UniversalPostCard({ post: p, onDeleted, onBookmarkChange }: {
       {!isAd && p.music_title && (
         <div className="mx-4 mb-3 flex items-center gap-3 px-3 py-2.5 rounded-xl music-bar-post" style={{ background: "var(--s3)" }}>
           <div className="h-9 w-9 rounded-lg overflow-hidden flex-shrink-0 bg-[var(--s2)]/10">
-            {p.music_cover ? <img loading="lazy" decoding="async" src={p.music_cover} alt="" className="h-full w-full object-cover" onError={(e) => { e.currentTarget.style.display = "none"; }} /> : <div className="h-full w-full flex items-center justify-center">🎵</div>}
+            {p.music_cover ? <img loading="lazy" decoding="async" src={optimizeThumbnail(p.music_cover, 72)} alt="" className="h-full w-full object-cover" onError={(e) => { e.currentTarget.style.display = "none"; }} /> : <div className="h-full w-full flex items-center justify-center">🎵</div>}
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-white text-xs font-bold truncate">{p.music_title}</p>
@@ -1398,7 +1401,7 @@ export function UniversalPostCard({ post: p, onDeleted, onBookmarkChange }: {
               <ProfileAvatarLink userId={p.author_id ?? ""} username={p.author_username ?? ""}>
                 <div className="h-9 w-9 rounded-full flex-shrink-0 overflow-hidden flex items-center justify-center" style={{ background: p.color }}>
                   {p.avatar_url
-                    ? <img loading="lazy" decoding="async" src={p.avatar_url} alt={p.user} className="w-full h-full object-cover" />
+                    ? <img loading="lazy" decoding="async" src={optimizeAvatar(p.avatar_url, 40)} alt={p.user} className="w-full h-full object-cover" />
                     : <span className="text-white font-bold text-sm">{(p.user?.[0] ?? "?").toUpperCase()}</span>}
                 </div>
               </ProfileAvatarLink>

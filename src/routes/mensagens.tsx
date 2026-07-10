@@ -41,6 +41,7 @@ import { extractUrl } from "@/lib/linkPreview";
 import { LinkPreview as SharedLinkPreview } from "@/components/LinkPreview";
 import { getCloudinaryPosterFromUrl } from "@/lib/cloudinary";
 import { uploadMessageImage, uploadMessageMedia } from "@/lib/cloudinaryMessages";
+import { optimizeImage, optimizeAvatar, optimizePostPhoto, optimizeThumbnail } from "@/lib/imageOptimize";
 import { getHoodaOfficialId } from "@/lib/hoodaOfficial";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -392,7 +393,7 @@ function Av({ name, color, size = 40, src }: { name: string; color?: string; siz
       flexShrink: 0, overflow: "hidden",
     }}>
       {src
-        ? <img src={src} alt={name} style={{ width: "100%", height: "100%", objectFit: "cover" }}
+        ? <img loading="lazy" decoding="async" src={optimizeAvatar(src, size)} alt={name} style={{ width: "100%", height: "100%", objectFit: "cover" }}
             onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
         : (name?.[0] ?? "?").toUpperCase()}
     </div>
@@ -1445,7 +1446,7 @@ function ViewOnceModal({ url, type, onClose }: { url: string; type: "image"|"vid
       <div className="w-full h-full flex items-center justify-center select-none"
         style={{ userSelect: "none", pointerEvents: "none" }}>
         {type === "image"
-          ? <img src={url} alt="" className="max-w-full max-h-full object-contain"
+          ? <img src={optimizePostPhoto(url, 1080)} alt="" className="max-w-full max-h-full object-contain"
               style={{ userSelect: "none", WebkitUserSelect: "none", pointerEvents: "none" }}
               draggable={false} />
           : <video src={url} autoPlay muted={false} playsInline className="max-w-full max-h-full object-contain"
@@ -1990,7 +1991,7 @@ function ChatMediaLightbox({ items, index, onIndexChange, onClose, onReact, cont
             displayItem.editState ? (
               <EditedMediaDisplay src={displayItem.mediaUrl!} type="image" edit={displayItem.editState} maxH={(typeof window !== "undefined" ? window.innerHeight : 600) * 0.7} />
             ) : (
-              <img src={displayItem.mediaUrl} alt="" onClick={handleZoomToggle}
+              <img src={optimizePostPhoto(displayItem.mediaUrl, 1080)} alt="" onClick={handleZoomToggle}
                 className="max-w-full max-h-[72vh] object-contain select-none transition-transform duration-300 cursor-zoom-in"
                 style={{ transform: `scale(${zoom})`, cursor: zoom > 1 ? "zoom-out" : "zoom-in" }}
                 draggable={false} />
@@ -2025,7 +2026,7 @@ function ChatMediaLightbox({ items, index, onIndexChange, onClose, onReact, cont
                 opacity: i === index ? 1 : 0.6,
               }}>
               {it.type === "image" ? (
-                <img src={it.mediaUrl} alt="" className="w-full h-full object-cover" />
+                <img loading="lazy" decoding="async" src={optimizeThumbnail(it.mediaUrl, 112)} alt="" className="w-full h-full object-cover" />
               ) : (
                 <>
                   <video src={it.mediaUrl} className="w-full h-full object-cover" muted />
@@ -2558,7 +2559,7 @@ function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit
               <button type="button" className="block" onClick={onOpenLightbox}>
                 {m.editState
                   ? <EditedMediaDisplay src={m.mediaUrl} type="image" edit={m.editState} maxH={280} />
-                  : <img src={m.mediaUrl} alt="imagem" className="rounded-xl max-w-full" style={{ maxHeight: 260, maxWidth: 240, objectFit: "cover" }} />}
+                  : <img loading="lazy" decoding="async" src={optimizeImage(m.mediaUrl, { width: 480, height: 520, crop: "fill" })} alt="imagem" className="rounded-xl max-w-full" style={{ maxHeight: 260, maxWidth: 240, objectFit: "cover" }} />}
               </button>
             )}
 
@@ -4245,7 +4246,7 @@ function ChatPanel({ myId, contact, onBack, contacts }: {
           <div className="h-10 w-10 rounded-full overflow-hidden flex items-center justify-center text-white font-bold"
             style={{ background: colorFor(contact.username ?? "") }}>
             {contact.avatar_url
-              ? <img src={contact.avatar_url} alt="" className="w-full h-full object-cover" />
+              ? <img loading="lazy" decoding="async" src={optimizeAvatar(contact.avatar_url, 40)} alt="" className="w-full h-full object-cover" />
               : (contact.full_name?.[0] ?? contact.username?.[0] ?? "?").toUpperCase()}
           </div>
         </div>
@@ -4444,7 +4445,7 @@ function ChatPanel({ myId, contact, onBack, contacts }: {
                 <div className="flex justify-end pr-1 pt-0.5">
                   <div className="w-4 h-4 rounded-full overflow-hidden shrink-0" title={`Visto por @${contact.username}`}>
                     {contact.avatar_url
-                      ? <img src={contact.avatar_url} alt="" className="w-full h-full object-cover" />
+                      ? <img loading="lazy" decoding="async" src={optimizeAvatar(contact.avatar_url, 16)} alt="" className="w-full h-full object-cover" />
                       : (
                         <div className="w-full h-full flex items-center justify-center text-[8px] font-bold text-white"
                           style={{ background: contact.color || "#5B3FCF" }}>
@@ -5489,7 +5490,7 @@ function MensagensPage() {
             <div className="w-9 h-9 rounded-full overflow-hidden shrink-0 flex items-center justify-center text-white font-bold text-sm"
               style={{ background: "#5B3FCF" }}>
               {avatarUrl
-                ? <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
+                ? <img loading="lazy" decoding="async" src={optimizeAvatar(avatarUrl, 36)} alt="" className="w-full h-full object-cover" />
                 : (name[0] ?? "?").toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">

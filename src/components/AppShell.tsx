@@ -12,6 +12,7 @@ import {
   Moon, Sun, Bell, Feather, MoreHorizontal, ArrowLeft,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { optimizeAvatar } from "@/lib/imageOptimize";
 
 const NAV_ITEMS = [
   { to: "/home",       label: t("nav.home"),          Icon: Home,          search: undefined as Record<string, string> | undefined },
@@ -139,7 +140,7 @@ export function SideNav() {
                 <div className="shrink-0 h-7 w-7 rounded-full overflow-hidden flex items-center justify-center text-[11px] font-extrabold text-white"
                   style={{ background: avatarUrl ? "transparent" : "#5B3FCF" }}>
                   {avatarUrl
-                    ? <img src={avatarUrl} alt={name} className="w-full h-full object-cover" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+                    ? <img loading="lazy" decoding="async" src={optimizeAvatar(avatarUrl, 40)} alt={name} className="w-full h-full object-cover" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
                     : initial}
                 </div>
               ) : (
@@ -186,7 +187,7 @@ export function SideNav() {
           <div className="h-10 w-10 rounded-full overflow-hidden flex items-center justify-center text-white text-sm font-bold shrink-0"
             style={{ background: avatarUrl ? "transparent" : "#5B3FCF" }}>
             {avatarUrl
-              ? <img src={avatarUrl} alt={name} className="w-full h-full object-cover" />
+              ? <img loading="lazy" decoding="async" src={optimizeAvatar(avatarUrl, 40)} alt={name} className="w-full h-full object-cover" />
               : initial}
           </div>
           <div className="flex-1 min-w-0 text-left">

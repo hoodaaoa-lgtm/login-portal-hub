@@ -5,6 +5,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { getHoodaOfficialId } from "@/lib/hoodaOfficial";
 import { useFollowState } from "@/hooks/useSocialSystem";
 import { HoodaTipCard } from "@/components/HoodaTipCard";
+import { optimizeAvatar } from "@/lib/imageOptimize";
 
 const ACCENT = "#5B3FCF";
 
@@ -134,7 +135,7 @@ function SuggestionRow({ u, myId, onFollowed, onNavigate }: {
         <div className="h-9 w-9 rounded-full shrink-0 overflow-hidden flex items-center justify-center text-white text-sm font-bold"
           style={{ background: u.avatar_url ? "transparent" : colorFor(u.username) }}>
           {u.avatar_url
-            ? <img src={u.avatar_url} alt="" className="w-full h-full object-cover" />
+            ? <img loading="lazy" decoding="async" src={optimizeAvatar(u.avatar_url, 40)} alt="" className="w-full h-full object-cover" />
             : (u.username?.[0] ?? "?").toUpperCase()}
         </div>
         <div className="min-w-0">

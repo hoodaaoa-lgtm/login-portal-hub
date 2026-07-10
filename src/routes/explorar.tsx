@@ -10,6 +10,7 @@ import { t } from "@/lib/useT";
 import { getHoodaOfficialId } from "@/lib/hoodaOfficial";
 import { useFollowState } from "@/hooks/useSocialSystem";
 import { UniversalSkeleton } from "@/components/Skeletons";
+import { optimizeImage, optimizeAvatar } from "@/lib/imageOptimize";
 
 export const Route = createFileRoute("/explorar")({
   head: () => ({ meta: [{ title: "Hooda" }] }),
@@ -96,7 +97,7 @@ function BooksSection({ search, navigate }: { search: string; navigate: any }) {
               style={{ background: "var(--s0)", border: "1px solid var(--border-subtle)" }}>
               <div style={{ aspectRatio: "2/3", background: "var(--s2)", position: "relative" }}>
                 {book.cover_url
-                  ? <img src={book.cover_url} alt={book.title} className="w-full h-full object-cover" />
+                  ? <img loading="lazy" decoding="async" src={optimizeImage(book.cover_url, { width: 300, height: 450, crop: "fill" })} alt={book.title} className="w-full h-full object-cover" />
                   : <div className="w-full h-full flex flex-col items-center justify-center p-2 gap-1"
                       style={{ background: `linear-gradient(135deg,${color}22,${color}44)` }}>
                       <BookOpen className="w-6 h-6 opacity-50" style={{ color }} />
@@ -133,7 +134,7 @@ function Av({ name, src, size = 40, color }: { name: string; src?: string | null
       fontSize: size * 0.38, fontWeight: 700, color: "#fff",
     }}>
       {src
-        ? <img src={src} alt={name} style={{ width: "100%", height: "100%", objectFit: "cover" }}
+        ? <img loading="lazy" decoding="async" src={optimizeAvatar(src, size)} alt={name} style={{ width: "100%", height: "100%", objectFit: "cover" }}
             onError={e => e.currentTarget.style.display = "none"} />
         : (name?.[0] ?? "?").toUpperCase()}
     </div>
