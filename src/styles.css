@@ -912,6 +912,12 @@ nav.hooda-bottom-nav {
   .hooda-page-enter {
     padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px)) !important;
   }
+  /* Páginas com altura fixa ao ecrã (ex: /mensagens) já reservam o espaço
+     da BottomNav elas próprias — o padding acima duplicava esse espaço e
+     criava um vão vazio entre a caixa de escrever e a barra de baixo. */
+  .hooda-page-enter.hooda-page-fixed {
+    padding-bottom: 0 !important;
+  }
 }
 
 /* ── Typing indicator dots (DM chat) ── */

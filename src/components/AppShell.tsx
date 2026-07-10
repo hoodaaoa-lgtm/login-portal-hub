@@ -338,7 +338,7 @@ export function PageWrapper({ children, className = "", noPageScroll = false }: 
   return (
     <div
       key={pathname}
-      className={`lg:ml-[320px] ${noPageScroll ? "h-dvh overflow-hidden" : "min-h-dvh"} hooda-page-enter overflow-x-hidden ${className}`}
+      className={`lg:ml-[320px] ${noPageScroll ? "h-dvh overflow-hidden hooda-page-fixed" : "min-h-dvh"} hooda-page-enter overflow-x-hidden ${className}`}
       style={{ background: "var(--s1)" }}
     >
       {children}
