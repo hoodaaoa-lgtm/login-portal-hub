@@ -45,7 +45,7 @@ export const Route = createFileRoute("/perfil")({
 
 type Profile = { id?: string; username: string; full_name: string; age: number | null; bio: string | null; username_changed_at?: string | null };
 type Post = {
-  id: string; text: string; photo: string | null; bgColor: string | null; createdAt: Date;
+  id: string; text: string; photo: string | null; photos?: string[] | null; bgColor: string | null; createdAt: Date;
   likes: number; likedByMe: boolean; comments: number; bookmarked: boolean;
   videoUrl?: string;
   views_count?: number;
@@ -1660,13 +1660,14 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
               } catch (_) {}
             }
             const photo = (p as any).photo_url || (p as any).image_url || ((p as any).photos && (p as any).photos[0]) || null;
+            const photos = Array.isArray((p as any).photos) && (p as any).photos.length > 0 ? (p as any).photos : null;
             const videoUrl = (p as any).video_url || undefined;
             const clipVideoId = (p as any).clip_video_id || null;
             const clipThumb = (p as any).clip_thumb_url || null;
             const clipTitle = (p as any).clip_title || null;
             const likeIds = likesByPost[p.id] ?? [];
             return {
-              id: p.id, text, photo, bgColor, createdAt: new Date(p.created_at ?? Date.now()),
+              id: p.id, text, photo, photos, bgColor, createdAt: new Date(p.created_at ?? Date.now()),
               likes: likeIds.length, likedByMe: likeIds.includes(session.user.id), views_count: (p as any).views_count ?? 0,
               comments: commentsByPost[p.id] ?? 0, bookmarked: savedSet.has(p.id),
               kind: (p as any).kind ?? "post",
@@ -1845,10 +1846,11 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
           try { const j = JSON.parse(p.content); text = j.text; bgColor = j.bgColor; } catch (_) {}
         }
         const photo = (p as any).photo_url || (p as any).image_url || ((p as any).photos && (p as any).photos[0]) || null;
+        const photos = Array.isArray((p as any).photos) && (p as any).photos.length > 0 ? (p as any).photos : null;
         const videoUrl = (p as any).video_url || undefined;
         const likeIds = likesByPost[p.id] ?? [];
         return {
-          id: p.id, text, photo, bgColor, createdAt: new Date(p.created_at ?? Date.now()),
+          id: p.id, text, photo, photos, bgColor, createdAt: new Date(p.created_at ?? Date.now()),
           likes: likeIds.length, likedByMe: likeIds.includes(myUserId), views_count: (p as any).views_count ?? 0,
           comments: commentsByPost[p.id] ?? 0, bookmarked: true,
           videoUrl,

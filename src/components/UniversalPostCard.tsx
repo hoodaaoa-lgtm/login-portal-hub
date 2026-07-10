@@ -132,6 +132,7 @@ export function normalizePost(
       avatar_url: extra?.avatarUrl ?? raw.authorAvatar ?? null,
       text: raw.text,
       photo: raw.photo ?? null,
+      photos: raw.photos ?? null,
       video: raw.videoUrl ?? null,
       bg_color: raw.bgColor ?? null,
       kind: raw.kind ?? null,
@@ -159,6 +160,7 @@ export function normalizePost(
       avatar_url: extra?.avatarUrl ?? null,
       text: raw.text,
       photo: raw.photo ?? null,
+      photos: raw.photos ?? null,
       video: raw.videoUrl ?? null,
       bg_color: raw.bgColor ?? null,
       kind: raw.kind ?? null,
@@ -331,8 +333,11 @@ export function PhotoGrid({ photos }: { photos: string[] }) {
   return (
     <>
       <div className="relative w-full select-none px-4 pb-3 max-w-[520px] mx-auto">
-        <div className="relative w-full cursor-pointer rounded-2xl overflow-hidden transition-[aspect-ratio] duration-200"
-          style={{ aspectRatio: String(boxRatio), maxHeight: "min(70vh, 620px)", background: "var(--s1)" }}>
+        {/* A largura da caixa (não só a altura) é limitada pelo teto de altura,
+            para fotos verticais/estreitas encolherem a caixa inteira em vez de
+            ficar com espaço/blur sobrando nas laterais dentro de uma caixa larga. */}
+        <div className="relative mx-auto cursor-pointer rounded-2xl overflow-hidden transition-[aspect-ratio] duration-200"
+          style={{ aspectRatio: String(boxRatio), width: `min(100%, calc(min(70vh, 620px) * ${boxRatio}))`, background: "var(--s1)" }}>
 
           <SlideTrack
             photos={photos}

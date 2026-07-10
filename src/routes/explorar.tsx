@@ -255,7 +255,7 @@ function ExplorePage() {
     queryKey: ["explore-posts"],
     queryFn: async () => {
       const { data } = await (supabase as any).from("posts")
-        .select("id,content,kind,photo_url,image_url,likes_count,comments_count,author_username,author_color,author_id,created_at")
+        .select("id,content,kind,photo_url,image_url,photos,likes_count,comments_count,author_username,author_color,author_id,created_at")
         .in("kind",["photo","post"])
         .eq("is_draft", false)
         .or(`scheduled_at.is.null,scheduled_at.lte.${new Date().toISOString()}`)
@@ -406,7 +406,7 @@ function ExplorePage() {
     queryKey: ["explore-search-posts", search],
     queryFn: async () => {
       const { data } = await (supabase as any).from("posts")
-        .select("id,content,title,kind,photo_url,image_url,likes_count,comments_count,author_username,author_color,author_id,created_at")
+        .select("id,content,title,kind,photo_url,image_url,photos,likes_count,comments_count,author_username,author_color,author_id,created_at")
         .in("kind",["photo","post"])
         .eq("is_draft", false)
         .or(`scheduled_at.is.null,scheduled_at.lte.${new Date().toISOString()}`)
@@ -427,7 +427,7 @@ function ExplorePage() {
     queryKey: ["explore-search-posts-by-author", searchPeopleIds],
     queryFn: async () => {
       const { data } = await (supabase as any).from("posts")
-        .select("id,content,title,kind,photo_url,image_url,likes_count,comments_count,author_username,author_color,author_id,created_at")
+        .select("id,content,title,kind,photo_url,image_url,photos,likes_count,comments_count,author_username,author_color,author_id,created_at")
         .in("kind",["photo","post"])
         .eq("is_draft", false)
         .or(`scheduled_at.is.null,scheduled_at.lte.${new Date().toISOString()}`)
@@ -486,7 +486,9 @@ function ExplorePage() {
       id: p.id, author_id: p.author_id ?? null, author_username: p.author_username ?? null,
       user: name, name: `@${p.author_username || "?"}`,
       color: p.author_color || colorFor(name), avatar_url: postAvatarMap[p.author_id] ?? null,
-      text: p.content, photo: p.photo_url || p.image_url || null, photos: null, video: null, video_thumb: null,
+      text: p.content, photo: p.photo_url || p.image_url || null,
+      photos: Array.isArray(p.photos) && p.photos.length > 0 ? p.photos : null,
+      video: null, video_thumb: null,
       bg_color: null, created_at: p.created_at, kind: p.kind, is_ad: false,
       likes: p.likes_count ?? 0, liked_by_me: false, comments: p.comments_count ?? 0,
       views_count: 0, reposts_count: 0,
