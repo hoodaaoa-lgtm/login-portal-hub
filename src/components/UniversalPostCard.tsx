@@ -249,9 +249,9 @@ function useSwipeSlider(n: number, idx: number, setIdx: (fn: (i: number) => numb
   return { drag, animate, onTouchStart, onTouchMove, onTouchEnd, isDragging: dragging };
 }
 
-function SlideTrack({ photos, idx, setIdx, fit, onClickImage }: {
+function SlideTrack({ photos, idx, setIdx, fit, onClickImage, onNaturalRatio }: {
   photos: string[]; idx: number; setIdx: (fn: (i: number) => number) => void;
-  fit: "cover" | "contain"; onClickImage?: () => void;
+  fit: "cover" | "contain"; onClickImage?: () => void; onNaturalRatio?: (i: number, ratio: number) => void;
 }) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const n = photos.length;
@@ -266,8 +266,20 @@ function SlideTrack({ photos, idx, setIdx, fit, onClickImage }: {
       onTouchEnd={(e) => onTouchEnd(e, wrapRef.current?.clientWidth || 1)}
       onClick={(e) => { if (!isDragging.current) onClickImage?.(); }}
     >
+      {/* Fundo desfocado atrás da imagem atual, para preencher o espaço
+          que sobra quando a foto não bate certo com a caixa (mesma ideia
+          usada no player de vídeo) — evita esticar/cortar a imagem real. */}
+      {fit === "contain" && photos[idx] && (
+        <img
+          src={photos[idx]}
+          alt=""
+          aria-hidden
+          className="absolute inset-0 w-full h-full object-cover scale-110 pointer-events-none"
+          style={{ filter: "blur(30px) brightness(0.55)" }}
+        />
+      )}
       <div
-        className="flex h-full will-change-transform"
+        className="flex h-full will-change-transform relative"
         style={{
           width: `${n * 100}%`,
           transform: `translate3d(calc(${-idx * (100 / n)}% + ${drag}px), 0, 0)`,
@@ -282,8 +294,12 @@ function SlideTrack({ photos, idx, setIdx, fit, onClickImage }: {
               src={p}
               alt=""
               draggable={false}
-              className="block w-full h-full pointer-events-none"
+              className="block w-full h-full pointer-events-none relative"
               style={{ objectFit: fit }}
+              onLoad={(e) => {
+                const img = e.currentTarget;
+                if (img.naturalWidth && img.naturalHeight) onNaturalRatio?.(i, img.naturalWidth / img.naturalHeight);
+              }}
               onError={(e) => { e.currentTarget.style.display = "none"; }}
             />
           </div>
@@ -293,19 +309,39 @@ function SlideTrack({ photos, idx, setIdx, fit, onClickImage }: {
   );
 }
 
+// Instagram-style: a caixa adapta-se ao formato real da foto em vez de
+// forçar sempre 4:5 e cortar (era isso que "comia" as bordas de imagens
+// mais largas, como screenshots/memes). Limitamos entre retrato 4:5 e
+// paisagem 1.91:1 para não ficar uma caixa gigante ou minúscula.
+const MIN_RATIO = 4 / 5;
+const MAX_RATIO = 1.91;
+
 export function PhotoGrid({ photos }: { photos: string[] }) {
   const [idx, setIdx] = useState(0);
   const [fullscreen, setFullscreen] = useState(false);
+  const [ratios, setRatios] = useState<Record<number, number>>({});
   const n = photos.length;
   if (n === 0) return null;
+
+  const activeRatio = ratios[idx];
+  const boxRatio = activeRatio != null
+    ? Math.min(MAX_RATIO, Math.max(MIN_RATIO, activeRatio))
+    : MIN_RATIO;
 
   return (
     <>
       <div className="relative w-full select-none px-4 pb-3 max-w-[520px] mx-auto">
-        <div className="relative w-full cursor-pointer rounded-2xl overflow-hidden"
-          style={{ aspectRatio: "4 / 5", maxHeight: "min(70vh, 620px)", background: "var(--s1)" }}>
+        <div className="relative w-full cursor-pointer rounded-2xl overflow-hidden transition-[aspect-ratio] duration-200"
+          style={{ aspectRatio: String(boxRatio), maxHeight: "min(70vh, 620px)", background: "var(--s1)" }}>
 
-          <SlideTrack photos={photos} idx={idx} setIdx={setIdx} fit="cover" onClickImage={() => setFullscreen(true)} />
+          <SlideTrack
+            photos={photos}
+            idx={idx}
+            setIdx={setIdx}
+            fit="contain"
+            onClickImage={() => setFullscreen(true)}
+            onNaturalRatio={(i, ratio) => setRatios((prev) => (prev[i] === ratio ? prev : { ...prev, [i]: ratio }))}
+          />
 
           {n > 1 && (
             <div className="absolute top-3 right-3 px-2.5 py-1 rounded-full text-white text-xs font-bold z-10 transition-opacity"
