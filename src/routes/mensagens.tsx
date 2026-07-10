@@ -3756,9 +3756,16 @@ function ChatPanel({ myId, contact, onBack, contacts }: {
   async function uploadFile(file: File, folder: string): Promise<string|null> {
     setUploading(true); setUploadPct(5);
     try {
-      // folder define o tipo: "audio" e "video" → resource_type=video; "images" → image
+      // folder define o tipo: "audio" e "video" → resource_type=video; "images" → image;
+      // qualquer outro ficheiro (pdf, zip, docs...) → "raw", que é o tipo
+      // certo do Cloudinary para ficheiros genéricos. Antes disto caía
+      // sempre em "video", e o Cloudinary rejeitava esses ficheiros —
+      // por isso não era possível enviar ficheiros pelo botão "Ficheiro".
       const isImage = folder === "images" || file.type.startsWith("image/");
-      const resourceType: "image" | "video" = isImage ? "image" : "video";
+      const isAudioOrVideo = folder === "videos" || folder === "audio"
+        || file.type.startsWith("video/") || file.type.startsWith("audio/");
+      const resourceType: "image" | "video" | "raw" =
+        isImage ? "image" : isAudioOrVideo ? "video" : "raw";
       const cloudFolder = `hooda/messages/${folder}/${myId}`;
 
       let url: string;

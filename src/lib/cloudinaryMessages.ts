@@ -62,12 +62,13 @@ export function uploadMessageImage(
 
 /**
  * Upload de áudio/vídeo/ficheiro para a conta de mensagens (unsigned
- * preset). resourceType "video" cobre também áudio e ficheiros gerais
- * no Cloudinary (é o mesmo endpoint que já era usado no chat).
+ * preset). "video" cobre vídeo e áudio; "raw" é o tipo correto do
+ * Cloudinary para ficheiros genéricos (pdf, zip, docs, etc.) — o endpoint
+ * de vídeo rejeita esses formatos.
  */
 export function uploadMessageMedia(
   file: File,
-  resourceType: "image" | "video",
+  resourceType: "image" | "video" | "raw",
   folder: string,
   onProgress?: (pct: number) => void,
 ): Promise<string> {
