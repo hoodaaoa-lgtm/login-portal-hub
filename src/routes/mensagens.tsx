@@ -5333,6 +5333,17 @@ function MensagensPage() {
   const loadError = contactsQuery.isError
     ? (contactsQuery.error instanceof Error ? contactsQuery.error.message : "Erro inesperado ao carregar contactos")
     : "";
+
+  // `contacts` e `contactsQuery` mudam de referência a cada refetch (inclusive
+  // o refetch disparado pelo PRÓPRIO canal global abaixo). Se entrassem nas
+  // deps do useEffect do realtime, o canal seria destruído e recriado a cada
+  // mensagem nova — abrindo uma janela em que mensagens podem ser perdidas
+  // (exatamente o "não cai em tempo real" relatado). Por isso guardamos a
+  // versão mais recente em refs e mantemos o canal vivo com deps só em myId.
+  const contactsRef = useRef(contacts);
+  useEffect(() => { contactsRef.current = contacts; }, [contacts]);
+  const refetchContactsRef = useRef(contactsQuery.refetch);
+  useEffect(() => { refetchContactsRef.current = contactsQuery.refetch; }, [contactsQuery.refetch]);
   const loadContacts = useCallback((_uid: string) => contactsQuery.refetch(), [contactsQuery]);
 
   const loadPendingRequests = useCallback(async (uid: string) => {
@@ -5391,7 +5402,7 @@ function MensagensPage() {
         if (!part) return;
 
         // Atualizar lista de contactos
-        contactsQuery.refetch();
+        refetchContactsRef.current();
 
         // Notificação toast estilo WhatsApp
         // (só se a conversa não estiver aberta)
@@ -5436,7 +5447,7 @@ function MensagensPage() {
             action: {
               label: "Ver",
               onClick: () => {
-                const contact = contacts.find(c => c.conversationId === msg.conversation_id);
+                const contact = contactsRef.current.find(c => c.conversationId === msg.conversation_id);
                 if (contact) setActive(contact);
               },
             },
@@ -5449,12 +5460,12 @@ function MensagensPage() {
         // Mensagem editada, marcada como lida, ou eliminada para todos —
         // atualiza a pré-visualização na lista de conversas sem precisar
         // de dar refresh à página.
-        contactsQuery.refetch();
+        refetchContactsRef.current();
       })
       .subscribe();
 
     return () => { supabase.removeChannel(ch); };
-  }, [myId, contacts, contactsQuery]);
+  }, [myId]);
 
   // Mobile: refrescar lista de conversas quando o separador volta a estar visível
   useEffect(() => {
