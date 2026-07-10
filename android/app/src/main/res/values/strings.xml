@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Hooda</string>
+    <string name="title_activity_main">Hooda</string>
+    <string name="package_name">ao.hooda.app</string>
+    <string name="custom_url_scheme">ao.hooda.app</string>
+</resources>
