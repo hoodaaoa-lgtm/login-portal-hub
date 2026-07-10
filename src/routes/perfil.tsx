@@ -330,29 +330,13 @@ function CreatePostModal({
               </button>
             </div>
           )}
-          <div className="rounded-2xl transition-all"
-            style={{ background: bgColor || "transparent", padding: bgColor ? "28px 20px" : "0",
-              minHeight: bgColor ? 150 : "auto", display: "flex", alignItems: "center" }}>
+          <div className="rounded-2xl transition-all">
             <textarea autoFocus value={text} onChange={(e) => setText(e.target.value)}
-              placeholder={bgColor ? "O que queres partilhar?" : t("post.placeholder")}
-              rows={bgColor ? 3 : 4}
+              placeholder={t("post.placeholder")}
+              rows={4}
               className="w-full outline-none resize-none bg-transparent leading-relaxed"
-              style={{ color: textColorForBg(bgColor), fontSize: bgColor ? 20 : 15,
-                fontWeight: bgColor ? 700 : 400, textAlign: bgColor ? "center" : "left" }} />
+              style={{ color: "var(--text-primary,#111)", fontSize: 15, fontWeight: 400, textAlign: "left" }} />
           </div>
-          {!photo && (
-            <div className="mt-4">
-              <p className="text-[11px] text-[var(--text-muted)] font-semibold uppercase tracking-wide mb-2">Cor de fundo</p>
-              <div className="flex gap-2 flex-wrap">
-                {BG_COLORS.map((c) => (
-                  <button key={c.label} onClick={() => setBgColor(c.value)} title={c.label}
-                    className="transition-all active:scale-95"
-                    style={{ width: 32, height: 32, borderRadius: "50%", background: c.preview,
-                      border: bgColor === c.value ? `3px solid ${ACCENT}` : "2px solid #e5e5e5" }} />
-                ))}
-              </div>
-            </div>
-          )}
         </div>
         <div className="px-4 py-3 border-t border-[var(--border-subtle)]">
           <div className="flex items-center justify-between mb-3">
