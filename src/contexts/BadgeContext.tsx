@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { countUnreadOfficialMessages } from "@/lib/officialMessages";
 
 const db = supabase as any;
 
@@ -54,7 +55,10 @@ export function BadgeProvider({ children }: { children: React.ReactNode }) {
       const convIds: string[] = (parts || []).map((p: any) => p.conversation_id);
       conversationIdsRef.current = new Set(convIds);
 
-      if (convIds.length === 0) { setUnreadMessages(0); return; }
+      if (convIds.length === 0) {
+        setUnreadMessages(await countUnreadOfficialMessages(uid));
+        return;
+      }
 
       const { count, error } = await db
         .from("messages")
@@ -64,7 +68,7 @@ export function BadgeProvider({ children }: { children: React.ReactNode }) {
         .neq("status", "read");
       if (error) throw error;
 
-      setUnreadMessages(count || 0);
+      setUnreadMessages((count || 0) + await countUnreadOfficialMessages(uid));
     } catch (err) {
       console.error("[badges] Erro ao calcular mensagens não lidas:", err);
     }
@@ -116,6 +120,18 @@ export function BadgeProvider({ children }: { children: React.ReactNode }) {
         refreshUnreadMessages(userId);
       })
       .on("postgres_changes", { event: "*", schema: "public", table: "conversation_participants", filter: `user_id=eq.${userId}` }, () => {
+        refreshUnreadMessages(userId);
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [userId, refreshUnreadMessages]);
+
+  /* ─── Realtime: mensagens oficiais (Instalar App / Atualizações / Dicas) ─── */
+  useEffect(() => {
+    if (!userId) return;
+    const channel = supabase
+      .channel(`badges-official-messages-${userId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "user_official_messages", filter: `user_id=eq.${userId}` }, () => {
         refreshUnreadMessages(userId);
       })
       .subscribe();

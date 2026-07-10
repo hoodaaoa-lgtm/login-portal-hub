@@ -27,9 +27,33 @@ function attachListener() {
   });
   window.addEventListener("appinstalled", () => {
     deferredPrompt = null;
+    markInstalledOnServer();
   });
 }
 attachListener();
+
+// iOS nunca dispara "appinstalled" — se a app já está a correr em modo
+// standalone (utilizador já fez "Adicionar ao Ecrã Principal" antes), marca
+// aqui, já que é o único momento em que temos essa confirmação.
+if (typeof window !== "undefined" && isRunningStandalone()) {
+  markInstalledOnServer();
+}
+
+/** Marca profiles.pwa_installed=true para o utilizador atual, para o admin
+ * poder segmentar envios por "ainda não instalou". Falha em silêncio (não é
+ * crítico para a instalação em si já ter acontecido). Import feito
+ * dinamicamente para não obrigar este módulo, usado logo no arranque da
+ * app, a carregar o cliente Supabase antes de ser preciso. */
+async function markInstalledOnServer() {
+  try {
+    const { supabase } = await import("@/integrations/supabase/client");
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user?.id) return;
+    await (supabase as any).from("profiles").update({ pwa_installed: true }).eq("id", session.user.id);
+  } catch {
+    // silencioso — o essencial (a instalação) já aconteceu
+  }
+}
 
 /** true se o browser já ofereceu o prompt nativo de instalação (Android). */
 export function canPromptInstall(): boolean {

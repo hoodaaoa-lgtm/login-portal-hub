@@ -2,6 +2,14 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { uploadImageToCloudinary } from "@/lib/cloudinary";
+import {
+  OFFICIAL_CATEGORY_META,
+  sendOfficialMessage,
+  fetchOfficialMessageHistory,
+  type OfficialCategory,
+  type OfficialActionType,
+  type OfficialAudience,
+} from "@/lib/officialMessages";
 import { toast } from "sonner";
 import { FeedVideoPlayer } from "@/components/FeedVideoPlayer";
 import { useAdminPwaShell } from "@/hooks/useAdminPwaShell";
@@ -11,7 +19,7 @@ import {
   LayoutDashboard, Flag, Users as UsersIcon, Ban, ShieldCheck,
   UsersRound, FileText, Radio, TrendingUp, CheckCircle2, XCircle,
   Trash2, Image as ImageIcon, Video as VideoIcon, ExternalLink, Activity,
-  Megaphone, History, UserX,
+  Megaphone, History, UserX, Upload, Smartphone,
 } from "lucide-react";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -286,7 +294,7 @@ function AdminPage() {
 
 function AdminDashboard({ adminId }: { adminId: string }) {
   const navigate = useNavigate();
-  const [section, setSection] = useState<"dashboard" | "reports" | "users" | "messages" | "posts" | "presence" | "broadcast" | "audit">("dashboard");
+  const [section, setSection] = useState<"dashboard" | "reports" | "users" | "messages" | "posts" | "presence" | "broadcast" | "official" | "audit">("dashboard");
   const [search, setSearch] = useState("");
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
@@ -327,6 +335,21 @@ function AdminDashboard({ adminId }: { adminId: string }) {
   // ── Auditoria (registo de ações do admin) ──
   const [auditList, setAuditList] = useState<AuditRow[]>([]);
   const [auditLoading, setAuditLoading] = useState(true);
+
+  // ── Mensagens Oficiais (Instalar App / Atualizações / Dicas) ──
+  const [officialCategory, setOfficialCategory] = useState<OfficialCategory>("INSTALL_APP");
+  const [officialTitle, setOfficialTitle] = useState("");
+  const [officialDescription, setOfficialDescription] = useState("");
+  const [officialImageUrl, setOfficialImageUrl] = useState<string | null>(null);
+  const [officialUploadingImg, setOfficialUploadingImg] = useState(false);
+  const [officialButtonText, setOfficialButtonText] = useState("");
+  const [officialActionType, setOfficialActionType] = useState<OfficialActionType>("none");
+  const [officialActionValue, setOfficialActionValue] = useState("");
+  const [officialAudience, setOfficialAudience] = useState<OfficialAudience>("all");
+  const [officialSending, setOfficialSending] = useState(false);
+  const [officialHistory, setOfficialHistory] = useState<Awaited<ReturnType<typeof fetchOfficialMessageHistory>>>([]);
+  const [officialHistoryLoading, setOfficialHistoryLoading] = useState(true);
+  const officialImgInputRef = useRef<HTMLInputElement>(null);
 
   // ── Dashboard: números reais ──
   useEffect(() => {
@@ -570,6 +593,70 @@ function AdminDashboard({ adminId }: { adminId: string }) {
   }, []);
 
   useEffect(() => { if (section === "audit") loadAudit(); }, [section, loadAudit]);
+
+  // ── Mensagens Oficiais ──
+  const loadOfficialHistory = useCallback(async () => {
+    setOfficialHistoryLoading(true);
+    setOfficialHistory(await fetchOfficialMessageHistory());
+    setOfficialHistoryLoading(false);
+  }, []);
+
+  useEffect(() => { if (section === "official") loadOfficialHistory(); }, [section, loadOfficialHistory]);
+
+  async function uploadOfficialImage(file: File) {
+    if (!file.type.startsWith("image/")) { toast.error("Escolhe um ficheiro de imagem."); return; }
+    setOfficialUploadingImg(true);
+    try {
+      const { url } = await uploadImageToCloudinary(file, `hooda/official-messages/${adminId}`);
+      setOfficialImageUrl(url);
+    } catch (err: any) {
+      console.error("[admin] erro ao enviar imagem da mensagem oficial:", err);
+      toast.error("Erro ao enviar imagem: " + (err?.message ?? "desconhecido"));
+    } finally {
+      setOfficialUploadingImg(false);
+    }
+  }
+
+  function resetOfficialForm() {
+    setOfficialTitle("");
+    setOfficialDescription("");
+    setOfficialImageUrl(null);
+    setOfficialButtonText("");
+    setOfficialActionType("none");
+    setOfficialActionValue("");
+    setOfficialAudience("all");
+  }
+
+  async function handleSendOfficial() {
+    const title = officialTitle.trim();
+    const description = officialDescription.trim();
+    if (!title || !description || officialSending) return;
+    const audienceLabel = officialAudience === "all" ? "todos os utilizadores" : officialAudience === "new_users" ? "novos utilizadores (últimos 7 dias)" : "utilizadores que ainda não instalaram a app";
+    const confirmed = window.confirm(`Isto envia "${title}" (${OFFICIAL_CATEGORY_META[officialCategory].label}) para ${audienceLabel}. Confirmas?`);
+    if (!confirmed) return;
+    setOfficialSending(true);
+    try {
+      const { recipients } = await sendOfficialMessage({
+        category: officialCategory,
+        title,
+        description,
+        imageUrl: officialImageUrl,
+        buttonText: officialButtonText.trim() || null,
+        actionType: officialActionType,
+        actionValue: officialActionValue.trim() || null,
+        audience: officialAudience,
+      });
+      toast.success(`Mensagem enviada a ${recipients} utilizadores.`);
+      logAudit("send_official_message", "official_message", OFFICIAL_CATEGORY_META[officialCategory].label, `${title} → ${recipients} utilizadores`);
+      resetOfficialForm();
+      loadOfficialHistory();
+    } catch (err: any) {
+      console.error("[admin] erro ao enviar mensagem oficial:", err);
+      toast.error("Erro ao enviar: " + (err?.message ?? "desconhecido"));
+    } finally {
+      setOfficialSending(false);
+    }
+  }
 
   // ── Comunicados: envia uma mensagem oficial a TODOS os utilizadores ──
   async function sendBroadcast() {
@@ -848,6 +935,7 @@ function AdminDashboard({ adminId }: { adminId: string }) {
           { key: "users" as const, Icon: UsersIcon, label: "Utilizadores" },
           { key: "messages" as const, Icon: MessageSquare, label: "Mensagens" },
           { key: "broadcast" as const, Icon: Megaphone, label: "Comunicados" },
+          { key: "official" as const, Icon: Smartphone, label: "Mensagens Oficiais" },
           { key: "audit" as const, Icon: History, label: "Auditoria" },
         ]).map(({ key, Icon, label, badge }) => (
           <button key={key} onClick={() => setSection(key)} title={label}
@@ -1271,6 +1359,139 @@ function AdminDashboard({ adminId }: { adminId: string }) {
         </div>
       )}
 
+      {/* ── Mensagens Oficiais (Instalar App / Atualizações / Dicas) ── */}
+      {section === "official" && (
+        <div className="flex-1 overflow-y-auto p-6 md:p-10">
+          <h1 className="text-2xl font-extrabold text-neutral-900 mb-1">Mensagens Oficiais</h1>
+          <p className="text-neutral-400 text-sm mb-6">
+            Cartões ricos que chegam à caixa de entrada, sem perfil e sem possibilidade de resposta.
+          </p>
+
+          <div className="max-w-xl rounded-2xl p-5 mb-8" style={{ background: "#ffffff", border: "1px solid #ececf1" }}>
+            {/* Categoria — ícone e nome são fixos, o admin só escolhe qual */}
+            <p className="text-[12px] font-bold text-neutral-500 mb-2">Categoria</p>
+            <div className="grid grid-cols-3 gap-2 mb-4">
+              {(Object.keys(OFFICIAL_CATEGORY_META) as OfficialCategory[]).map((cat) => {
+                const meta = OFFICIAL_CATEGORY_META[cat];
+                const isSel = officialCategory === cat;
+                return (
+                  <button key={cat} onClick={() => setOfficialCategory(cat)}
+                    className="flex flex-col items-center gap-1.5 py-3 rounded-2xl transition"
+                    style={{ background: isSel ? `${meta.color}18` : "#f5f5f7", border: isSel ? `1px solid ${meta.color}60` : "1px solid transparent" }}>
+                    <meta.Icon className="h-5 w-5" style={{ color: meta.color }} />
+                    <span className="text-[11px] font-bold text-center" style={{ color: isSel ? meta.color : "#6b6b76" }}>{meta.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <p className="text-[12px] font-bold text-neutral-500 mb-2">Imagem</p>
+            <input ref={officialImgInputRef} type="file" accept="image/*" className="hidden"
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadOfficialImage(f); }} />
+            <button onClick={() => officialImgInputRef.current?.click()} disabled={officialUploadingImg}
+              className="w-full mb-4 rounded-2xl overflow-hidden flex items-center justify-center transition disabled:opacity-60"
+              style={{ background: "#f5f5f7", height: officialImageUrl ? 140 : 90, border: "1px dashed #d4d4db" }}>
+              {officialUploadingImg ? (
+                <Loader className="h-5 w-5 animate-spin text-neutral-400" />
+              ) : officialImageUrl ? (
+                <img src={officialImageUrl} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <div className="flex flex-col items-center gap-1.5">
+                  <Upload className="h-5 w-5 text-neutral-400" />
+                  <span className="text-[12px] text-neutral-400">Carregar imagem</span>
+                </div>
+              )}
+            </button>
+
+            <p className="text-[12px] font-bold text-neutral-500 mb-2">Título</p>
+            <input value={officialTitle} onChange={(e) => setOfficialTitle(e.target.value)}
+              placeholder='Ex.: "Instala a Hooda"'
+              className="w-full rounded-2xl px-4 py-2.5 text-sm outline-none text-neutral-900 placeholder:text-neutral-400 mb-4"
+              style={{ background: "#f5f5f7" }} />
+
+            <p className="text-[12px] font-bold text-neutral-500 mb-2">Descrição</p>
+            <textarea value={officialDescription} onChange={(e) => setOfficialDescription(e.target.value)}
+              rows={3} placeholder="Ex.: Adiciona a Hooda ao teu ecrã inicial para uma experiência melhor."
+              className="w-full rounded-2xl px-4 py-3 text-sm outline-none resize-none text-neutral-900 placeholder:text-neutral-400 mb-4"
+              style={{ background: "#f5f5f7" }} />
+
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <div>
+                <p className="text-[12px] font-bold text-neutral-500 mb-2">Texto do botão</p>
+                <input value={officialButtonText} onChange={(e) => setOfficialButtonText(e.target.value)}
+                  placeholder="Instalar App"
+                  className="w-full rounded-2xl px-4 py-2.5 text-sm outline-none text-neutral-900 placeholder:text-neutral-400"
+                  style={{ background: "#f5f5f7" }} />
+              </div>
+              <div>
+                <p className="text-[12px] font-bold text-neutral-500 mb-2">Ação</p>
+                <select value={officialActionType} onChange={(e) => setOfficialActionType(e.target.value as OfficialActionType)}
+                  className="w-full rounded-2xl px-4 py-2.5 text-sm outline-none text-neutral-900"
+                  style={{ background: "#f5f5f7" }}>
+                  <option value="none">Sem botão</option>
+                  <option value="install_pwa">Instalar PWA</option>
+                  <option value="open_page">Abrir página (interna)</option>
+                  <option value="open_link">Abrir link (externo)</option>
+                </select>
+              </div>
+            </div>
+
+            {(officialActionType === "open_page" || officialActionType === "open_link") && (
+              <div className="mb-4">
+                <p className="text-[12px] font-bold text-neutral-500 mb-2">
+                  {officialActionType === "open_page" ? "Caminho da página (ex.: /explorar)" : "URL (ex.: https://...)"}
+                </p>
+                <input value={officialActionValue} onChange={(e) => setOfficialActionValue(e.target.value)}
+                  placeholder={officialActionType === "open_page" ? "/explorar" : "https://..."}
+                  className="w-full rounded-2xl px-4 py-2.5 text-sm outline-none text-neutral-900 placeholder:text-neutral-400"
+                  style={{ background: "#f5f5f7" }} />
+              </div>
+            )}
+
+            <p className="text-[12px] font-bold text-neutral-500 mb-2">Público</p>
+            <select value={officialAudience} onChange={(e) => setOfficialAudience(e.target.value as OfficialAudience)}
+              className="w-full rounded-2xl px-4 py-2.5 text-sm outline-none text-neutral-900 mb-5"
+              style={{ background: "#f5f5f7" }}>
+              <option value="all">Todos os utilizadores</option>
+              <option value="new_users">Novos utilizadores (últimos 7 dias)</option>
+              <option value="not_installed">Utilizadores que ainda não instalaram</option>
+            </select>
+
+            <button onClick={handleSendOfficial} disabled={officialSending || !officialTitle.trim() || !officialDescription.trim()}
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl font-bold text-sm text-white transition active:scale-95 disabled:opacity-40"
+              style={{ background: "linear-gradient(135deg,#5B3FCF,#7B5CE8)", boxShadow: "0 4px 14px rgba(91,63,207,0.4)" }}>
+              {officialSending ? <Loader className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              Enviar mensagem
+            </button>
+          </div>
+
+          <h2 className="text-lg font-extrabold text-neutral-900 mb-3">Histórico</h2>
+          {officialHistoryLoading ? (
+            <div className="flex items-center justify-center py-10"><Loader className="h-5 w-5 animate-spin text-neutral-400" /></div>
+          ) : officialHistory.length === 0 ? (
+            <p className="text-neutral-400 text-sm">Ainda sem mensagens enviadas.</p>
+          ) : (
+            <div className="max-w-xl rounded-2xl overflow-hidden" style={{ background: "#ffffff", border: "1px solid #ececf1" }}>
+              {officialHistory.map((m, i) => {
+                const meta = OFFICIAL_CATEGORY_META[m.category];
+                return (
+                  <div key={m.id} className="flex items-start gap-3 px-4 py-3" style={{ borderTop: i === 0 ? "none" : "1px solid #f0f0f3" }}>
+                    <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${meta.color}18` }}>
+                      <meta.Icon className="h-4 w-4" style={{ color: meta.color }} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-bold text-neutral-900 truncate">{m.title}</p>
+                      <p className="text-[12px] text-neutral-400">{meta.label} · {m.recipients} destinatários</p>
+                    </div>
+                    <p className="text-[11px] text-neutral-300 shrink-0">{new Date(m.created_at).toLocaleString("pt-PT")}</p>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* ── Auditoria (registo de ações do admin) ── */}
       {section === "audit" && (
         <div className="flex-1 overflow-y-auto p-6 md:p-10">
@@ -1297,6 +1518,7 @@ function AdminDashboard({ adminId }: { adminId: string }) {
                   report_resolved: { label: "Resolveu denúncia sobre", color: "#6BA547" },
                   report_dismissed: { label: "Ignorou denúncia sobre", color: "#9a9aa5" },
                   broadcast: { label: "Enviou comunicado a", color: "#5B3FCF" },
+                  send_official_message: { label: "Enviou mensagem oficial", color: "#5B3FCF" },
                 };
                 const info = actionLabels[a.action] ?? { label: a.action, color: "#5B3FCF" };
                 return (

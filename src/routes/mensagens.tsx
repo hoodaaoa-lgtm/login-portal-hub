@@ -44,6 +44,8 @@ import { uploadMessageImage, uploadMessageMedia } from "@/lib/cloudinaryMessages
 import { optimizeImage, optimizeAvatar, optimizePostPhoto, optimizeThumbnail } from "@/lib/imageOptimize";
 import { getHoodaOfficialId } from "@/lib/hoodaOfficial";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { fetchMyOfficialMessages, markOfficialMessageRead, type UserOfficialMessage } from "@/lib/officialMessages";
+import { OfficialMessageListItem, OfficialMessageDetail } from "@/components/OfficialMessageCard";
 
 
 
@@ -4934,7 +4936,7 @@ function saveHiddenConversations(map: Record<string, number>) {
   try { localStorage.setItem(HIDDEN_CONV_KEY, JSON.stringify(map)); } catch {}
 }
 
-function ContactList({ contacts, loading, refreshing, search, setSearch, active, setActive, setShowAddContact, setShowRequests, pendingRequestCount }: {
+function ContactList({ contacts, loading, refreshing, search, setSearch, active, setActive, setShowAddContact, setShowRequests, pendingRequestCount, officialMessages, activeOfficialId, onSelectOfficial }: {
   contacts: Contact[];
   loading: boolean;
   refreshing?: boolean;
@@ -4945,6 +4947,9 @@ function ContactList({ contacts, loading, refreshing, search, setSearch, active,
   setShowAddContact: (v: boolean) => void;
   setShowRequests: (v: boolean) => void;
   pendingRequestCount: number;
+  officialMessages?: UserOfficialMessage[];
+  activeOfficialId?: string | null;
+  onSelectOfficial?: (item: UserOfficialMessage) => void;
 }) {
   const isMobile = useIsMobile();
   const [hiddenMap, setHiddenMap] = useState<Record<string, number>>(() => loadHiddenConversations());
@@ -5056,6 +5061,20 @@ function ContactList({ contacts, loading, refreshing, search, setSearch, active,
 
       <div className="flex-1 overflow-y-auto">
         {loading && <UniversalSkeleton variant="messages" count={8} />}
+
+        {!!officialMessages && officialMessages.length > 0 && (
+          <div style={{ borderBottom: "1px solid var(--border-subtle,#f0f0f0)" }}>
+            {officialMessages.map((item) => (
+              <OfficialMessageListItem
+                key={item.id}
+                item={item}
+                active={activeOfficialId === item.id}
+                onClick={() => onSelectOfficial?.(item)}
+              />
+            ))}
+          </div>
+        )}
+
         {!loading && filtered.length === 0 && (
           <div className="text-center py-12" style={{ color: "var(--text-muted,#888)" }}>
             <MessageSquare className="h-12 w-12 mx-auto mb-3" style={{ color: "#d1d1d1" }} />
@@ -5220,6 +5239,8 @@ function MensagensPage() {
   const [myId, setMyId] = useState(() => (user?.id && isValidUUID(user.id)) ? user.id : "");
   const [search, setSearch] = useState("");
   const [active, setActive] = useState<Contact | null>(null);
+  const [officialMessages, setOfficialMessages] = useState<UserOfficialMessage[]>([]);
+  const [activeOfficial, setActiveOfficial] = useState<UserOfficialMessage | null>(null);
   const [showAddContact, setShowAddContact] = useState(false);
   const [showRequests, setShowRequests] = useState(false);
   const [pendingRequestCount, setPendingRequestCount] = useState(0);
@@ -5414,6 +5435,24 @@ function MensagensPage() {
     setPendingRequestCount(count || 0);
   }, []);
 
+  const loadOfficialMessages = useCallback(async (uid: string) => {
+    setOfficialMessages(await fetchMyOfficialMessages(uid));
+  }, []);
+
+  const handleSelectOfficial = useCallback((item: UserOfficialMessage) => {
+    setActive(null);
+    setActiveOfficial(item);
+    if (!item.is_read) {
+      markOfficialMessageRead(item.id);
+      setOfficialMessages(prev => prev.map(m => m.id === item.id ? { ...m, is_read: true } : m));
+    }
+  }, []);
+
+  const handleOfficialArchived = useCallback(() => {
+    setOfficialMessages(prev => prev.filter(m => m.id !== activeOfficial?.id));
+    setActiveOfficial(null);
+  }, [activeOfficial]);
+
   useEffect(() => {
     if (!user?.id || !isValidUUID(user.id)) {
       navigate({ to: "/", replace: true });
@@ -5425,7 +5464,20 @@ function MensagensPage() {
     // (cache instantâneo) assim que myId muda — só precisamos dos
     // pedidos pendentes aqui.
     loadPendingRequests(uid);
-  }, [user, navigate, loadPendingRequests]);
+    loadOfficialMessages(uid);
+  }, [user, navigate, loadPendingRequests, loadOfficialMessages]);
+
+  // Realtime: novas mensagens oficiais recebidas (Instalar App / Atualizações / Dicas)
+  useEffect(() => {
+    if (!myId) return;
+    const ch = supabase.channel(`official-messages-${myId}`)
+      .on("postgres_changes", {
+        event: "INSERT", schema: "public", table: "user_official_messages",
+        filter: `user_id=eq.${myId}`,
+      }, () => loadOfficialMessages(myId))
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [myId, loadOfficialMessages]);
 
   // Realtime para pedidos
   useEffect(() => {
@@ -5600,12 +5652,15 @@ function MensagensPage() {
           <div className="w-80 shrink-0 border-r overflow-hidden" style={{ borderColor: "var(--border-subtle,#e5e5e5)" }}>
             <ContactList
               contacts={contacts} loading={loading} refreshing={refreshingInBackground} search={search} setSearch={setSearch}
-              active={active} setActive={setActive} setShowAddContact={setShowAddContact}
+              active={active} setActive={(c) => { setActive(c); setActiveOfficial(null); }} setShowAddContact={setShowAddContact}
               setShowRequests={setShowRequests} pendingRequestCount={pendingRequestCount}
+              officialMessages={officialMessages} activeOfficialId={activeOfficial?.id ?? null} onSelectOfficial={handleSelectOfficial}
             />
           </div>
           <div className="flex-1 flex flex-col">
-            {active
+            {activeOfficial
+              ? <OfficialMessageDetail key={activeOfficial.id} item={activeOfficial} onBack={() => setActiveOfficial(null)} onArchived={handleOfficialArchived} />
+              : active
               ? <ChatPanel key={active.conversationId} myId={myId} contact={active} onBack={() => setActive(null)} contacts={contacts} />
               : <div className="flex items-center justify-center h-full flex-col gap-3" style={{ color: "var(--text-muted,#888)" }}>
                   <MessageSquare className="h-12 w-12" style={{ color: "#d1d1d1" }} />
@@ -5617,15 +5672,18 @@ function MensagensPage() {
 
         {/* Mobile */}
         <div className="lg:hidden relative" style={{ height: "calc(100dvh - 62px)" }}>
-          <div className="absolute inset-0 transition-transform duration-300" style={{ transform: active ? "translateX(-100%)" : "translateX(0)", overflow: "hidden" }}>
+          <div className="absolute inset-0 transition-transform duration-300" style={{ transform: (active || activeOfficial) ? "translateX(-100%)" : "translateX(0)", overflow: "hidden" }}>
             <ContactList
               contacts={contacts} loading={loading} refreshing={refreshingInBackground} search={search} setSearch={setSearch}
-              active={active} setActive={setActive} setShowAddContact={setShowAddContact}
+              active={active} setActive={(c) => { setActive(c); setActiveOfficial(null); }} setShowAddContact={setShowAddContact}
               setShowRequests={setShowRequests} pendingRequestCount={pendingRequestCount}
+              officialMessages={officialMessages} activeOfficialId={activeOfficial?.id ?? null} onSelectOfficial={handleSelectOfficial}
             />
           </div>
-          <div className="absolute inset-0 transition-transform duration-300" style={{ transform: active ? "translateX(0)" : "translateX(100%)", overflow: "hidden", pointerEvents: active ? "auto" : "none" }}>
-            {active && <ChatPanel key={active.conversationId} myId={myId} contact={active} onBack={() => setActive(null)} contacts={contacts} />}
+          <div className="absolute inset-0 transition-transform duration-300" style={{ transform: (active || activeOfficial) ? "translateX(0)" : "translateX(100%)", overflow: "hidden", pointerEvents: (active || activeOfficial) ? "auto" : "none" }}>
+            {activeOfficial
+              ? <OfficialMessageDetail key={activeOfficial.id} item={activeOfficial} onBack={() => setActiveOfficial(null)} onArchived={handleOfficialArchived} />
+              : active && <ChatPanel key={active.conversationId} myId={myId} contact={active} onBack={() => setActive(null)} contacts={contacts} />}
           </div>
         </div>
 
