@@ -333,12 +333,12 @@ export function BottomNav() {
 }
 
 /* ─── Page wrapper — adds sidebar padding on desktop ─── */
-export function PageWrapper({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+export function PageWrapper({ children, className = "", noPageScroll = false }: { children: React.ReactNode; className?: string; noPageScroll?: boolean }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   return (
     <div
       key={pathname}
-      className={`lg:ml-[320px] min-h-dvh hooda-page-enter overflow-x-hidden ${className}`}
+      className={`lg:ml-[320px] ${noPageScroll ? "h-dvh overflow-hidden" : "min-h-dvh"} hooda-page-enter overflow-x-hidden ${className}`}
       style={{ background: "var(--s1)" }}
     >
       {children}

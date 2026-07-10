@@ -5567,7 +5567,7 @@ function MensagensPage() {
   return (
     <>
       <SideNav />
-      <PageWrapper className="pb-0 lg:pb-0">
+      <PageWrapper className="pb-0 lg:pb-0" noPageScroll>
         {loadError && (
           <div className="flex items-center gap-2 px-4 py-2.5" style={{ background: "#FEE2E2" }}>
             <X className="h-4 w-4 shrink-0" style={{ color: "#DC2626" }} />
