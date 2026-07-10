@@ -1,0 +1,53 @@
+name: Build Hooda APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'android/**'
+      - 'capacitor.config.ts'
+      - '.github/workflows/build-apk.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Configurar Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Configurar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Instalar dependências
+        run: npm install
+
+      - name: Criar pasta dist (placeholder)
+        run: |
+          mkdir -p dist
+          echo "<!DOCTYPE html><html><head><title>Hooda</title></head><body>Loading Hooda...</body></html>" > dist/index.html
+
+      - name: Sincronizar Capacitor
+        run: npx cap sync android
+
+      - name: Dar permissão ao gradlew
+        run: chmod +x android/gradlew
+
+      - name: Construir APK (debug)
+        run: |
+          cd android
+          ./gradlew assembleDebug
+
+      - name: Enviar APK como artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: hooda-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
