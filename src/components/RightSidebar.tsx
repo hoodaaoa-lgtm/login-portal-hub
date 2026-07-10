@@ -1,11 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { RefreshCw, Users, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "@tanstack/react-router";
-import { useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
 import { getHoodaOfficialId } from "@/lib/hoodaOfficial";
-import { FOLLOW_KEYS } from "@/hooks/useSocialSystem";
+import { useFollowState } from "@/hooks/useSocialSystem";
 import { HoodaTipCard } from "@/components/HoodaTipCard";
 
 const ACCENT = "#5B3FCF";
@@ -17,7 +15,6 @@ function colorFor(s: string) {
 
 export function RightSidebar() {
   const navigate = useNavigate();
-  const qc = useQueryClient();
   const [suggestions, setSuggestions] = useState<{ id: string; username: string; full_name: string; avatar_url?: string | null }[]>([]);
   const [loading, setLoading] = useState(true);
   const [myId, setMyId] = useState<string | null>(null);
@@ -42,23 +39,6 @@ export function RightSidebar() {
   }
 
   useEffect(() => { load(); }, []);
-
-  async function follow(userId: string, username: string) {
-    if (!myId) return;
-    // Fonte única de verdade: a mesma RPC usada em todo o resto da app
-    // (UniversalPostCard, perfil, canal...), para os contadores e o
-    // estado de "seguido" ficarem sempre consistentes em toda a parte.
-    const { data, error } = await (supabase as any).rpc("toggle_follow", {
-      p_target_username: username,
-      p_target_id: userId,
-    });
-    if (error) { console.error("Erro ao seguir:", error); toast.error(`Não foi possível acompanhar: ${error.message}`); return; }
-    // Sincroniza a cache partilhada — se o perfil desta pessoa já estiver
-    // aberto noutro sítio, passa a mostrar "A seguir" sem precisar de reload.
-    qc.setQueryData(FOLLOW_KEYS.status(myId, username), !!data?.following);
-    qc.invalidateQueries({ queryKey: FOLLOW_KEYS.counts(username) });
-    setSuggestions(p => p.filter(u => u.id !== userId));
-  }
 
   return (
     <div className="sticky top-0 py-3 space-y-4 max-h-screen overflow-y-auto">
@@ -103,26 +83,9 @@ export function RightSidebar() {
         ) : (
           <>
             {suggestions.map(u => (
-              <div key={u.id} className="flex items-center gap-3 px-4 py-2.5">
-                <button onClick={() => navigate({ to: "/u/$username", params: { username: u.username } })}
-                  className="flex items-center gap-3 flex-1 min-w-0 text-left">
-                  <div className="h-9 w-9 rounded-full shrink-0 overflow-hidden flex items-center justify-center text-white text-sm font-bold"
-                    style={{ background: u.avatar_url ? "transparent" : colorFor(u.username) }}>
-                    {u.avatar_url
-                      ? <img src={u.avatar_url} alt="" className="w-full h-full object-cover" />
-                      : (u.username?.[0] ?? "?").toUpperCase()}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-bold truncate" style={{ color: "var(--text-primary)" }}>{u.full_name || u.username}</p>
-                    <p className="text-xs truncate" style={{ color: "var(--text-muted)" }}>@{u.username}</p>
-                  </div>
-                </button>
-                <button onClick={() => follow(u.id, u.username)}
-                  className="shrink-0 px-3 py-1.5 rounded-full text-xs font-bold text-white transition active:scale-90"
-                  style={{ background: ACCENT }}>
-                  Acompanhar
-                </button>
-              </div>
+              <SuggestionRow key={u.id} u={u} myId={myId}
+                onFollowed={() => setSuggestions(p => p.filter(x => x.id !== u.id))}
+                onNavigate={() => navigate({ to: "/u/$username", params: { username: u.username } })} />
             ))}
             <button onClick={() => navigate({ to: "/explorar", search: { tab: "people" } })}
               className="w-full text-left px-4 py-3 text-sm font-semibold border-t"
@@ -143,6 +106,47 @@ export function RightSidebar() {
         <a href="/acessibilidade" target="_blank" rel="noopener noreferrer" className="hover:underline">Acessibilidade</a>
       </div>
       <p className="text-[11px] text-center" style={{ color: "var(--text-muted)" }}>© 2026 Hooda</p>
+    </div>
+  );
+}
+
+/* Linha individual de sugestão — usa useFollowState, a mesma fonte de
+   verdade partilhada com o resto da app (post cards, perfil, explorar,
+   modal de seguidores...). Assim que o follow é confirmado, o cartão
+   desaparece da lista de sugestões (comportamento próprio desta secção). */
+function SuggestionRow({ u, myId, onFollowed, onNavigate }: {
+  u: { id: string; username: string; full_name: string; avatar_url?: string | null };
+  myId: string | null;
+  onFollowed: () => void;
+  onNavigate: () => void;
+}) {
+  const { isFollowing, isPending, toggle } = useFollowState(myId, u.username, u.id);
+  const wasFollowing = useRef(isFollowing);
+  useEffect(() => {
+    if (isFollowing && !wasFollowing.current) onFollowed();
+    wasFollowing.current = isFollowing;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isFollowing]);
+
+  return (
+    <div className="flex items-center gap-3 px-4 py-2.5">
+      <button onClick={onNavigate} className="flex items-center gap-3 flex-1 min-w-0 text-left">
+        <div className="h-9 w-9 rounded-full shrink-0 overflow-hidden flex items-center justify-center text-white text-sm font-bold"
+          style={{ background: u.avatar_url ? "transparent" : colorFor(u.username) }}>
+          {u.avatar_url
+            ? <img src={u.avatar_url} alt="" className="w-full h-full object-cover" />
+            : (u.username?.[0] ?? "?").toUpperCase()}
+        </div>
+        <div className="min-w-0">
+          <p className="text-sm font-bold truncate" style={{ color: "var(--text-primary)" }}>{u.full_name || u.username}</p>
+          <p className="text-xs truncate" style={{ color: "var(--text-muted)" }}>@{u.username}</p>
+        </div>
+      </button>
+      <button onClick={toggle} disabled={isPending}
+        className="shrink-0 px-3 py-1.5 rounded-full text-xs font-bold text-white transition active:scale-90 disabled:opacity-60"
+        style={{ background: ACCENT }}>
+        Acompanhar
+      </button>
     </div>
   );
 }

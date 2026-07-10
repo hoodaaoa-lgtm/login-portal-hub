@@ -167,7 +167,6 @@ function ShareProfileModal({ username, name, onClose }: { username: string; name
 function FollowListModal({ userId, kind, onClose }:
   { userId:string; kind:"followers"|"following"; onClose:()=>void }) {
   const [myId, setMyId] = useState("");
-  const qc = useQueryClient();
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -203,58 +202,11 @@ function FollowListModal({ userId, kind, onClose }:
     staleTime:30_000,
   });
 
-  // Estado REAL de "já sigo" para cada pessoa da lista, vindo diretamente
-  // da BD — nunca assumido vazio. Sem isto, o botão mostrava sempre
-  // "Seguir" mesmo quando já se seguia, e um clique podia na verdade
-  // DEIXAR de seguir por engano (porque a relação já existia).
-  const usernames = useMemo(()=>data.map((u:any)=>u.username).filter(Boolean), [data]);
-  const { data: followingSet } = useQuery({
-    queryKey:["followListStatus", myId, usernames.join(",")],
-    queryFn: async () => {
-      if (!myId || usernames.length===0) return new Set<string>();
-      const { data: rows } = await (supabase as any).from("follows")
-        .select("target_username").eq("follower_id", myId).in("target_username", usernames);
-      return new Set((rows??[]).map((r:any)=>r.target_username));
-    },
-    enabled: !!myId && usernames.length>0,
-    staleTime: 15_000,
-  });
-  const following = followingSet ?? new Set<string>();
-  const followStatusLoading = !!myId && usernames.length>0 && followingSet===undefined;
-
-  async function toggleFollow(targetUsername:string) {
-    if (!myId) return;
-    const key = ["followListStatus", myId, usernames.join(",")];
-    const prev = qc.getQueryData<Set<string>>(key) ?? new Set<string>();
-    const isF = prev.has(targetUsername);
-    const next = new Set(prev);
-    isF ? next.delete(targetUsername) : next.add(targetUsername);
-    qc.setQueryData(key, next);
-    // Estado otimista também na cache PARTILHADA (a mesma que UniversalPostCard
-    // e perfil.tsx leem via useFollowState) — antes este modal só atualizava a
-    // sua própria lista local, então seguir aqui não refletia no botão
-    // "Seguir" do cartão do post ou da página de perfil dessa pessoa.
-    qc.setQueryData(FOLLOW_KEYS.status(myId, targetUsername), !isF);
-    const targetId = (data as any[]).find(u => u.username === targetUsername)?.id ?? null;
-    try {
-      // Mesma RPC atómica usada em toda a app — verifica a relação real
-      // na BD antes de decidir seguir/deixar de seguir, nunca duplica
-      // nem falha por a relação já existir.
-      const { data: res, error } = await (supabase as any).rpc("toggle_follow", {
-        p_target_username: targetUsername,
-        p_target_id: targetId,
-      });
-      if (error) throw error;
-      qc.setQueryData(FOLLOW_KEYS.status(myId, targetUsername), !!res?.following);
-      qc.invalidateQueries({ queryKey: FOLLOW_KEYS.counts(targetUsername) });
-      qc.invalidateQueries({ queryKey: ["follow-status"], exact: false });
-      qc.invalidateQueries({ queryKey: ["follow-counts"], exact: false });
-      qc.invalidateQueries({ queryKey: ["profile"], exact: false });
-    } catch {
-      qc.setQueryData(key, prev);
-      qc.setQueryData(FOLLOW_KEYS.status(myId, targetUsername), isF);
-    }
-  }
+  // Estado de "já sigo" por linha — cada FollowRow usa useFollowState,
+  // a MESMA fonte de verdade partilhada com o resto da app (post cards,
+  // perfil, explorar, sugestões da home). Antes este modal tinha a sua
+  // própria cópia local (Set + toggleFollow duplicado), o que fazia
+  // seguir aqui não refletir sempre nos outros sítios e vice-versa.
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4"
@@ -287,29 +239,38 @@ function FollowListModal({ userId, kind, onClose }:
               {kind==="followers"?"Ainda sem acompanhantes":"Não acompanha ninguém"}
             </p>
           ) : data.map((u:any)=>(
-            <div key={u.id} className="flex items-center gap-3 px-4 py-3 hover:bg-[var(--s1)] transition">
-              <Av name={u.full_name||u.username} src={u.avatar_url} size={42} />
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-sm truncate" style={{color:"var(--text-primary)"}}>{u.full_name||u.username}</p>
-                <p className="text-xs" style={{color:"var(--text-muted)"}}>@{u.username}</p>
-              </div>
-              {myId && myId!==u.id && (
-                followStatusLoading ? (
-                  <div className="h-[26px] w-[68px] rounded-full animate-pulse" style={{background:"var(--s2)"}} />
-                ) : (
-                  <button onClick={()=>toggleFollow(u.username)}
-                    className="px-3 py-1.5 rounded-full text-xs font-bold transition active:scale-95"
-                    style={following.has(u.username)
-                      ?{background:"var(--s2)",color:"var(--text-secondary)",border:"1px solid var(--border-default)"}
-                      :{background:P,color:"#fff"}}>
-                    {following.has(u.username)?"Acompanhando":"Acompanhar"}
-                  </button>
-                )
-              )}
-            </div>
+            <FollowRow key={u.id} u={u} myId={myId} />
           ))}
         </div>
       </div>
+    </div>
+  );
+}
+
+/* Linha individual da lista de seguidores/seguindo — botão "Acompanhar"
+   usa useFollowState (fonte única partilhada com toda a app). */
+function FollowRow({ u, myId }: { u: any; myId: string }) {
+  const { isFollowing, isPending, isLoading, toggle } = useFollowState(myId || null, u.username, u.id);
+  return (
+    <div className="flex items-center gap-3 px-4 py-3 hover:bg-[var(--s1)] transition">
+      <Av name={u.full_name||u.username} src={u.avatar_url} size={42} />
+      <div className="flex-1 min-w-0">
+        <p className="font-semibold text-sm truncate" style={{color:"var(--text-primary)"}}>{u.full_name||u.username}</p>
+        <p className="text-xs" style={{color:"var(--text-muted)"}}>@{u.username}</p>
+      </div>
+      {myId && myId!==u.id && (
+        isLoading ? (
+          <div className="h-[26px] w-[68px] rounded-full animate-pulse" style={{background:"var(--s2)"}} />
+        ) : (
+          <button onClick={toggle} disabled={isPending}
+            className="px-3 py-1.5 rounded-full text-xs font-bold transition active:scale-95 disabled:opacity-60"
+            style={isFollowing
+              ?{background:"var(--s2)",color:"var(--text-secondary)",border:"1px solid var(--border-default)"}
+              :{background:P,color:"#fff"}}>
+            {isFollowing?"Acompanhando":"Acompanhar"}
+          </button>
+        )
+      )}
     </div>
   );
 }
