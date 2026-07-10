@@ -67,7 +67,7 @@ function WhoToFollowCard({ myUserId, onDismiss, offset = 0 }: { myUserId: string
         // 1 — quem eu sigo
         const { data: myFollows } = await (supabase as any)
           .from("follows").select("following_id").eq("follower_id", myUserId);
-        const myFollowIds = (myFollows ?? []).map((f: any) => f.following_id);
+        const myFollowIds = (myFollows ?? []).map((f: any) => f.following_id).filter(Boolean);
         const excludeIds = new Set([myUserId, ...myFollowIds]);
 
         // 2 — amigos de amigos
