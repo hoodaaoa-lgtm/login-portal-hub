@@ -22,7 +22,6 @@ export const Route = createFileRoute("/hdequipa9x2")({
   component: AdminPage,
 });
 
-const UNLOCK_KEY = "hooda_admin_unlocked_v1";
 const LOGO = "/icons/icon-192.png";
 
 type UserRow = {
@@ -229,14 +228,12 @@ function AdminPostMedia({ p }: { p: PostRow }) {
   return null;
 }
 
-type Stage = "checking" | "denied" | "password" | "unlocked";
+type Stage = "checking" | "denied" | "unlocked";
 
 function AdminPage() {
   const navigate = useNavigate();
   const [stage, setStage] = useState<Stage>("checking");
   const [adminId, setAdminId] = useState("");
-  const [pwd, setPwd] = useState("");
-  const [pwdError, setPwdError] = useState(false);
 
   // Ativa a identidade do PWA "Hooda Admin" (manifest, ícones, Service
   // Worker próprio) assim que sabemos que é mesmo um admin — nunca antes
@@ -258,27 +255,9 @@ function AdminPage() {
         return;
       }
       setAdminId(session.user.id);
-      const alreadyUnlocked = sessionStorage.getItem(UNLOCK_KEY) === "1";
-      setStage(alreadyUnlocked ? "unlocked" : "password");
+      setStage("unlocked");
     })();
   }, [navigate]);
-
-  const [pwdChecking, setPwdChecking] = useState(false);
-
-  async function tryUnlock(e: React.FormEvent) {
-    e.preventDefault();
-    setPwdChecking(true);
-    const { data: ok, error } = await db.rpc("verify_admin_pin", { candidate: pwd });
-    setPwdChecking(false);
-    if (!error && ok) {
-      sessionStorage.setItem(UNLOCK_KEY, "1");
-      setStage("unlocked");
-      setPwdError(false);
-    } else {
-      setPwdError(true);
-      setPwd("");
-    }
-  }
 
   if (stage === "checking") {
     return (
@@ -299,42 +278,6 @@ function AdminPage() {
     );
   }
 
-  if (stage === "password") {
-    return (
-      <div className="min-h-screen flex items-center justify-center px-6"
-        style={{ background: "radial-gradient(circle at 50% 0%, #ede9fe 0%, #f7f7f9 65%)" }}>
-        <form onSubmit={tryUnlock} className="w-full max-w-sm rounded-3xl p-8 flex flex-col items-center gap-5 shadow-xl"
-          style={{ background: "#ffffff", border: "1px solid #ececf1" }}>
-          <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
-            style={{ background: "linear-gradient(135deg,#5B3FCF,#E94B8A)", boxShadow: "0 8px 30px rgba(91,63,207,0.45)" }}>
-            <Lock className="h-7 w-7 text-white" />
-          </div>
-          <div className="text-center">
-            <p className="flex items-center justify-center gap-1.5"><HoodaWordmark size={22} /><span className="text-neutral-500 font-extrabold text-lg">Oficial</span></p>
-            <p className="text-neutral-400 text-xs mt-1">Introduz a palavra-passe de acesso</p>
-          </div>
-          <input
-            type="password"
-            autoFocus
-            value={pwd}
-            onChange={e => { setPwd(e.target.value); setPwdError(false); }}
-            placeholder="Palavra-passe"
-            className="w-full text-center tracking-[0.3em] text-lg font-bold rounded-2xl px-4 py-3 outline-none text-neutral-900"
-            style={{
-              background: "#f5f5f7",
-              border: pwdError ? "1px solid #EF4444" : "1px solid #e2e2e8",
-            }}
-          />
-          {pwdError && <p className="text-xs -mt-3" style={{ color: "#EF4444" }}>Palavra-passe incorreta.</p>}
-          <button type="submit" disabled={pwdChecking}
-            className="w-full py-3 rounded-2xl font-bold text-white transition active:scale-95 disabled:opacity-60"
-            style={{ background: "linear-gradient(135deg,#5B3FCF,#7B5CE8)", boxShadow: "0 4px 20px rgba(91,63,207,0.4)" }}>
-            {pwdChecking ? <Loader className="h-4 w-4 animate-spin mx-auto" /> : "Entrar"}
-          </button>
-        </form>
-      </div>
-    );
-  }
 
   return <AdminDashboard adminId={adminId} />;
 }
@@ -922,7 +865,7 @@ function AdminDashboard({ adminId }: { adminId: string }) {
           </button>
         ))}
         <div className="flex-1" />
-        <button onClick={() => { sessionStorage.removeItem(UNLOCK_KEY); navigate({ to: "/home" }); }}
+        <button onClick={() => { navigate({ to: "/home" }); }}
           title="Sair do painel" className="flex items-center gap-3 px-2.5 md:px-3 py-2.5 rounded-2xl transition active:scale-[0.98] w-full"
           style={{ background: "rgba(239,68,68,0.08)" }}>
           <LogOut className="h-5 w-5 shrink-0" style={{ color: "#F87171" }} />
