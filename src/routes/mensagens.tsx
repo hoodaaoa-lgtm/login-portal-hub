@@ -3356,6 +3356,7 @@ function ChatPanel({ myId, contact, onBack, contacts }: {
     } catch {}
   }
 
+  const [msgsLoading, setMsgsLoading] = useState(false);
   // ── E2EE para DMs (ECDH + AES-GCM partilhada via conversation_key_shares) ──
   //
   // canEncrypt = o outro participante tem chave pública ECDH publicada.
@@ -3456,6 +3457,7 @@ function ChatPanel({ myId, contact, onBack, contacts }: {
   // ── Load msgs from Supabase ──
   const loadMsgs = useCallback(async () => {
     if (!contact.conversationId) return;
+    setMsgsLoading(true);
 
     // ── DIAGNÓSTICO: testar sessão e participação ──
     const { data: sessionData } = await supabase.auth.getSession();
@@ -3478,11 +3480,12 @@ function ChatPanel({ myId, contact, onBack, contacts }: {
     if (error) {
       console.error("[loadMsgs] Erro Supabase:", JSON.stringify(error));
       toast.error("Erro ao carregar: " + error.message);
+      setMsgsLoading(false);
       return;
     }
     console.log("[loadMsgs] Rows recebidos:", data?.length ?? 0);
     if (data?.length) console.log("[loadMsgs] Primeira row:", JSON.stringify(data[0]));
-    if (!data) return;
+    if (!data) { setMsgsLoading(false); return; }
 
     // Carregar reações para todas as mensagens desta conversa
     const msgIds = data.map((r: any) => r.id);
@@ -3507,6 +3510,7 @@ function ChatPanel({ myId, contact, onBack, contacts }: {
     const parsed = await Promise.all(enriched.map(parseRow));
     setMsgs(parsed);
     saveCache(parsed);
+    setMsgsLoading(false);
     // marcar como lido
     await db.from("messages")
       .update({ status: "read" })
@@ -4384,6 +4388,9 @@ function ChatPanel({ myId, contact, onBack, contacts }: {
 
       {/* ── MESSAGES ── */}
       <div className="flex-1 overflow-y-auto scroll-smooth" onScroll={onScroll}>
+        {msgsLoading && msgs.length === 0 ? (
+          <UniversalSkeleton variant="chat-bubbles" />
+        ) : (
         <div className="flex flex-col justify-end min-h-full px-3 py-3 space-y-1.5">
         {msgs.map(m => {
           const merged = { ...m, ...(localOverrides[m.id] ?? {}) } as Message & { deletedForMe?: boolean };
@@ -4443,6 +4450,7 @@ function ChatPanel({ myId, contact, onBack, contacts }: {
         })}
         <div ref={bottomRef} />
         </div>
+        )}
       </div>
 
       {/* ── SCROLL TO BOTTOM ── */}

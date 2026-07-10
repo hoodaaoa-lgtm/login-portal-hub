@@ -34,6 +34,7 @@ export type UniversalSkeletonVariant =
   | "profile" // cabeçalho de perfil: capa + avatar + botões + nome/bio + stats
   | "video-grid" // grade de vídeos/mídia (Studio, HoodaTV): aspect-square em grid
   | "messages" // linha de conversa: avatar + nome/hora + prévia (ContactList)
+  | "chat-bubbles" // bolhas de mensagem alternadas esq/dir dentro de uma conversa aberta
   | "explorar" // linha de pessoa sugerida: avatar + nome/username + botão seguir
   | "circle-list" // fileira horizontal de avatares circulares com legenda
   | "generic"; // linha genérica: avatar + bolha de texto + meta (comentários, etc.)
@@ -79,6 +80,15 @@ function MessageItem() {
     </div>
   );
 }
+
+function ChatBubbleItem({ isMe, width }: { isMe: boolean; width: number }) {
+  return (
+    <div className={`flex ${isMe ? "justify-end" : "justify-start"} px-3 py-1 animate-pulse`}>
+      <Shimmer className="rounded-2xl" style={{ width, height: 34 }} />
+    </div>
+  );
+}
+
 
 function ExplorarItem() {
   // Mesma geometria do PersonCard real em explorar.tsx: avatar 40 + duas
@@ -215,6 +225,26 @@ export function UniversalSkeleton({
           ))}
         </div>
       );
+
+    case "chat-bubbles": {
+      // Padrão fixo (não aleatório) para nunca "saltar" entre renders —
+      // alterna esq/dir com larguras variadas, como uma conversa real.
+      const pattern: Array<{ isMe: boolean; width: number }> = [
+        { isMe: false, width: 160 }, { isMe: false, width: 90 },
+        { isMe: true, width: 130 },
+        { isMe: false, width: 200 },
+        { isMe: true, width: 80 }, { isMe: true, width: 150 },
+        { isMe: false, width: 110 },
+        { isMe: true, width: 170 },
+      ];
+      return (
+        <div className="flex flex-col justify-end min-h-full py-3">
+          {pattern.slice(0, count ?? pattern.length).map((p, i) => (
+            <ChatBubbleItem key={i} isMe={p.isMe} width={p.width} />
+          ))}
+        </div>
+      );
+    }
 
     case "explorar":
       return (
