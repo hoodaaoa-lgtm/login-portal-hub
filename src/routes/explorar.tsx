@@ -169,7 +169,7 @@ function ExplorePage() {
   }, []);
 
   /* Carregar quem já sigo, para o botão mostrar o estado certo */
-  const { data: myFollowsData } = useQuery({
+  const { data: myFollowsData, isLoading: myFollowsLoading } = useQuery({
     queryKey: ["explore-my-follows", myId],
     queryFn: async () => {
       const { data } = await (supabase as any)
@@ -179,6 +179,10 @@ function ExplorePage() {
     enabled: !!myId,
     staleTime: 10_000,
   });
+  // Enquanto isto ainda não carregou, não sabemos de verdade quem já sigo —
+  // mostrar "Acompanhar" nesse intervalo e depois saltar para "Acompanhando"
+  // é o "piscar" que confunde o utilizador. Skeleton em vez disso.
+  const followStatusLoading = !!myId && myFollowsLoading;
 
   /* ── Query: pesquisa ── */
   const searchActive = search.trim().length >= 2;
@@ -632,13 +636,19 @@ function ExplorePage() {
           </p>
         </div>
         {myId && myId !== p.id && (
-          <button onClick={() => toggleFollow(p.id, p.username)}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold transition active:scale-95 shrink-0"
-            style={isF
-              ? { background: "var(--s2)", color: "var(--text-secondary)", border: "1px solid var(--border-default)" }
-              : { background: P, color: "#fff" }}>
-            {isF ? <><UserCheck className="h-3.5 w-3.5" />Acompanhando</> : <><UserPlus className="h-3.5 w-3.5" />Acompanhar</>}
-          </button>
+          followStatusLoading ? (
+            <div className="relative overflow-hidden h-[30px] w-[104px] rounded-full shrink-0" style={{ background: "var(--s2)" }}>
+              <div className="skeleton-shimmer absolute inset-0" />
+            </div>
+          ) : (
+            <button onClick={() => toggleFollow(p.id, p.username)}
+              className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold transition active:scale-95 shrink-0"
+              style={isF
+                ? { background: "var(--s2)", color: "var(--text-secondary)", border: "1px solid var(--border-default)" }
+                : { background: P, color: "#fff" }}>
+              {isF ? <><UserCheck className="h-3.5 w-3.5" />Acompanhando</> : <><UserPlus className="h-3.5 w-3.5" />Acompanhar</>}
+            </button>
+          )
         )}
       </div>
     );

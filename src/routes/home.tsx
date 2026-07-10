@@ -167,7 +167,7 @@ function WhoToFollowSuggestionCard({ user, myUserId, navigate }: { user: any; my
   const AVATAR_COLORS = [ACCENT, "#F26B3A", "#1FAFA6", "#6BA547", "#E94B8A"];
   const name = user.full_name || user.username || "Utilizador";
   const bg = AVATAR_COLORS[(name?.charCodeAt(0) ?? 0) % AVATAR_COLORS.length];
-  const { isFollowing, isPending, toggle } = useFollowState(myUserId, user.username, user.id);
+  const { isFollowing, isPending, isLoading: followLoading, toggle } = useFollowState(myUserId, user.username, user.id);
 
   return (
     <div className="shrink-0 flex flex-col items-center rounded-2xl p-3 border transition"
@@ -202,14 +202,21 @@ function WhoToFollowSuggestionCard({ user, myUserId, navigate }: { user: any; my
         </p>
       )}
 
-      {/* Botão seguir */}
-      <button onClick={toggle} disabled={isPending}
-        className="w-full h-8 rounded-full text-[12px] font-bold transition active:scale-95 mt-auto disabled:opacity-60"
-        style={isFollowing
-          ? { background: "var(--s3)", color: "var(--text-secondary)", border: "1.5px solid var(--border-default)" }
-          : { background: ACCENT, color: "#fff", border: "none" }}>
-        {isFollowing ? "A acompanhar" : "Acompanhar"}
-      </button>
+      {/* Botão seguir — skeleton enquanto o estado real ainda não chegou,
+          para não piscar "Acompanhar" e depois saltar para "A acompanhar" */}
+      {followLoading ? (
+        <div className="relative overflow-hidden w-full h-8 rounded-full mt-auto" style={{ background: "var(--s2)" }}>
+          <div className="skeleton-shimmer absolute inset-0" />
+        </div>
+      ) : (
+        <button onClick={toggle} disabled={isPending}
+          className="w-full h-8 rounded-full text-[12px] font-bold transition active:scale-95 mt-auto disabled:opacity-60"
+          style={isFollowing
+            ? { background: "var(--s3)", color: "var(--text-secondary)", border: "1.5px solid var(--border-default)" }
+            : { background: ACCENT, color: "#fff", border: "none" }}>
+          {isFollowing ? "A acompanhar" : "Acompanhar"}
+        </button>
+      )}
     </div>
   );
 }
