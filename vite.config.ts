@@ -33,6 +33,13 @@
             process.env.SUPABASE_PROJECT_ID ||
             "uiqxumshtqcmnjjciuba",
         ),
+        // Lovable não permite segredos com prefixo VITE_ (são valores que vão
+        // parar ao browser, não segredos verdadeiros). O segredo real
+        // chama-se TENOR_API_KEY; aqui injetamo-lo como VITE_TENOR_API_KEY
+        // para o código do cliente (src/routes/mensagens.tsx) o conseguir ler.
+        "import.meta.env.VITE_TENOR_API_KEY": JSON.stringify(
+          process.env.VITE_TENOR_API_KEY || process.env.TENOR_API_KEY || "",
+        ),
       },
       resolve: {
         alias: {
