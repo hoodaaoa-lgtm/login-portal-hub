@@ -2325,7 +2325,7 @@ function PublicProfile({ profile, email }: { profile: Profile | null; email: str
             <button onClick={toggleFollow} disabled={followTogglePending}
               className={`text-sm font-bold rounded-full px-5 py-1.5 transition shadow-sm disabled:opacity-60 ${following ? "border border-neutral-300 bg-[var(--s2)] text-black" : "text-white"}`}
               style={{ background: following ? undefined : ACCENT }}>
-              {following ? t("profile.unfollow") : t("profile.follow")}
+              {following ? t("profile.following") : t("profile.follow")}
             </button>
           )}
         </div>
