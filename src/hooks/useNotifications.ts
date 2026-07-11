@@ -111,11 +111,16 @@ export function useNotifications(userId: string | null) {
         { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` },
         async (payload: any) => {
           const row = payload.new;
-          if (row.type === "message") return; // mensagens ficam só na aba Mensagens
           const profilesCache = await loadProfiles([row.actor_id]);
           const notif = await mapRow(row, profilesCache);
 
-          setNotifications((prev) => [notif, ...prev]);
+          // Mensagens não entram na lista persistente do sino (ficam só na
+          // aba Mensagens), mas têm de aparecer como toast na hora — é
+          // assim que o utilizador sabe quem lhe mandou mensagem sem ter
+          // de abrir a conversa às cegas.
+          if (row.type !== "message") {
+            setNotifications((prev) => [notif, ...prev]);
+          }
 
           playNotificationSound();
 
