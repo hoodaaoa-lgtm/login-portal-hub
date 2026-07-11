@@ -5336,7 +5336,11 @@ function MensagensPage() {
         if (!lastMsgMap[msg.conversation_id] && !isHiddenForMe(msg.conversation_id, msg.id)) {
           lastMsgMap[msg.conversation_id] = msg;
         }
-        if (msg.sender_id !== uid && msg.status === "sent") {
+        // "Não lida" = ainda não chegou a "read", independentemente de já ter
+        // passado por "delivered" (que acontece 1s depois de enviada — ver
+        // handleSend). Contar só status === "sent" fazia o contador ficar
+        // sempre a 0 passado esse segundo inicial.
+        if (msg.sender_id !== uid && msg.status !== "read") {
           unreadMap[msg.conversation_id] = (unreadMap[msg.conversation_id] ?? 0) + 1;
         }
       }
