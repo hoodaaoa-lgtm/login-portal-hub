@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ChevronLeft, Share, PlusSquare, Trash2, Check } from "lucide-react";
+import { ChevronLeft, Share, PlusSquare, Trash2, Check, Download, X, Sparkles } from "lucide-react";
 import {
   OFFICIAL_CATEGORY_META,
   markOfficialMessageClicked,
@@ -74,6 +74,48 @@ function IosInstallHelp({ onClose }: { onClose: () => void }) {
   );
 }
 
+/** Modal com a marca da Hooda, mostrado ANTES do prompt nativo do browser.
+ * O prompt nativo do Chrome/Edge (janela cinzenta "Instale o app") não pode
+ * ser removido — é o browser que decide essa UI por segurança — mas assim o
+ * utilizador vê primeiro o nosso ecrã, com a nossa mensagem, e só depois
+ * aparece a confirmação do sistema. */
+function HoodaInstallModal({ title, onConfirm, onClose, installing }: {
+  title: string;
+  onConfirm: () => void;
+  onClose: () => void;
+  installing: boolean;
+}) {
+  return (
+    <div className="fixed inset-0 z-[999] flex items-end lg:items-center justify-center"
+      style={{ background: "rgba(0,0,0,0.5)" }}
+      onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="w-full lg:max-w-sm lg:mx-4 lg:rounded-3xl rounded-t-3xl bg-white p-5 relative">
+        <button onClick={onClose} className="absolute top-4 right-4 w-7 h-7 rounded-full bg-neutral-100 flex items-center justify-center">
+          <X className="h-3.5 w-3.5 text-neutral-500" />
+        </button>
+        <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3" style={{ background: "#5B3FCF" }}>
+          <Sparkles className="h-6 w-6 text-white" />
+        </div>
+        <p className="font-extrabold text-[17px] text-black mb-1">{title}</p>
+        <p className="text-[13px] text-neutral-500 leading-snug mb-5">
+          Instala a Hooda no teu ecrã inicial para nunca perderes uma mensagem, like ou acompanhante novo.
+        </p>
+        <button
+          onClick={onConfirm}
+          disabled={installing}
+          className="w-full flex items-center justify-center gap-2 rounded-2xl py-3 font-bold text-[14px] text-white transition active:scale-95 disabled:opacity-60"
+          style={{ background: "linear-gradient(135deg,#5B3FCF,#7B5CE8)" }}
+        >
+          {installing ? "A instalar…" : (<><Download className="h-4 w-4" /> Instalar app</>)}
+        </button>
+        <button onClick={onClose} className="w-full text-center py-2.5 text-[13px] font-semibold text-neutral-400">
+          Agora não
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /** Vista de detalhe — cartão rico, sem composer, sem responder. Ocupa o
  * lugar do ChatPanel quando uma mensagem oficial está selecionada. */
 export function OfficialMessageDetail({ item, onBack, onArchived }: {
@@ -84,18 +126,21 @@ export function OfficialMessageDetail({ item, onBack, onArchived }: {
   const { message } = item;
   const meta = OFFICIAL_CATEGORY_META[message.category];
   const [showIosHelp, setShowIosHelp] = useState(false);
+  const [showInstallModal, setShowInstallModal] = useState(false);
+  const [installing, setInstalling] = useState(false);
   const [installReady, setInstallReady] = useState(canPromptInstall());
   const [installed, setInstalled] = useState(isRunningStandalone());
 
   useEffect(() => onInstallable(() => setInstallReady(true)), []);
 
-  async function handleAction() {
+  function handleAction() {
     markOfficialMessageClicked(item.id);
     if (message.action_type === "install_pwa") {
       if (installed) return;
       if (isIos()) { setShowIosHelp(true); return; }
-      const outcome = await promptInstall();
-      if (outcome === "accepted") setInstalled(true);
+      // Mostra primeiro o nosso modal com a marca da Hooda — o prompt nativo
+      // do browser só aparece depois de o utilizador confirmar aqui.
+      setShowInstallModal(true);
       return;
     }
     if (message.action_type === "open_link" && message.action_value) {
@@ -105,6 +150,14 @@ export function OfficialMessageDetail({ item, onBack, onArchived }: {
     if (message.action_type === "open_page" && message.action_value) {
       window.location.href = message.action_value;
     }
+  }
+
+  async function confirmInstall() {
+    setInstalling(true);
+    const outcome = await promptInstall();
+    setInstalling(false);
+    setShowInstallModal(false);
+    if (outcome === "accepted") setInstalled(true);
   }
 
   async function handleArchive() {
@@ -158,6 +211,14 @@ export function OfficialMessageDetail({ item, onBack, onArchived }: {
       </div>
 
       {showIosHelp && <IosInstallHelp onClose={() => setShowIosHelp(false)} />}
+      {showInstallModal && (
+        <HoodaInstallModal
+          title={message.title}
+          installing={installing}
+          onConfirm={confirmInstall}
+          onClose={() => setShowInstallModal(false)}
+        />
+      )}
     </div>
   );
 }
