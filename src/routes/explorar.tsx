@@ -5,7 +5,7 @@ import { UniversalPostCard } from "@/components/UniversalPostCard";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect, useMemo } from "react";
-import { Search, X, TrendingUp, Users, FileText, UserPlus, UserCheck, BookOpen, Download, Bookmark, Hash } from "lucide-react";
+import { Search, X, TrendingUp, Users, FileText, UserPlus, UserCheck, BookOpen, Download, Bookmark, Hash, RefreshCw } from "lucide-react";
 import { t } from "@/lib/useT";
 import { getHoodaOfficialId } from "@/lib/hoodaOfficial";
 import { useFollowState } from "@/hooks/useSocialSystem";
@@ -583,7 +583,7 @@ function ExplorePage() {
      sensação de "acompanho, mas o botão não guarda" ou "num sítio diz
      que sigo, no Explorar não". */
   function PersonCard({ p }: { p: any }) {
-    const { isFollowing, isPending, isLoading: followLoading, toggle } = useFollowState(myId || null, p.username, p.id);
+    const { isFollowing, isPending, isLoading: followLoading, hasError: followHasError, toggle, refetchStatus } = useFollowState(myId || null, p.username, p.id);
     const followers = followerCounts[p.username];
     return (
       <div className="flex items-center gap-3 p-3 rounded-2xl border transition hover:bg-[var(--s1)]"
@@ -602,6 +602,12 @@ function ExplorePage() {
             <div className="relative overflow-hidden h-[30px] w-[104px] rounded-full shrink-0" style={{ background: "var(--s2)" }}>
               <div className="skeleton-shimmer absolute inset-0" />
             </div>
+          ) : followHasError ? (
+            <button onClick={() => refetchStatus()}
+              className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold transition active:scale-95 shrink-0"
+              style={{ background: "var(--s2)", color: "var(--text-secondary)", border: "1px solid var(--border-default)" }}>
+              <RefreshCw className="h-3.5 w-3.5" />
+            </button>
           ) : (
             <button onClick={toggle} disabled={isPending}
               className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold transition active:scale-95 shrink-0 disabled:opacity-60"

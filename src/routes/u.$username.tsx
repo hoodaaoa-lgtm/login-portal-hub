@@ -18,7 +18,7 @@ import {
   ChevronLeft, Flag, Share2, Ban,
   MoreHorizontal, UserCheck, UserPlus, X, MapPin,
   Link as LinkIcon, Calendar, Camera,
-  Copy, Check,
+  Copy, Check, RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -250,7 +250,7 @@ function FollowListModal({ userId, kind, onClose }:
 /* Linha individual da lista de seguidores/seguindo — botão "Acompanhar"
    usa useFollowState (fonte única partilhada com toda a app). */
 function FollowRow({ u, myId }: { u: any; myId: string }) {
-  const { isFollowing, isPending, isLoading, toggle } = useFollowState(myId || null, u.username, u.id);
+  const { isFollowing, isPending, isLoading, hasError, toggle, refetchStatus } = useFollowState(myId || null, u.username, u.id);
   return (
     <div className="flex items-center gap-3 px-4 py-3 hover:bg-[var(--s1)] transition">
       <Av name={u.full_name||u.username} src={u.avatar_url} size={42} />
@@ -261,6 +261,13 @@ function FollowRow({ u, myId }: { u: any; myId: string }) {
       {myId && myId!==u.id && (
         isLoading ? (
           <div className="h-[26px] w-[68px] rounded-full animate-pulse" style={{background:"var(--s2)"}} />
+        ) : hasError ? (
+          // Não sabemos se já acompanha — nunca assumir "Acompanhar".
+          <button onClick={() => refetchStatus()}
+            className="px-3 py-1.5 rounded-full text-xs font-bold transition active:scale-95"
+            style={{background:"var(--s2)",color:"var(--text-secondary)",border:"1px solid var(--border-default)"}}>
+            <RefreshCw className="h-3.5 w-3.5" />
+          </button>
         ) : (
           <button onClick={toggle} disabled={isPending}
             className="px-3 py-1.5 rounded-full text-xs font-bold transition active:scale-95 disabled:opacity-60"
@@ -532,11 +539,13 @@ function UserProfilePage() {
   const {
     isFollowing: following,
     isLoading: followLoading,
+    hasError: followHasError,
     followersCount: followerCount,
     followingCount,
     countsLoading,
     isPending: followTogglePending,
     toggle: toggleFollow,
+    refetchStatus: refetchFollowStatus,
   } = useFollowState(myId || null, username || null, profileId || null);
   const postCount = statsQuery.data?.postCount??0;
   const name = profile?.full_name||profile?.username||username;
@@ -710,6 +719,17 @@ function UserProfilePage() {
               <div className="relative overflow-hidden h-[30px] w-[104px] rounded-full" style={{background:"var(--s2)"}}>
                 <div className="skeleton-shimmer absolute inset-0" />
               </div>
+            ) : (!!myId && followHasError) ? (
+              // Não sabemos de verdade se já acompanha este perfil (falha
+              // ao consultar a BD) — nunca mostrar "Acompanhar" com
+              // confiança aqui, pois pode já existir o registo e isso
+              // convidaria a um clique redundante. Mostra estado neutro
+              // com opção de tentar de novo.
+              <button onClick={() => refetchFollowStatus()}
+                className="flex items-center gap-1.5 px-5 py-1.5 rounded-full text-sm font-bold transition active:scale-95 shadow-sm"
+                style={{background:"var(--s2)",border:"1px solid var(--border-default)",color:"var(--text-secondary)"}}>
+                <RefreshCw className="h-4 w-4"/>Tentar novamente
+              </button>
             ) : (
               <button onClick={toggleFollow} disabled={followTogglePending}
                 className="flex items-center gap-1.5 px-5 py-1.5 rounded-full text-sm font-bold transition active:scale-95 shadow-sm disabled:opacity-60"

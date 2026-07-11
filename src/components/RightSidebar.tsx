@@ -121,7 +121,7 @@ function SuggestionRow({ u, myId, onFollowed, onNavigate }: {
   onFollowed: () => void;
   onNavigate: () => void;
 }) {
-  const { isFollowing, isPending, toggle } = useFollowState(myId, u.username, u.id);
+  const { isFollowing, isPending, hasError, toggle, refetchStatus } = useFollowState(myId, u.username, u.id);
   const wasFollowing = useRef(isFollowing);
   useEffect(() => {
     if (isFollowing && !wasFollowing.current) onFollowed();
@@ -143,11 +143,21 @@ function SuggestionRow({ u, myId, onFollowed, onNavigate }: {
           <p className="text-xs truncate" style={{ color: "var(--text-muted)" }}>@{u.username}</p>
         </div>
       </button>
-      <button onClick={toggle} disabled={isPending}
-        className="shrink-0 px-3 py-1.5 rounded-full text-xs font-bold text-white transition active:scale-90 disabled:opacity-60"
-        style={{ background: ACCENT }}>
-        Acompanhar
-      </button>
+      {hasError ? (
+        <button onClick={() => refetchStatus()}
+          className="shrink-0 px-3 py-1.5 rounded-full text-xs font-bold transition active:scale-90"
+          style={{ background: "var(--s2)", color: "var(--text-secondary)" }}>
+          <RefreshCw className="h-3.5 w-3.5" />
+        </button>
+      ) : (
+        <button onClick={toggle} disabled={isPending}
+          className="shrink-0 px-3 py-1.5 rounded-full text-xs font-bold transition active:scale-90 disabled:opacity-60"
+          style={isFollowing
+            ? { background: "var(--s2)", color: "var(--text-secondary)", border: "1px solid var(--border-default)" }
+            : { background: ACCENT, color: "#fff" }}>
+          {isFollowing ? "Acompanhando" : "Acompanhar"}
+        </button>
+      )}
     </div>
   );
 }

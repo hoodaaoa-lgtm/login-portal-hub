@@ -25,7 +25,7 @@ import {
   Search, Bell, Plus, MessageCircle, Share2, Music, X, Heart,
   ChevronLeft, ChevronRight, ImageIcon, Type as TypeIcon, Check,
   BarChart3, Trash2, Copy, Bookmark, BookmarkCheck, Forward, Repeat2,
-  MoreHorizontal,
+  MoreHorizontal, RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
 import { extractUrl } from "@/lib/linkPreview";
@@ -1025,7 +1025,7 @@ export function UniversalPostCard({ post: p, onDeleted, onBookmarkChange }: {
     useVideoLikeState(p.clip_video_id || p.id, myUserId, { liked: p.liked_by_me ?? false, count: p.likes ?? 0 });
   const liked = isVideoFeedItem ? videoLiked : postLiked;
   const likeCount = isVideoFeedItem ? videoLikeCount : postLikeCount;
-  const { isFollowing: following, isLoading: followLoading, toggle: toggleFollow } = useFollowState(myUserId, p.author_username, p.author_id);
+  const { isFollowing: following, isLoading: followLoading, hasError: followHasError, toggle: toggleFollow, refetchStatus: refetchFollowStatus } = useFollowState(myUserId, p.author_username, p.author_id);
   const { count: commentCount, increment: incrementCommentCount } = usePostCommentCount(p.id, p.comments ?? 0);
   const { bookmarked, toggle: toggleBookmarkShared } = useBookmarkState(p.id, myUserId);
   const [viewCount, setViewCount] = useState(Number(p.views_count ?? 0));
@@ -1203,6 +1203,12 @@ export function UniversalPostCard({ post: p, onDeleted, onBookmarkChange }: {
               <div className="relative overflow-hidden h-[26px] w-[68px] rounded-full" style={{ background: "var(--s2)" }}>
                 <div className="skeleton-shimmer absolute inset-0" />
               </div>
+            ) : (!!myUserId && followHasError) ? (
+              <button onClick={() => refetchFollowStatus()}
+                className="text-xs font-bold px-3 py-1.5 rounded-full transition-all active:scale-95 flex items-center gap-1"
+                style={{ background: "var(--s2)", color: "var(--text-secondary)", border: "1.5px solid var(--border-default)" }}>
+                <RefreshCw className="h-3.5 w-3.5" />
+              </button>
             ) : (
               <button onClick={toggleFollow}
                 className="text-xs font-bold px-3 py-1.5 rounded-full transition-all active:scale-95"

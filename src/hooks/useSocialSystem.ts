@@ -145,6 +145,12 @@ export function useFollowState(myId: string | null | undefined, targetUsername: 
     enabled: !!myId && !!targetUsername,
     staleTime: 60_000,
     gcTime: 10 * 60_000,
+    // Este pedido decide o estado do botão "Acompanhar" — vale a pena
+    // insistir mais que o default (1 tentativa) antes de desistir, já
+    // que uma falha aqui (RLS/rede) nunca deve resultar num falso
+    // "não sigo" mostrado com confiança ao utilizador.
+    retry: 3,
+    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 8000),
   });
 
   const countsQuery = useQuery({
@@ -200,6 +206,13 @@ export function useFollowState(myId: string | null | undefined, targetUsername: 
   return {
     isFollowing: statusQuery.data ?? false,
     isLoading: statusQuery.isLoading,
+    // Verdadeiro só quando a consulta ao estado de "sigo/não sigo" falhou
+    // (RLS, rede) E não há nenhum valor bom em cache para mostrar — isto
+    // é, o caso em que não temos como saber a verdade. Os consumidores
+    // devem usar isto para mostrar um estado neutro/"tentar novamente"
+    // em vez de "Acompanhar" com confiança, que convida a um novo clique
+    // sobre um registo que pode já existir na BD.
+    hasError: statusQuery.isError,
     followersCount: countsQuery.data?.followers ?? 0,
     followingCount: countsQuery.data?.following ?? 0,
     // Loading real dos CONTADORES (followers/following) — distinto de
@@ -211,6 +224,7 @@ export function useFollowState(myId: string | null | undefined, targetUsername: 
     // curso — usar para desativar o botão e impedir duplo-clique.
     isPending,
     toggle,
+    refetchStatus: statusQuery.refetch,
   };
 }
 
