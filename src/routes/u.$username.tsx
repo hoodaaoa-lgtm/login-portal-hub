@@ -8,6 +8,7 @@ import { useScrollLock } from "@/hooks/useScrollLock";
 import { RichText } from "@/components/RichText";
 import { PostCommentsModal } from "@/components/PostCommentsModal";
 import { UniversalPostCard, normalizePost } from "@/components/UniversalPostCard";
+import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { FeedVideoPlayer } from "@/components/FeedVideoPlayer";
 import { fetchPostComments, sendPostComment, replyToPostComment, toggleCommentLike } from "@/lib/comments";
 import { BottomNav, SideNav, PageWrapper, FeedLayout } from "@/components/AppShell";
@@ -17,7 +18,7 @@ import { useFollowState, FOLLOW_KEYS } from "@/hooks/useSocialSystem";
 import {
   ChevronLeft, Flag, Share2, Ban,
   MoreHorizontal, UserCheck, UserPlus, X, MapPin,
-  Link as LinkIcon, Calendar, Camera,
+  Link as LinkIcon, Calendar, Camera, MessageCircle,
   Copy, Check, RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -446,7 +447,7 @@ function UserProfilePage() {
     queryKey:["profileByUsername", username],
     queryFn: async ()=>{
       const {data}=await (supabase as any).from("profiles")
-        .select("id,username,full_name,bio,avatar_url,cover_url,website,location,created_at")
+        .select("id,username,full_name,bio,avatar_url,cover_url,website,location,created_at,is_verified,whatsapp")
         .eq("username",username).maybeSingle();
       return data;
     },
@@ -743,7 +744,9 @@ function UserProfilePage() {
 
           {/* ── Info ── */}
           <div className="px-4 pt-9 pb-3">
-            <h1 className="text-xl font-extrabold" style={{color:"var(--text-primary)"}}>{name}</h1>
+            <h1 className="text-xl font-extrabold inline-flex items-center gap-1.5" style={{color:"var(--text-primary)"}}>
+              {name}{profile.is_verified && <VerifiedBadge size={17} />}
+            </h1>
             <p className="text-sm mt-0.5" style={{color:"var(--text-muted)"}}>@{profile.username}</p>
             {profile.bio && (
               <p className="text-sm mt-2 leading-relaxed" style={{color:"var(--text-secondary)"}}>{profile.bio}</p>
@@ -758,6 +761,12 @@ function UserProfilePage() {
                 <a href={profile.website} target="_blank" rel="noopener noreferrer"
                   className="flex items-center gap-1 text-xs hover:underline" style={{color:P}}>
                   <LinkIcon className="h-3.5 w-3.5"/>{profile.website.replace(/^https?:\/\//,"")}
+                </a>
+              )}
+              {profile.whatsapp && (
+                <a href={`https://wa.me/${profile.whatsapp.replace(/\D/g,"")}`} target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-1 text-xs hover:underline" style={{color:"#25D366"}}>
+                  <MessageCircle className="h-3.5 w-3.5"/>WhatsApp
                 </a>
               )}
               {profile.created_at && (
@@ -808,7 +817,7 @@ function UserProfilePage() {
             <div className="pb-6 space-y-3 w-full px-3 pt-2">
               {posts.map((post:any)=>(
                 <UniversalPostCard key={post.id}
-                  post={normalizePost(post, "userPage", { name, username: profile.username, avatarUrl, authorId: profileId })}
+                  post={normalizePost(post, "userPage", { name, username: profile.username, avatarUrl, authorId: profileId, isVerified: !!profile.is_verified })}
                   onDeleted={()=>qc.invalidateQueries({queryKey:["profilePosts2", profileId]})}
                 />
               ))}

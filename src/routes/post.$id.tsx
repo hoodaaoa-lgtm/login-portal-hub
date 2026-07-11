@@ -29,6 +29,15 @@ function SinglePostPage() {
 
       if (error || !data) { setNotFound(true); setLoading(false); return; }
 
+      let avatar_url: string | null = null;
+      let is_verified = false;
+      if ((data as any).author_id) {
+        const { data: authorProf } = await supabase.from("profiles")
+          .select("avatar_url,is_verified").eq("id", (data as any).author_id).maybeSingle();
+        avatar_url = (authorProf as any)?.avatar_url ?? null;
+        is_verified = !!(authorProf as any)?.is_verified;
+      }
+
       const { count: likes } = await supabase.from("post_likes").select("*", { count: "exact", head: true }).eq("post_id", id);
       const { count: comments } = await supabase.from("post_comments").select("*", { count: "exact", head: true }).eq("post_id", id);
 
@@ -39,7 +48,7 @@ function SinglePostPage() {
         liked_by_me = !!likeRow;
       }
 
-      setPost({ ...data, likes: likes ?? 0, comments: comments ?? 0, liked_by_me });
+      setPost({ ...data, avatar_url, is_verified, likes: likes ?? 0, comments: comments ?? 0, liked_by_me });
       setLoading(false);
     })();
   }, [id]);
@@ -69,7 +78,7 @@ function SinglePostPage() {
             </div>
           ) : (
             <UniversalPostCard
-              post={normalizePost(post, "single")}
+              post={normalizePost(post, "single", { avatarUrl: post.avatar_url, isVerified: post.is_verified })}
               onDeleted={() => navigate({ to: "/home" })}
             />
           )}

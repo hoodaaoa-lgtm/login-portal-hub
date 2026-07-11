@@ -33,6 +33,7 @@ import { uploadFeedVideo } from "@/lib/cloudinaryFeedVideo";
 import { fetchPostComments, sendPostComment, replyToPostComment, toggleCommentLike } from "@/lib/comments";
 import { deletePostForEveryone } from "@/lib/posts";
 import { UniversalPostCard, normalizePost } from "@/components/UniversalPostCard";
+import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { FollowListModal } from "@/components/FollowList";
 import { PhotoViewer } from "@/components/PhotoViewer";
 import { FeedVideoPlayer } from "@/components/FeedVideoPlayer";
@@ -53,7 +54,7 @@ type Post = {
   poll?: { question?: string; options?: (string | { text: string })[] } | null;
   pollEndsAt?: string | null;
 };
-type SavedPost = Post & { authorId: string; authorName: string; authorUsername: string; authorAvatar: string | null };
+type SavedPost = Post & { authorId: string; authorName: string; authorUsername: string; authorAvatar: string | null; authorIsVerified?: boolean };
 
 const ACCENT = "#5B3FCF";
 const ACCENT_COLORS = ["#5B3FCF", "#F26B3A", "#1FAFA6", "#6BA547", "#E94B8A"];
@@ -130,10 +131,11 @@ function StatsGrid({ publications, followers, following, loading, onFollowersCli
 /* ─── Lista de Seguidores / Seguindo — ver src/components/FollowList.tsx ─── */
 
 
-function PostsFeed({ posts, loading, name, username, avatarUrl, onDelete, myUserId }: {
+function PostsFeed({ posts, loading, name, username, avatarUrl, onDelete, myUserId, isVerified }: {
   posts: Post[]; loading?: boolean; name: string; username: string; avatarUrl?: string | null;
   onDelete: (id: string) => void;
   myUserId?: string;
+  isVerified?: boolean;
 }) {
   if (loading) return (
     <div className="px-4 py-3 space-y-3">
@@ -157,7 +159,7 @@ function PostsFeed({ posts, loading, name, username, avatarUrl, onDelete, myUser
     <div className="pb-6 space-y-2 w-full px-3 pt-2">
       {posts.map((post) => (
         <UniversalPostCard key={post.id}
-          post={normalizePost(post, "profile", { name, username, avatarUrl, authorId: myUserId })}
+          post={normalizePost(post, "profile", { name, username, avatarUrl, authorId: myUserId, isVerified })}
           onDeleted={onDelete} />
       ))}
     </div>
@@ -405,7 +407,7 @@ function EditProfileModal({
 }: {
   profile: Profile | null; email: string;
   onClose: () => void;
-  onSave: (data: Partial<Profile> & { website?: string; location?: string }) => void;
+  onSave: (data: Partial<Profile> & { website?: string; location?: string; whatsapp?: string }) => void;
 }) {
   const { t } = useTranslation();
   const [name, setName] = useState(profile?.full_name || profile?.username || email?.split("@")[0] || "");
@@ -413,6 +415,7 @@ function EditProfileModal({
   const [bio, setBio] = useState(profile?.bio || "");
   const [website, setWebsite] = useState((profile as any)?.website || "");
   const [location, setLocation] = useState((profile as any)?.location || "");
+  const [whatsapp, setWhatsapp] = useState((profile as any)?.whatsapp || "");
   const [saving, setSaving] = useState(false);
   const [done, setDone] = useState(false);
   const [editingUsername, setEditingUsername] = useState(false); // lápis clicado?
@@ -489,6 +492,7 @@ function EditProfileModal({
           bio,
           website,
           location,
+          whatsapp,
           updated_at: new Date().toISOString(),
         };
         // Gravar data de troca de username para cooldown de 30 dias
@@ -513,9 +517,9 @@ function EditProfileModal({
           }
           // Tenta sem username_changed_at apenas se o erro for especificamente sobre essa coluna
           if (usernameChanged && (error.message?.includes("username_changed_at") || error.code === "42703" || error.code === "42501")) {
-            const { full_name, username: u, bio: b, website: w, location: l, updated_at } = updateData;
+            const { full_name, username: u, bio: b, website: w, location: l, whatsapp: wa, updated_at } = updateData;
             const { error: error2 } = await (supabase as any)
-              .from("profiles").update({ full_name, username: u, bio: b, website: w, location: l, updated_at }).eq("id", session.user.id);
+              .from("profiles").update({ full_name, username: u, bio: b, website: w, location: l, whatsapp: wa, updated_at }).eq("id", session.user.id);
             if (error2) console.error("[hooda] ERRO mesmo sem username_changed_at:", error2);
           } else if (usernameChanged) {
             toast.error("Não foi possível gravar as alterações. Tenta novamente.");
@@ -533,7 +537,7 @@ function EditProfileModal({
     } catch (err) {
       console.error("[hooda] EXCEÇÃO ao gravar perfil:", err);
     }
-    onSave({ full_name: name, username, bio, website, location,
+    onSave({ full_name: name, username, bio, website, location, whatsapp,
       ...(username !== (profile?.username || "") ? { username_changed_at: new Date().toISOString() } : {}) });
     setDone(true);
     setSaving(false);
@@ -718,6 +722,21 @@ function EditProfileModal({
                   style={{ background: "var(--s2)", color: "var(--text-primary)" }}
                 />
               </div>
+            </div>
+
+            {/* WhatsApp */}
+            <div>
+              <label className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">WhatsApp</label>
+              <div className="relative mt-1">
+                <MessageCircle className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-muted)]" />
+                <input value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)}
+                  placeholder="+244 900 000 000"
+                  inputMode="tel"
+                  className="w-full border border-[var(--border-default)] rounded-xl pl-10 pr-4 py-2.5 text-sm outline-none focus:border-[#5B3FCF] focus:ring-2 focus:ring-[#5B3FCF]/20 transition"
+                  style={{ background: "var(--s2)", color: "var(--text-primary)" }}
+                />
+              </div>
+              <p className="text-[11px] text-[var(--text-muted)] mt-1">Com código do país, ex: +244. Aparece como link clicável no teu perfil.</p>
             </div>
 
             {/* Localização */}
@@ -1522,6 +1541,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
   const [activitiesLoaded, setActivitiesLoaded] = useState(false);
   const [website, setWebsite] = useState("");
   const [location, setLocation] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
   const { setAvatarUrl: setGlobalAvatarUrl } = useAvatar();
@@ -1581,13 +1601,14 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
       // Carregar avatar_url e username do perfil
       const { data: profData } = await supabase
         .from("profiles")
-        .select("avatar_url, username, msg_permission, website, location, cover_url")
+        .select("avatar_url, username, msg_permission, website, location, cover_url, whatsapp")
         .eq("id", session.user.id)
         .maybeSingle();
       if ((profData as any)?.avatar_url) setAvatarUrl((profData as any).avatar_url);
       if ((profData as any)?.msg_permission) setMsgPermission((profData as any).msg_permission);
       if ((profData as any)?.website) setWebsite((profData as any).website);
       if ((profData as any)?.location) setLocation((profData as any).location);
+      if ((profData as any)?.whatsapp) setWhatsapp((profData as any).whatsapp);
       if ((profData as any)?.cover_url) setCoverUrl((profData as any).cover_url);
 
       // follows: target_username é texto (username), não UUID
@@ -1819,10 +1840,11 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
 
       const authorIds = [...new Set(rows.map((p: any) => p.author_id).filter(Boolean))];
       const { data: authorProfiles } = authorIds.length > 0
-        ? await supabase.from("profiles").select("id,avatar_url").in("id", authorIds)
+        ? await supabase.from("profiles").select("id,avatar_url,is_verified").in("id", authorIds)
         : { data: [] as any[] };
       const avatarByAuthor: Record<string, string | null> = {};
-      (authorProfiles ?? []).forEach((p: any) => { avatarByAuthor[p.id] = p.avatar_url ?? null; });
+      const verifiedByAuthor: Record<string, boolean> = {};
+      (authorProfiles ?? []).forEach((p: any) => { avatarByAuthor[p.id] = p.avatar_url ?? null; verifiedByAuthor[p.id] = !!p.is_verified; });
 
       const loaded: SavedPost[] = rows.map((p: any) => {
         let text = p.content;
@@ -1842,6 +1864,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
           authorId: p.author_id, authorName: p.author_name || p.author_username || "hooda",
           authorUsername: p.author_username || "utilizador",
           authorAvatar: p.author_id ? avatarByAuthor[p.author_id] ?? null : null,
+          authorIsVerified: p.author_id ? !!verifiedByAuthor[p.author_id] : false,
         };
       }).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
       setSavedPosts(loaded);
@@ -1853,10 +1876,11 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
     setPosts(prev => prev.filter(p => p.id !== id));
   }
 
-  async function saveProfile(data: Partial<Profile> & { website?: string; location?: string }) {
+  async function saveProfile(data: Partial<Profile> & { website?: string; location?: string; whatsapp?: string }) {
     setProfile((p) => p ? { ...p, ...data } : p);
     if (data.website) setWebsite(data.website);
     if (data.location) setLocation(data.location);
+    if (data.whatsapp !== undefined) setWhatsapp(data.whatsapp);
 
     // Atualizar nome e username em todos os posts do utilizador
     try {
@@ -1984,7 +2008,9 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
         {/* Info pessoal */}
         <div className="px-5 pt-9 pb-3">
           <div className="flex items-center gap-1">
-            <p className="text-xl font-extrabold leading-tight" style={{ color: "var(--text-primary)" }}>{name}</p>
+            <p className="text-xl font-extrabold leading-tight inline-flex items-center gap-1.5" style={{ color: "var(--text-primary)" }}>
+              {name}{(profile as any)?.is_verified && <VerifiedBadge size={17} />}
+            </p>
           </div>
           <p className="text-sm text-[var(--text-muted)] font-medium mt-0.5">@{profile?.username || "utilizador"}</p>
           {profile?.bio && (
@@ -2001,6 +2027,13 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
                 className="flex items-center gap-1 text-xs font-semibold"
                 style={{ color: ACCENT }}>
                 <Link className="h-3.5 w-3.5" /> {website.replace(/^https?:\/\//, "")}
+              </a>
+            )}
+            {whatsapp && (
+              <a href={`https://wa.me/${whatsapp.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer"
+                className="flex items-center gap-1 text-xs font-semibold"
+                style={{ color: "#25D366" }}>
+                <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
               </a>
             )}
             <span className="flex items-center gap-1 text-xs text-[var(--text-muted)]">
@@ -2047,7 +2080,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
         {tab === "posts" && (
           <PostsFeed posts={posts} loading={postsLoading} name={name} username={profile?.username || "utilizador"}
             avatarUrl={avatarUrl} onDelete={deletePost}
-            myUserId={myUserId} />
+            myUserId={myUserId} isVerified={!!(profile as any)?.is_verified} />
         )}
 
         {tab === "replies" && (
@@ -2132,7 +2165,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
             <div className="pb-6 space-y-3 w-full px-3 pt-2">
               {savedPosts.map((sp) => (
                 <UniversalPostCard key={sp.id}
-                  post={normalizePost(sp, "profile", { name: sp.authorName, username: sp.authorUsername, avatarUrl: sp.authorAvatar, authorId: sp.authorId })}
+                  post={normalizePost(sp, "profile", { name: sp.authorName, username: sp.authorUsername, avatarUrl: sp.authorAvatar, authorId: sp.authorId, isVerified: sp.authorIsVerified })}
                   onDeleted={(id) => setSavedPosts(prev => prev.filter(p => p.id !== id))}
                   onBookmarkChange={(id, bookmarked) => { if (!bookmarked) setSavedPosts(prev => prev.filter(p => p.id !== id)); }} />
               ))}
@@ -2226,7 +2259,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
       )}
       {showEditProfile && (
         <EditProfileModal
-          profile={profile}
+          profile={profile ? { ...profile, website, location, whatsapp } as any : profile}
           email={email}
           onClose={() => setShowEditProfile(false)}
           onSave={(data) => { saveProfile(data); setShowEditProfile(false); }}
