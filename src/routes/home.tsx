@@ -468,7 +468,7 @@ function HomePage() {
         ? supabase.from("post_comments").select("post_id").in("post_id", postIds)
         : Promise.resolve({ data: [] as any[] }),
       authorIds.size > 0
-        ? supabase.from("profiles").select("id,avatar_url,username,full_name").in("id", [...authorIds])
+        ? supabase.from("profiles").select("id,avatar_url,username,full_name,is_verified").in("id", [...authorIds])
         : Promise.resolve({ data: [] as any[] }),
       videoIds.length > 0 && uid
         ? (supabase as any).from("video_likes").select("video_id").eq("user_id", uid).in("video_id", videoIds)
@@ -488,10 +488,12 @@ function HomePage() {
     const avatarMap: Record<string, string | null> = {};
     const nameMap: Record<string, string> = {};
     const usernameMap: Record<string, string> = {};
+    const verifiedMap: Record<string, boolean> = {};
     (authorProfiles || []).forEach((p: any) => {
       avatarMap[p.id] = p.avatar_url || null;
       nameMap[p.id]   = p.full_name || p.username || "";
       usernameMap[p.id] = p.username || "";
+      verifiedMap[p.id] = !!p.is_verified;
     });
 
     // ── Mapear posts ──
@@ -512,6 +514,7 @@ function HomePage() {
         user: name, name: `@${username || "?"}`,
         color: p.author_color || ACCENT_LOCAL[(name.charCodeAt(0) || 0) % ACCENT_LOCAL.length],
         avatar_url: authorKey ? (avatarMap[authorKey] ?? null) : null,
+        is_verified: authorKey ? !!verifiedMap[authorKey] : false,
         text, photo: p.photo_url ?? null,
         photos: Array.isArray(p.photos) && p.photos.length > 0 ? p.photos : (p.photo_url ? [p.photo_url] : null),
         video: p.video_url ?? null,
@@ -540,6 +543,7 @@ function HomePage() {
         user: name, name: `@${username || "?"}`,
         color: ACCENT_LOCAL[(name.charCodeAt(0) || 0) % ACCENT_LOCAL.length],
         avatar_url: authorKey ? (avatarMap[authorKey] ?? null) : null,
+        is_verified: authorKey ? !!verifiedMap[authorKey] : false,
         text: null, photo: null, photos: null, video: null,
         bg_color: null, created_at: v.created_at, kind: "clip", is_ad: false,
         likes: v.likes_count ?? 0, liked_by_me: likedVideoSet.has(v.id), comments: v.comments_count ?? 0,

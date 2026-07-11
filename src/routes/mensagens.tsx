@@ -46,6 +46,7 @@ import { getHoodaOfficialId } from "@/lib/hoodaOfficial";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { fetchMyOfficialMessages, markOfficialMessageRead, type UserOfficialMessage } from "@/lib/officialMessages";
 import { OfficialMessageListItem, OfficialMessageDetail } from "@/components/OfficialMessageCard";
+import { VerifiedBadge } from "@/components/VerifiedBadge";
 
 
 
@@ -319,19 +320,6 @@ type Contact = Profile & {
   isOfficial?: boolean;
   replyAllowed?: boolean;
 };
-
-/** Selo azul de verificado, usado junto ao nome "Hooda Oficial". */
-function VerifiedBadge({ size = 13 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, display: "inline-block" }}>
-      <path
-        d="M12 2.5l2.4 1.4 2.7-.6 1.4 2.4 2.4 1.4-.6 2.7.6 2.7-2.4 1.4-1.4 2.4-2.7-.6L12 21.5l-2.4-1.4-2.7.6-1.4-2.4-2.4-1.4.6-2.7-.6-2.7 2.4-1.4 1.4-2.4 2.7.6L12 2.5z"
-        fill="#3B9EFF"
-      />
-      <path d="M8.5 12.3l2.2 2.2 4.8-4.8" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
 
 // Cores da identidade visual da Hooda — usadas para colorir a palavra
 // "Hooda" letra a letra, igual ao logótipo (ver HoodaLogo.tsx).

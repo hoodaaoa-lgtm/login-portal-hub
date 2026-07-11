@@ -4,6 +4,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { ProfileAvatarLink } from "@/components/ProfileAvatarLink";
+import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { PostCommentsModal } from "@/components/PostCommentsModal";
 import { RichText } from "@/components/RichText";
 import { registerVideo, pauseAllVideos } from "@/lib/mediaManager";
@@ -106,6 +107,7 @@ export type NormalizedPost = {
   // Fase 6 — moderação de conteúdo
   moderation_status?: string | null;
   is_sensitive?: boolean | null;
+  is_verified?: boolean;
 };
 
 /* ── normalizePost — converte os formatos de dados de cada página
@@ -113,7 +115,7 @@ export type NormalizedPost = {
 export function normalizePost(
   raw: any,
   source: "feed" | "profile" | "userPage" | "single",
-  extra?: { name?: string; username?: string; avatarUrl?: string | null; authorId?: string | null }
+  extra?: { name?: string; username?: string; avatarUrl?: string | null; authorId?: string | null; isVerified?: boolean }
 ): NormalizedPost {
   if (!raw) return { id: "" };
 
@@ -131,6 +133,7 @@ export function normalizePost(
       user: extra?.name ?? raw.authorName ?? extra?.username,
       name: `@${extra?.username ?? raw.authorUsername ?? "?"}`,
       avatar_url: extra?.avatarUrl ?? raw.authorAvatar ?? null,
+      is_verified: extra?.isVerified ?? raw.isVerified ?? false,
       text: raw.text,
       photo: raw.photo ?? null,
       photos: raw.photos ?? null,
@@ -159,6 +162,7 @@ export function normalizePost(
       user: extra?.name,
       name: `@${extra?.username ?? "?"}`,
       avatar_url: extra?.avatarUrl ?? null,
+      is_verified: extra?.isVerified ?? false,
       text: raw.text,
       photo: raw.photo ?? null,
       photos: raw.photos ?? null,
@@ -191,6 +195,7 @@ export function normalizePost(
     name: `@${raw.author_username ?? "?"}`,
     color: raw.author_color ?? undefined,
     avatar_url: extra?.avatarUrl ?? null,
+    is_verified: extra?.isVerified ?? raw.is_verified ?? false,
     text,
     bg_color,
     photo: raw.photo_url ?? null,
@@ -838,8 +843,9 @@ function ClipCard({ p, liked, likeCount, viewCount, onLike, onComment }: {
               </span>}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="font-bold text-sm leading-tight truncate" style={{ color: "var(--text-primary)" }}>
+          <p className="font-bold text-sm leading-tight truncate inline-flex items-center gap-1" style={{ color: "var(--text-primary)" }}>
             {p.user ?? "Hooda"}
+            {p.is_verified && <VerifiedBadge size={12} />}
           </p>
           <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
             @{p.author_username} · HoodaTV
@@ -1189,8 +1195,9 @@ export function UniversalPostCard({ post: p, onDeleted, onBookmarkChange }: {
           </ProfileAvatarLink>
           <div className="min-w-0">
             <ProfileAvatarLink userId={p.author_id ?? ""} username={p.author_username ?? ""} className="inline-flex">
-              <span className="text-sm font-bold hover:underline" style={{ color: "var(--text-primary)" }}>
+              <span className="text-sm font-bold hover:underline inline-flex items-center gap-1" style={{ color: "var(--text-primary)" }}>
                 {p.user}
+                {p.is_verified && <VerifiedBadge size={13} />}
                 {isAd && <span className="text-[9px] uppercase bg-[var(--s2)] text-[var(--text-muted)] px-1.5 py-0.5 rounded font-semibold ml-1">Patrocinado</span>}
               </span>
             </ProfileAvatarLink>
@@ -1412,7 +1419,7 @@ export function UniversalPostCard({ post: p, onDeleted, onBookmarkChange }: {
                 </div>
               </ProfileAvatarLink>
               <div>
-                <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>{p.user}</p>
+                <p className="text-sm font-bold inline-flex items-center gap-1" style={{ color: "var(--text-primary)" }}>{p.user}{p.is_verified && <VerifiedBadge size={12} />}</p>
                 {(p.name || timeLabel) && <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>{p.name}{p.name && timeLabel ? " · " : ""}{timeLabel}</p>}
               </div>
             </div>

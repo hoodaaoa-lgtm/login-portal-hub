@@ -2365,7 +2365,7 @@ function ProfilePage() {
       let data: any = null;
       const { data: d1, error: e1 } = await supabase
         .from("profiles")
-        .select("id, username, full_name, age, bio, username_changed_at")
+        .select("id, username, full_name, age, bio, username_changed_at, is_verified")
         .eq("id", session.session.user.id)
         .maybeSingle();
       if (e1) {

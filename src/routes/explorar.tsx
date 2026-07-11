@@ -353,7 +353,7 @@ function ExplorePage() {
     queryFn: async () => {
       if (videoAuthorIds.length === 0) return [];
       const { data } = await (supabase as any).from("profiles")
-        .select("id,username,full_name,avatar_url").in("id", videoAuthorIds);
+        .select("id,username,full_name,avatar_url,is_verified").in("id", videoAuthorIds);
       return data ?? [];
     },
     enabled: searchActive && videoAuthorIds.length > 0,
@@ -363,7 +363,7 @@ function ExplorePage() {
   /* ── Resultados de vídeo (canal + posts) já no formato "p" do PostCard do
      Lar — igual ao que o feed principal já faz, para não reinventar a roda. ── */
   const searchVideos = useMemo(() => {
-    const authorMap: Record<string, { username: string; full_name: string | null; avatar_url: string | null }> = {};
+    const authorMap: Record<string, { username: string; full_name: string | null; avatar_url: string | null; is_verified?: boolean }> = {};
     (videoAuthorProfiles ?? []).forEach((a: any) => { authorMap[a.id] = a; });
 
     const fromChannelVideos = (searchChannelVideos ?? []).map((v: any) => {
@@ -374,6 +374,7 @@ function ExplorePage() {
         author_username: author?.username || null,
         user: name, name: `@${author?.username || "?"}`,
         color: colorFor(name), avatar_url: author?.avatar_url ?? null,
+        is_verified: !!author?.is_verified,
         text: null, photo: null, photos: null, video: null,
         bg_color: null, created_at: v.created_at, kind: "clip", is_ad: false,
         likes: v.likes_count ?? 0, liked_by_me: false, comments: 0,
@@ -392,6 +393,7 @@ function ExplorePage() {
         author_username: username || null,
         user: name, name: `@${username || "?"}`,
         color: p.author_color || colorFor(name), avatar_url: author?.avatar_url ?? null,
+        is_verified: !!author?.is_verified,
         text: p.content, photo: null, photos: null, video: p.video_url ?? null, video_thumb: p.thumbnail_url ?? null,
         bg_color: null, created_at: p.created_at, kind: p.kind, is_ad: false,
         likes: 0, liked_by_me: false, comments: 0,
@@ -465,7 +467,7 @@ function ExplorePage() {
     queryFn: async () => {
       if (postAuthorIds.length === 0) return [];
       const { data } = await (supabase as any).from("profiles")
-        .select("id,avatar_url").in("id", postAuthorIds);
+        .select("id,avatar_url,is_verified").in("id", postAuthorIds);
       return data ?? [];
     },
     enabled: postAuthorIds.length > 0,
@@ -478,6 +480,12 @@ function ExplorePage() {
     return m;
   }, [postAuthorProfiles]);
 
+  const postVerifiedMap = useMemo(() => {
+    const m: Record<string, boolean> = {};
+    (postAuthorProfiles ?? []).forEach((a: any) => { m[a.id] = !!a.is_verified; });
+    return m;
+  }, [postAuthorProfiles]);
+
   /* Converte uma linha crua de "posts" (foto/texto) no formato canónico do
      UniversalPostCard — antes estes resultados usavam um PostThumb próprio
      (grelha estática, sem player, sem ações de gostar/comentar/partilhar). */
@@ -487,6 +495,7 @@ function ExplorePage() {
       id: p.id, author_id: p.author_id ?? null, author_username: p.author_username ?? null,
       user: name, name: `@${p.author_username || "?"}`,
       color: p.author_color || colorFor(name), avatar_url: postAvatarMap[p.author_id] ?? null,
+      is_verified: !!postVerifiedMap[p.author_id],
       text: p.content, photo: p.photo_url || p.image_url || null,
       photos: Array.isArray(p.photos) && p.photos.length > 0 ? p.photos : null,
       video: null, video_thumb: null,
@@ -496,8 +505,8 @@ function ExplorePage() {
     };
   }
 
-  const popularPostCards = useMemo(() => (popularPosts ?? []).map(toCanonicalPost), [popularPosts, postAvatarMap]);
-  const searchPostCards  = useMemo(() => (mergedSearchPosts ?? []).map(toCanonicalPost),  [mergedSearchPosts, postAvatarMap]);
+  const popularPostCards = useMemo(() => (popularPosts ?? []).map(toCanonicalPost), [popularPosts, postAvatarMap, postVerifiedMap]);
+  const searchPostCards  = useMemo(() => (mergedSearchPosts ?? []).map(toCanonicalPost),  [mergedSearchPosts, postAvatarMap, postVerifiedMap]);
 
   /* ── Pesquisa inteligente: em vez de só confiar no ILIKE (que só bate
      palavra exata), manda os candidatos já encontrados a um modelo de IA
