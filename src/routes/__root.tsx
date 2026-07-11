@@ -12,6 +12,7 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Toaster } from "sonner";
 import { ThemeProvider } from "../contexts/ThemeContext";
 import { AvatarProvider } from "../contexts/AvatarContext";
 import { BadgeProvider } from "../contexts/BadgeContext";
@@ -179,6 +180,7 @@ function RootComponent() {
           <TopProgressBar />
           <Outlet />
           <ConditionalBottomNav />
+          <Toaster richColors position="top-center" />
         </AuthGate>
       </AppProviders>
     );
@@ -205,6 +207,7 @@ function RootComponent() {
           <TopProgressBar />
           <Outlet />
           <ConditionalBottomNav />
+          <Toaster richColors position="top-center" />
         </AuthGate>
       </AppProviders>
     </PersistQueryClientProvider>
