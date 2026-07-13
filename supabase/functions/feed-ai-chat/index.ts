@@ -7,7 +7,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 // Recebe { message }, junta o histórico da conversa + estado atual real do
 // feed (pesos de algorithm_settings, estatísticas do dashboard, análise de
 // conteúdo por estado de distribuição) e manda tudo para a IA (Gemini via
-// Lovable AI Gateway), que:
+// API direta da Google, com chave gratuita do AI Studio), que:
 //   1. Responde em português (Angola) explicando o que percebeu.
 //   2. Se fizer sentido ajustar o algoritmo, propõe novos pesos através da
 //      tool `propor_pesos` — nunca aplica sozinho.
@@ -20,10 +20,10 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const SUPABASE_URL         = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const LOVABLE_API_KEY      = Deno.env.get("LOVABLE_API_KEY")!;
+const GEMINI_API_KEY       = Deno.env.get("GEMINI_API_KEY")!;
 
-const LOVABLE_AI_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
-const MODEL = "google/gemini-2.5-flash";
+const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
+const MODEL = "gemini-2.5-flash";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -106,11 +106,11 @@ serve(async (req) => {
       "raciocínio antes de propor. Se o pedido for só uma pergunta sobre como o feed está a " +
       "funcionar, responde só em texto, sem usar a tool.";
 
-    const aiRes = await fetch(LOVABLE_AI_URL, {
+    const aiRes = await fetch(GEMINI_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+        "Authorization": `Bearer ${GEMINI_API_KEY}`,
       },
       body: JSON.stringify({
         model: MODEL,
@@ -126,12 +126,12 @@ serve(async (req) => {
     if (aiRes.status === 429) {
       return json({ error: "Muitos pedidos à IA. Espera um pouco e tenta outra vez." }, 429);
     }
-    if (aiRes.status === 402) {
-      return json({ error: "Créditos da IA esgotados. Verifica o workspace do Lovable." }, 402);
+    if (aiRes.status === 401 || aiRes.status === 403) {
+      return json({ error: "Chave da IA inválida ou em falta. Verifica o segredo GEMINI_API_KEY." }, 401);
     }
     if (!aiRes.ok) {
       const errText = await aiRes.text();
-      console.error("[feed-ai-chat] erro da Lovable AI Gateway:", errText);
+      console.error("[feed-ai-chat] erro da Gemini API:", errText);
       return json({ error: "A IA não respondeu. Tenta outra vez." }, 502);
     }
 
