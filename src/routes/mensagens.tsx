@@ -191,6 +191,31 @@ function truncateText(text: string): string {
   return text.slice(0, LONG_TEXT_CHAR_LIMIT);
 }
 
+/** Descarrega um ficheiro anexado numa mensagem, forçando o nome original
+ * (m.text) em vez do hash do Cloudinary — antes disto o link só fazia
+ * target="_blank", que abre o ficheiro na aba (ex: PDF no leitor do
+ * browser) em vez de o descarregar, e quando descarregava ficava com um
+ * nome aleatório. Se o fetch falhar (ex: CORS), cai para abrir numa nova
+ * aba, para nunca deixar o utilizador sem alternativa nenhuma. */
+async function downloadChatFile(url: string, filename: string) {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("download falhou");
+    const blob = await res.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = blobUrl;
+    a.download = filename || "ficheiro";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+  } catch {
+    window.open(url, "_blank");
+    toast.info("Não foi possível descarregar diretamente — o ficheiro abriu numa nova aba.");
+  }
+}
+
 /** Mensagem de texto com "Ler mais/Ver menos" (para textos longos) e deteção
  * automática de conteúdo (links, emails, telefones, menções, hashtags). */
 function ExpandableMessageText({ text, isMe }: { text: string; isMe: boolean }) {
@@ -2577,13 +2602,15 @@ function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit
 
             {/* File */}
             {m.type === "file" && m.mediaUrl && (
-              <a href={m.mediaUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 py-1">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center"
+              <button type="button" onClick={() => downloadChatFile(m.mediaUrl!, m.text)}
+                className="flex items-center gap-2 py-1 w-full text-left">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
                   style={{ background: isMe ? "rgba(255,255,255,0.2)" : "#5B3FCF" }}>
                   <FileText className="h-4 w-4 text-white" />
                 </div>
                 <span className="text-sm font-medium truncate max-w-[140px]">{m.text}</span>
-              </a>
+                <Download className="h-3.5 w-3.5 shrink-0 opacity-60" />
+              </button>
             )}
 
             {/* Text */}
