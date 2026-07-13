@@ -151,6 +151,37 @@ type ContentAnalysisRow = {
   created_at: string;
 };
 
+// ── Conteúdo sensível: resultado da IA de moderação (texto + imagem) ──
+type SensitiveContentRow = {
+  post_id: string;
+  author_id: string;
+  author_username: string | null;
+  author_name: string | null;
+  content: string | null;
+  photo_url: string | null;
+  photos: string[] | null;
+  video_url: string | null;
+  thumbnail_url: string | null;
+  moderation_status: string;
+  is_sensitive: boolean;
+  confidence: number | null;
+  keywords: string[] | null;
+  sentiment: string | null;
+  moderation_checked_at: string | null;
+  created_at: string;
+};
+
+const MODERATION_CATEGORY_META: Record<string, { label: string; color: string }> = {
+  sensitive:  { label: "Sensível",  color: "#8b8b95" },
+  nudity:     { label: "Nudez",     color: "#E94B8A" },
+  violence:   { label: "Violência", color: "#EF4444" },
+  harassment: { label: "Assédio",   color: "#F26B3A" },
+  spam:       { label: "Spam",      color: "#FFC93C" },
+  scam:       { label: "Golpe",     color: "#B45309" },
+  illegal:    { label: "Ilegal",    color: "#7F1D1D" },
+  safe:       { label: "Seguro",    color: "#6BA547" },
+};
+
 const DISTRIBUTION_STATE_META: Record<string, { label: string; color: string }> = {
   em_analise:           { label: "Em análise",           color: "#8b8b95" },
   em_teste:             { label: "Em teste",             color: "#1FAFA6" },
@@ -395,7 +426,7 @@ function AdminDashboard({ adminId }: { adminId: string }) {
   const officialImgInputRef = useRef<HTMLInputElement>(null);
 
   // ── Centro de IA: estado ──
-  const [aiTab, setAiTab] = useState<"painel" | "pesos" | "categorias" | "conteudo">("painel");
+  const [aiTab, setAiTab] = useState<"painel" | "pesos" | "categorias" | "conteudo" | "moderacao">("painel");
   const [aiStats, setAiStats] = useState<AiDashboardStats | null>(null);
   const [aiStatsLoading, setAiStatsLoading] = useState(false);
   const [aiWeights, setAiWeights] = useState<AlgorithmWeights | null>(null);
@@ -405,6 +436,47 @@ function AdminDashboard({ adminId }: { adminId: string }) {
   const [analysisState, setAnalysisState] = useState<string>("viral");
   const [analysisRows, setAnalysisRows] = useState<ContentAnalysisRow[]>([]);
   const [analysisLoading, setAnalysisLoading] = useState(false);
+
+  // ── Conteúdo sensível (IA analisa texto + imagem, marca aqui para revisão) ──
+  const [sensitiveRows, setSensitiveRows] = useState<SensitiveContentRow[]>([]);
+  const [sensitiveLoading, setSensitiveLoading] = useState(false);
+
+  const loadSensitiveContent = useCallback(async () => {
+    setSensitiveLoading(true);
+    const { data, error } = await db.rpc("get_ai_sensitive_content", { p_limit: 50 });
+    if (error) { console.error("[admin] erro ao carregar conteúdo sensível:", error); toast.error("Erro ao carregar conteúdo sensível"); }
+    else setSensitiveRows((data ?? []) as SensitiveContentRow[]);
+    setSensitiveLoading(false);
+  }, []);
+
+  // Admin corrige a classificação depois de rever à mão (ex.: falso positivo).
+  async function overrideModeration(row: SensitiveContentRow, category: string) {
+    const { error } = await db.rpc("admin_override_moderation", { p_post_id: row.post_id, p_category: category });
+    if (error) { toast.error("Não foi possível atualizar a classificação."); return; }
+    setSensitiveRows((prev) =>
+      category === "safe" ? prev.filter((r) => r.post_id !== row.post_id)
+        : prev.map((r) => r.post_id === row.post_id ? { ...r, moderation_status: category } : r)
+    );
+    toast.success(category === "safe" ? "Marcado como seguro." : "Classificação atualizada.");
+    logAudit("override_moderation", "post", `@${row.author_username ?? "?"}`, `→ ${category}`);
+  }
+
+  // Elimina a publicação sinalizada diretamente a partir da revisão de conteúdo sensível.
+  async function deleteSensitivePost(row: SensitiveContentRow) {
+    const reason = window.prompt(
+      "Motivo da remoção (fica registado e é enviado ao autor):",
+      "A tua publicação foi removida por violar os nossos termos de utilização."
+    );
+    if (reason === null) return;
+    const { error } = await db.from("posts").delete().eq("id", row.post_id);
+    if (error) { toast.error("Não foi possível eliminar a publicação."); return; }
+    setSensitiveRows((prev) => prev.filter((r) => r.post_id !== row.post_id));
+    toast.success("Publicação eliminada.");
+    if (row.author_id) {
+      notifyUserOfficial(row.author_id, reason.trim() || "A tua publicação foi removida por violar os nossos termos de utilização.");
+    }
+    logAudit("delete_post", "post", `@${row.author_username ?? "?"}`, reason.trim() || undefined);
+  }
 
   const loadAiDashboard = useCallback(async () => {
     setAiStatsLoading(true);
@@ -440,6 +512,7 @@ function AdminDashboard({ adminId }: { adminId: string }) {
     if (aiTab === "pesos" && !aiWeights) loadAiWeights();
     if (aiTab === "categorias" && aiCategories.length === 0) loadAiCategories();
     if (aiTab === "conteudo") loadAnalysis(analysisState);
+    if (aiTab === "moderacao") loadSensitiveContent();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [section, aiTab, analysisState]);
 
@@ -1142,6 +1215,7 @@ function AdminDashboard({ adminId }: { adminId: string }) {
               { key: "pesos" as const, label: "Controlo da IA" },
               { key: "categorias" as const, label: "Categorias" },
               { key: "conteudo" as const, label: "Análise de conteúdo" },
+              { key: "moderacao" as const, label: "Conteúdo sensível" },
             ]).map(t => (
               <button key={t.key} onClick={() => setAiTab(t.key)}
                 className="px-3.5 py-2 rounded-xl text-sm font-semibold transition"
@@ -1359,6 +1433,82 @@ function AdminDashboard({ adminId }: { adminId: string }) {
                     </div>
                   ))}
                   {analysisRows.length === 0 && <p className="text-sm text-neutral-400 px-4 py-6 text-center">Nenhuma publicação neste estado.</p>}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── Conteúdo sensível: a IA já analisou texto + imagem de cada
+              publicação (edge function moderate-content) — aqui o admin vê
+              o resultado (categoria, confiança, palavras-chave) com a
+              imagem/vídeo, para revisão humana rápida. ── */}
+          {aiTab === "moderacao" && (
+            <div>
+              <p className="text-neutral-400 text-sm mb-4">
+                Publicações que a IA sinalizou automaticamente ao analisar texto e imagem/vídeo.
+                Revê e corrige se for falso positivo, ou elimina se confirmar a violação.
+              </p>
+              {sensitiveLoading ? (
+                <div className="h-40 rounded-2xl relative overflow-hidden" style={{ background: "rgba(0,0,0,0.05)" }}>
+                  <div className="skeleton-shimmer absolute inset-0" style={{ opacity: 0.15 }} />
+                </div>
+              ) : sensitiveRows.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 gap-2">
+                  <Flag className="h-8 w-8 text-neutral-300" />
+                  <p className="text-neutral-400 text-sm">Nada sinalizado pela IA neste momento.</p>
+                </div>
+              ) : (
+                <div className="space-y-3 max-w-2xl">
+                  {sensitiveRows.map((r) => {
+                    const meta = MODERATION_CATEGORY_META[r.moderation_status] ?? { label: r.moderation_status, color: "#8b8b95" };
+                    const photos = r.photos && r.photos.length > 0 ? r.photos : (r.photo_url ? [r.photo_url] : []);
+                    return (
+                      <div key={r.post_id} className="rounded-2xl p-4" style={{ background: "#ffffff", border: "1px solid #ececf1" }}>
+                        <div className="flex items-start justify-between gap-3 mb-2">
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-neutral-800 truncate">
+                              {r.author_name || r.author_username || "?"}
+                              <span className="text-neutral-400 font-normal"> @{r.author_username ?? "?"}</span>
+                            </p>
+                            <p className="text-[11px] text-neutral-300">{new Date(r.created_at).toLocaleString("pt-PT")}</p>
+                          </div>
+                          <span className="text-[11px] font-bold px-2 py-0.5 rounded-full text-white shrink-0" style={{ background: meta.color }}>
+                            {meta.label}{r.confidence != null ? ` · ${Math.round(r.confidence)}%` : ""}
+                          </span>
+                        </div>
+                        {r.content && <p className="text-neutral-600 text-sm mb-2 whitespace-pre-wrap break-words line-clamp-4">{r.content}</p>}
+                        {photos.length > 0 && (
+                          <div className="mb-2 max-w-xs">
+                            <img src={photos[0]} alt="" className="w-full max-h-64 object-contain rounded-xl bg-neutral-100" />
+                          </div>
+                        )}
+                        {!photos.length && (r.video_url || r.thumbnail_url) && (
+                          <div className="mb-2 max-w-xs">
+                            <img src={r.thumbnail_url ?? undefined} alt="" className="w-full max-h-64 object-contain rounded-xl bg-neutral-100" />
+                          </div>
+                        )}
+                        {r.keywords && r.keywords.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 mb-3">
+                            {r.keywords.map((kw, i) => (
+                              <span key={i} className="text-[11px] px-2 py-0.5 rounded-full" style={{ background: "#f5f5f7", color: "#6b6b76" }}>{kw}</span>
+                            ))}
+                          </div>
+                        )}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <button onClick={() => overrideModeration(r, "safe")}
+                            className="px-3 py-1.5 rounded-lg text-xs font-semibold transition active:scale-[0.97]"
+                            style={{ background: "rgba(107,165,71,0.15)", color: "#4d7a34" }}>
+                            Marcar como seguro
+                          </button>
+                          <button onClick={() => deleteSensitivePost(r)}
+                            className="px-3 py-1.5 rounded-lg text-xs font-semibold transition active:scale-[0.97]"
+                            style={{ background: "rgba(239,68,68,0.15)", color: "#B91C1C" }}>
+                            Eliminar publicação
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>

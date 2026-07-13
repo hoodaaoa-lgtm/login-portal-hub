@@ -606,9 +606,16 @@ function HomePage() {
     return items;
   }
 
-  // persistência em localStorage configurada no root, restaura este
-  // resultado instantaneamente na próxima visita — sem ecrã vazio nem
-  // spinner — enquanto busca dados novos em segundo plano.
+  // IMPORTANTE — meta: { persist: false }: o feed NÃO fica persistido em
+  // IndexedDB (ver root.tsx / idbPersister). Sem isto, sair do site (fechar
+  // app/tab) ou só sair do Home e voltar restaurava a ÚLTIMA página gravada
+  // — precisamente os posts já marcados como "vistos" (addSeenPostIds) — e
+  // mostrava-a instantaneamente no topo antes do refetch em segundo plano os
+  // substituir. Sem persistência entre sessões, cada montagem do Home busca
+  // sempre a rede (respeitando getSeenPostIds/getSeenVideoIds, à parte em
+  // localStorage) — nunca reexibe o topo antigo. Dentro da MESMA sessão
+  // (sem recarregar), a cache em memória do React Query continua válida por
+  // staleTime (60s), o que é o comportamento correto e esperado.
   const effectiveUserId = myUserId || session?.user?.id || "";
   const feedQuery = useQuery({
     queryKey: QUERY_KEYS.feed(effectiveUserId),
@@ -616,6 +623,7 @@ function HomePage() {
     enabled: !!effectiveUserId,
     ...FEED_QUERY_OPTIONS,
     placeholderData: (prev: any) => prev,
+    meta: { persist: false },
   });
 
   const firstPagePosts = feedQuery.data ?? [];
