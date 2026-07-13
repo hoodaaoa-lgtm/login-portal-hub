@@ -6,7 +6,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 //
 // Recebe { message }, junta o histórico da conversa + estado atual real do
 // feed (pesos de algorithm_settings, estatísticas do dashboard, análise de
-// conteúdo por estado de distribuição) e manda tudo para o Claude, que:
+// conteúdo por estado de distribuição) e manda tudo para a IA (Gemini via
+// Lovable AI Gateway), que:
 //   1. Responde em português (Angola) explicando o que percebeu.
 //   2. Se fizer sentido ajustar o algoritmo, propõe novos pesos através da
 //      tool `propor_pesos` — nunca aplica sozinho.
@@ -19,10 +20,10 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const SUPABASE_URL         = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const ANTHROPIC_API_KEY    = Deno.env.get("ANTHROPIC_API_KEY")!;
+const LOVABLE_API_KEY      = Deno.env.get("LOVABLE_API_KEY")!;
 
-const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
-const MODEL = "claude-sonnet-5";
+const LOVABLE_AI_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
+const MODEL = "google/gemini-2.5-flash";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -44,16 +45,19 @@ const WEIGHT_KEYS = [
 ] as const;
 
 const PROPOR_PESOS_TOOL = {
-  name: "propor_pesos",
-  description:
-    "Propõe uma alteração aos pesos do algoritmo do feed. Só chama isto quando o pedido do " +
-    "admin implicar mesmo mudar o comportamento do feed — para perguntas informativas, responde só em texto.",
-  input_schema: {
-    type: "object",
-    properties: Object.fromEntries(
-      WEIGHT_KEYS.map((k) => [k, { type: "number", description: `Novo valor para ${k}` }])
-    ),
-    required: [],
+  type: "function",
+  function: {
+    name: "propor_pesos",
+    description:
+      "Propõe uma alteração aos pesos do algoritmo do feed. Só chama isto quando o pedido do " +
+      "admin implicar mesmo mudar o comportamento do feed — para perguntas informativas, responde só em texto.",
+    parameters: {
+      type: "object",
+      properties: Object.fromEntries(
+        WEIGHT_KEYS.map((k) => [k, { type: "number", description: `Novo valor para ${k}` }])
+      ),
+      required: [],
+    },
   },
 };
 
@@ -102,39 +106,50 @@ serve(async (req) => {
       "raciocínio antes de propor. Se o pedido for só uma pergunta sobre como o feed está a " +
       "funcionar, responde só em texto, sem usar a tool.";
 
-    const anthropicRes = await fetch(ANTHROPIC_URL, {
+    const aiRes = await fetch(LOVABLE_AI_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-api-key": ANTHROPIC_API_KEY,
-        "anthropic-version": "2023-06-01",
+        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
       },
       body: JSON.stringify({
         model: MODEL,
-        max_tokens: 1024,
-        system: systemPrompt,
-        messages: [...pastMessages, { role: "user", content: message }],
+        messages: [
+          { role: "system", content: systemPrompt },
+          ...pastMessages,
+          { role: "user", content: message },
+        ],
         tools: [PROPOR_PESOS_TOOL],
       }),
     });
 
-    if (!anthropicRes.ok) {
-      const errText = await anthropicRes.text();
-      console.error("[feed-ai-chat] erro da Anthropic:", errText);
+    if (aiRes.status === 429) {
+      return json({ error: "Muitos pedidos à IA. Espera um pouco e tenta outra vez." }, 429);
+    }
+    if (aiRes.status === 402) {
+      return json({ error: "Créditos da IA esgotados. Verifica o workspace do Lovable." }, 402);
+    }
+    if (!aiRes.ok) {
+      const errText = await aiRes.text();
+      console.error("[feed-ai-chat] erro da Lovable AI Gateway:", errText);
       return json({ error: "A IA não respondeu. Tenta outra vez." }, 502);
     }
 
-    const data = await anthropicRes.json();
-    let replyText = "";
+    const data = await aiRes.json();
+    const choice = data.choices?.[0]?.message;
+    let replyText = choice?.content ?? "";
     let proposedWeights: Record<string, number> | null = null;
 
-    for (const block of data.content ?? []) {
-      if (block.type === "text") replyText += block.text;
-      if (block.type === "tool_use" && block.name === "propor_pesos") {
-        proposedWeights = block.input;
+    for (const call of choice?.tool_calls ?? []) {
+      if (call.function?.name === "propor_pesos") {
+        try {
+          proposedWeights = JSON.parse(call.function.arguments);
+        } catch (e) {
+          console.error("[feed-ai-chat] erro ao parsear tool_calls:", e);
+        }
       }
     }
-    if (!replyText.trim()) replyText = "Aqui está a proposta de ajuste:";
+    if (!replyText?.trim()) replyText = "Aqui está a proposta de ajuste:";
 
     // Guarda a mensagem do admin e a resposta da IA no histórico.
     await supabase.from("feed_ai_chat_messages").insert({ admin_id: adminId, role: "admin", content: message });
