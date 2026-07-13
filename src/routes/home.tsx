@@ -785,7 +785,7 @@ function HomePage() {
             .from("profiles").select("id, full_name, username").eq("id", video.owner_id).maybeSingle();
           if (!profileData) return;
           const { data: followRow } = await (supabase as any)
-            .from("follows").select("id").eq("follower_id", myUserId).eq("following_id", video.owner_id).maybeSingle();
+            .from("follows").select("follower_id").eq("follower_id", myUserId).eq("following_id", video.owner_id).maybeSingle();
           if (!followRow) return;
           insertNotif("video_new", video.owner_id, (profileData as any).full_name);
         }

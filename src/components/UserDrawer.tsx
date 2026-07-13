@@ -84,7 +84,7 @@ export function UserDrawer({ userId: _userId, onClose }: UserDrawerProps) {
         supabase.from("profiles").select("id,username,full_name,avatar_url,bio").eq("id", resolvedUid).maybeSingle(),
         // followersRes preenchido abaixo depois de termos o username
         Promise.resolve({ count: 0 }),
-        supabase.from("follows").select("id", { count: "exact", head: true }).eq("follower_id", resolvedUid),
+        supabase.from("follows").select("follower_id", { count: "exact", head: true }).eq("follower_id", resolvedUid),
         supabase.from("posts").select("id", { count: "exact", head: true }).eq("author_id", resolvedUid),
         supabase.from("user_ratings").select("stars").eq("rated_user_id", resolvedUid),
         supabase.from("user_ratings").select("stars").eq("rated_user_id", resolvedUid).eq("rater_user_id", session.user.id).maybeSingle(),
@@ -96,7 +96,7 @@ export function UserDrawer({ userId: _userId, onClose }: UserDrawerProps) {
       // exige saber o username do dono do perfil primeiro.
       const myUsername = (profRes.data as any)?.username ?? "";
       const { count: realFollowersCount } = myUsername
-        ? await supabase.from("follows").select("id", { count: "exact", head: true }).eq("target_username", myUsername)
+        ? await supabase.from("follows").select("follower_id", { count: "exact", head: true }).eq("target_username", myUsername)
         : { count: 0 };
 
       const allRatings = (ratingsRes.data ?? []) as { stars: number }[];

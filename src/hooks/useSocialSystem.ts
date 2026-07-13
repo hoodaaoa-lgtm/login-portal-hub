@@ -298,7 +298,7 @@ export function useBookmarkState(postId: string, myId: string | null | undefined
     queryKey: key,
     queryFn: async () => {
       if (!myId) return false;
-      const { data, error } = await (supabase as any).from("post_saves").select("id")
+      const { data, error } = await (supabase as any).from("post_saves").select("post_id")
         .eq("post_id", postId).eq("user_id", myId).maybeSingle();
       if (error) throw error;
       return !!data;
