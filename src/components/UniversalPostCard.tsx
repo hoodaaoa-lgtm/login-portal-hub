@@ -1201,7 +1201,14 @@ export function UniversalPostCard({ post: p, onDeleted, onBookmarkChange }: {
                 {isAd && <span className="text-[9px] uppercase bg-[var(--s2)] text-[var(--text-muted)] px-1.5 py-0.5 rounded font-semibold ml-1">Patrocinado</span>}
               </span>
             </ProfileAvatarLink>
-            {(p.name || timeLabel) && <p className="text-[11px] leading-tight" style={{ color: "var(--text-muted)" }}>{p.name}{p.name && timeLabel ? " · " : ""}{timeLabel}</p>}
+            {(p.name || timeLabel) && (
+              <p className="text-[11px] leading-tight" style={{ color: "var(--text-muted)" }}>
+                {p.name}{p.name && timeLabel ? " · " : ""}{timeLabel}
+                {!isAd && !isOwnPost && sessionChecked && !!myUserId && !followLoading && !followHasError && !following && (
+                  <span className="ml-1 font-semibold" style={{ color: "#5B3FCF" }}>· Sugestão para você</span>
+                )}
+              </p>
+            )}
           </div>
         </div>
         <div className="flex items-center gap-1.5">
