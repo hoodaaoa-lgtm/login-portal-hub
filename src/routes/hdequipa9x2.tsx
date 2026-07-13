@@ -489,8 +489,9 @@ function AdminDashboard({ adminId }: { adminId: string }) {
         applied: false,
         created_at: new Date().toISOString(),
       }]);
-    } catch (e) {
-      toast.error("Não consegui falar com a IA. Tenta outra vez.");
+    } catch (e: any) {
+      const msg = e?.message || "Não consegui falar com a IA. Tenta outra vez.";
+      toast.error(msg);
       console.error("[admin] erro no chat da IA do feed:", e);
     } finally {
       setFeedChatSending(false);
