@@ -350,7 +350,7 @@ function HomePage() {
     const rpcCursor = cursor ?? new Date().toISOString();
 
     const [{ data: rankedRows, error: rankErr }, { data: rankedVideoRows, error: videoRankErr }] = await Promise.all([
-      (supabase as any).rpc("get_personalized_feed_v2", {
+      (supabase as any).rpc("get_personalized_feed_v3", {
         p_user_id: uid, p_cursor: rpcCursor, p_limit: FEED_CHUNK_SIZE,
         // Publicações já mostradas neste dispositivo (mesmo sem terem sido
         // "vistas" a sério) — para nunca repetir a mesma ao atualizar a
@@ -401,7 +401,7 @@ function HomePage() {
     let rankByPostId: Record<string, number> = {};
     let topicByPostId: Record<string, string | null> = {};
     if (rankErr || !rankedRows) {
-      console.error("get_personalized_feed_v2 falhou, a usar ordem cronológica:", rankErr);
+      console.error("get_personalized_feed_v3 falhou, a usar ordem cronológica:", rankErr);
       let fallbackQuery = supabase.from("posts").select(POST_SELECT_FIELDS)
         .eq("is_draft", false)
         .or(`scheduled_at.is.null,scheduled_at.lte.${new Date().toISOString()}`)

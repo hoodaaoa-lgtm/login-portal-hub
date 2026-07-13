@@ -21,6 +21,7 @@ import {
   UsersRound, FileText, Radio, TrendingUp, CheckCircle2, XCircle,
   Trash2, Image as ImageIcon, Video as VideoIcon, ExternalLink, Activity,
   Megaphone, History, UserX, Upload, Smartphone,
+  Brain, Sliders, Tag, Eye, ThumbsUp, MessageCircle, Share2,
 } from "lucide-react";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -104,6 +105,60 @@ type DashboardStats = {
   postsToday: number;
   totalVideos: number;
   pendingReports: number;
+};
+
+type AlgorithmWeights = {
+  weight_seguidores: number;
+  weight_interesses: number;
+  weight_similaridade: number;
+  weight_descoberta: number;
+  weight_tendencias: number;
+  weight_curtidas: number;
+  weight_comentarios: number;
+  weight_partilhas: number;
+  weight_guardados: number;
+  weight_retencao: number;
+};
+
+type AiDashboardStats = {
+  usuarios_ativos_7d: number;
+  novos_registos_hoje: number;
+  publicacoes_hoje: number;
+  visualizacoes_hoje: number;
+  curtidas_hoje: number;
+  comentarios_hoje: number;
+  partilhas_hoje: number;
+  distribuicao_estados: Record<string, number>;
+  serie_7_dias: { dia: string; publicacoes: number; visualizacoes: number; curtidas: number }[];
+};
+
+type ContentCategoryRow = {
+  id: string;
+  slug: string;
+  name: string;
+  is_auto: boolean;
+};
+
+type ContentAnalysisRow = {
+  post_id: string;
+  author_username: string;
+  content: string | null;
+  quality_score: number;
+  views_count: number;
+  likes_count: number;
+  comments_count: number;
+  distribution_state: string;
+  created_at: string;
+};
+
+const DISTRIBUTION_STATE_META: Record<string, { label: string; color: string }> = {
+  em_analise:           { label: "Em análise",           color: "#8b8b95" },
+  em_teste:             { label: "Em teste",             color: "#1FAFA6" },
+  distribuicao_normal:  { label: "Distribuição normal",  color: "#5B3FCF" },
+  em_crescimento:       { label: "Em crescimento",       color: "#6BA547" },
+  tendencia:            { label: "Tendência",             color: "#FFC93C" },
+  viral:                { label: "Viral",                 color: "#E94B8A" },
+  distribuicao_reduzida:{ label: "Distribuição reduzida", color: "#F87171" },
 };
 
 type AdminMsg = {
@@ -282,7 +337,7 @@ function AdminPage() {
 
 function AdminDashboard({ adminId }: { adminId: string }) {
   const navigate = useNavigate();
-  const [section, setSection] = useState<"dashboard" | "reports" | "users" | "messages" | "posts" | "presence" | "broadcast" | "official" | "audit">("dashboard");
+  const [section, setSection] = useState<"dashboard" | "reports" | "users" | "messages" | "posts" | "presence" | "broadcast" | "official" | "audit" | "ai">("dashboard");
   const [search, setSearch] = useState("");
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
@@ -338,6 +393,91 @@ function AdminDashboard({ adminId }: { adminId: string }) {
   const [officialHistory, setOfficialHistory] = useState<Awaited<ReturnType<typeof fetchOfficialMessageHistory>>>([]);
   const [officialHistoryLoading, setOfficialHistoryLoading] = useState(true);
   const officialImgInputRef = useRef<HTMLInputElement>(null);
+
+  // ── Centro de IA: estado ──
+  const [aiTab, setAiTab] = useState<"painel" | "pesos" | "categorias" | "conteudo">("painel");
+  const [aiStats, setAiStats] = useState<AiDashboardStats | null>(null);
+  const [aiStatsLoading, setAiStatsLoading] = useState(false);
+  const [aiWeights, setAiWeights] = useState<AlgorithmWeights | null>(null);
+  const [aiWeightsSaving, setAiWeightsSaving] = useState(false);
+  const [aiCategories, setAiCategories] = useState<ContentCategoryRow[]>([]);
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [analysisState, setAnalysisState] = useState<string>("viral");
+  const [analysisRows, setAnalysisRows] = useState<ContentAnalysisRow[]>([]);
+  const [analysisLoading, setAnalysisLoading] = useState(false);
+
+  const loadAiDashboard = useCallback(async () => {
+    setAiStatsLoading(true);
+    const { data, error } = await db.rpc("get_ai_dashboard_stats");
+    if (error) { console.error("[admin] erro ao carregar dashboard de IA:", error); toast.error("Erro ao carregar Centro de IA"); }
+    else setAiStats(data as AiDashboardStats);
+    setAiStatsLoading(false);
+  }, []);
+
+  const loadAiWeights = useCallback(async () => {
+    const { data, error } = await db.from("algorithm_settings").select("*").eq("id", 1).maybeSingle();
+    if (error) { console.error("[admin] erro ao carregar pesos:", error); return; }
+    if (data) setAiWeights(data as AlgorithmWeights);
+  }, []);
+
+  const loadAiCategories = useCallback(async () => {
+    const { data, error } = await db.from("content_categories").select("id,slug,name,is_auto").order("name");
+    if (error) { console.error("[admin] erro ao carregar categorias:", error); return; }
+    setAiCategories((data ?? []) as ContentCategoryRow[]);
+  }, []);
+
+  const loadAnalysis = useCallback(async (state: string) => {
+    setAnalysisLoading(true);
+    const { data, error } = await db.rpc("get_ai_content_analysis", { p_state: state, p_limit: 30 });
+    if (error) { console.error("[admin] erro ao carregar análise de conteúdo:", error); toast.error("Erro ao carregar análise de conteúdo"); }
+    else setAnalysisRows((data ?? []) as ContentAnalysisRow[]);
+    setAnalysisLoading(false);
+  }, []);
+
+  useEffect(() => {
+    if (section !== "ai") return;
+    if (aiTab === "painel" && !aiStats) loadAiDashboard();
+    if (aiTab === "pesos" && !aiWeights) loadAiWeights();
+    if (aiTab === "categorias" && aiCategories.length === 0) loadAiCategories();
+    if (aiTab === "conteudo") loadAnalysis(analysisState);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [section, aiTab, analysisState]);
+
+  async function saveAiWeights() {
+    if (!aiWeights) return;
+    setAiWeightsSaving(true);
+    const { error } = await db.rpc("admin_update_algorithm_weights", {
+      p_weight_seguidores: aiWeights.weight_seguidores,
+      p_weight_interesses: aiWeights.weight_interesses,
+      p_weight_similaridade: aiWeights.weight_similaridade,
+      p_weight_descoberta: aiWeights.weight_descoberta,
+      p_weight_tendencias: aiWeights.weight_tendencias,
+      p_weight_curtidas: aiWeights.weight_curtidas,
+      p_weight_comentarios: aiWeights.weight_comentarios,
+      p_weight_partilhas: aiWeights.weight_partilhas,
+      p_weight_guardados: aiWeights.weight_guardados,
+      p_weight_retencao: aiWeights.weight_retencao,
+    });
+    if (error) { console.error("[admin] erro ao gravar pesos:", error); toast.error("Erro ao gravar pesos: " + error.message); }
+    else toast.success("Pesos do algoritmo atualizados");
+    setAiWeightsSaving(false);
+  }
+
+  async function createCategory() {
+    const name = newCategoryName.trim();
+    if (!name) return;
+    const slug = name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+    const { error } = await db.from("content_categories").insert({ slug, name });
+    if (error) { console.error("[admin] erro ao criar categoria:", error); toast.error("Erro ao criar categoria: " + error.message); return; }
+    setNewCategoryName("");
+    loadAiCategories();
+  }
+
+  async function deleteCategory(id: string) {
+    const { error } = await db.from("content_categories").delete().eq("id", id);
+    if (error) { console.error("[admin] erro ao remover categoria:", error); toast.error("Erro ao remover categoria: " + error.message); return; }
+    setAiCategories(prev => prev.filter(c => c.id !== id));
+  }
 
   // ── Dashboard: números reais ──
   useEffect(() => {
@@ -917,6 +1057,7 @@ function AdminDashboard({ adminId }: { adminId: string }) {
         </div>
         {([
           { key: "dashboard" as const, Icon: LayoutDashboard, label: "Dashboard" },
+          { key: "ai" as const, Icon: Brain, label: "Centro de IA" },
           { key: "reports" as const, Icon: Flag, label: "Denúncias", badge: stats?.pendingReports },
           { key: "posts" as const, Icon: FileText, label: "Publicações" },
           { key: "presence" as const, Icon: Activity, label: "Em Linha", badge: onlineCount || undefined },
@@ -984,6 +1125,242 @@ function AdminDashboard({ adminId }: { adminId: string }) {
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Centro de IA ── */}
+      {section === "ai" && (
+        <div className="flex-1 overflow-y-auto p-6 md:p-10">
+          <h1 className="text-2xl font-extrabold text-neutral-900 mb-1">Centro de IA</h1>
+          <p className="text-neutral-400 text-sm mb-6">Distribuição inteligente, controlo do algoritmo e desempenho do conteúdo.</p>
+
+          <div className="flex gap-2 mb-6 flex-wrap">
+            {([
+              { key: "painel" as const, label: "Painel geral" },
+              { key: "pesos" as const, label: "Controlo da IA" },
+              { key: "categorias" as const, label: "Categorias" },
+              { key: "conteudo" as const, label: "Análise de conteúdo" },
+            ]).map(t => (
+              <button key={t.key} onClick={() => setAiTab(t.key)}
+                className="px-3.5 py-2 rounded-xl text-sm font-semibold transition"
+                style={{
+                  background: aiTab === t.key ? "linear-gradient(135deg,#5B3FCF,#7B5CE8)" : "#ffffff",
+                  color: aiTab === t.key ? "white" : "#3a3a42",
+                  border: aiTab === t.key ? "none" : "1px solid #ececf1",
+                }}>{t.label}</button>
+            ))}
+          </div>
+
+          {/* Painel geral */}
+          {aiTab === "painel" && (
+            aiStatsLoading || !aiStats ? (
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <div key={i} className="h-28 rounded-2xl relative overflow-hidden" style={{ background: "rgba(0,0,0,0.05)" }}>
+                    <div className="skeleton-shimmer absolute inset-0" style={{ opacity: 0.15 }} />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                  {[
+                    { label: "Utilizadores ativos (7d)", value: aiStats.usuarios_ativos_7d, Icon: UsersRound, color: "#5B3FCF" },
+                    { label: "Novos registos hoje", value: aiStats.novos_registos_hoje, Icon: TrendingUp, color: "#6BA547" },
+                    { label: "Publicações hoje", value: aiStats.publicacoes_hoje, Icon: FileText, color: "#F26B3A" },
+                    { label: "Visualizações hoje", value: aiStats.visualizacoes_hoje, Icon: Eye, color: "#1FAFA6" },
+                    { label: "Curtidas hoje", value: aiStats.curtidas_hoje, Icon: ThumbsUp, color: "#E94B8A" },
+                    { label: "Comentários hoje", value: aiStats.comentarios_hoje, Icon: MessageCircle, color: "#FFC93C" },
+                    { label: "Partilhas hoje", value: aiStats.partilhas_hoje, Icon: Share2, color: "#5B3FCF" },
+                  ].map((c) => (
+                    <div key={c.label} className="rounded-2xl p-5 flex flex-col gap-3" style={{ background: "#ffffff", border: "1px solid #ececf1" }}>
+                      <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: `${c.color}22` }}>
+                        <c.Icon className="h-4.5 w-4.5" style={{ color: c.color }} />
+                      </div>
+                      <div>
+                        <p className="text-2xl font-extrabold text-neutral-900 leading-tight">{Number(c.value ?? 0).toLocaleString("pt-PT")}</p>
+                        <p className="text-neutral-400 text-xs mt-0.5">{c.label}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="rounded-2xl p-5 mb-6" style={{ background: "#ffffff", border: "1px solid #ececf1" }}>
+                  <p className="font-bold text-neutral-900 mb-3 text-sm">Estados de distribuição (últimos 7 dias)</p>
+                  <div className="flex flex-wrap gap-3">
+                    {Object.entries(DISTRIBUTION_STATE_META).map(([key, meta]) => (
+                      <div key={key} className="flex items-center gap-2 px-3 py-2 rounded-xl" style={{ background: `${meta.color}15` }}>
+                        <span className="w-2.5 h-2.5 rounded-full" style={{ background: meta.color }} />
+                        <span className="text-sm font-semibold text-neutral-800">{aiStats.distribuicao_estados?.[key] ?? 0}</span>
+                        <span className="text-xs text-neutral-400">{meta.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="rounded-2xl p-5" style={{ background: "#ffffff", border: "1px solid #ececf1" }}>
+                  <p className="font-bold text-neutral-900 mb-3 text-sm">Últimos 7 dias</p>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="text-left text-neutral-400 text-xs">
+                          <th className="pb-2 pr-4">Dia</th><th className="pb-2 pr-4">Publicações</th>
+                          <th className="pb-2 pr-4">Visualizações</th><th className="pb-2">Curtidas</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {aiStats.serie_7_dias?.map(d => (
+                          <tr key={d.dia} className="border-t" style={{ borderColor: "#f2f2f5" }}>
+                            <td className="py-2 pr-4 text-neutral-700 font-medium">{d.dia}</td>
+                            <td className="py-2 pr-4 text-neutral-600">{d.publicacoes}</td>
+                            <td className="py-2 pr-4 text-neutral-600">{d.visualizacoes}</td>
+                            <td className="py-2 text-neutral-600">{d.curtidas}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </>
+            )
+          )}
+
+          {/* Controlo da IA */}
+          {aiTab === "pesos" && (
+            !aiWeights ? (
+              <div className="h-40 rounded-2xl relative overflow-hidden" style={{ background: "rgba(0,0,0,0.05)" }}>
+                <div className="skeleton-shimmer absolute inset-0" style={{ opacity: 0.15 }} />
+              </div>
+            ) : (
+              <div className="max-w-2xl">
+                <div className="rounded-2xl p-5 mb-5" style={{ background: "#ffffff", border: "1px solid #ececf1" }}>
+                  <p className="font-bold text-neutral-900 mb-1 text-sm flex items-center gap-2"><Sliders className="h-4 w-4" style={{ color: "#5B3FCF" }} />Composição do feed</p>
+                  <p className="text-neutral-400 text-xs mb-4">Percentagem relativa de cada fonte no feed. Não precisam de somar 100 — são normalizadas automaticamente.</p>
+                  {([
+                    ["weight_interesses", "Interesses (afinidade por autor)"],
+                    ["weight_seguidores", "Contas seguidas"],
+                    ["weight_similaridade", "Conteúdo semelhante (IA)"],
+                    ["weight_descoberta", "Descoberta"],
+                    ["weight_tendencias", "Tendências globais"],
+                  ] as [keyof AlgorithmWeights, string][]).map(([key, label]) => (
+                    <div key={key} className="mb-4">
+                      <div className="flex justify-between text-xs mb-1">
+                        <span className="text-neutral-600 font-medium">{label}</span>
+                        <span className="text-neutral-900 font-bold">{aiWeights[key]}%</span>
+                      </div>
+                      <input type="range" min={0} max={100} value={aiWeights[key]}
+                        onChange={e => setAiWeights({ ...aiWeights, [key]: Number(e.target.value) })}
+                        className="w-full accent-[#5B3FCF]" />
+                    </div>
+                  ))}
+                </div>
+
+                <div className="rounded-2xl p-5 mb-5" style={{ background: "#ffffff", border: "1px solid #ececf1" }}>
+                  <p className="font-bold text-neutral-900 mb-1 text-sm">Peso de cada sinal de engajamento</p>
+                  <p className="text-neutral-400 text-xs mb-4">Usado no cálculo de qualidade/pontuação de cada publicação.</p>
+                  {([
+                    ["weight_curtidas", "Curtidas"],
+                    ["weight_comentarios", "Comentários"],
+                    ["weight_partilhas", "Partilhas"],
+                    ["weight_guardados", "Guardados"],
+                  ] as [keyof AlgorithmWeights, string][]).map(([key, label]) => (
+                    <div key={key} className="mb-4">
+                      <div className="flex justify-between text-xs mb-1">
+                        <span className="text-neutral-600 font-medium">{label}</span>
+                        <span className="text-neutral-900 font-bold">{aiWeights[key]}</span>
+                      </div>
+                      <input type="range" min={0} max={10} step={0.5} value={aiWeights[key]}
+                        onChange={e => setAiWeights({ ...aiWeights, [key]: Number(e.target.value) })}
+                        className="w-full accent-[#5B3FCF]" />
+                    </div>
+                  ))}
+                  <div className="mb-1">
+                    <div className="flex justify-between text-xs mb-1">
+                      <span className="text-neutral-600 font-medium">Peso da retenção (tempo de visualização)</span>
+                      <span className="text-neutral-900 font-bold">{aiWeights.weight_retencao}%</span>
+                    </div>
+                    <input type="range" min={0} max={100} value={aiWeights.weight_retencao}
+                      onChange={e => setAiWeights({ ...aiWeights, weight_retencao: Number(e.target.value) })}
+                      className="w-full accent-[#5B3FCF]" />
+                  </div>
+                </div>
+
+                <button onClick={saveAiWeights} disabled={aiWeightsSaving}
+                  className="px-5 py-2.5 rounded-xl font-bold text-sm text-white transition active:scale-[0.98] disabled:opacity-60"
+                  style={{ background: "linear-gradient(135deg,#5B3FCF,#7B5CE8)" }}>
+                  {aiWeightsSaving ? "A gravar..." : "Gravar alterações"}
+                </button>
+              </div>
+            )
+          )}
+
+          {/* Categorias */}
+          {aiTab === "categorias" && (
+            <div className="max-w-xl">
+              <div className="flex gap-2 mb-4">
+                <input value={newCategoryName} onChange={e => setNewCategoryName(e.target.value)}
+                  placeholder="Nome da nova categoria" onKeyDown={e => e.key === "Enter" && createCategory()}
+                  className="flex-1 px-3.5 py-2.5 rounded-xl text-sm outline-none" style={{ border: "1px solid #ececf1" }} />
+                <button onClick={createCategory} className="px-4 py-2.5 rounded-xl text-sm font-bold text-white"
+                  style={{ background: "linear-gradient(135deg,#5B3FCF,#7B5CE8)" }}>Criar</button>
+              </div>
+              <div className="rounded-2xl overflow-hidden" style={{ background: "#ffffff", border: "1px solid #ececf1" }}>
+                {aiCategories.map((c, i) => (
+                  <div key={c.id} className="flex items-center justify-between px-4 py-3"
+                    style={{ borderTop: i === 0 ? "none" : "1px solid #f2f2f5" }}>
+                    <div className="flex items-center gap-2.5">
+                      <Tag className="h-4 w-4" style={{ color: "#5B3FCF" }} />
+                      <span className="text-sm font-semibold text-neutral-800">{c.name}</span>
+                      {c.is_auto && <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold" style={{ background: "#F26B3A22", color: "#F26B3A" }}>auto</span>}
+                    </div>
+                    <button onClick={() => deleteCategory(c.id)} className="text-xs font-semibold" style={{ color: "#F87171" }}>Remover</button>
+                  </div>
+                ))}
+                {aiCategories.length === 0 && <p className="text-sm text-neutral-400 px-4 py-6 text-center">Nenhuma categoria ainda.</p>}
+              </div>
+            </div>
+          )}
+
+          {/* Análise de conteúdo */}
+          {aiTab === "conteudo" && (
+            <div>
+              <div className="flex gap-2 mb-4 flex-wrap">
+                {Object.entries(DISTRIBUTION_STATE_META).map(([key, meta]) => (
+                  <button key={key} onClick={() => setAnalysisState(key)}
+                    className="px-3 py-1.5 rounded-lg text-xs font-semibold transition"
+                    style={{
+                      background: analysisState === key ? meta.color : "#ffffff",
+                      color: analysisState === key ? "white" : "#3a3a42",
+                      border: analysisState === key ? "none" : "1px solid #ececf1",
+                    }}>{meta.label}</button>
+                ))}
+              </div>
+              {analysisLoading ? (
+                <div className="h-40 rounded-2xl relative overflow-hidden" style={{ background: "rgba(0,0,0,0.05)" }}>
+                  <div className="skeleton-shimmer absolute inset-0" style={{ opacity: 0.15 }} />
+                </div>
+              ) : (
+                <div className="rounded-2xl overflow-hidden" style={{ background: "#ffffff", border: "1px solid #ececf1" }}>
+                  {analysisRows.map((r, i) => (
+                    <div key={r.post_id} className="px-4 py-3 flex items-center justify-between gap-3"
+                      style={{ borderTop: i === 0 ? "none" : "1px solid #f2f2f5" }}>
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-neutral-800 truncate">@{r.author_username}</p>
+                        <p className="text-xs text-neutral-400 truncate max-w-md">{r.content || "(sem texto)"}</p>
+                      </div>
+                      <div className="flex items-center gap-3 shrink-0 text-xs text-neutral-500">
+                        <span>{Math.round(r.quality_score)} pts</span>
+                        <span className="flex items-center gap-1"><Eye className="h-3.5 w-3.5" />{r.views_count}</span>
+                        <span className="flex items-center gap-1"><ThumbsUp className="h-3.5 w-3.5" />{r.likes_count}</span>
+                        <span className="flex items-center gap-1"><MessageCircle className="h-3.5 w-3.5" />{r.comments_count}</span>
+                      </div>
+                    </div>
+                  ))}
+                  {analysisRows.length === 0 && <p className="text-sm text-neutral-400 px-4 py-6 text-center">Nenhuma publicação neste estado.</p>}
+                </div>
+              )}
             </div>
           )}
         </div>
