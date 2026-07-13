@@ -2680,7 +2680,7 @@ function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit
                 style={{ background: "var(--s2)", color: "var(--text-secondary)" }}>
                 Cancelar
               </button>
-              <button onClick={() => { confirmDel === "all" ? onDeleteForEveryone() : onDeleteForMe(); setConfirmDel(null); }}
+              <button onClick={() => { if (confirmDel === "all") onDeleteForEveryone(); else onDeleteForMe(); setConfirmDel(null); }}
                 className="flex-1 py-2 rounded-xl text-sm font-bold text-white"
                 style={{ background: confirmDel === "all" ? "#EF4444" : "#F97316" }}>
                 Eliminar
@@ -3986,7 +3986,7 @@ function ChatPanel({ myId, contact, onBack, contacts }: {
           ctx.font = `${t.bold?"bold ":""}${t.italic?"italic ":""}${t.sizePx * (canvas.width/400)}px ${t.fontCss}`;
           ctx.fillStyle = t.color;
           ctx.textAlign = t.align;
-          if (t.shadow) ctx.shadowColor = "rgba(0,0,0,0.9)", ctx.shadowBlur = 8;
+          if (t.shadow) { ctx.shadowColor = "rgba(0,0,0,0.9)"; ctx.shadowBlur = 8; }
           const x = (t.x / 100) * canvas.width;
           const y = (t.y / 100) * canvas.height;
           ctx.fillText(t.text, x, y);
@@ -4348,7 +4348,7 @@ function ChatPanel({ myId, contact, onBack, contacts }: {
                 </div>
               </button>
               {/* Bloquear / Desbloquear */}
-              <button onClick={e => { e.stopPropagation(); isBlocked ? unblockUser() : blockUser(); }}
+              <button onClick={e => { e.stopPropagation(); if (isBlocked) unblockUser(); else blockUser(); }}
                 className="w-full flex items-center gap-3 px-4 py-3 transition text-left border-t"
                 style={{ borderColor:"var(--border-default)", background: isBlocked ? "transparent" : "transparent" }}
                 onMouseOver={e => e.currentTarget.style.background = isBlocked ? "#dcfce7" : "#fee2e2"}
@@ -4834,7 +4834,7 @@ function ChatPanel({ myId, contact, onBack, contacts }: {
             </button>
           ) : (
             <button
-              onClick={() => { recording ? stopRecording() : startRecording(); }}
+              onClick={() => { if (recording) stopRecording(); else startRecording(); }}
               className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 transition active:scale-90 mb-0.5"
               style={{ background: recording ? "#EF4444" : "#5B3FCF", color:"white", boxShadow: recording ? "0 4px 14px #EF444455" : "0 4px 14px #5B3FCF55" }}>
               {recording ? <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="2" y="2" width="4" height="10" rx="1" fill="white"/><rect x="8" y="2" width="4" height="10" rx="1" fill="white"/></svg> : <Mic className="h-5 w-5" />}

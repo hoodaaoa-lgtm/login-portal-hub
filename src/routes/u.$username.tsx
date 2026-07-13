@@ -674,7 +674,7 @@ function UserProfilePage() {
                     ...(myId ? [{
                       icon:<Ban className="h-4 w-4"/>,
                       label: isBlocked ? "Desbloquear" : "Bloquear",
-                      action: ()=>{ setShowMenu(false); isBlocked ? unblockUser() : setShowBlockConfirm(true); },
+                      action: ()=>{ setShowMenu(false); if (isBlocked) unblockUser(); else setShowBlockConfirm(true); },
                       danger: !isBlocked,
                     }] : []),
                     {icon:<Flag className="h-4 w-4"/>, label:"Denunciar", action:()=>{setShowMenu(false);setShowReport(true);}, danger:false},

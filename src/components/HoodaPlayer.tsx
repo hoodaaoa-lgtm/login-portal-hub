@@ -875,7 +875,8 @@ export const HoodaPlayer = forwardRef<HTMLVideoElement, HoodaPlayerProps>(functi
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                duration > 0 && duration - currentTime < 2 ? restart() : togglePlay();
+                if (duration > 0 && duration - currentTime < 2) restart();
+                else togglePlay();
               }}
               className={`shrink-0 flex items-center justify-center rounded-full transition hover:bg-white/15 ${isMobile ? "w-9 h-9" : "w-[22px] h-[22px]"}`}
             >
