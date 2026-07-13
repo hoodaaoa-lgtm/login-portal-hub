@@ -1744,7 +1744,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
           ...quotes.map((q: any) => q.original_post_id),
         ].filter(Boolean);
 
-        let originalsMap: Record<string, any> = {};
+        const originalsMap: Record<string, any> = {};
         if (allOriginalIds.length > 0) {
           const { data: originals } = await (supabase as any)
             .from("posts")

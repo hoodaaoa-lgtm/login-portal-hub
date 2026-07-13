@@ -162,7 +162,7 @@ export function QuickPostModal({ name, username, avatarUrl, onClose, onPublished
           })
         : null;
 
-      let imageUrls: string[] = [];
+      const imageUrls: string[] = [];
       let videoUrl: string | null = null;
       let videoThumbUrl: string | null = null;
 

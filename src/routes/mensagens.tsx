@@ -34,7 +34,7 @@ import {
   AlertCircle, RefreshCw, ArrowDown,
   Lock, Unlock, Maximize2,
 } from "lucide-react";
-import MediaEditor, { MediaEditState, DEFAULT_EDIT, EditedMediaDisplay } from "@/components/MediaEditor";
+import MediaEditor, { MediaEditState, DEFAULT_EDIT, EditedMediaDisplay, EDITOR_FILTERS } from "@/components/MediaEditor";
 import { HoodaPlayer } from "@/components/HoodaPlayer";
 import { FeedVideoPlayer } from "@/components/FeedVideoPlayer";
 import { extractUrl } from "@/lib/linkPreview";
@@ -3494,7 +3494,7 @@ function ChatPanel({ myId, contact, onBack, contacts }: {
 
     // Carregar reações para todas as mensagens desta conversa
     const msgIds = data.map((r: any) => r.id);
-    let reactionsMap: Record<string, { emoji: string; user_id: string }[]> = {};
+    const reactionsMap: Record<string, { emoji: string; user_id: string }[]> = {};
     if (msgIds.length > 0) {
       const { data: rxData } = await (db as any).from("message_reactions")
         .select("message_id,emoji,user_id")
@@ -3949,7 +3949,6 @@ function ChatPanel({ myId, contact, onBack, contacts }: {
         if (!ctx) { reject(new Error("Canvas não suportado")); return; }
 
         // Aplicar filtros CSS via filter
-        const { EDITOR_FILTERS } = await import("@/components/MediaEditor").then(m => m).catch(() => ({ EDITOR_FILTERS: [] as any[] }));
         const filterCss = (() => {
           const base = (EDITOR_FILTERS as any[])[edit.filterIdx]?.css ?? "none";
           const parts: string[] = [];

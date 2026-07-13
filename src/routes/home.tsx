@@ -402,8 +402,8 @@ function HomePage() {
     // Se a RPC de ranking falhar por qualquer razão, cai de volta à busca
     // cronológica simples de posts — nunca deixa o feed vazio por causa disto.
     let rawPosts: any[] = [];
-    let rankByPostId: Record<string, number> = {};
-    let topicByPostId: Record<string, string | null> = {};
+    const rankByPostId: Record<string, number> = {};
+    const topicByPostId: Record<string, string | null> = {};
     if (rankErr || !rankedRows) {
       console.error("get_personalized_feed_v3 falhou, a usar ordem cronológica:", rankErr);
       let fallbackQuery = supabase.from("posts").select(POST_SELECT_FIELDS)
