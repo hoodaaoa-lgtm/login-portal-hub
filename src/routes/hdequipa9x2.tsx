@@ -132,6 +132,15 @@ type AiDashboardStats = {
   serie_7_dias: { dia: string; publicacoes: number; visualizacoes: number; curtidas: number }[];
 };
 
+type FeedAiChatMessage = {
+  id: string;
+  role: "admin" | "assistant";
+  content: string;
+  proposed_weights: AlgorithmWeights | null;
+  applied: boolean;
+  created_at: string;
+};
+
 type ContentCategoryRow = {
   id: string;
   slug: string;
@@ -425,7 +434,7 @@ function AdminDashboard({ adminId }: { adminId: string }) {
   const officialImgInputRef = useRef<HTMLInputElement>(null);
 
   // ── Centro de IA: estado ──
-  const [aiTab, setAiTab] = useState<"painel" | "pesos" | "categorias" | "conteudo" | "moderacao">("painel");
+  const [aiTab, setAiTab] = useState<"painel" | "pesos" | "entrega" | "categorias" | "conteudo" | "moderacao">("painel");
   const [aiStats, setAiStats] = useState<AiDashboardStats | null>(null);
   const [aiStatsLoading, setAiStatsLoading] = useState(false);
   const [aiWeights, setAiWeights] = useState<AlgorithmWeights | null>(null);
@@ -435,6 +444,87 @@ function AdminDashboard({ adminId }: { adminId: string }) {
   const [analysisState, setAnalysisState] = useState<string>("viral");
   const [analysisRows, setAnalysisRows] = useState<ContentAnalysisRow[]>([]);
   const [analysisLoading, setAnalysisLoading] = useState(false);
+
+  // ── Entrega de Conteúdo: chat com a IA que ajusta o algoritmo ──
+  const [feedChatMessages, setFeedChatMessages] = useState<FeedAiChatMessage[]>([]);
+  const [feedChatLoading, setFeedChatLoading] = useState(false);
+  const [feedChatInput, setFeedChatInput] = useState("");
+  const [feedChatSending, setFeedChatSending] = useState(false);
+  const [applyingProposalId, setApplyingProposalId] = useState<string | null>(null);
+  const feedChatEndRef = useRef<HTMLDivElement>(null);
+
+  const loadFeedChatHistory = useCallback(async () => {
+    setFeedChatLoading(true);
+    const { data, error } = await db.rpc("get_feed_ai_chat_history", { p_limit: 50 });
+    if (error) { console.error("[admin] erro ao carregar chat da IA:", error); toast.error("Erro ao carregar conversa"); }
+    else setFeedChatMessages(((data ?? []) as FeedAiChatMessage[]).slice().reverse());
+    setFeedChatLoading(false);
+  }, []);
+
+  useEffect(() => {
+    feedChatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [feedChatMessages, feedChatSending]);
+
+  async function sendFeedChatMessage() {
+    const text = feedChatInput.trim();
+    if (!text || feedChatSending) return;
+    setFeedChatInput("");
+    setFeedChatSending(true);
+
+    // Mostra a mensagem do admin já na hora, sem esperar a resposta.
+    setFeedChatMessages(prev => [...prev, {
+      id: `temp-${Date.now()}`, role: "admin", content: text, proposed_weights: null, applied: false, created_at: new Date().toISOString(),
+    }]);
+
+    try {
+      const { data, error } = await supabase.functions.invoke("feed-ai-chat", { body: { message: text } });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      setFeedChatMessages(prev => [...prev, {
+        id: data.messageId ?? `temp-reply-${Date.now()}`,
+        role: "assistant",
+        content: data.reply,
+        proposed_weights: data.proposedWeights ?? null,
+        applied: false,
+        created_at: new Date().toISOString(),
+      }]);
+    } catch (e) {
+      toast.error("Não consegui falar com a IA. Tenta outra vez.");
+      console.error("[admin] erro no chat da IA do feed:", e);
+    } finally {
+      setFeedChatSending(false);
+    }
+  }
+
+  async function applyProposedWeights(msg: FeedAiChatMessage) {
+    if (!msg.proposed_weights) return;
+    setApplyingProposalId(msg.id);
+    const w = msg.proposed_weights;
+    const { error } = await db.rpc("admin_update_algorithm_weights", {
+      p_weight_seguidores: w.weight_seguidores,
+      p_weight_interesses: w.weight_interesses,
+      p_weight_similaridade: w.weight_similaridade,
+      p_weight_descoberta: w.weight_descoberta,
+      p_weight_tendencias: w.weight_tendencias,
+      p_weight_curtidas: w.weight_curtidas,
+      p_weight_comentarios: w.weight_comentarios,
+      p_weight_partilhas: w.weight_partilhas,
+      p_weight_guardados: w.weight_guardados,
+      p_weight_retencao: w.weight_retencao,
+    });
+    if (error) {
+      toast.error("Não foi possível aplicar os pesos.");
+      setApplyingProposalId(null);
+      return;
+    }
+    await db.rpc("mark_feed_ai_proposal_applied", { p_message_id: msg.id });
+    setFeedChatMessages(prev => prev.map(m => m.id === msg.id ? { ...m, applied: true } : m));
+    setAiWeights(w as AlgorithmWeights);
+    toast.success("Pesos do algoritmo atualizados.");
+    logAudit("update_algorithm_weights", "algorithm_settings", "via chat de IA");
+    setApplyingProposalId(null);
+  }
 
   // ── Conteúdo sensível (IA analisa texto + imagem, marca aqui para revisão) ──
   const [sensitiveRows, setSensitiveRows] = useState<SensitiveContentRow[]>([]);
@@ -509,6 +599,7 @@ function AdminDashboard({ adminId }: { adminId: string }) {
     if (section !== "ai") return;
     if (aiTab === "painel" && !aiStats) loadAiDashboard();
     if (aiTab === "pesos" && !aiWeights) loadAiWeights();
+    if (aiTab === "entrega") { if (!aiWeights) loadAiWeights(); if (feedChatMessages.length === 0) loadFeedChatHistory(); }
     if (aiTab === "categorias" && aiCategories.length === 0) loadAiCategories();
     if (aiTab === "conteudo") loadAnalysis(analysisState);
     if (aiTab === "moderacao") loadSensitiveContent();
@@ -1212,6 +1303,7 @@ function AdminDashboard({ adminId }: { adminId: string }) {
             {([
               { key: "painel" as const, label: "Painel geral" },
               { key: "pesos" as const, label: "Controlo da IA" },
+              { key: "entrega" as const, label: "Entrega de Conteúdo" },
               { key: "categorias" as const, label: "Categorias" },
               { key: "conteudo" as const, label: "Análise de conteúdo" },
               { key: "moderacao" as const, label: "Conteúdo sensível" },
@@ -1367,6 +1459,81 @@ function AdminDashboard({ adminId }: { adminId: string }) {
                 </button>
               </div>
             )
+          )}
+
+          {/* Entrega de Conteúdo — chat com a IA */}
+          {aiTab === "entrega" && (
+            <div className="max-w-2xl flex flex-col" style={{ height: "calc(100vh - 260px)" }}>
+              <div className="rounded-2xl p-4 mb-3" style={{ background: "#F5F3FF", border: "1px solid #E4DEFB" }}>
+                <p className="text-xs text-neutral-600">
+                  Conversa com a IA sobre o comportamento do feed. Ela vê os pesos e estatísticas reais antes de responder.
+                  Quando sugerir uma mudança, tens de confirmar antes de ser aplicada.
+                </p>
+              </div>
+
+              <div className="flex-1 overflow-y-auto rounded-2xl p-4 mb-3 flex flex-col gap-3"
+                style={{ background: "#ffffff", border: "1px solid #ececf1" }}>
+                {feedChatLoading ? (
+                  <div className="h-24 rounded-xl relative overflow-hidden" style={{ background: "rgba(0,0,0,0.05)" }}>
+                    <div className="skeleton-shimmer absolute inset-0" style={{ opacity: 0.15 }} />
+                  </div>
+                ) : feedChatMessages.length === 0 ? (
+                  <p className="text-sm text-neutral-400 text-center py-10">
+                    Ainda não há conversa. Pergunta algo tipo "porque é que o feed tá parado?" ou "mostra mais vídeos".
+                  </p>
+                ) : (
+                  feedChatMessages.map(m => (
+                    <div key={m.id} className={`flex ${m.role === "admin" ? "justify-end" : "justify-start"}`}>
+                      <div className="max-w-[85%] rounded-2xl px-4 py-2.5 text-sm"
+                        style={{
+                          background: m.role === "admin" ? "linear-gradient(135deg,#5B3FCF,#7B5CE8)" : "#f5f5f7",
+                          color: m.role === "admin" ? "#ffffff" : "#1f1f23",
+                        }}>
+                        <p className="whitespace-pre-wrap">{m.content}</p>
+                        {m.proposed_weights && (
+                          <div className="mt-3 rounded-xl p-3" style={{ background: "rgba(255,255,255,0.9)", border: "1px solid #E4DEFB" }}>
+                            <p className="text-[11px] font-bold text-neutral-500 mb-2 uppercase tracking-wide">Proposta de novos pesos</p>
+                            <div className="grid grid-cols-2 gap-x-3 gap-y-1 mb-3">
+                              {Object.entries(m.proposed_weights).map(([k, v]) => (
+                                <div key={k} className="flex justify-between text-[11px]">
+                                  <span className="text-neutral-500">{k.replace("weight_", "")}</span>
+                                  <span className="font-bold text-neutral-800">{v}</span>
+                                </div>
+                              ))}
+                            </div>
+                            {m.applied ? (
+                              <p className="text-[11px] font-bold" style={{ color: "#1FAFA6" }}>✓ Aplicado</p>
+                            ) : (
+                              <button onClick={() => applyProposedWeights(m)} disabled={applyingProposalId === m.id}
+                                className="w-full py-1.5 rounded-lg text-[11px] font-bold text-white disabled:opacity-60"
+                                style={{ background: "linear-gradient(135deg,#5B3FCF,#7B5CE8)" }}>
+                                {applyingProposalId === m.id ? "A aplicar..." : "Aplicar estes pesos"}
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+                {feedChatSending && (
+                  <div className="flex justify-start">
+                    <div className="rounded-2xl px-4 py-2.5 text-sm text-neutral-400" style={{ background: "#f5f5f7" }}>A pensar...</div>
+                  </div>
+                )}
+                <div ref={feedChatEndRef} />
+              </div>
+
+              <div className="flex gap-2">
+                <input value={feedChatInput} onChange={e => setFeedChatInput(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && sendFeedChatMessage()}
+                  placeholder="Escreve aqui, tipo: 'mostra mais vídeos e menos fotos'"
+                  className="flex-1 px-3.5 py-2.5 rounded-xl text-sm outline-none" style={{ border: "1px solid #ececf1" }} />
+                <button onClick={sendFeedChatMessage} disabled={feedChatSending || !feedChatInput.trim()}
+                  className="px-4 py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-60"
+                  style={{ background: "linear-gradient(135deg,#5B3FCF,#7B5CE8)" }}>Enviar</button>
+              </div>
+            </div>
           )}
 
           {/* Categorias */}
