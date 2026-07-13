@@ -97,7 +97,7 @@ serve(async (req) => {
     const raw: string = data?.choices?.[0]?.message?.content ?? "{}";
     const clean = raw.replace(/```json|```/g, "").trim();
 
-    let parsed: any;
+    let parsed: { summary?: string; results?: { index: number; score: number }[] };
     try {
       parsed = JSON.parse(clean);
     } catch {

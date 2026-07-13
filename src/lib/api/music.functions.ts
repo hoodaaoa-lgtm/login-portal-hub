@@ -1,6 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
+type RawTrack = {
+  id: string; title: string; artist?: string; category: string;
+  url: string; stream_url: string; cover_url: string;
+  cover_stream_url?: string; duration?: number;
+};
+
 const MUSIC_API = "https://soundcloud-stories.lovable.app/api/public/music";
 
 export const fetchMusic = createServerFn({ method: "GET" })
@@ -37,7 +43,7 @@ export const fetchMusic = createServerFn({ method: "GET" })
       throw new Error(`Biblioteca musical respondeu com erro ${res.status} (${res.statusText}).`);
     }
 
-    let json: any;
+    let json: RawTrack[] | { tracks?: RawTrack[]; library?: RawTrack[]; songs?: RawTrack[]; data?: RawTrack[] };
     try {
       json = JSON.parse(text);
     } catch {

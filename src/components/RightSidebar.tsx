@@ -27,7 +27,7 @@ export function RightSidebar() {
     setMyId(session.user.id);
     const { data: follows } = await supabase.from("follows")
       .select("following_id").eq("follower_id", session.user.id);
-    const followingIds = (follows ?? []).map((f: any) => f.following_id).filter(Boolean);
+    const followingIds = (follows ?? []).map((f: { following_id: string | null }) => f.following_id).filter(Boolean);
     const officialId = await getHoodaOfficialId();
     // A conta "Hooda Oficial" nunca aparece como sugestão de "seguir".
     const excludeIds = [session.user.id, ...followingIds, ...(officialId ? [officialId] : [])];

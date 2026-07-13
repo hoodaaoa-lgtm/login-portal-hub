@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ChevronLeft, Shield, Lock, Eye, Database, Users, Mail } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 export const Route = createFileRoute("/privacidade")({
   head: () => ({ meta: [{ title: "Hooda" }] }),
@@ -8,7 +9,7 @@ export const Route = createFileRoute("/privacidade")({
 
 const P = "#5B3FCF";
 
-function Section({ icon: Icon, title, children }: { icon: any; title: string; children: React.ReactNode }) {
+function Section({ icon: Icon, title, children }: { icon: LucideIcon; title: string; children: React.ReactNode }) {
   return (
     <section className="mb-10">
       <div className="flex items-center gap-2.5 mb-3">

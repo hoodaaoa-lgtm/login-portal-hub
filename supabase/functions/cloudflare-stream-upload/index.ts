@@ -55,8 +55,9 @@ serve(async (req) => {
         headers: { ...CORS, "Content-Type": "application/json" },
       }
     );
-  } catch (e: any) {
-    return new Response(JSON.stringify({ error: e.message }), {
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e);
+    return new Response(JSON.stringify({ error: message }), {
       status: 500,
       headers: { ...CORS, "Content-Type": "application/json" },
     });

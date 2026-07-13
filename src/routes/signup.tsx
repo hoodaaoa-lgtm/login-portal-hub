@@ -173,7 +173,7 @@ function SignupPage() {
           id: session.user.id,
           username: username.toLowerCase(),
           full_name: name,
-        } as any, { onConflict: "id", ignoreDuplicates: false });
+        } as { id: string; username: string; full_name: string }, { onConflict: "id", ignoreDuplicates: false });
       }
     } catch (e) {
       console.warn("[hooda] Não foi possível garantir o username no profile imediatamente:", e);

@@ -78,7 +78,7 @@ export function SideNav() {
       if (session) {
         setCurrentUserId(session.user.id);
         supabase.from("profiles").select("username").eq("id", session.user.id).maybeSingle()
-          .then(({ data }) => setCurrentUsername((data as any)?.username ?? ""));
+          .then(({ data }) => setCurrentUsername((data as { username: string } | null)?.username ?? ""));
       }
     });
   }, []);
