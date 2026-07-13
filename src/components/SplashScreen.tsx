@@ -2,8 +2,8 @@ export const SPLASH_EXIT_MS = 800;
 
 type Props = { leaving?: boolean };
 
-const COLORS  = ['#5B3FCF','#F26B3A','#1FAFA6','#6BA547','#E94B8A'];
-const LETTERS = ['H','o','o','d','a'];
+const COLORS  = ['#E94B8A','#F2874B','#1FAFA6','#7F5AF0'];
+const LETTERS = ['B','a','y','a'];
 
 export function SplashScreen({ leaving = false }: Props) {
   return (
@@ -23,12 +23,12 @@ export function SplashScreen({ leaving = false }: Props) {
           from { opacity: 0; transform: scale(0.85); }
           to   { opacity: 1; transform: scale(1); }
         }
-        ._hooda-logo {
+        ._baya-logo {
           animation: _logoIn 0.6s cubic-bezier(0.34,1.2,0.64,1) both;
         }
       `}</style>
 
-      <div className="_hooda-logo" style={{ display:'flex', alignItems:'center', gap: 0 }}>
+      <div className="_baya-logo" style={{ display:'flex', alignItems:'center', gap: 0 }}>
         {LETTERS.map((ch, i) => (
           <span key={i} style={{
             fontSize: 52,
