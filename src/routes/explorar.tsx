@@ -260,6 +260,9 @@ function ExplorePage() {
         .in("kind",["photo","post"])
         .eq("is_draft", false)
         .or(`scheduled_at.is.null,scheduled_at.lte.${new Date().toISOString()}`)
+        // CORREÇÃO: Descobrir/Tendências nunca mostram publicações ainda em
+        // análise/teste — só liberadas pela IA para distribuição pública.
+        .in("distribution_state", ["distribuicao_normal", "em_crescimento", "tendencia", "viral"])
         .order("created_at", { ascending: false }).limit(500);
       return data ?? [];
     },
@@ -293,6 +296,9 @@ function ExplorePage() {
         .eq("kind","video")
         .eq("is_draft", false)
         .or(`scheduled_at.is.null,scheduled_at.lte.${new Date().toISOString()}`)
+        // CORREÇÃO: pesquisa é descoberta aberta a qualquer utilizador — não
+        // pode expor publicações ainda em análise/teste a quem não segue o autor.
+        .in("distribution_state", ["distribuicao_normal", "em_crescimento", "tendencia", "viral"])
         .or(`content.ilike.%${search}%,title.ilike.%${search}%`).limit(25);
       return data ?? [];
     },
@@ -321,6 +327,7 @@ function ExplorePage() {
         .eq("kind","video")
         .eq("is_draft", false)
         .or(`scheduled_at.is.null,scheduled_at.lte.${new Date().toISOString()}`)
+        .in("distribution_state", ["distribuicao_normal", "em_crescimento", "tendencia", "viral"])
         .in("author_id", searchPeopleIds)
         .order("created_at", { ascending: false })
         .limit(25);
@@ -413,6 +420,7 @@ function ExplorePage() {
         .in("kind",["photo","post"])
         .eq("is_draft", false)
         .or(`scheduled_at.is.null,scheduled_at.lte.${new Date().toISOString()}`)
+        .in("distribution_state", ["distribuicao_normal", "em_crescimento", "tendencia", "viral"])
         .or(`content.ilike.%${search}%,title.ilike.%${search}%`).limit(25);
       return data ?? [];
     },
@@ -434,6 +442,7 @@ function ExplorePage() {
         .in("kind",["photo","post"])
         .eq("is_draft", false)
         .or(`scheduled_at.is.null,scheduled_at.lte.${new Date().toISOString()}`)
+        .in("distribution_state", ["distribuicao_normal", "em_crescimento", "tendencia", "viral"])
         .in("author_id", searchPeopleIds)
         .order("created_at", { ascending: false })
         .limit(25);
