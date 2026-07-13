@@ -5,7 +5,7 @@ import {
   MessageCircle, Bell, Shield, HelpCircle, Info, BarChart2, User, Moon, Sun,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { signOutHooda } from "@/contexts/AuthContext";
+import { signOutBaya } from "@/contexts/AuthContext";
 import { useNavigate } from "@tanstack/react-router";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useScrollLock } from "@/hooks/useScrollLock";
@@ -162,7 +162,7 @@ export function UserDrawer({ userId: _userId, onClose }: UserDrawerProps) {
   }
 
   async function logout() {
-    await signOutHooda();
+    await signOutBaya();
     onClose();
     navigate({ to: "/" });
   }
@@ -192,7 +192,7 @@ export function UserDrawer({ userId: _userId, onClose }: UserDrawerProps) {
             setTimeout(() => window.dispatchEvent(new CustomEvent("hooda:open-notifications")), 60);
           } },
         { icon: BookOpen, label: "Livros", color: "#E94B8A", action: () => { onClose(); navigate({ to: "/livros" as any }); } },
-        { icon: BarChart2, label: "Hooda Studio", color: "#F26B3A", action: () => { onClose(); navigate({ to: "/studio" as any }); } },
+        { icon: BarChart2, label: "Baya Studio", color: "#F26B3A", action: () => { onClose(); navigate({ to: "/studio" as any }); } },
       ],
     },
     {
@@ -208,7 +208,7 @@ export function UserDrawer({ userId: _userId, onClose }: UserDrawerProps) {
       title: "Ajuda & Info",
       items: [
         { icon: HelpCircle, label: "Ajuda & Suporte", color: "#6b7280", action: () => { onClose(); navigate({ to: "/definicoes", search: { panel: "help" } as any }); } },
-        { icon: Info, label: "Sobre a Hooda", color: "#6b7280", action: () => { onClose(); navigate({ to: "/definicoes", search: { panel: "about" } as any }); } },
+        { icon: Info, label: "Sobre a Baya", color: "#6b7280", action: () => { onClose(); navigate({ to: "/definicoes", search: { panel: "about" } as any }); } },
       ],
     },
   ];

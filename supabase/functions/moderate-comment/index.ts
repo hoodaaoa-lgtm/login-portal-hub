@@ -7,7 +7,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 // Recebe { commentId }, busca o texto do comentário e pede a um modelo de
 // linguagem para o classificar na mesma taxonomia usada em posts (safe,
 // sensitive, nudity, violence, harassment, spam, scam, illegal). Comentários
-// na Hooda não têm media própria, por isso a análise é só de texto.
+// na Baya não têm media própria, por isso a análise é só de texto.
 //
 // Corre em segundo plano (fire-and-forget a partir do cliente, igual ao
 // moderate-content) — nunca bloqueia o envio do comentário.

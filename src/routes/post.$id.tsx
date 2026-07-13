@@ -6,7 +6,7 @@ import { UniversalPostCard, normalizePost } from "@/components/UniversalPostCard
 import { Loader, X } from "lucide-react";
 
 export const Route = createFileRoute("/post/$id")({
-  head: () => ({ meta: [{ title: "Hooda" }] }),
+  head: () => ({ meta: [{ title: "Baya" }] }),
   component: SinglePostPage,
 });
 

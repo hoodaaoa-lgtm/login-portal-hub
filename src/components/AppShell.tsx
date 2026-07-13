@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { t } from "@/lib/useT";
 import { Link, useRouterState, useNavigate, useRouter } from "@tanstack/react-router";
-import { HoodaLogo } from "@/components/HoodaLogo";
+import { BayaLogo } from "@/components/BayaLogo";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useAvatar } from "@/contexts/AvatarContext";
 import { useBadges } from "@/contexts/BadgeContext";
@@ -95,7 +95,7 @@ export function SideNav() {
       }}>
       {/* Logo */}
       <div className="px-5 pt-5 pb-3">
-        <HoodaLogo size="sm" animate={false} />
+        <BayaLogo size="sm" animate={false} />
       </div>
 
       {/* Nav links */}

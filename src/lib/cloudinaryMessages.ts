@@ -1,7 +1,7 @@
 /**
  * Cloudinary — conta DEDICADA às mensagens (chat).
  *
- * A Hooda usa uma conta Cloudinary por área (feed, mensagens, perfil,
+ * A Baya usa uma conta Cloudinary por área (feed, mensagens, perfil,
  * livros) para multiplicar o espaço grátis disponível — cada conta
  * Cloudinary free tem o seu próprio limite, então em vez de todas as
  * áreas partilharem uma única conta, cada uma tem a sua.

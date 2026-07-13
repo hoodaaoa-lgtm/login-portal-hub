@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { HoodaLogo } from "@/components/HoodaLogo";
+import { BayaLogo } from "@/components/BayaLogo";
 import { AuthLeftPanel } from "@/components/AuthLeftPanel";
 import { InstallPwaButton } from "@/components/InstallPwaButton";
 import {
@@ -11,8 +11,8 @@ import {
 export const Route = createFileRoute("/")(({
   head: () => ({
     meta: [
-      { title: "Hooda" },
-      { name: "description", content: "Hooda é a rede social para partilhares vídeos e fotos, conversares com amigos e descobrires conteúdo novo todos os dias. Cria a tua conta grátis." },
+      { title: "Baya" },
+      { name: "description", content: "Baya é a rede social para partilhares vídeos e fotos, conversares com amigos e descobrires conteúdo novo todos os dias. Cria a tua conta grátis." },
     ],
   }),
   component: LoginPage,
@@ -83,7 +83,7 @@ function LoginPage() {
       >
         {/* Mobile logo */}
         <div className="lg:hidden mb-4">
-          <HoodaLogo size="xl" animate={true} />
+          <BayaLogo size="xl" animate={true} />
         </div>
 
         {/* Instalar app — funciona mesmo sem sessão, é o que torna o link

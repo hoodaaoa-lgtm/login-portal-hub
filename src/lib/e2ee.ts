@@ -1,5 +1,5 @@
 /**
- * e2ee.ts — Encriptação ponta-a-ponta para mensagens diretas (DM) da Hooda
+ * e2ee.ts — Encriptação ponta-a-ponta para mensagens diretas (DM) da Baya
  *
  * ARQUITECTURA:
  * ─────────────

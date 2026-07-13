@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { uploadBookCover, uploadBookFile } from "@/lib/cloudinaryBooks";
 
 export const Route = createFileRoute("/livros")({
-  head: () => ({ meta: [{ title: "Hooda" }] }),
+  head: () => ({ meta: [{ title: "Baya" }] }),
   component: LivrosPage,
 });
 

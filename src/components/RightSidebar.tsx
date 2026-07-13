@@ -2,9 +2,9 @@ import React, { useEffect, useRef, useState } from "react";
 import { RefreshCw, Users, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "@tanstack/react-router";
-import { getHoodaOfficialId } from "@/lib/hoodaOfficial";
+import { getBayaOfficialId } from "@/lib/hoodaOfficial";
 import { useFollowState } from "@/hooks/useSocialSystem";
-import { HoodaTipCard } from "@/components/HoodaTipCard";
+import { BayaTipCard } from "@/components/BayaTipCard";
 import { optimizeAvatar } from "@/lib/imageOptimize";
 
 const ACCENT = "#5B3FCF";
@@ -28,8 +28,8 @@ export function RightSidebar() {
     const { data: follows } = await supabase.from("follows")
       .select("following_id").eq("follower_id", session.user.id);
     const followingIds = (follows ?? []).map((f: { following_id: string | null }) => f.following_id).filter(Boolean);
-    const officialId = await getHoodaOfficialId();
-    // A conta "Hooda Oficial" nunca aparece como sugestão de "seguir".
+    const officialId = await getBayaOfficialId();
+    // A conta "Baya Oficial" nunca aparece como sugestão de "seguir".
     const excludeIds = [session.user.id, ...followingIds, ...(officialId ? [officialId] : [])];
     const { data } = await supabase.from("profiles")
       .select("id, username, full_name, avatar_url")
@@ -50,7 +50,7 @@ export function RightSidebar() {
           className="w-full flex items-center gap-3 h-11 pl-11 pr-4 rounded-full text-left transition relative hover:border-[#5B3FCF]"
           style={{ background: "var(--s1)", border: "1px solid transparent" }}>
           <Search className="h-4 w-4 absolute left-4" style={{ color: "var(--text-muted)" }} />
-          <span className="text-sm" style={{ color: "var(--text-muted)" }}>Pesquisar no Hooda</span>
+          <span className="text-sm" style={{ color: "var(--text-muted)" }}>Pesquisar no Baya</span>
         </button>
       </div>
 
@@ -97,7 +97,7 @@ export function RightSidebar() {
         )}
       </div>
 
-      <HoodaTipCard variant="sidebar" />
+      <BayaTipCard variant="sidebar" />
 
       <div className="flex items-center justify-center flex-wrap gap-x-1.5 text-[11px]" style={{ color: "var(--text-muted)" }}>
         <a href="/uso" target="_blank" rel="noopener noreferrer" className="hover:underline">Termos</a>
@@ -106,7 +106,7 @@ export function RightSidebar() {
         <span>·</span>
         <a href="/acessibilidade" target="_blank" rel="noopener noreferrer" className="hover:underline">Acessibilidade</a>
       </div>
-      <p className="text-[11px] text-center" style={{ color: "var(--text-muted)" }}>© 2026 Hooda</p>
+      <p className="text-[11px] text-center" style={{ color: "var(--text-muted)" }}>© 2026 Baya</p>
     </div>
   );
 }

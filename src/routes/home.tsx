@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { HoodaLogo } from "@/components/HoodaLogo";
+import { BayaLogo } from "@/components/BayaLogo";
 import { BottomNav, SideNav, PageWrapper, FeedLayout } from "@/components/AppShell";
 import { RightSidebar } from "@/components/RightSidebar";
 import { useAvatar } from "@/contexts/AvatarContext";
@@ -10,7 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { ProfileAvatarLink } from "@/components/ProfileAvatarLink";
 import { PostCommentsModal } from "@/components/PostCommentsModal";
 import { UniversalPostCard } from "@/components/UniversalPostCard";
-import { HoodaTipCard } from "@/components/HoodaTipCard";
+import { BayaTipCard } from "@/components/BayaTipCard";
 import { registerVideo, notifyVideoPlaying, pauseAllVideos } from "@/lib/mediaManager";
 import { useNetworkInfo } from "@/hooks/useNetworkInfo";
 import { fetchPostComments, sendPostComment, replyToPostComment, toggleCommentLike, notifyMentions } from "@/lib/comments";
@@ -45,7 +45,7 @@ import { getSeenPostIds, addSeenPostIds, getSeenVideoIds, addSeenVideoIds, diver
 function t(key: string, opts?: Record<string, unknown>) { return i18n.t(key, opts) as string; }
 
 export const Route = createFileRoute("/home")({
-  head: () => ({ meta: [{ title: "Hooda" }] }),
+  head: () => ({ meta: [{ title: "Baya" }] }),
   component: HomePage,
 });
 
@@ -855,7 +855,7 @@ function HomePage() {
       <header className="sticky top-0 z-30 border-b hooda-sticky-header"
         style={{ background: "var(--s0)", borderColor: "var(--border-subtle)", backdropFilter: "blur(20px)" }}>
         <div className="mx-auto px-4 h-14 flex items-center justify-between max-w-full">
-          <HoodaLogo size="sm" className="lg:hidden" />
+          <BayaLogo size="sm" className="lg:hidden" />
           <span className="hidden lg:block" />
           <button className="lg:hidden p-2 hover:bg-[var(--s2)] rounded-full text-[var(--text-secondary)]"
             onClick={() => navigate({ to: "/explorar" })}>
@@ -908,7 +908,7 @@ function HomePage() {
                   aparece fixa na sidebar direita (RightSidebar). */}
               {idx === 7 && (
                 <div className="xl:hidden">
-                  <HoodaTipCard variant="feed" />
+                  <BayaTipCard variant="feed" />
                 </div>
               )}
               {/* Após o 12º post */}

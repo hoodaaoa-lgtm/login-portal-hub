@@ -3,7 +3,7 @@ import { ChevronLeft, FileText, AlertTriangle, UserX, Scale, Mail } from "lucide
 import type { LucideIcon } from "lucide-react";
 
 export const Route = createFileRoute("/uso")({
-  head: () => ({ meta: [{ title: "Hooda" }] }),
+  head: () => ({ meta: [{ title: "Baya" }] }),
   component: UsoPage,
 });
 
@@ -44,7 +44,7 @@ function UsoPage() {
         </div>
 
         <Section icon={FileText} title="Aceitação dos termos">
-          <p>Ao criares uma conta na Hooda, concordas com estes Termos de Uso e com a nossa Política de Privacidade. Se não concordas, não deves usar a plataforma.</p>
+          <p>Ao criares uma conta na Baya, concordas com estes Termos de Uso e com a nossa Política de Privacidade. Se não concordas, não deves usar a plataforma.</p>
         </Section>
 
         <Section icon={UserX} title="Regras da comunidade">
@@ -52,11 +52,11 @@ function UsoPage() {
         </Section>
 
         <Section icon={AlertTriangle} title="Responsabilidade do utilizador">
-          <p>És responsável pelo conteúdo que publicas e pela segurança da tua conta. A Hooda não se responsabiliza por danos resultantes do uso indevido da plataforma por terceiros ou pela perda de acesso devido a partilha de credenciais.</p>
+          <p>És responsável pelo conteúdo que publicas e pela segurança da tua conta. A Baya não se responsabiliza por danos resultantes do uso indevido da plataforma por terceiros ou pela perda de acesso devido a partilha de credenciais.</p>
         </Section>
 
         <Section icon={Scale} title="Propriedade do conteúdo">
-          <p>Mantens todos os direitos sobre o conteúdo que publicas. Ao publicares na Hooda, concedes-nos uma licença não exclusiva para exibir e distribuir esse conteúdo dentro da plataforma.</p>
+          <p>Mantens todos os direitos sobre o conteúdo que publicas. Ao publicares na Baya, concedes-nos uma licença não exclusiva para exibir e distribuir esse conteúdo dentro da plataforma.</p>
         </Section>
 
         <Section icon={FileText} title="Alterações aos termos">

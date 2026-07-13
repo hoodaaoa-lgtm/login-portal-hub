@@ -24,7 +24,7 @@ import {
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/u/$username")({
-  head: () => ({ meta: [{ title: "Hooda" }] }),
+  head: () => ({ meta: [{ title: "Baya" }] }),
   component: UserProfilePage,
 });
 
@@ -116,7 +116,7 @@ function PostShareSheet({ postId, postText, authorName, onClose }: { postId: str
           {typeof navigator.share === "function" && (
             <button
               onClick={() => {
-                navigator.share({ title: `Publicação de ${authorName}`, text: postText || "Vê esta publicação na Hooda", url }).catch(() => {});
+                navigator.share({ title: `Publicação de ${authorName}`, text: postText || "Vê esta publicação na Baya", url }).catch(() => {});
               }}
               className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-semibold transition active:scale-[0.98] border"
               style={{ borderColor: "var(--border-default)", color: "var(--text-primary)" }}>
@@ -623,7 +623,7 @@ function UserProfilePage() {
         <div className="flex flex-col items-center justify-center py-32 gap-4 text-center px-8">
           <p className="text-5xl">🔍</p>
           <p className="font-bold text-lg" style={{color:"var(--text-primary)"}}>Utilizador não encontrado</p>
-          <p className="text-sm" style={{color:"var(--text-muted)"}}>@{username} não existe na Hooda</p>
+          <p className="text-sm" style={{color:"var(--text-muted)"}}>@{username} não existe na Baya</p>
           <button onClick={()=>navigate({to:"/home"})}
             className="mt-2 px-6 py-2.5 rounded-full text-white font-bold text-sm"
             style={{background:P}}>

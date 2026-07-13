@@ -11,14 +11,13 @@ const sizeMap = { sm: "text-3xl", md: "text-5xl", lg: "text-7xl", xl: "text-8xl 
 const suffixSizeMap = { sm: "text-[11px]", md: "text-[14px]", lg: "text-[18px]", xl: "text-[20px]" };
 
 const letters = [
-  { char: "H", color: "#5B3FCF" },
-  { char: "o", color: "#F26B3A" },
-  { char: "o", color: "#1FAFA6" },
-  { char: "d", color: "#6BA547" },
-  { char: "a", color: "#E94B8A" },
+  { char: "B", color: "#E94B8A" },
+  { char: "a", color: "#F2874B" },
+  { char: "y", color: "#1FAFA6" },
+  { char: "a", color: "#7F5AF0" },
 ];
 
-export function HoodaLogo({ className = "", size = "lg", animate = true }: Props) {
+export function BayaLogo({ className = "", size = "lg", animate = true }: Props) {
   const [visible, setVisible] = useState(!animate);
   const { suffix, loading } = useCountry();
 
@@ -31,7 +30,7 @@ export function HoodaLogo({ className = "", size = "lg", animate = true }: Props
 
   return (
     <span
-      aria-label={suffix ? `hooda ${suffix}` : "hooda"}
+      aria-label={suffix ? `baya ${suffix}` : "baya"}
       className={`inline-flex items-end gap-1 font-extrabold tracking-tight leading-none ${sizeMap[size]} ${className}`}
       style={{ fontFamily: '"Nunito", "Quicksand", system-ui, sans-serif' }}
     >
@@ -60,7 +59,7 @@ export function HoodaLogo({ className = "", size = "lg", animate = true }: Props
           className={`${suffixSizeMap[size]} font-black uppercase tracking-widest mb-[0.15em]`}
           style={{
             color: "#ffffff",
-            background: "linear-gradient(135deg,#5B3FCF,#E94B8A)",
+            background: "linear-gradient(135deg,#E94B8A,#7F5AF0)",
             borderRadius: "5px",
             padding: "1px 5px 1px 4px",
             lineHeight: 1,

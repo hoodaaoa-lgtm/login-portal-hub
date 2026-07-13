@@ -1,12 +1,12 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { HoodaLogo } from "@/components/HoodaLogo";
+import { BayaLogo } from "@/components/BayaLogo";
 import { Loader } from "lucide-react";
 
 // Rota-ponte: o Studio (hooda-creator-hub) abre este URL com os tokens de
 // sessão já existentes (mesmo projeto Supabase dos dois). Aqui estabelecemos
-// essa sessão no Hooda e seguimos direto para a home — nunca mostra o
+// essa sessão no Baya e seguimos direto para a home — nunca mostra o
 // ecrã de login.
 export const Route = createFileRoute("/auth/bridge")({
   ssr: false,
@@ -46,11 +46,11 @@ function AuthBridge() {
   return (
     <div className="min-h-screen bg-white flex items-center justify-center px-4">
       <div className="flex flex-col items-center gap-5">
-        <HoodaLogo size="md" animate />
+        <BayaLogo size="md" animate />
         {failed ? (
           <>
             <p className="text-sm text-neutral-400 text-center max-w-xs">
-              Não foi possível entrar automaticamente. Tenta abrir o Hooda outra vez a partir do Studio.
+              Não foi possível entrar automaticamente. Tenta abrir o Baya outra vez a partir do Studio.
             </p>
             <button
               onClick={() => navigate({ to: "/", replace: true })}
@@ -63,7 +63,7 @@ function AuthBridge() {
         ) : (
           <div className="flex items-center gap-2 text-sm text-neutral-400">
             <Loader className="h-4 w-4 animate-spin" />
-            A entrar no Hooda…
+            A entrar no Baya…
           </div>
         )}
       </div>

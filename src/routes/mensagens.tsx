@@ -35,14 +35,14 @@ import {
   Lock, Unlock, Maximize2,
 } from "lucide-react";
 import MediaEditor, { MediaEditState, DEFAULT_EDIT, EditedMediaDisplay, EDITOR_FILTERS } from "@/components/MediaEditor";
-import { HoodaPlayer } from "@/components/HoodaPlayer";
+import { BayaPlayer } from "@/components/BayaPlayer";
 import { FeedVideoPlayer } from "@/components/FeedVideoPlayer";
 import { extractUrl } from "@/lib/linkPreview";
 import { LinkPreview as SharedLinkPreview } from "@/components/LinkPreview";
 import { getCloudinaryPosterFromUrl } from "@/lib/cloudinary";
 import { uploadMessageImage, uploadMessageMedia } from "@/lib/cloudinaryMessages";
 import { optimizeImage, optimizeAvatar, optimizePostPhoto, optimizeThumbnail } from "@/lib/imageOptimize";
-import { getHoodaOfficialId } from "@/lib/hoodaOfficial";
+import { getBayaOfficialId } from "@/lib/hoodaOfficial";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { fetchMyOfficialMessages, markOfficialMessageRead, type UserOfficialMessage } from "@/lib/officialMessages";
 import { OfficialMessageListItem, OfficialMessageDetail } from "@/components/OfficialMessageCard";
@@ -53,7 +53,7 @@ import { VerifiedBadge } from "@/components/VerifiedBadge";
 // ── Link Preview inteligente — lógica partilhada com o feed de publicações ──
 // Detecta o primeiro URL numa mensagem de texto e mostra uma prévia rica:
 // título, imagem, descrição e domínio — igual ao WhatsApp/Telegram. Se for
-// YouTube/vídeo direto/publicação Hooda, embeds um player mesmo na mensagem.
+// YouTube/vídeo direto/publicação Baya, embeds um player mesmo na mensagem.
 function LinkPreview({ url, isMe }: { url: string; isMe: boolean }) {
   return <SharedLinkPreview url={url} isMe={isMe} variant="message" />;
 }
@@ -276,7 +276,7 @@ function ComposerHighlightOverlay({ text }: { text: string }) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const Route = createFileRoute("/mensagens")({
-  head: () => ({ meta: [{ title: "Hooda" }] }),
+  head: () => ({ meta: [{ title: "Baya" }] }),
   component: MensagensPage,
 });
 
@@ -346,8 +346,8 @@ type Contact = Profile & {
   replyAllowed?: boolean;
 };
 
-// Cores da identidade visual da Hooda — usadas para colorir a palavra
-// "Hooda" letra a letra, igual ao logótipo (ver HoodaLogo.tsx).
+// Cores da identidade visual da Baya — usadas para colorir a palavra
+// "Baya" letra a letra, igual ao logótipo (ver BayaLogo.tsx).
 const HOODA_BRAND_LETTERS = [
   { char: "H", color: "#5B3FCF" },
   { char: "o", color: "#F26B3A" },
@@ -358,7 +358,7 @@ const HOODA_BRAND_LETTERS = [
 
 /**
  * Nome do remetente exibido ACIMA da bolha para mensagens da conta
- * oficial ("Hooda Oficial"): "Hooda" colorido letra a letra (identidade
+ * oficial ("Baya Oficial"): "Baya" colorido letra a letra (identidade
  * visual da marca), "Oficial" a roxo com peso forte, e o selo azul de
  * verificado ao lado. Nunca deve ser renderizado dentro da bolha.
  */
@@ -544,9 +544,9 @@ function AddContactModal({ myId, onClose, onAdd, existingContacts }: {
     setSearching(true);
     const clean = query.trim().replace(/^@/, "");
     try {
-      // A conta "Hooda Oficial" nunca pode ser encontrada/adicionada aqui —
+      // A conta "Baya Oficial" nunca pode ser encontrada/adicionada aqui —
       // só o admin, a partir do painel, inicia conversas com essa conta.
-      const officialId = await getHoodaOfficialId();
+      const officialId = await getBayaOfficialId();
 
       // Pesquisar por username OU full_name
       let q = db
@@ -2016,7 +2016,7 @@ function ChatMediaLightbox({ items, index, onIndexChange, onClose, onReact, cont
               <EditedMediaDisplay src={displayItem.mediaUrl!} type="video" edit={displayItem.editState} maxH={(typeof window !== "undefined" ? window.innerHeight : 600) * 0.7} />
             ) : (
               <div className="max-w-full w-full" style={{ maxHeight: "72vh" }}>
-                <HoodaPlayer src={displayItem.mediaUrl!} poster={getCloudinaryPosterFromUrl(displayItem.mediaUrl!) ?? undefined} autoPlay forceLoad rounded="rounded-xl" aspectRatio="auto" />
+                <BayaPlayer src={displayItem.mediaUrl!} poster={getCloudinaryPosterFromUrl(displayItem.mediaUrl!) ?? undefined} autoPlay forceLoad rounded="rounded-xl" aspectRatio="auto" />
               </div>
             )
           )}
@@ -2463,7 +2463,7 @@ function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit
 
         {/* Nome do remetente — SEMPRE acima da bolha, nunca dentro dela.
             Só aparece para mensagens recebidas (não minhas) da conta
-            oficial da Hooda, com destaque de cor e selo de verificado. */}
+            oficial da Baya, com destaque de cor e selo de verificado. */}
         {!isMe && contact.isOfficial && <OfficialSenderName />}
 
         {/* Bubble */}
@@ -4285,7 +4285,7 @@ function ChatPanel({ myId, contact, onBack, contacts }: {
           </p>
           <p className="text-[11px] text-white/70 flex items-center gap-1">
             {(contact as Contact).isOfficial
-              ? "Comunicação oficial da Hooda"
+              ? "Comunicação oficial da Baya"
               : presenceLabel
                 ? (<>
                     {contactTyping && <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#7CFFB2] animate-pulse" />}
@@ -4753,7 +4753,7 @@ function ChatPanel({ myId, contact, onBack, contacts }: {
         <div className="flex flex-col items-center justify-center px-4 py-4 shrink-0 border-t gap-1"
           style={{ background:"var(--s2)", borderColor:"var(--border-default)" }}>
           <p className="text-sm text-center font-bold flex items-center gap-1.5" style={{ color:"var(--text-primary)" }}>
-            <VerifiedBadge size={13} /> Esta é uma comunicação oficial da Hooda
+            <VerifiedBadge size={13} /> Esta é uma comunicação oficial da Baya
           </p>
           <p className="text-xs text-center" style={{ color:"var(--text-muted)" }}>
             Não é possível responder a esta conversa.
@@ -5302,14 +5302,14 @@ function MensagensPage() {
           .select("conversation_id,user_id")
           .in("conversation_id", convIds)
           .neq("user_id", uid),
-        // flags is_official/reply_allowed de cada conversa (mensagens oficiais da Hooda)
+        // flags is_official/reply_allowed de cada conversa (mensagens oficiais da Baya)
         db.from("conversations").select("id,is_official,reply_allowed").in("id", convIds),
         // última mensagem de TODAS as conversas de uma só vez
         db.from("messages")
           .select("id,conversation_id,content,created_at,sender_id,status,message_type,deleted_for_all,is_surprise")
           .in("conversation_id", convIds)
           .order("created_at", { ascending: false }),
-        // id da conta "Hooda Oficial" — nunca sobrepomos a identidade do próprio admin na sua caixa pessoal
+        // id da conta "Baya Oficial" — nunca sobrepomos a identidade do próprio admin na sua caixa pessoal
         db.rpc("get_hooda_official_id"),
       ]);
       const officialId: string | null = (officialIdResult as any)?.data ?? null;
@@ -5372,14 +5372,14 @@ function MensagensPage() {
 
         const lastMsg = lastMsgMap[convId];
         const meta = convMetaMap[convId];
-        // Só sobrepõe a identidade para "Hooda Oficial" do lado de quem RECEBE —
+        // Só sobrepõe a identidade para "Baya Oficial" do lado de quem RECEBE —
         // o próprio admin continua a ver o utilizador real na sua caixa pessoal.
         const isOfficial = !!meta?.is_official && uid !== officialId;
 
         (contactList as any[]).push({
           id: profile.id,
           username: isOfficial ? "hooda" : (profile.username || "?"),
-          full_name: isOfficial ? "Hooda Oficial" : profile.full_name,
+          full_name: isOfficial ? "Baya Oficial" : profile.full_name,
           avatar_url: isOfficial ? "/icons/icon-192.png" : profile.avatar_url,
           color: colorFor(profile.username || profile.id),
           is_online: isOfficial ? false : isOnlineNow(profile.is_online, profile.last_seen),
@@ -5550,7 +5550,7 @@ function MensagensPage() {
         const activeConvId = (window as any).__hoodalActiveConvId__;
         if (activeConvId === msg.conversation_id) return;
 
-        // Buscar perfil do remetente + saber se é uma conversa oficial da Hooda
+        // Buscar perfil do remetente + saber se é uma conversa oficial da Baya
         // (nesse caso nunca mostramos a identidade real de quem está por trás)
         const [{ data: profile }, { data: convMeta }] = await Promise.all([
           db.from("profiles").select("username,full_name,avatar_url").eq("id", msg.sender_id).single(),
@@ -5558,7 +5558,7 @@ function MensagensPage() {
         ]);
         const isOfficialMsg = !!convMeta?.is_official && msg.sender_id !== myId;
 
-        const name = isOfficialMsg ? "Hooda Oficial" : (profile?.full_name || profile?.username || "Alguém");
+        const name = isOfficialMsg ? "Baya Oficial" : (profile?.full_name || profile?.username || "Alguém");
         const avatarUrl = isOfficialMsg ? "/icons/icon-192.png" : profile?.avatar_url;
         const text = msg.content?.startsWith("e2ee:") ? "🔒 Mensagem"
           : msg.message_type === "image"  ? "📷 Imagem"

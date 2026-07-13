@@ -34,8 +34,8 @@ function messageFor(type: string, actor: string | null): { title: string; body: 
     case "video_new":     return { title: "Vídeo novo", body: `${name} publicou um vídeo novo`, icon };
     case "video_like":    return { title: "Gostaram do teu vídeo", body: `${name} gostou do teu vídeo`, icon };
     case "video_comment": return { title: "Novo comentário no vídeo", body: `${name} comentou o teu vídeo`, icon };
-    case "system":        return { title: "Hooda", body: "Tens uma notificação nova", icon };
-    default:              return { title: "Hooda", body: "Tens uma notificação nova", icon };
+    case "system":        return { title: "Baya", body: "Tens uma notificação nova", icon };
+    default:              return { title: "Baya", body: "Tens uma notificação nova", icon };
   }
 }
 

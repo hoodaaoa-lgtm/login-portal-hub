@@ -1,12 +1,12 @@
 /**
- * dataSaver — "Hooda Leve", modo de poupar dados.
+ * dataSaver — "Baya Leve", modo de poupar dados.
  *
  * Quando ativo, os vídeos do feed (Home, Perfil, Explorar, Canal) NÃO
  * carregam nem tocam sozinhos — mostram só a capa (poster) com um aviso
- * a dizer que o Hooda Leve está ativo, e só carregam quando o
+ * a dizer que o Baya Leve está ativo, e só carregam quando o
  * utilizador tocar de propósito em "Ver vídeo".
  *
- * Não afeta vídeo aberto diretamente (post individual, HoodaTV watch,
+ * Não afeta vídeo aberto diretamente (post individual, BayaTV watch,
  * modais) — usar forceLoad nesses casos, que já ignora este módulo.
  *
  * Preferência local ao aparelho (localStorage), igual ao padrão do

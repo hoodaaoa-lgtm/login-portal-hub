@@ -123,7 +123,7 @@ export function getCloudinaryRawUrl(mp4Url: string): string | null {
 
 /**
  * Deriva a URL de miniatura (thumbnail) a partir de QUALQUER URL de
- * reprodução Cloudinary já existente — usada para gerar o "poster" do HoodaPlayer
+ * reprodução Cloudinary já existente — usada para gerar o "poster" do BayaPlayer
  * quando não há uma coluna dedicada de thumbnail (ex.: vídeos de chat),
  * para que o fundo desfocado (em vez de barra preta) tenha uma imagem
  * para desfocar. Devolve null se o URL não for do Cloudinary.
@@ -135,7 +135,7 @@ export function getCloudinaryPosterFromUrl(mp4Url: string, timeOffset = "0"): st
   if (!match) return null;
   const [, cloud, publicId] = match;
   // w_1280,c_limit (sem h_/c_fill): mantém a proporção REAL do vídeo em
-  // vez de forçar sempre 16:9 — importante porque o HoodaPlayer usa as
+  // vez de forçar sempre 16:9 — importante porque o BayaPlayer usa as
   // dimensões desta imagem para adivinhar a proporção da caixa antes do
   // vídeo carregar metadata (evita o "salto" de tamanho em vídeos
   // verticais, que antes nasciam numa caixa 16:9 errada).

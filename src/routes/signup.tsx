@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { HoodaLogo } from "@/components/HoodaLogo";
+import { BayaLogo } from "@/components/BayaLogo";
 import { AuthLeftPanel } from "@/components/AuthLeftPanel";
 import {
   Field, SpinIcon, MailIcon, LockIcon, UserIcon, AtIcon, CalendarIcon, PersonAddIcon,
@@ -11,8 +11,8 @@ import {
 export const Route = createFileRoute("/signup")({
   head: () => ({
     meta: [
-      { title: "Hooda" },
-      { name: "description", content: "Cria a tua conta Hooda grátis e começa a partilhar vídeos e fotos, e a conversar com amigos." },
+      { title: "Baya" },
+      { name: "description", content: "Cria a tua conta Baya grátis e começa a partilhar vídeos e fotos, e a conversar com amigos." },
     ],
   }),
   component: SignupPage,
@@ -225,7 +225,7 @@ function SignupPage() {
       >
         {/* Mobile logo */}
         <div className="lg:hidden mb-8">
-          <HoodaLogo size="xl" animate={true} />
+          <BayaLogo size="xl" animate={true} />
         </div>
 
         {/* ── ECRÃ DE CONFIRMAÇÃO ── */}

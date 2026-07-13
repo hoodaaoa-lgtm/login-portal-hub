@@ -1,7 +1,7 @@
 // ── Link Preview inteligente — partilhado entre Mensagens e Publicações ──
 // Detecta o primeiro URL num texto e prepara os dados para uma prévia rica:
 // título, imagem, descrição e domínio — igual ao WhatsApp/Telegram/Twitter.
-// Se for YouTube/vídeo direto/publicação Hooda, os dados para embutir o
+// Se for YouTube/vídeo direto/publicação Baya, os dados para embutir o
 // player vêm daqui também. Esta lógica nasceu em mensagens.tsx e foi
 // extraída para aqui para ser reutilizada também no feed de publicações.
 
@@ -51,12 +51,12 @@ export function getYouTubeId(url: string): string | null {
   }
 }
 
-/** Deteta um link para uma publicação/vídeo da própria Hooda (ex: /post/<id>),
+/** Deteta um link para uma publicação/vídeo da própria Baya (ex: /post/<id>),
  * seja qual for o domínio (produção, preview, localhost) — basta o caminho
  * bater certo. Isto permite ir buscar os dados reais diretamente à base de
  * dados (mais rápido e fiável que uma API externa) e reproduzir o vídeo
  * mesmo dentro da prévia. */
-export function getHoodaPostId(url: string): string | null {
+export function getBayaPostId(url: string): string | null {
   try {
     const u = new URL(url);
     const m = u.pathname.match(/^\/post\/([0-9a-fA-F-]{36})\/?$/);
@@ -66,7 +66,7 @@ export function getHoodaPostId(url: string): string | null {
   }
 }
 
-export interface HoodaPostPreview {
+export interface BayaPostPreview {
   id: string;
   content: string | null;
   photo_url: string | null;
@@ -77,10 +77,10 @@ export interface HoodaPostPreview {
   author_color: string | null;
 }
 
-const hoodaPostCache = new Map<string, HoodaPostPreview | null>();
+const bayaPostCache = new Map<string, BayaPostPreview | null>();
 
-export async function fetchHoodaPost(id: string): Promise<HoodaPostPreview | null> {
-  if (hoodaPostCache.has(id)) return hoodaPostCache.get(id)!;
+export async function fetchBayaPost(id: string): Promise<BayaPostPreview | null> {
+  if (bayaPostCache.has(id)) return bayaPostCache.get(id)!;
   try {
     const { data, error } = await supabase
       .from("posts")
@@ -88,10 +88,10 @@ export async function fetchHoodaPost(id: string): Promise<HoodaPostPreview | nul
       .eq("id", id)
       .maybeSingle();
     if (error || !data) throw error ?? new Error("not found");
-    hoodaPostCache.set(id, data as HoodaPostPreview);
-    return data as HoodaPostPreview;
+    bayaPostCache.set(id, data as BayaPostPreview);
+    return data as BayaPostPreview;
   } catch {
-    hoodaPostCache.set(id, null);
+    bayaPostCache.set(id, null);
     return null;
   }
 }

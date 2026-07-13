@@ -1,7 +1,7 @@
 /**
  * Otimização de imagens — poupança de dados
  *
- * Todas as imagens do Hooda (avatares, capas, fotos de posts) são
+ * Todas as imagens do Baya (avatares, capas, fotos de posts) são
  * hospedadas no Cloudinary. Por defeito, quando se guarda `secure_url`
  * no upload, essa URL aponta para a imagem ORIGINAL — se o utilizador
  * enviou uma foto de 12MP, é isso que é descarregado mesmo que ela

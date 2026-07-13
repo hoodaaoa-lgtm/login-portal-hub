@@ -15,7 +15,7 @@ import { UniversalPostCard, normalizePost } from "@/components/UniversalPostCard
 import { UniversalSkeleton } from "@/components/Skeletons";
 
 export const Route = createFileRoute("/studio")({
-  head: () => ({ meta: [{ title: "Hooda Studio" }] }),
+  head: () => ({ meta: [{ title: "Baya Studio" }] }),
   component: StudioPage,
 });
 
@@ -84,7 +84,7 @@ function StudioPage() {
           <span className="text-xs font-semibold">Voltar</span>
         </button>
         <span className="px-2 mb-8 font-black text-xl tracking-tight" style={{ color: "var(--text-primary)" }}>
-          Hooda <span style={{ color: P }}>Studio</span>
+          Baya <span style={{ color: P }}>Studio</span>
         </span>
         <nav className="flex flex-col gap-1">
           {navItems.map(({ k, label, icon: Icon }) => {
@@ -115,7 +115,7 @@ function StudioPage() {
             <ArrowLeft className="h-4 w-4" />
           </button>
           <span className="font-bold text-base shrink-0" style={{ color: "var(--text-primary)" }}>
-            Hooda <span style={{ color: P }}>Studio</span>
+            Baya <span style={{ color: P }}>Studio</span>
           </span>
           <div className="flex-1" />
           <div className="flex gap-1 p-1 rounded-full" style={{ background: "var(--s2)" }}>

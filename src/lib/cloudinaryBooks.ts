@@ -1,7 +1,7 @@
 /**
  * Cloudinary — conta DEDICADA aos livros (capas + ficheiros raw
  * PDF/EPUB/DOCX). Ver nota em cloudinaryMessages.ts sobre porque cada
- * área da Hooda usa a sua própria conta Cloudinary.
+ * área da Baya usa a sua própria conta Cloudinary.
  */
 
 const BOOKS_CLOUD_NAME = "cfve4eo1";

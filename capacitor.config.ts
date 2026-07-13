@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'ao.hooda.app',
-  appName: 'Hooda',
+  appName: 'Baya',
   webDir: 'dist',
   server: {
     // App carrega o site já publicado (mesma abordagem de um PWA embrulhado)

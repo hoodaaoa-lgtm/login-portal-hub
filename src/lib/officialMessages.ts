@@ -15,7 +15,7 @@ export type OfficialAudience = "all" | "new_users" | "not_installed";
 export const OFFICIAL_CATEGORY_META: Record<OfficialCategory, { label: string; Icon: LucideIcon; color: string }> = {
   INSTALL_APP: { label: "Instalar App", Icon: Smartphone, color: "#5B3FCF" },
   UPDATES: { label: "Atualizações", Icon: Rocket, color: "#1FAFA6" },
-  TIPS: { label: "Dicas da Hooda", Icon: Lightbulb, color: "#FFC93C" },
+  TIPS: { label: "Dicas da Baya", Icon: Lightbulb, color: "#FFC93C" },
 };
 
 export interface OfficialMessage {

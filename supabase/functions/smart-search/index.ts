@@ -48,7 +48,7 @@ serve(async (req) => {
     const list = Array.isArray(candidates) ? candidates.slice(0, 60) : [];
 
     if (!q) return json({ summary: "", ranked: [] });
-    if (list.length === 0) return json({ summary: "Ainda não há nada sobre isso na Hooda.", ranked: [] });
+    if (list.length === 0) return json({ summary: "Ainda não há nada sobre isso na Baya.", ranked: [] });
 
     // Cada candidato entra com um snippet curto — mantém o pedido leve e barato.
     const catalog = list
@@ -56,7 +56,7 @@ serve(async (req) => {
       .join("\n");
 
     const systemPrompt =
-      "És o motor de pesquisa inteligente da Hooda, uma rede social. Recebes o termo que o " +
+      "És o motor de pesquisa inteligente da Baya, uma rede social. Recebes o termo que o " +
       "utilizador procurou e uma lista numerada de conteúdos candidatos (vídeos e publicações), " +
       "cada um com um pequeno resumo do texto. A tua tarefa:\n" +
       "1. Perceber a INTENÇÃO da pesquisa — considera sinónimos, temas relacionados, erros de " +

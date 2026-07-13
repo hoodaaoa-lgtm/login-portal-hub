@@ -73,7 +73,7 @@ export function WelcomeInstallPrompt({ userId }: { userId: string | null }) {
             <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3" style={{ background: ACCENT }}>
               <Sparkles className="h-6 w-6 text-white" />
             </div>
-            <p className="font-extrabold text-[17px] text-black mb-1">Bem-vindo à Hooda! 🎉</p>
+            <p className="font-extrabold text-[17px] text-black mb-1">Bem-vindo à Baya! 🎉</p>
             <p className="text-[13px] text-neutral-500 leading-snug mb-4">
               Instala a app e ativa as notificações para nunca perderes uma mensagem, like ou acompanhante novo — mesmo com o telemóvel fechado.
             </p>

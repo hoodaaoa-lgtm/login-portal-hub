@@ -88,7 +88,7 @@
     "support": "Support",
     "help": "Help",
     "help_desc": "Frequently asked questions",
-    "about": "About Hooda",
+    "about": "About Baya",
     "about_desc": "Version and legal info",
     "msg_privacy": "Message Privacy",
     "msg_privacy_desc": "Who can send you direct messages?",
@@ -121,7 +121,7 @@
     "no_channels": "No channels available yet.",
     "follow": "+ Follow",
     "following_btn": "Following ✓",
-    "creators": "Discover Hooda creators",
+    "creators": "Discover Baya creators",
     "subscribers": "subscribers",
     "subscribe": "Subscribe",
     "subscribed": "Subscribed",
@@ -180,7 +180,7 @@
     "suggested": "Suggested"
   },
   "studio": {
-    "title": "Hooda Studio",
+    "title": "Baya Studio",
     "dashboard": "Dashboard",
     "content": "Content",
     "upload": "Upload video",

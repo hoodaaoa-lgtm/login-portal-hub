@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { FeedVideoPlayer } from "@/components/FeedVideoPlayer";
 import {
-  getYouTubeId, getHoodaPostId, isDirectVideo, fetchOgData, fetchHoodaPost,
-  type OgData, type HoodaPostPreview,
+  getYouTubeId, getBayaPostId, isDirectVideo, fetchOgData, fetchBayaPost,
+  type OgData, type BayaPostPreview,
 } from "@/lib/linkPreview";
 
 /**
@@ -15,19 +15,19 @@ export function LinkPreview({ url, isMe = false, variant = "post" }: { url: stri
   const navigate = useNavigate();
   const ytId = getYouTubeId(url);
   const isDirect = isDirectVideo(url);
-  const hoodaPostId = getHoodaPostId(url);
+  const bayaPostId = getBayaPostId(url);
   const [og, setOg] = useState<OgData | null | "loading">("loading");
-  const [hoodaPost, setHoodaPost] = useState<HoodaPostPreview | null | "loading">("loading");
+  const [bayaPost, setBayaPost] = useState<BayaPostPreview | null | "loading">("loading");
 
   useEffect(() => {
-    if (ytId || isDirect || hoodaPostId) { setOg(null); return; }
+    if (ytId || isDirect || bayaPostId) { setOg(null); return; }
     fetchOgData(url).then(setOg);
-  }, [url, ytId, isDirect, hoodaPostId]);
+  }, [url, ytId, isDirect, bayaPostId]);
 
   useEffect(() => {
-    if (!hoodaPostId) { setHoodaPost(null); return; }
-    fetchHoodaPost(hoodaPostId).then(setHoodaPost);
-  }, [hoodaPostId]);
+    if (!bayaPostId) { setBayaPost(null); return; }
+    fetchBayaPost(bayaPostId).then(setBayaPost);
+  }, [bayaPostId]);
 
   const border = variant === "message" && isMe ? "rgba(255,255,255,0.15)" : "var(--border-subtle)";
   const bg = variant === "message" && isMe ? "rgba(0,0,0,0.2)" : "var(--s2)";
@@ -35,33 +35,33 @@ export function LinkPreview({ url, isMe = false, variant = "post" }: { url: stri
   const mutedColor = variant === "message" && isMe ? "rgba(255,255,255,0.6)" : "var(--text-muted)";
   const marginTop = variant === "message" ? "mt-2" : "mt-3";
 
-  if (hoodaPostId) {
-    if (hoodaPost === "loading") {
+  if (bayaPostId) {
+    if (bayaPost === "loading") {
       return (
         <div className={`${marginTop} rounded-xl overflow-hidden animate-pulse`} style={{ background: bg, border: `1px solid ${border}`, height: 96 }} />
       );
     }
-    if (!hoodaPost) return null;
-    const img = hoodaPost.photo_url || hoodaPost.photos?.[0] || null;
+    if (!bayaPost) return null;
+    const img = bayaPost.photo_url || bayaPost.photos?.[0] || null;
     const mediaMaxH = variant === "message" ? 140 : 256;
     return (
       <div className={`${marginTop} rounded-xl overflow-hidden`} style={{ border: `1px solid ${border}`, maxWidth: variant === "message" ? 220 : undefined }}>
-        {hoodaPost.video_url ? (
+        {bayaPost.video_url ? (
           <div style={{ maxHeight: mediaMaxH, overflow: "hidden" }}>
-            <FeedVideoPlayer src={hoodaPost.video_url} rounded="rounded-none" />
+            <FeedVideoPlayer src={bayaPost.video_url} rounded="rounded-none" />
           </div>
         ) : img ? (
           <img src={img} alt="" className="w-full object-cover" style={{ maxHeight: mediaMaxH }}
             onError={e => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
         ) : null}
-        <button onClick={() => navigate({ to: "/post/$id", params: { id: hoodaPostId } })}
+        <button onClick={() => navigate({ to: "/post/$id", params: { id: bayaPostId } })}
           className="w-full text-left p-2.5" style={{ background: bg }}>
           <p className="text-[10px] font-semibold uppercase tracking-wide truncate" style={{ color: mutedColor }}>
-            Hooda · @{hoodaPost.author_username}
+            Baya · @{bayaPost.author_username}
           </p>
-          {hoodaPost.content && (
+          {bayaPost.content && (
             <p className="text-xs font-medium leading-snug line-clamp-2 mt-0.5" style={{ color: textColor }}>
-              {hoodaPost.content}
+              {bayaPost.content}
             </p>
           )}
         </button>

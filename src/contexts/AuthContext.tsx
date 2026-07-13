@@ -41,7 +41,7 @@ async function markOffline() {
  * termina a sessão. Usar SEMPRE isto em vez de supabase.auth.signOut()
  * diretamente nos ecrãs (definições, perfil, studio, etc.).
  */
-export async function signOutHooda() {
+export async function signOutBaya() {
   await markOffline();
   await supabase.auth.signOut();
 }

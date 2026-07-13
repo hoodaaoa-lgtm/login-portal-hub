@@ -1,4 +1,4 @@
-import { HoodaLogo } from "@/components/HoodaLogo";
+import { BayaLogo } from "@/components/BayaLogo";
 import womanPhonePhoto from "@/assets/auth/woman-phone.webp";
 import manBeaniePhoto from "@/assets/auth/man-beanie.webp";
 import womanCurlyPhoto from "@/assets/auth/woman-curly.webp";
@@ -35,7 +35,7 @@ export function AuthLeftPanel() {
 
         {/* Logo top-left */}
         <div>
-          <HoodaLogo size="sm" animate={false} />
+          <BayaLogo size="sm" animate={false} />
         </div>
 
         {/* Headline + subtext */}
@@ -177,7 +177,7 @@ export function AuthLeftPanel() {
         </div>
 
         {/* Bottom copyright */}
-        <p className="text-[11px] text-neutral-400">© 2026 Hooda · Todos os direitos reservados</p>
+        <p className="text-[11px] text-neutral-400">© 2026 Baya · Todos os direitos reservados</p>
       </div>
     </div>
   );

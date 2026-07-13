@@ -17,7 +17,7 @@ const resources = {
       "nav": {
         "home": "Lar",
         "explore": "Explorar",
-        "tv": "HoodaTV",
+        "tv": "BayaTV",
         "messages": "Mensagens",
         "profile": "Perfil"
       },
@@ -93,7 +93,7 @@ const resources = {
         "support": "Suporte",
         "help": "Ajuda",
         "help_desc": "Perguntas frequentes",
-        "about": "Sobre a Hooda",
+        "about": "Sobre a Baya",
         "about_desc": "Versão e informações legais",
         "msg_privacy": "Privacidade de Mensagens",
         "msg_privacy_desc": "Quem pode enviar-te mensagens diretas?",
@@ -117,7 +117,7 @@ const resources = {
         "no_channels": "Nenhum canal disponível ainda.",
         "follow": "+ Acompanhar",
         "following_btn": "A acompanhar ✓",
-        "creators": "Descobre criadores da Hooda"
+        "creators": "Descobre criadores da Baya"
       },
       "common": {
         "loading": "A carregar...",
@@ -176,7 +176,7 @@ const resources = {
         "spam": "Spam ou enganoso",
         "violence": "Violência",
         "other": "Outro",
-        "back_to_tv": "Voltar à HoodaTV",
+        "back_to_tv": "Voltar à BayaTV",
         "no_followers": "Ainda sem acompanhantes",
         "no_following": "Ainda não acompanha ninguém",
         "filters": "Filtros",
@@ -260,7 +260,7 @@ const resources = {
       "nav": {
         "home": "Home",
         "explore": "Explore",
-        "tv": "HoodaTV",
+        "tv": "BayaTV",
         "messages": "Messages",
         "profile": "Profile"
       },
@@ -336,7 +336,7 @@ const resources = {
         "support": "Support",
         "help": "Help",
         "help_desc": "Frequently asked questions",
-        "about": "About Hooda",
+        "about": "About Baya",
         "about_desc": "Version and legal info",
         "msg_privacy": "Message Privacy",
         "msg_privacy_desc": "Who can send you direct messages?",
@@ -360,7 +360,7 @@ const resources = {
         "no_channels": "No channels available yet.",
         "follow": "+ Follow",
         "following_btn": "Following ✓",
-        "creators": "Discover Hooda creators"
+        "creators": "Discover Baya creators"
       },
       "common": {
         "loading": "Loading...",
@@ -419,7 +419,7 @@ const resources = {
         "spam": "Spam or misleading",
         "violence": "Violence",
         "other": "Other",
-        "back_to_tv": "Back to HoodaTV",
+        "back_to_tv": "Back to BayaTV",
         "no_followers": "No followers yet",
         "no_following": "Not following anyone yet",
         "filters": "Filters",
@@ -503,7 +503,7 @@ const resources = {
       "nav": {
         "home": "Accueil",
         "explore": "Explorer",
-        "tv": "HoodaTV",
+        "tv": "BayaTV",
         "messages": "Messages",
         "profile": "Profil"
       },
@@ -579,7 +579,7 @@ const resources = {
         "support": "Support",
         "help": "Aide",
         "help_desc": "Questions fréquentes",
-        "about": "À propos de Hooda",
+        "about": "À propos de Baya",
         "about_desc": "Version et mentions légales",
         "msg_privacy": "Confidentialité des messages",
         "msg_privacy_desc": "Qui peut vous envoyer des messages ?",
@@ -603,7 +603,7 @@ const resources = {
         "no_channels": "Aucune chaîne disponible.",
         "follow": "+ Suivre",
         "following_btn": "Abonné ✓",
-        "creators": "Découvrez les créateurs Hooda"
+        "creators": "Découvrez les créateurs Baya"
       },
       "common": {
         "loading": "Chargement...",
@@ -662,7 +662,7 @@ const resources = {
         "spam": "Spam ou trompeur",
         "violence": "Violence",
         "other": "Autre",
-        "back_to_tv": "Retour à HoodaTV",
+        "back_to_tv": "Retour à BayaTV",
         "no_followers": "Pas encore d'abonnés",
         "no_following": "Vous ne suivez personne",
         "filters": "Filtres",
@@ -746,7 +746,7 @@ const resources = {
       "nav": {
         "home": "Inicio",
         "explore": "Explorar",
-        "tv": "HoodaTV",
+        "tv": "BayaTV",
         "messages": "Mensajes",
         "profile": "Perfil"
       },
@@ -822,7 +822,7 @@ const resources = {
         "support": "Soporte",
         "help": "Ayuda",
         "help_desc": "Preguntas frecuentes",
-        "about": "Sobre Hooda",
+        "about": "Sobre Baya",
         "about_desc": "Versión e información legal",
         "msg_privacy": "Privacidad de mensajes",
         "msg_privacy_desc": "¿Quién puede enviarte mensajes?",
@@ -846,7 +846,7 @@ const resources = {
         "no_channels": "Ningún canal disponible aún.",
         "follow": "+ Seguir",
         "following_btn": "Siguiendo ✓",
-        "creators": "Descubre creadores de Hooda"
+        "creators": "Descubre creadores de Baya"
       },
       "common": {
         "loading": "Cargando...",
@@ -905,7 +905,7 @@ const resources = {
         "spam": "Spam o engañoso",
         "violence": "Violencia",
         "other": "Otro",
-        "back_to_tv": "Volver a HoodaTV",
+        "back_to_tv": "Volver a BayaTV",
         "no_followers": "Aún sin seguidores",
         "no_following": "Aún no sigues a nadie",
         "filters": "Filtros",
@@ -989,7 +989,7 @@ const resources = {
       "nav": {
         "home": "الرئيسية",
         "explore": "استكشاف",
-        "tv": "HoodaTV",
+        "tv": "BayaTV",
         "messages": "الرسائل",
         "profile": "الملف الشخصي"
       },
@@ -1065,7 +1065,7 @@ const resources = {
         "support": "الدعم",
         "help": "المساعدة",
         "help_desc": "الأسئلة الشائعة",
-        "about": "حول Hooda",
+        "about": "حول Baya",
         "about_desc": "الإصدار والمعلومات القانونية",
         "msg_privacy": "خصوصية الرسائل",
         "msg_privacy_desc": "من يمكنه إرسال رسائل مباشرة إليك؟",
@@ -1089,7 +1089,7 @@ const resources = {
         "no_channels": "لا توجد قنوات متاحة بعد.",
         "follow": "+ متابعة",
         "following_btn": "تتابع ✓",
-        "creators": "اكتشف منشئي Hooda"
+        "creators": "اكتشف منشئي Baya"
       },
       "common": {
         "loading": "جاري التحميل...",
@@ -1148,7 +1148,7 @@ const resources = {
         "spam": "بريد عشوائي أو مضلل",
         "violence": "عنف",
         "other": "أخرى",
-        "back_to_tv": "العودة إلى HoodaTV",
+        "back_to_tv": "العودة إلى BayaTV",
         "no_followers": "لا متابعون بعد",
         "no_following": "لا تتابع أحدًا بعد",
         "filters": "فلاتر",

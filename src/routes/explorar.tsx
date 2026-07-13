@@ -7,13 +7,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect, useMemo } from "react";
 import { Search, X, TrendingUp, Users, FileText, UserPlus, UserCheck, BookOpen, Download, Bookmark, Hash, RefreshCw } from "lucide-react";
 import { t } from "@/lib/useT";
-import { getHoodaOfficialId } from "@/lib/hoodaOfficial";
+import { getBayaOfficialId } from "@/lib/hoodaOfficial";
 import { useFollowState } from "@/hooks/useSocialSystem";
 import { UniversalSkeleton } from "@/components/Skeletons";
 import { optimizeImage, optimizeAvatar } from "@/lib/imageOptimize";
 
 export const Route = createFileRoute("/explorar")({
-  head: () => ({ meta: [{ title: "Hooda" }] }),
+  head: () => ({ meta: [{ title: "Baya" }] }),
   validateSearch: (search: Record<string, unknown>): { tab?: Tab; q?: string } => ({
     tab: TABS.some(t => t.key === search.tab) ? (search.tab as Tab) : undefined,
     q: typeof search.q === "string" ? search.q : undefined,
@@ -172,12 +172,12 @@ function ExplorePage() {
   const { data: searchPeople = [] } = useQuery({
     queryKey: ["explore-search-people", search],
     queryFn: async () => {
-      const officialId = await getHoodaOfficialId();
+      const officialId = await getBayaOfficialId();
       const { data } = await (supabase as any).from("profiles")
         .select("id,username,full_name,avatar_url,bio")
         .or(`username.ilike.%${search}%,full_name.ilike.%${search}%`)
         .limit(20);
-      // A conta "Hooda Oficial" nunca aparece em pesquisas de pessoas.
+      // A conta "Baya Oficial" nunca aparece em pesquisas de pessoas.
       return (data ?? []).filter((p: any) => p.id !== officialId);
     },
     enabled: searchActive,
@@ -188,7 +188,7 @@ function ExplorePage() {
   const { data: suggestedPeople = [], isLoading: suggestedPeopleLoading } = useQuery({
     queryKey: ["explore-people", myId],
     queryFn: async () => {
-      const officialId = await getHoodaOfficialId();
+      const officialId = await getBayaOfficialId();
       const { data } = await (supabase as any).from("profiles")
         .select("id,username,full_name,avatar_url,bio")
         .neq("id", myId || "00000000-0000-0000-0000-000000000000")
@@ -270,7 +270,7 @@ function ExplorePage() {
     staleTime: 60_000,
   });
 
-  /* ── Pesquisa: vídeos do Studio/HoodaTV que batem com o termo pesquisado ── */
+  /* ── Pesquisa: vídeos do Studio/BayaTV que batem com o termo pesquisado ── */
   const { data: searchChannelVideos = [] } = useQuery({
     queryKey: ["explore-search-videos", search],
     queryFn: async () => {

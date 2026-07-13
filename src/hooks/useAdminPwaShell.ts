@@ -1,8 +1,8 @@
 import { useEffect } from "react";
 
 /**
- * Ativa a identidade PWA do "Hooda Admin" enquanto o utilizador está na
- * rota de administração, e repõe a identidade do PWA principal (Hooda)
+ * Ativa a identidade PWA do "Baya Admin" enquanto o utilizador está na
+ * rota de administração, e repõe a identidade do PWA principal (Baya)
  * ao sair.
  *
  * Porquê troca dinâmica em vez de dois <link rel="manifest"> estáticos:
@@ -10,7 +10,7 @@ import { useEffect } from "react";
  * declarados no <head> ao mesmo tempo é ambíguo (o browser só respeita
  * um). Trocar o href do link consoante a rota evita esse conflito e
  * garante que "Adicionar ao ecrã principal" no /hdequipa9x2 instala
- * sempre o PWA Admin (ícone, nome e start_url próprios), nunca o Hooda
+ * sempre o PWA Admin (ícone, nome e start_url próprios), nunca o Baya
  * normal — e vice-versa em qualquer outra página.
  *
  * O Service Worker do Admin (public/sw-admin.js) é registado aqui com
@@ -51,12 +51,12 @@ export function useAdminPwaShell(enabled: boolean) {
     themeMeta?.setAttribute("content", "#1a162e");
 
     const appleTitleMeta = head.querySelector<HTMLMetaElement>('meta[name="apple-mobile-web-app-title"]');
-    const previousAppleTitle = appleTitleMeta?.getAttribute("content") ?? "Hooda";
-    appleTitleMeta?.setAttribute("content", "Hooda Admin");
+    const previousAppleTitle = appleTitleMeta?.getAttribute("content") ?? "Baya";
+    appleTitleMeta?.setAttribute("content", "Baya Admin");
 
     const appNameMeta = head.querySelector<HTMLMetaElement>('meta[name="application-name"]');
-    const previousAppName = appNameMeta?.getAttribute("content") ?? "Hooda";
-    appNameMeta?.setAttribute("content", "Hooda Admin");
+    const previousAppName = appNameMeta?.getAttribute("content") ?? "Baya";
+    appNameMeta?.setAttribute("content", "Baya Admin");
 
     // ── 4) Service Worker do Admin — scope isolado, não mexe no principal ──
     if ("serviceWorker" in navigator) {

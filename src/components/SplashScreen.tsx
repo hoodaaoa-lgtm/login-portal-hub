@@ -9,7 +9,7 @@ export function SplashScreen({ leaving = false }: Props) {
   return (
     <main
       role="status"
-      aria-label="A carregar a Hooda"
+      aria-label="A carregar a Baya"
       style={{
         position: 'fixed', inset: 0, zIndex: 9999,
         background: '#ffffff',
