@@ -678,8 +678,8 @@ function HomePage() {
         style={{ background: "var(--s0)", borderColor: "var(--border-subtle)", backdropFilter: "blur(20px)" }}>
         <div className="mx-auto px-4 h-14 flex items-center justify-between max-w-full">
           <span className="lg:hidden inline-flex items-center gap-1.5">
-            <img src={snapperIcon} alt="" style={{ height: 30, width: "auto", display: "block" }} />
-            <img src={snapperWordmark} alt="Snapper" style={{ height: 16, width: "auto", display: "block" }} />
+            <img src={snapperIcon} alt="" style={{ height: 26, width: "auto", display: "block" }} />
+            <img src={snapperWordmark} alt="Snapper" style={{ height: 12, width: "auto", display: "block" }} />
           </span>
           <span className="hidden lg:block" />
           <div className="lg:hidden flex items-center gap-1">

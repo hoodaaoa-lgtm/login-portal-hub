@@ -100,8 +100,8 @@ export function SideNav() {
       {/* Logo */}
       <div className="px-5 pt-5 pb-3">
         <span className="inline-flex items-center gap-1.5">
-          <img src={snapperIcon} alt="" style={{ height: 34, width: "auto", display: "block" }} />
-          <img src={snapperWordmark} alt="Snapper" style={{ height: 18, width: "auto", display: "block" }} />
+          <img src={snapperIcon} alt="" style={{ height: 30, width: "auto", display: "block" }} />
+          <img src={snapperWordmark} alt="Snapper" style={{ height: 14, width: "auto", display: "block" }} />
           {!countryLoading && suffix && (
             <span
               className="text-[11px] font-black uppercase tracking-widest mb-[0.15em]"
