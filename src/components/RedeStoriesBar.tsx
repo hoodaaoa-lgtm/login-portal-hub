@@ -23,7 +23,7 @@ export function RedeStoriesBar({ userId }: { userId: string | null | undefined }
     return (
       <div className="px-3 pt-2">
         <button
-          onClick={() => navigate({ to: "/redes" })}
+          onClick={() => navigate({ to: "/explorar", search: { tab: "redes" } })}
           className="text-xs font-semibold px-3 py-1.5 rounded-full"
           style={{ background: "var(--s2)", color: "var(--text-secondary)" }}
         >
@@ -36,7 +36,7 @@ export function RedeStoriesBar({ userId }: { userId: string | null | undefined }
   return (
     <div className="px-3 pt-2 pb-1 flex gap-3 overflow-x-auto no-scrollbar">
       <button
-        onClick={() => navigate({ to: "/redes" })}
+        onClick={() => navigate({ to: "/explorar", search: { tab: "redes" } })}
         className="shrink-0 flex flex-col items-center gap-1 w-16"
       >
         <div className="w-12 h-12 rounded-full flex items-center justify-center border-2"

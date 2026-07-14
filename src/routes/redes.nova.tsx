@@ -76,7 +76,7 @@ function NovaRedePage() {
       <SideNav />
       <PageWrapper className="flex-1 min-w-0">
         <div className="max-w-[600px] mx-auto lg:border-x min-h-screen" style={{ borderColor: "var(--border-subtle)" }}>
-          <PageHeader title="Criar Rede" onBack={() => navigate({ to: "/redes" })} />
+          <PageHeader title="Criar Rede" onBack={() => navigate({ to: "/explorar", search: { tab: "redes" } })} />
 
           <div className="px-4 py-5 space-y-6">
             {/* Foto */}

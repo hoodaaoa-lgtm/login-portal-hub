@@ -17,6 +17,7 @@ import { optimizeAvatar } from "@/lib/imageOptimize";
 const NAV_ITEMS = [
   { to: "/home",       label: t("nav.home"),          Icon: Home,          search: undefined as Record<string, string> | undefined },
   { to: "/explorar",   label: t("nav.explore"),     Icon: Compass,       search: undefined as Record<string, string> | undefined },
+  { to: "/redes/nova", label: "Criar Rede",         Icon: Users,         search: undefined as Record<string, string> | undefined },
   { to: "/mensagens",  label: t("nav.messages"),    Icon: MessageSquare, search: undefined as Record<string, string> | undefined },
   { to: "/home",       label: "Notificações",  Icon: Bell,          search: { notifications: "1" } as Record<string, string> | undefined },
   { to: "/perfil",     label: t("nav.profile"),       Icon: User,          search: undefined as Record<string, string> | undefined },

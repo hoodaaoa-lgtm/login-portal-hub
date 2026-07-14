@@ -10,6 +10,8 @@ import { t } from "@/lib/useT";
 import { getBayaOfficialId } from "@/lib/hoodaOfficial";
 import { UniversalSkeleton } from "@/components/Skeletons";
 import { optimizeImage, optimizeAvatar } from "@/lib/imageOptimize";
+import { fetchRedesPublicas, fetchMinhasRedes } from "@/lib/redes";
+import { VerifiedBadge } from "@/components/VerifiedBadge";
 
 export const Route = createFileRoute("/explorar")({
   head: () => ({ meta: [{ title: "Baya" }] }),
@@ -31,6 +33,7 @@ const fmtNum = (n: number) => n >= 1_000_000 ? `${(n/1_000_000).toFixed(1)}M` : 
 const TABS = [
   { key: "trending", label: "Tendência",  icon: TrendingUp },
   { key: "people",   label: "Pessoas",    icon: Users      },
+  { key: "redes",    label: "Redes",      icon: Users      },
   { key: "posts",    label: "Mídia",      icon: FileText   },
   { key: "books",    label: "Livros",     icon: BookOpen   },
 ] as const;
@@ -140,6 +143,73 @@ function Av({ name, src, size = 40, color }: { name: string; src?: string | null
   );
 }
 
+/* ── Redes (comunidades) ── */
+function RedeRow({ nome, username, avatar_url, membros_count, verificada, onClick }: any) {
+  return (
+    <button onClick={onClick} className="w-full flex items-center gap-3 p-3 rounded-2xl border transition hover:bg-[var(--s1)] text-left"
+      style={{ borderColor: "var(--border-subtle)", background: "var(--s0)" }}>
+      <div className="w-11 h-11 rounded-full overflow-hidden shrink-0 flex items-center justify-center font-bold text-white" style={{ background: colorFor(nome) }}>
+        {avatar_url ? <img src={avatar_url} alt="" className="w-full h-full object-cover" /> : (nome?.[0] ?? "?").toUpperCase()}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-bold inline-flex items-center gap-1 truncate" style={{ color: "var(--text-primary)" }}>
+          {nome}{verificada && <VerifiedBadge size={12} />}
+        </p>
+        <p className="text-xs truncate" style={{ color: "var(--text-muted)" }}>
+          @{username}{membros_count != null ? ` · ${membros_count} membro${membros_count === 1 ? "" : "s"}` : ""}
+        </p>
+      </div>
+    </button>
+  );
+}
+
+function RedesSection({ search, navigate, myId }: { search: string; navigate: any; myId: string }) {
+  const { data: minhasRedes } = useQuery({
+    queryKey: ["minhas-redes", myId],
+    queryFn: fetchMinhasRedes,
+    enabled: !!myId,
+    staleTime: 60_000,
+  });
+
+  const { data: publicas, isLoading } = useQuery({
+    queryKey: ["redes-publicas", search],
+    queryFn: () => fetchRedesPublicas({ termo: search.trim() || undefined }),
+  });
+
+  return (
+    <div className="px-4 py-4 space-y-6">
+      {!search && minhasRedes && minhasRedes.length > 0 && (
+        <section>
+          <p className="text-[11px] font-bold uppercase tracking-wider mb-2.5" style={{ color: "var(--text-muted)" }}>As minhas Redes</p>
+          <div className="space-y-2">
+            {minhasRedes.map((r: any) => (
+              <RedeRow key={r.id} nome={r.nome} username={r.username} avatar_url={r.avatar_url} verificada={r.verificada}
+                onClick={() => navigate({ to: "/redes/$username", params: { username: r.username } })} />
+            ))}
+          </div>
+        </section>
+      )}
+      <section>
+        <p className="text-[11px] font-bold uppercase tracking-wider mb-2.5" style={{ color: "var(--text-muted)" }}>Descobrir</p>
+        {isLoading && <UniversalSkeleton variant="explorar" count={5} />}
+        {!isLoading && (publicas?.length ?? 0) === 0 && (
+          <div className="flex flex-col items-center gap-2 py-16 text-center">
+            <Users className="h-8 w-8" style={{ color: "var(--text-muted)" }} />
+            <p className="font-bold text-sm" style={{ color: "var(--text-primary)" }}>Nenhuma Rede encontrada</p>
+            <p className="text-xs" style={{ color: "var(--text-muted)" }}>Sê o primeiro a criar uma Rede sobre este tema.</p>
+          </div>
+        )}
+        <div className="space-y-2">
+          {publicas?.map((r: any) => (
+            <RedeRow key={r.id} nome={r.nome} username={r.username} avatar_url={r.avatar_url} membros_count={r.membros_count} verificada={r.verificada}
+              onClick={() => navigate({ to: "/redes/$username", params: { username: r.username } })} />
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
 /* ══════════════════════════════════════════
    PÁGINA
 ══════════════════════════════════════════ */
@@ -183,7 +253,20 @@ function ExplorePage() {
     staleTime: 30_000,
   });
 
-  /* ── Query: pessoas sugeridas ── */
+  /* ── Query: Redes que correspondem à pesquisa global ── */
+  const { data: searchRedes = [] } = useQuery({
+    queryKey: ["explore-search-redes", search],
+    queryFn: () => fetchRedesPublicas({ termo: search.trim() }),
+    enabled: searchActive,
+    staleTime: 30_000,
+  });
+
+  /* ── Query: Redes em destaque (aba Tendência) ── */
+  const { data: trendingRedes = [], isLoading: trendingRedesLoading } = useQuery({
+    queryKey: ["redes-publicas", ""],
+    queryFn: () => fetchRedesPublicas({}),
+    staleTime: 60_000,
+  });
   const { data: suggestedPeople = [], isLoading: suggestedPeopleLoading } = useQuery({
     queryKey: ["explore-people", myId],
     queryFn: async () => {
@@ -668,6 +751,18 @@ function ExplorePage() {
                 </div>
               </section>
             )}
+            {/* Redes */}
+            {searchRedes.length > 0 && (
+              <section>
+                <p className="text-[11px] font-bold uppercase tracking-wider mb-2.5" style={{ color: "var(--text-muted)" }}>Redes</p>
+                <div className="space-y-2">
+                  {searchRedes.map((r: any) => (
+                    <RedeRow key={r.id} nome={r.nome} username={r.username} avatar_url={r.avatar_url} membros_count={r.membros_count} verificada={r.verificada}
+                      onClick={() => navigate({ to: "/redes/$username", params: { username: r.username } })} />
+                  ))}
+                </div>
+              </section>
+            )}
             {/* Prévia da IA — frase curta a dizer o que encontrou, antes
                 de mostrar os resultados de vídeos/publicações. */}
             {smartSearch?.summary && (rankedSearchVideos.length > 0 || rankedSearchPostCards.length > 0) && (
@@ -696,7 +791,7 @@ function ExplorePage() {
                 </div>
               </section>
             )}
-            {searchPeople.length === 0 && rankedSearchVideos.length === 0 && rankedSearchPostCards.length === 0 && searchHashtags.length === 0 && (
+            {searchPeople.length === 0 && searchRedes.length === 0 && rankedSearchVideos.length === 0 && rankedSearchPostCards.length === 0 && searchHashtags.length === 0 && (
               <div className="py-20 text-center">
                 <p className="text-4xl mb-3">🔍</p>
                 <p className="font-bold" style={{ color: "var(--text-primary)" }}>Sem resultados</p>
@@ -763,6 +858,22 @@ function ExplorePage() {
               </div>
             </section>
 
+            {/* Redes em destaque */}
+            <section className="px-4">
+              <div className="flex items-center justify-between mb-2.5">
+                <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>Redes em destaque</p>
+                <button onClick={() => setTab("redes")} className="text-xs font-semibold" style={{ color: P }}>Ver mais →</button>
+              </div>
+              <div className="space-y-2">
+                {trendingRedesLoading
+                  ? <UniversalSkeleton variant="explorar" count={3} />
+                  : trendingRedes.slice(0, 3).map((r: any) => (
+                    <RedeRow key={r.id} nome={r.nome} username={r.username} avatar_url={r.avatar_url} membros_count={r.membros_count} verificada={r.verificada}
+                      onClick={() => navigate({ to: "/redes/$username", params: { username: r.username } })} />
+                  ))}
+              </div>
+            </section>
+
             {/* Posts — removidos daqui: só devem aparecer quando o usuário pesquisa */}
           </div>
 
@@ -802,6 +913,10 @@ function ExplorePage() {
               </div>
             )}
           </div>
+
+        /* ══════════ REDES (comunidades) ══════════ */
+        ) : tab === "redes" ? (
+          <RedesSection search={search} navigate={navigate} myId={myId} />
 
         /* ══════════ CANAIS ══════════ */
         ) : tab === "books" ? (

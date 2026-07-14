@@ -147,7 +147,7 @@ function RedePage() {
       <div className="flex">
         <SideNav />
         <PageWrapper className="flex-1 min-w-0">
-          <PageHeader title="Rede" onBack={() => navigate({ to: "/redes" })} />
+          <PageHeader title="Rede" onBack={() => navigate({ to: "/explorar", search: { tab: "redes" } })} />
           <div className="flex flex-col items-center gap-2 py-20 text-center px-6">
             <p className="font-bold text-sm" style={{ color: "var(--text-primary)" }}>Esta Rede não existe</p>
           </div>
@@ -165,7 +165,7 @@ function RedePage() {
         <div className="max-w-[600px] mx-auto lg:border-x min-h-screen relative" style={{ borderColor: "var(--border-subtle)" }}>
           <PageHeader
             title={rede.nome}
-            onBack={() => navigate({ to: "/redes" })}
+            onBack={() => navigate({ to: "/explorar", search: { tab: "redes" } })}
             actions={
               <div className="relative">
                 <button onClick={() => setShowMenu((v) => !v)} className="p-2 rounded-full hover:bg-[var(--s2)]">
