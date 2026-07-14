@@ -79,7 +79,7 @@ export async function marcarRedeVista(redeId: string) {
 }
 
 export type CriarRedeInput = {
-  username: string; nome: string; avatarUrl: string | null; categoria: string | null;
+  username: string; nome: string; avatarUrl: string | null; capaUrl: string | null; categoria: string | null;
   tipo: "publica" | "privada" | "canal"; temChat: boolean;
 };
 
@@ -91,6 +91,7 @@ export async function criarRede(input: CriarRedeInput): Promise<Rede> {
     p_categoria: input.categoria,
     p_tipo: input.tipo,
     p_tem_chat: input.temChat,
+    p_capa_url: input.capaUrl,
   });
   if (error) throw error;
   return data;
