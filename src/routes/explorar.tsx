@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { BottomNav, SideNav, PageWrapper, FeedLayout } from "@/components/AppShell";
 import { RightSidebar } from "@/components/RightSidebar";
-import { UniversalPostCard } from "@/components/UniversalPostCard";
+import { UniversalPostCard, type NormalizedPost } from "@/components/UniversalPostCard";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect, useMemo } from "react";
@@ -32,9 +32,7 @@ const fmtNum = (n: number) => n >= 1_000_000 ? `${(n/1_000_000).toFixed(1)}M` : 
 
 const TABS = [
   { key: "trending", label: "Tendência",  icon: TrendingUp },
-  { key: "people",   label: "Pessoas",    icon: Users      },
   { key: "redes",    label: "Redes",      icon: Users      },
-  { key: "posts",    label: "Mídia",      icon: FileText   },
   { key: "books",    label: "Livros",     icon: BookOpen   },
 ] as const;
 type Tab = typeof TABS[number]["key"];
@@ -163,6 +161,50 @@ function RedeRow({ nome, username, avatar_url, membros_count, verificada, onClic
   );
 }
 
+/** Publicações recentes da Rede, mostradas logo abaixo do seu card quando
+ * alguém a encontra numa pesquisa — mesma lógica usada para mostrar posts
+ * na aba Mídia (agora aqui, junto da Rede a que pertencem). */
+function RedePostsPreview({ redeId }: { redeId: string }) {
+  const { data: posts, isLoading } = useQuery({
+    queryKey: ["rede-search-posts", redeId],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any).from("posts").select("*")
+        .eq("rede_id", redeId).eq("is_draft", false)
+        .order("created_at", { ascending: false }).limit(3);
+      if (error) throw error;
+      return data ?? [];
+    },
+    staleTime: 30_000,
+  });
+
+  const normalized: NormalizedPost[] = (posts ?? []).map((p: any) => {
+    let text = p.content;
+    let bg_color: string | null = null;
+    if (p.kind === "bg") { try { const j = JSON.parse(p.content); text = j.text; bg_color = j.bgColor; } catch { /* noop */ } }
+    return {
+      id: p.id, author_id: p.author_id ?? null, author_username: p.author_username ?? null,
+      user: p.author_name ?? p.author_username, name: `@${p.author_username ?? "?"}`,
+      color: p.author_color ?? undefined, text, bg_color,
+      photo: p.photo_url ?? null, photos: p.photos ?? null, video: p.video_url ?? null,
+      video_thumb: p.thumbnail_url ?? null, kind: p.kind ?? null,
+      likes: p.likes_count ?? 0, comments: p.comments_count ?? 0, views_count: p.views_count ?? 0,
+      poll: p.poll ?? null, poll_ends_at: p.poll_ends_at ?? null,
+      moderation_status: p.moderation_status, is_sensitive: !!p.is_sensitive,
+      rede_id: p.rede_id, rede_nome: p.rede_nome, rede_username: p.rede_username,
+      rede_avatar_url: p.rede_avatar_url, rede_verificada: !!p.rede_verificada,
+    };
+  });
+
+  if (isLoading) return <div className="pl-4 pb-2"><UniversalSkeleton variant="feed" count={1} /></div>;
+  if (normalized.length === 0) return null;
+
+  return (
+    <div className="-mx-4 space-y-2 pb-2">
+      {normalized.map((p) => <UniversalPostCard key={p.id} post={p} />)}
+    </div>
+  );
+}
+
 function RedesSection({ search, navigate, myId }: { search: string; navigate: any; myId: string }) {
   const { data: minhasRedes } = useQuery({
     queryKey: ["minhas-redes", myId],
@@ -201,8 +243,11 @@ function RedesSection({ search, navigate, myId }: { search: string; navigate: an
         )}
         <div className="space-y-2">
           {publicas?.map((r: any) => (
-            <RedeRow key={r.id} nome={r.nome} username={r.username} avatar_url={r.avatar_url} membros_count={r.membros_count} verificada={r.verificada}
-              onClick={() => navigate({ to: "/redes/$username", params: { username: r.username } })} />
+            <div key={r.id}>
+              <RedeRow nome={r.nome} username={r.username} avatar_url={r.avatar_url} membros_count={r.membros_count} verificada={r.verificada}
+                onClick={() => navigate({ to: "/redes/$username", params: { username: r.username } })} />
+              {search.trim() && <RedePostsPreview redeId={r.id} />}
+            </div>
           ))}
         </div>
       </section>
@@ -267,21 +312,6 @@ function ExplorePage() {
     queryFn: () => fetchRedesPublicas({}),
     staleTime: 60_000,
   });
-  const { data: suggestedPeople = [], isLoading: suggestedPeopleLoading } = useQuery({
-    queryKey: ["explore-people", myId],
-    queryFn: async () => {
-      const officialId = await getBayaOfficialId();
-      const { data } = await (supabase as any).from("profiles")
-        .select("id,username,full_name,avatar_url,bio")
-        .neq("id", myId || "00000000-0000-0000-0000-000000000000")
-        .order("created_at", { ascending: false })
-        .limit(200);
-      return (data ?? []).filter((p: any) => p.id !== officialId);
-    },
-    enabled: tab === "trending" || tab === "people",
-    staleTime: 60_000,
-  });
-
   /* ── Hashtags em tendência (14 dias), extraídas de verdade do conteúdo
      dos posts — antes era um array vazio fixo no frontend. ── */
   const { data: trendingHashtags = [] } = useQuery({
@@ -330,27 +360,6 @@ function ExplorePage() {
     const timer = setTimeout(() => setDebouncedSearch(search.trim()), 500);
     return () => clearTimeout(timer);
   }, [search]);
-
-  /* ── Query: posts (aba Mídia + trending) — nunca inclui vídeos; vídeos só
-     aparecem quando o utilizador pesquisa (ver searchVideos/searchVideoPosts
-     mais abaixo), nunca na navegação normal. ── */
-  const { data: popularPosts = [] } = useQuery({
-    queryKey: ["explore-posts"],
-    queryFn: async () => {
-      const { data } = await (supabase as any).from("posts")
-        .select("id,content,kind,photo_url,image_url,photos,likes_count,comments_count,author_username,author_color,author_id,created_at")
-        .in("kind",["photo","post"])
-        .eq("is_draft", false)
-        .or(`scheduled_at.is.null,scheduled_at.lte.${new Date().toISOString()}`)
-        // CORREÇÃO: Descobrir/Tendências nunca mostram publicações ainda em
-        // análise/teste — só liberadas pela IA para distribuição pública.
-        .in("distribution_state", ["distribuicao_normal", "em_crescimento", "tendencia", "viral"])
-        .order("created_at", { ascending: false }).limit(500);
-      return data ?? [];
-    },
-    enabled: tab === "trending" || tab === "posts",
-    staleTime: 60_000,
-  });
 
   /* ── Pesquisa: vídeos do Studio/BayaTV que batem com o termo pesquisado ── */
   const { data: searchChannelVideos = [] } = useQuery({
@@ -547,10 +556,9 @@ function ExplorePage() {
      mostrar foto de perfil em vez de ficar sempre com a inicial. ── */
   const postAuthorIds = useMemo(() => {
     const ids = new Set<string>();
-    (popularPosts ?? []).forEach((p: any) => { if (p.author_id) ids.add(p.author_id); });
     (mergedSearchPosts ?? []).forEach((p: any) => { if (p.author_id) ids.add(p.author_id); });
     return [...ids];
-  }, [popularPosts, mergedSearchPosts]);
+  }, [mergedSearchPosts]);
 
 
   const { data: postAuthorProfiles = [] } = useQuery({
@@ -596,7 +604,6 @@ function ExplorePage() {
     };
   }
 
-  const popularPostCards = useMemo(() => (popularPosts ?? []).map(toCanonicalPost), [popularPosts, postAvatarMap, postVerifiedMap]);
   const searchPostCards  = useMemo(() => (mergedSearchPosts ?? []).map(toCanonicalPost),  [mergedSearchPosts, postAvatarMap, postVerifiedMap]);
 
   /* ── Pesquisa inteligente: em vez de só confiar no ILIKE (que só bate
@@ -686,7 +693,7 @@ function ExplorePage() {
               <input
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                placeholder="Pesquisar pessoas, posts, vídeos..."
+                placeholder="Pesquisar pessoas, Redes, posts, vídeos..."
                 className="w-full h-10 pl-10 pr-9 rounded-full text-sm outline-none transition-all"
                 style={{
                   background: "var(--s2)",
@@ -757,8 +764,11 @@ function ExplorePage() {
                 <p className="text-[11px] font-bold uppercase tracking-wider mb-2.5" style={{ color: "var(--text-muted)" }}>Redes</p>
                 <div className="space-y-2">
                   {searchRedes.map((r: any) => (
-                    <RedeRow key={r.id} nome={r.nome} username={r.username} avatar_url={r.avatar_url} membros_count={r.membros_count} verificada={r.verificada}
-                      onClick={() => navigate({ to: "/redes/$username", params: { username: r.username } })} />
+                    <div key={r.id}>
+                      <RedeRow nome={r.nome} username={r.username} avatar_url={r.avatar_url} membros_count={r.membros_count} verificada={r.verificada}
+                        onClick={() => navigate({ to: "/redes/$username", params: { username: r.username } })} />
+                      <RedePostsPreview redeId={r.id} />
+                    </div>
                   ))}
                 </div>
               </section>
@@ -845,19 +855,6 @@ function ExplorePage() {
             </section>
             )}
 
-            {/* Pessoas sugeridas */}
-            <section className="px-4">
-              <div className="flex items-center justify-between mb-2.5">
-                <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>Pessoas sugeridas</p>
-                <button onClick={() => setTab("people")} className="text-xs font-semibold" style={{ color: P }}>Ver mais →</button>
-              </div>
-              <div className="space-y-2">
-                {suggestedPeopleLoading
-                  ? <UniversalSkeleton variant="explorar" count={3} />
-                  : suggestedPeople.slice(0, 3).map((p: any) => <PersonCard key={p.id} p={p} />)}
-              </div>
-            </section>
-
             {/* Redes em destaque */}
             <section className="px-4">
               <div className="flex items-center justify-between mb-2.5">
@@ -875,43 +872,6 @@ function ExplorePage() {
             </section>
 
             {/* Posts — removidos daqui: só devem aparecer quando o usuário pesquisa */}
-          </div>
-
-        /* ══════════ PESSOAS ══════════ */
-        ) : tab === "people" ? (
-          <div className="px-4 py-4 space-y-2">
-            <p className="text-[11px] font-bold uppercase tracking-wider mb-3" style={{ color: "var(--text-muted)" }}>
-              Pessoas sugeridas
-            </p>
-            {suggestedPeopleLoading
-              ? <UniversalSkeleton variant="explorar" count={8} />
-              : suggestedPeople.map((p: any) => <PersonCard key={p.id} p={p} />)}
-          </div>
-
-        /* ══════════ MÍDIA (posts de qualquer pessoa; vídeos só na pesquisa) ══════════ */
-        ) : tab === "posts" ? (
-          <div className="px-4 py-4">
-            {search && popularPostCards.length > 0 && (
-              <section>
-                <p className="text-[11px] font-bold uppercase tracking-wider mb-3 px-0" style={{ color: "var(--text-muted)" }}>
-                  Posts
-                </p>
-                <div className="space-y-4 -mx-4">
-                  {popularPostCards.map((p: any) => <UniversalPostCard key={p.id} post={p} />)}
-                </div>
-              </section>
-            )}
-            {!search && (
-              <div className="py-20 text-center">
-                <p className="text-4xl mb-3">🔍</p>
-                <p className="font-bold" style={{ color: "var(--text-primary)" }}>Pesquisa algo para ver publicações</p>
-              </div>
-            )}
-            {search && popularPostCards.length === 0 && (
-              <div className="py-20 text-center">
-                <p className="font-bold" style={{ color: "var(--text-primary)" }}>Ainda não há mídia</p>
-              </div>
-            )}
           </div>
 
         /* ══════════ REDES (comunidades) ══════════ */

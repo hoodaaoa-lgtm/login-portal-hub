@@ -53,8 +53,8 @@ function buildTips(): Tip[] {
     },
     {
       icon: Users,
-      text: "Descobre pessoas com interesses parecidos na aba Pessoas do Explorar.",
-      cta: { label: "Ver pessoas", action: ({ navigate }) => navigate({ to: "/explorar", search: { tab: "people" } }) },
+      text: "Descobre Redes sobre os teus temas favoritos na aba Redes do Explorar.",
+      cta: { label: "Ver Redes", action: ({ navigate }) => navigate({ to: "/explorar", search: { tab: "redes" } }) },
     },
     {
       icon: Bell,
