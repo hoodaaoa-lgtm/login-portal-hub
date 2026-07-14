@@ -36,6 +36,8 @@ import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { PhotoViewer } from "@/components/PhotoViewer";
 import { FeedVideoPlayer } from "@/components/FeedVideoPlayer";
 import { PollCard } from "@/components/PollCard";
+import { RedePickerModal } from "@/components/RedePickerModal";
+import { RedeStoriesBar } from "@/components/RedeStoriesBar";
 import { UniversalSkeleton } from "@/components/Skeletons";
 
 export const Route = createFileRoute("/perfil")({
@@ -1984,6 +1986,9 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
           </div>
         </div>
 
+        {/* Redes de que sou membro — publicar é sempre dentro de uma Rede */}
+        {tab === "posts" && <RedeStoriesBar userId={myUserId} />}
+
         {/* Botão flutuante de criar publicação — só ícone, sem caixa duplicada */}
         {tab === "posts" && (
           <div className="px-5 mb-2 flex justify-end">
@@ -2198,11 +2203,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
         />
       )}
       {showCreate && (
-        <CreatePostModal
-          profile={profile} email={email}
-          onClose={() => setShowCreate(false)}
-          onPublish={(data) => { addPost(data); setShowCreate(false); }}
-        />
+        <RedePickerModal onClose={() => setShowCreate(false)} />
       )}
       {showShareModal && (
         <ShareProfileModal username={profile?.username || "utilizador"} name={name} onClose={() => setShowShareModal(false)} />

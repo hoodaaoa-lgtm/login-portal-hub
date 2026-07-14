@@ -126,7 +126,10 @@ function HomePage() {
         // CORREÇÃO: mesma regra de distribuição do get_personalized_feed_v3 —
         // este é só o fallback de emergência (RPC principal indisponível),
         // mas não pode contornar a fase "Em Análise"/"Em Teste".
-        .in("distribution_state", ["distribuicao_normal", "em_crescimento", "tendencia", "viral"])
+        // O feed só mostra publicações feitas dentro de Redes — perfil
+        // deixou de publicar directamente, então posts antigos sem
+        // rede_id não entram mais no feed.
+        .not("rede_id", "is", null)
         .order("created_at", { ascending: false })
         .limit(50);
       return diversifyByAuthor((data ?? []).map((p: any) => {
@@ -231,9 +234,8 @@ function HomePage() {
       let fallbackQuery = supabase.from("posts").select(POST_SELECT_FIELDS)
         .eq("is_draft", false)
         .or(`scheduled_at.is.null,scheduled_at.lte.${new Date().toISOString()}`)
-        // CORREÇÃO: mesma regra de distribuição da RPC — o fallback
-        // cronológico não pode mostrar posts ainda em análise/teste.
-        .in("distribution_state", ["distribuicao_normal", "em_crescimento", "tendencia", "viral"])
+        // Mesma regra da RPC: só publicações de Redes entram no feed.
+        .not("rede_id", "is", null)
         .order("created_at", { ascending: false }).limit(FEED_CHUNK_SIZE);
       if (cursor) fallbackQuery = fallbackQuery.lt("created_at", cursor);
       const { data } = await fallbackQuery;

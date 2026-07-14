@@ -6,7 +6,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useAvatar } from "@/contexts/AvatarContext";
 import { useBadges } from "@/contexts/BadgeContext";
 import { UserDrawer } from "@/components/UserDrawer";
-import { QuickPostModal } from "@/components/QuickComposer";
+import { RedePickerModal } from "@/components/RedePickerModal";
 import {
   Home, Compass, MessageSquare, Users, User, Tv, Menu,
   Moon, Sun, Bell, Feather, MoreHorizontal, ArrowLeft,
@@ -171,13 +171,7 @@ export function SideNav() {
       </nav>
 
       {showComposer && (
-        <QuickPostModal
-          name={name || "Utilizador"}
-          username={currentUsername}
-          avatarUrl={avatarUrl}
-          onClose={() => setShowComposer(false)}
-          onPublished={() => setShowComposer(false)}
-        />
+        <RedePickerModal onClose={() => setShowComposer(false)} />
       )}
 
       {/* Bottom user card — X style */}
