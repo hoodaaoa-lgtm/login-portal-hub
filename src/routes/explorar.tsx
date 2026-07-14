@@ -5,10 +5,9 @@ import { UniversalPostCard } from "@/components/UniversalPostCard";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect, useMemo } from "react";
-import { Search, X, TrendingUp, Users, FileText, UserPlus, UserCheck, BookOpen, Download, Bookmark, Hash, RefreshCw } from "lucide-react";
+import { Search, X, TrendingUp, Users, FileText, MessageCircle, BookOpen, Download, Bookmark, Hash, RefreshCw } from "lucide-react";
 import { t } from "@/lib/useT";
 import { getBayaOfficialId } from "@/lib/hoodaOfficial";
-import { useFollowState } from "@/hooks/useSocialSystem";
 import { UniversalSkeleton } from "@/components/Skeletons";
 import { optimizeImage, optimizeAvatar } from "@/lib/imageOptimize";
 
@@ -563,46 +562,8 @@ function ExplorePage() {
   const rankedSearchVideos    = useMemo(() => applySmartRank(searchVideos, "video"),    [searchVideos, smartSearch]);
   const rankedSearchPostCards = useMemo(() => applySmartRank(searchPostCards, "post"),  [searchPostCards, smartSearch]);
 
-  /* ── Contagem de seguidores em lote para as pessoas visíveis (pesquisa +
-     sugeridas) — 1 pedido só, em vez de 1 por cartão. ── */
-  const visiblePeopleUsernames = useMemo(() => {
-    const set = new Set<string>();
-    (searchPeople ?? []).forEach((p: any) => p.username && set.add(p.username));
-    (suggestedPeople ?? []).slice(0, 60).forEach((p: any) => p.username && set.add(p.username));
-    return [...set];
-  }, [searchPeople, suggestedPeople]);
-
-  const { data: followerCountsRaw = [] } = useQuery({
-    queryKey: ["explore-follower-counts", visiblePeopleUsernames],
-    queryFn: async () => {
-      if (visiblePeopleUsernames.length === 0) return [];
-      const { data, error } = await (supabase as any).rpc("get_follower_counts", { p_usernames: visiblePeopleUsernames });
-      if (error) throw error;
-      return (data ?? []) as { username: string; followers: number }[];
-    },
-    enabled: visiblePeopleUsernames.length > 0,
-    staleTime: 30_000,
-  });
-  const followerCounts = useMemo(() => {
-    const m: Record<string, number> = {};
-    (followerCountsRaw ?? []).forEach((r: any) => { m[r.username] = Number(r.followers) || 0; });
-    return m;
-  }, [followerCountsRaw]);
-
-  /* ── Render helpers ──
-     PersonCard usa useFollowState — a MESMA fonte de verdade partilhada
-     com o resto da app (post cards, perfil, u/$username, sugestões da
-     home...). Antes, o Explorar tinha a sua própria cópia do estado
-     ("followMap" local + query "explore-my-follows" com staleTime de só
-     10s, sem cobertura do realtime): clicar aqui até acompanhava de
-     verdade na base de dados, mas o botão nesta página específica
-     esquecia isso ao fim de pouco tempo (refetch/remount) porque vivia
-     numa cache totalmente separada da usada nas outras páginas — dava a
-     sensação de "acompanho, mas o botão não guarda" ou "num sítio diz
-     que sigo, no Explorar não". */
+  /* ── Render helpers ── */
   function PersonCard({ p }: { p: any }) {
-    const { isFollowing, isPending, isLoading: followLoading, hasError: followHasError, toggle, refetchStatus } = useFollowState(myId || null, p.username, p.id);
-    const followers = followerCounts[p.username];
     return (
       <div className="flex items-center gap-3 p-3 rounded-2xl border transition hover:bg-[var(--s1)]"
         style={{ borderColor: "var(--border-subtle)", background: "var(--s0)" }}>
@@ -611,30 +572,14 @@ function ExplorePage() {
         </button>
         <div className="flex-1 min-w-0" onClick={() => navigate({ to: "/u/$username", params: { username: p.username } })} style={{ cursor: "pointer" }}>
           <p className="font-bold text-sm truncate" style={{ color: "var(--text-primary)" }}>{p.full_name || p.username}</p>
-          <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
-            @{p.username}{followers !== undefined && <> · {fmtNum(followers)} acompanhante{followers === 1 ? "" : "s"}</>}
-          </p>
+          <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>@{p.username}</p>
         </div>
         {myId && myId !== p.id && (
-          followLoading ? (
-            <div className="relative overflow-hidden h-[30px] w-[104px] rounded-full shrink-0" style={{ background: "var(--s2)" }}>
-              <div className="skeleton-shimmer absolute inset-0" />
-            </div>
-          ) : followHasError ? (
-            <button onClick={() => refetchStatus()}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold transition active:scale-95 shrink-0"
-              style={{ background: "var(--s2)", color: "var(--text-secondary)", border: "1px solid var(--border-default)" }}>
-              <RefreshCw className="h-3.5 w-3.5" />
-            </button>
-          ) : (
-            <button onClick={toggle} disabled={isPending}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold transition active:scale-95 shrink-0 disabled:opacity-60"
-              style={isFollowing
-                ? { background: "var(--s2)", color: "var(--text-secondary)", border: "1px solid var(--border-default)" }
-                : { background: P, color: "#fff" }}>
-              {isFollowing ? <><UserCheck className="h-3.5 w-3.5" />Acompanhando</> : <><UserPlus className="h-3.5 w-3.5" />Acompanhar</>}
-            </button>
-          )
+          <button onClick={() => navigate({ to: "/mensagens" })}
+            className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold transition active:scale-95 shrink-0"
+            style={{ background: "var(--s2)", color: "var(--text-secondary)", border: "1px solid var(--border-default)" }}>
+            <MessageCircle className="h-3.5 w-3.5" />Mensagem
+          </button>
         )}
       </div>
     );
@@ -805,10 +750,10 @@ function ExplorePage() {
             </section>
             )}
 
-            {/* Pessoas para seguir */}
+            {/* Pessoas sugeridas */}
             <section className="px-4">
               <div className="flex items-center justify-between mb-2.5">
-                <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>Pessoas para acompanhar</p>
+                <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>Pessoas sugeridas</p>
                 <button onClick={() => setTab("people")} className="text-xs font-semibold" style={{ color: P }}>Ver mais →</button>
               </div>
               <div className="space-y-2">

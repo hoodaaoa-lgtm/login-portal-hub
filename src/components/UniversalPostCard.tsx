@@ -18,7 +18,7 @@ import { SensitiveContentOverlay } from "@/components/SensitiveContentOverlay";
 import { appealPostModeration } from "@/lib/moderationPrefs";
 import { useTimeAgo } from "@/hooks/useTimeAgo";
 import { useScrollLock } from "@/hooks/useScrollLock";
-import { useFollowState, usePostLikeState, usePostCommentCount, useBookmarkState, useVideoLikeState, getViewerFingerprint } from "@/hooks/useSocialSystem";
+import { usePostLikeState, usePostCommentCount, useBookmarkState, useVideoLikeState, getViewerFingerprint } from "@/hooks/useSocialSystem";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { QUERY_KEYS, REALTIME_QUERY_OPTIONS } from "@/lib/queryClient";
@@ -533,7 +533,7 @@ function RepostModal({ post, me, onClose, onReposted }: {
                   <Repeat2 className="w-5 h-5" />
                   <div className="text-left">
                     <p className="font-bold">Desfazer repost</p>
-                    <p className="text-xs opacity-70">Remove do teu feed e dos teus acompanhantes</p>
+                    <p className="text-xs opacity-70">Remove do teu feed</p>
                   </div>
                 </button>
               ) : (
@@ -548,7 +548,7 @@ function RepostModal({ post, me, onClose, onReposted }: {
                     </div>
                     <div className="text-left">
                       <p className="font-bold" style={{ color: "var(--text-primary)" }}>Repostar</p>
-                      <p className="text-xs" style={{ color: "var(--text-muted)" }}>Partilha imediatamente com os teus acompanhantes</p>
+                      <p className="text-xs" style={{ color: "var(--text-muted)" }}>Partilha imediatamente no teu feed</p>
                     </div>
                   </button>
 
@@ -645,7 +645,7 @@ function RepostModal({ post, me, onClose, onReposted }: {
               {alreadyReposted ? "Repost removido" : "Repostado!"}
             </p>
             <p className="text-sm text-center" style={{ color: "var(--text-muted)" }}>
-              {alreadyReposted ? "A publicação foi removida do teu feed." : "Os teus acompanhantes já podem ver esta publicação."}
+              {alreadyReposted ? "A publicação foi removida do teu feed." : "A publicação já está a aparecer no feed."}
             </p>
           </div>
         )}
@@ -1031,7 +1031,6 @@ export function UniversalPostCard({ post: p, onDeleted, onBookmarkChange }: {
     useVideoLikeState(p.clip_video_id || p.id, myUserId, { liked: p.liked_by_me ?? false, count: p.likes ?? 0 });
   const liked = isVideoFeedItem ? videoLiked : postLiked;
   const likeCount = isVideoFeedItem ? videoLikeCount : postLikeCount;
-  const { isFollowing: following, isLoading: followLoading, hasError: followHasError, toggle: toggleFollow, refetchStatus: refetchFollowStatus } = useFollowState(myUserId, p.author_username, p.author_id);
   const { count: commentCount, increment: incrementCommentCount } = usePostCommentCount(p.id, p.comments ?? 0);
   const { bookmarked, toggle: toggleBookmarkShared } = useBookmarkState(p.id, myUserId);
   const [viewCount, setViewCount] = useState(Number(p.views_count ?? 0));
@@ -1204,35 +1203,11 @@ export function UniversalPostCard({ post: p, onDeleted, onBookmarkChange }: {
             {(p.name || timeLabel) && (
               <p className="text-[11px] leading-tight" style={{ color: "var(--text-muted)" }}>
                 {p.name}{p.name && timeLabel ? " · " : ""}{timeLabel}
-                {!isAd && !isOwnPost && sessionChecked && !!myUserId && !followLoading && !followHasError && !following && (
-                  <span className="ml-1 font-semibold" style={{ color: "#5B3FCF" }}>· Sugestão para você</span>
-                )}
               </p>
             )}
           </div>
         </div>
         <div className="flex items-center gap-1.5">
-          {!isAd && p.author_id && !isOwnPost && (
-            (!sessionChecked || (!!myUserId && followLoading)) ? (
-              <div className="relative overflow-hidden h-[26px] w-[68px] rounded-full" style={{ background: "var(--s2)" }}>
-                <div className="skeleton-shimmer absolute inset-0" />
-              </div>
-            ) : (!!myUserId && followHasError) ? (
-              <button onClick={() => refetchFollowStatus()}
-                className="text-xs font-bold px-3 py-1.5 rounded-full transition-all active:scale-95 flex items-center gap-1"
-                style={{ background: "var(--s2)", color: "var(--text-secondary)", border: "1.5px solid var(--border-default)" }}>
-                <RefreshCw className="h-3.5 w-3.5" />
-              </button>
-            ) : (
-              <button onClick={toggleFollow}
-                className="text-xs font-bold px-3 py-1.5 rounded-full transition-all active:scale-95"
-                style={following
-                  ? { background: "var(--s2)", color: "var(--text-secondary)", border: "1.5px solid var(--border-default)" }
-                  : { background: "#5B3FCF", color: "#fff", boxShadow: "0 2px 8px rgba(91,63,207,0.35)" }}>
-                {following ? "A acompanhar ✓" : "+ Acompanhar"}
-              </button>
-            )
-          )}
           {!isAd && isOwnPost && (
             <div className="relative">
               <button onClick={() => setShowMenu(v => !v)}
