@@ -27,11 +27,12 @@ function MiniAvatar({ name, src, size = 40 }: { name: string; src?: string | nul
 /* ── Modal de criação de publicação (texto / foto / vídeo) ── */
 const MAX_POLL_OPTIONS = 4;
 
-export function QuickPostModal({ name, username, avatarUrl, onClose, onPublished, startWithPoll = false }: {
+export function QuickPostModal({ name, username, avatarUrl, onClose, onPublished, startWithPoll = false, redeContext }: {
   name: string; username: string; avatarUrl?: string | null;
   onClose: () => void;
   onPublished: () => void;
   startWithPoll?: boolean;
+  redeContext?: { id: string; nome: string; username: string; avatarUrl: string | null };
 }) {
   const MAX_PHOTOS = 10;
   const [text, setText] = useState("");
@@ -129,6 +130,13 @@ export function QuickPostModal({ name, username, avatarUrl, onClose, onPublished
         content: text,
         kind: !pollActive && videoFile ? "video" : !pollActive && photoFiles.length > 0 ? "photo" : "post",
       };
+
+      if (redeContext) {
+        basePayload.rede_id = redeContext.id;
+        basePayload.rede_nome = redeContext.nome;
+        basePayload.rede_username = redeContext.username;
+        basePayload.rede_avatar_url = redeContext.avatarUrl;
+      }
 
       if (pollActive) {
         basePayload.poll = {
@@ -406,9 +414,11 @@ export function QuickPostModal({ name, username, avatarUrl, onClose, onPublished
 }
 
 /* ── Caixa de composição compacta, mostrada no topo do feed ── */
-export function ComposeBox({ name, username, avatarUrl, onPublished }: {
+export function ComposeBox({ name, username, avatarUrl, onPublished, redeContext, placeholder }: {
   name: string; username: string; avatarUrl?: string | null;
   onPublished: () => void;
+  redeContext?: { id: string; nome: string; username: string; avatarUrl: string | null };
+  placeholder?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [openWithPoll, setOpenWithPoll] = useState(false);
@@ -425,7 +435,7 @@ export function ComposeBox({ name, username, avatarUrl, onPublished }: {
         <button onClick={() => setOpen(true)}
           className="w-full flex items-center gap-3 px-4 py-3 text-left transition active:scale-[0.99]">
           <MiniAvatar name={name} src={avatarUrl} size={38} />
-          <span className="flex-1 text-sm" style={{ color: "var(--text-muted)" }}>O que queres publicar?</span>
+          <span className="flex-1 text-sm" style={{ color: "var(--text-muted)" }}>{placeholder ?? "O que queres publicar?"}</span>
           <Plus className="h-5 w-5 shrink-0" style={{ color: ACCENT }} />
         </button>
         <div className="flex items-center gap-1.5 px-3 pb-3">
@@ -445,6 +455,7 @@ export function ComposeBox({ name, username, avatarUrl, onPublished }: {
           onClose={() => { setOpen(false); setOpenWithPoll(false); }}
           onPublished={onPublished}
           startWithPoll={openWithPoll}
+          redeContext={redeContext}
         />
       )}
     </>

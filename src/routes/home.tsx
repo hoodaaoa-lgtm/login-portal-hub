@@ -40,6 +40,7 @@ import { useTranslation } from "react-i18next";
 import i18n from "@/lib/i18n";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { ComposeBox } from "@/components/QuickComposer";
+import { RedeStoriesBar } from "@/components/RedeStoriesBar";
 import { getSeenPostIds, addSeenPostIds, getSeenVideoIds, addSeenVideoIds, diversifyByAuthor, diversifyByAuthorAndTopic } from "@/lib/feedSeen";
 function t(key: string, opts?: Record<string, unknown>) { return i18n.t(key, opts) as string; }
 
@@ -157,7 +158,7 @@ function HomePage() {
 
   const FEED_CHUNK_SIZE = 30;
   const ACCENT_LOCAL = ["#5B3FCF","#F26B3A","#1FAFA6","#6BA547","#E94B8A","#FFC93C"];
-  const POST_SELECT_FIELDS = "id,author_id,author_username,author_name,author_color,content,kind,is_ad,created_at,photo_url,photos,video_url,thumbnail_url,clip_video_id,clip_start,clip_end,clip_title,clip_thumb_url,views_count,reposts_count,poll,poll_ends_at,moderation_status,is_sensitive";
+  const POST_SELECT_FIELDS = "id,author_id,author_username,author_name,author_color,content,kind,is_ad,created_at,photo_url,photos,video_url,thumbnail_url,clip_video_id,clip_start,clip_end,clip_title,clip_thumb_url,views_count,reposts_count,poll,poll_ends_at,moderation_status,is_sensitive,rede_id,rede_nome,rede_username,rede_avatar_url,rede_verificada";
   const VIDEO_SELECT_FIELDS = "id,title,thumbnail_url,duration_seconds,views_count,likes_count,comments_count,created_at,owner_id";
 
   // ─── FEED COM RANKING (Fase 6) — busca posts via get_personalized_feed_v2 ─
@@ -358,6 +359,9 @@ function HomePage() {
         poll: p.poll ?? null, poll_ends_at: p.poll_ends_at ?? null,
         rank_score: rankByPostId[p.id] ?? 0,
         top_category: topicByPostId[p.id] ?? null,
+        rede_id: p.rede_id ?? null, rede_nome: p.rede_nome ?? null,
+        rede_username: p.rede_username ?? null, rede_avatar_url: p.rede_avatar_url ?? null,
+        rede_verificada: !!p.rede_verificada,
       };
     });
 
@@ -679,6 +683,7 @@ function HomePage() {
             onPublished={() => qc.invalidateQueries({ queryKey: QUERY_KEYS.feed(effectiveUserId) })}
           />
         </div>
+        <RedeStoriesBar userId={effectiveUserId} />
         {/* Feed */}
         <section className="pt-1 pb-6 space-y-1 w-full px-3">
           {loadingFeed && <UniversalSkeleton variant="feed" count={4} />}

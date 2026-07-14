@@ -5284,8 +5284,11 @@ function MensagensPage() {
           .select("conversation_id,user_id")
           .in("conversation_id", convIds)
           .neq("user_id", uid),
-        // flags is_official/reply_allowed de cada conversa (mensagens oficiais da Baya)
-        db.from("conversations").select("id,is_official,reply_allowed").in("id", convIds),
+        // flags is_official/reply_allowed de cada conversa (mensagens oficiais da Baya).
+        // rede_id identifica conversas de grupo de uma Rede — estas têm a
+        // sua própria UI (RedeChatPanel) e não devem aparecer aqui, pois
+        // esta caixa assume sempre exactamente um "outro" participante.
+        db.from("conversations").select("id,is_official,reply_allowed,rede_id").in("id", convIds),
         // última mensagem de TODAS as conversas de uma só vez
         db.from("messages")
           .select("id,conversation_id,content,created_at,sender_id,status,message_type,deleted_for_all,is_surprise")
@@ -5295,9 +5298,9 @@ function MensagensPage() {
         db.rpc("get_hooda_official_id"),
       ]);
       const officialId: string | null = (officialIdResult as any)?.data ?? null;
-      const convMetaMap: Record<string, { is_official: boolean; reply_allowed: boolean }> = {};
+      const convMetaMap: Record<string, { is_official: boolean; reply_allowed: boolean; rede_id: string | null }> = {};
       for (const row of (convMetaResult as any)?.data ?? []) {
-        convMetaMap[row.id] = { is_official: !!row.is_official, reply_allowed: row.reply_allowed !== false };
+        convMetaMap[row.id] = { is_official: !!row.is_official, reply_allowed: row.reply_allowed !== false, rede_id: row.rede_id ?? null };
       }
 
       const otherParticipants = partResult.data ?? [];
@@ -5344,6 +5347,9 @@ function MensagensPage() {
       const contactList: Contact[] = [];
 
       for (const convId of convIds) {
+        const meta = convMetaMap[convId];
+        if (meta?.rede_id) continue; // conversa de grupo de uma Rede — tem UI própria (RedeChatPanel)
+
         const participant = otherParticipants.find(
           (p: any) => p.conversation_id === convId && p.user_id !== uid
         );
@@ -5353,7 +5359,6 @@ function MensagensPage() {
         if (!profile) continue;
 
         const lastMsg = lastMsgMap[convId];
-        const meta = convMetaMap[convId];
         // Só sobrepõe a identidade para "Baya Oficial" do lado de quem RECEBE —
         // o próprio admin continua a ver o utilizador real na sua caixa pessoal.
         const isOfficial = !!meta?.is_official && uid !== officialId;
