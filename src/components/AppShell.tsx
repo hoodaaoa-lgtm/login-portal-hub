@@ -101,7 +101,7 @@ export function SideNav() {
       <div className="px-5 pt-5 pb-3">
         <span className="inline-flex items-center gap-1.5">
           <img src={snapperIcon} alt="" style={{ height: 30, width: "auto", display: "block" }} />
-          <img src={snapperWordmark} alt="Snapper" style={{ height: 24, width: "auto", display: "block" }} />
+          <img src={snapperWordmark} alt="Snapper" style={{ height: 24, width: "auto", display: "block", marginTop: 6 }} />
           {!countryLoading && suffix && (
             <span
               className="text-[11px] font-black uppercase tracking-widest mb-[0.15em]"

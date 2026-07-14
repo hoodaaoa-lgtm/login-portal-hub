@@ -679,7 +679,7 @@ function HomePage() {
         <div className="mx-auto px-4 h-14 flex items-center justify-between max-w-full">
           <span className="lg:hidden inline-flex items-center gap-1.5">
             <img src={snapperIcon} alt="" style={{ height: 26, width: "auto", display: "block" }} />
-            <img src={snapperWordmark} alt="Snapper" style={{ height: 21, width: "auto", display: "block" }} />
+            <img src={snapperWordmark} alt="Snapper" style={{ height: 21, width: "auto", display: "block", marginTop: 5 }} />
           </span>
           <span className="hidden lg:block" />
           <div className="lg:hidden flex items-center gap-1">
