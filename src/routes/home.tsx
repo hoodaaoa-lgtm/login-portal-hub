@@ -40,7 +40,6 @@ import { PollCard } from "@/components/PollCard";
 import { useTranslation } from "react-i18next";
 import i18n from "@/lib/i18n";
 import { useScrollLock } from "@/hooks/useScrollLock";
-import { RedeStoriesBar } from "@/components/RedeStoriesBar";
 import { getSeenPostIds, addSeenPostIds, getSeenVideoIds, addSeenVideoIds, diversifyByAuthor, diversifyByAuthorAndTopic } from "@/lib/feedSeen";
 function t(key: string, opts?: Record<string, unknown>) { return i18n.t(key, opts) as string; }
 
@@ -124,13 +123,6 @@ function HomePage() {
         .select("id,author_id,author_username,author_name,author_color,content,kind,is_ad,created_at,photo_url,photos,video_url,thumbnail_url,clip_video_id,clip_start,clip_end,clip_title,clip_thumb_url,poll,poll_ends_at,moderation_status,is_sensitive")
         .eq("is_draft", false)
         .or(`scheduled_at.is.null,scheduled_at.lte.${new Date().toISOString()}`)
-        // CORREÇÃO: mesma regra de distribuição do get_personalized_feed_v3 —
-        // este é só o fallback de emergência (RPC principal indisponível),
-        // mas não pode contornar a fase "Em Análise"/"Em Teste".
-        // O feed só mostra publicações feitas dentro de Redes — perfil
-        // deixou de publicar directamente, então posts antigos sem
-        // rede_id não entram mais no feed.
-        .not("rede_id", "is", null)
         .order("created_at", { ascending: false })
         .limit(50);
       return diversifyByAuthor((data ?? []).map((p: any) => {
@@ -161,7 +153,7 @@ function HomePage() {
 
   const FEED_CHUNK_SIZE = 30;
   const ACCENT_LOCAL = ["#5B3FCF","#F26B3A","#1FAFA6","#6BA547","#E94B8A","#FFC93C"];
-  const POST_SELECT_FIELDS = "id,author_id,author_username,author_name,author_color,content,kind,is_ad,created_at,photo_url,photos,video_url,thumbnail_url,clip_video_id,clip_start,clip_end,clip_title,clip_thumb_url,views_count,reposts_count,poll,poll_ends_at,moderation_status,is_sensitive,rede_id,rede_nome,rede_username,rede_avatar_url,rede_verificada";
+  const POST_SELECT_FIELDS = "id,author_id,author_username,author_name,author_color,content,kind,is_ad,created_at,photo_url,photos,video_url,thumbnail_url,clip_video_id,clip_start,clip_end,clip_title,clip_thumb_url,views_count,reposts_count,poll,poll_ends_at,moderation_status,is_sensitive";
   const VIDEO_SELECT_FIELDS = "id,title,thumbnail_url,duration_seconds,views_count,likes_count,comments_count,created_at,owner_id";
 
   // ─── FEED COM RANKING (Fase 6) — busca posts via get_personalized_feed_v2 ─
@@ -235,8 +227,6 @@ function HomePage() {
       let fallbackQuery = supabase.from("posts").select(POST_SELECT_FIELDS)
         .eq("is_draft", false)
         .or(`scheduled_at.is.null,scheduled_at.lte.${new Date().toISOString()}`)
-        // Mesma regra da RPC: só publicações de Redes entram no feed.
-        .not("rede_id", "is", null)
         .order("created_at", { ascending: false }).limit(FEED_CHUNK_SIZE);
       if (cursor) fallbackQuery = fallbackQuery.lt("created_at", cursor);
       const { data } = await fallbackQuery;
@@ -285,8 +275,6 @@ function HomePage() {
     const authorIds  = new Set<string>();
     eligiblePosts.forEach((p: any) => { const k = p.author_id || p.user_id; if (k) authorIds.add(k); });
     eligibleVideos.forEach((v: any) => { if (v.owner_id) authorIds.add(v.owner_id); });
-    const redeIds = new Set<string>();
-    eligiblePosts.forEach((p: any) => { if (p.rede_id) redeIds.add(p.rede_id); });
 
     // ── Sinais de exibição (likes/comentários/perfis) — sem influenciar ordem ──
     const [
@@ -294,7 +282,6 @@ function HomePage() {
       { data: commentsData },
       { data: authorProfiles },
       { data: videoLikesData },
-      { data: redeAdminData },
     ] = await Promise.all([
       postIds.length > 0
         ? supabase.from("post_likes").select("post_id,user_id").in("post_id", postIds)
@@ -308,9 +295,6 @@ function HomePage() {
       videoIds.length > 0 && uid
         ? (supabase as any).from("video_likes").select("video_id").eq("user_id", uid).in("video_id", videoIds)
         : Promise.resolve({ data: [] as any[] }),
-      redeIds.size > 0
-        ? (supabase as any).from("rede_membros").select("rede_id,user_id").in("rede_id", [...redeIds]).eq("papel", "admin").eq("estado", "ativo")
-        : Promise.resolve({ data: [] as any[] }),
     ]);
 
     const likedVideoSet = new Set((videoLikesData || []).map((l: any) => l.video_id));
@@ -322,9 +306,6 @@ function HomePage() {
     });
     const commentsByPost: Record<string, number> = {};
     (commentsData || []).forEach((c: any) => { commentsByPost[c.post_id] = (commentsByPost[c.post_id] || 0) + 1; });
-
-    const redeAdminKeys = new Set<string>();
-    (redeAdminData || []).forEach((m: any) => redeAdminKeys.add(`${m.rede_id}:${m.user_id}`));
 
     const avatarMap: Record<string, string | null> = {};
     const nameMap: Record<string, string> = {};
@@ -370,10 +351,6 @@ function HomePage() {
         poll: p.poll ?? null, poll_ends_at: p.poll_ends_at ?? null,
         rank_score: rankByPostId[p.id] ?? 0,
         top_category: topicByPostId[p.id] ?? null,
-        rede_id: p.rede_id ?? null, rede_nome: p.rede_nome ?? null,
-        rede_username: p.rede_username ?? null, rede_avatar_url: p.rede_avatar_url ?? null,
-        rede_verificada: !!p.rede_verificada,
-        author_is_rede_admin: !!(p.rede_id && authorKey && redeAdminKeys.has(`${p.rede_id}:${authorKey}`)),
       };
     });
 
@@ -708,9 +685,6 @@ function HomePage() {
       </header>
 
       <main className="w-full max-w-full">
-        {/* A Home não tem caixa de publicar — publicar é uma ação dentro de
-            cada Rede (RedeStoriesBar abaixo leva às Redes que sigo). */}
-        <RedeStoriesBar userId={effectiveUserId} />
         {/* Feed */}
         <section className="pt-1 pb-6 space-y-1 w-full px-3">
           {loadingFeed && <UniversalSkeleton variant="feed" count={4} />}

@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { Sparkles, Share2, Search, Film, Bell, Heart, Users } from "lucide-react";
+import { Sparkles, Share2, Search, Film, Bell, Heart } from "lucide-react";
 import { toast } from "sonner";
 
 /**
@@ -45,11 +45,6 @@ function buildTips(): Tip[] {
     {
       icon: Heart,
       text: "Gostar, comentar e guardar publicações ajuda o teu feed a mostrar mais do que gostas.",
-    },
-    {
-      icon: Users,
-      text: "Descobre Redes sobre os teus temas favoritos na aba Redes do Explorar.",
-      cta: { label: "Ver Redes", action: ({ navigate }) => navigate({ to: "/explorar", search: { tab: "redes" } }) },
     },
     {
       icon: Bell,

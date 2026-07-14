@@ -10,7 +10,6 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as UsoRouteImport } from './routes/uso'
-import { Route as StudioRouteImport } from './routes/studio'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as PrivacidadeRouteImport } from './routes/privacidade'
@@ -24,20 +23,12 @@ import { Route as DefinicoesRouteImport } from './routes/definicoes'
 import { Route as AcessibilidadeRouteImport } from './routes/acessibilidade'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
-import { Route as RedesNovaRouteImport } from './routes/redes.nova'
-import { Route as RedesUsernameRouteImport } from './routes/redes.$username'
 import { Route as PostIdRouteImport } from './routes/post.$id'
 import { Route as AuthBridgeRouteImport } from './routes/auth.bridge'
-import { Route as RedesUsernameDefinicoesRouteImport } from './routes/redes.$username.definicoes'
 
 const UsoRoute = UsoRouteImport.update({
   id: '/uso',
   path: '/uso',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const StudioRoute = StudioRouteImport.update({
-  id: '/studio',
-  path: '/studio',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SignupRoute = SignupRouteImport.update({
@@ -105,16 +96,6 @@ const UUsernameRoute = UUsernameRouteImport.update({
   path: '/u/$username',
   getParentRoute: () => rootRouteImport,
 } as any)
-const RedesNovaRoute = RedesNovaRouteImport.update({
-  id: '/redes/nova',
-  path: '/redes/nova',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const RedesUsernameRoute = RedesUsernameRouteImport.update({
-  id: '/redes/$username',
-  path: '/redes/$username',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const PostIdRoute = PostIdRouteImport.update({
   id: '/post/$id',
   path: '/post/$id',
@@ -124,11 +105,6 @@ const AuthBridgeRoute = AuthBridgeRouteImport.update({
   id: '/auth/bridge',
   path: '/auth/bridge',
   getParentRoute: () => rootRouteImport,
-} as any)
-const RedesUsernameDefinicoesRoute = RedesUsernameDefinicoesRouteImport.update({
-  id: '/definicoes',
-  path: '/definicoes',
-  getParentRoute: () => RedesUsernameRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -144,14 +120,10 @@ export interface FileRoutesByFullPath {
   '/privacidade': typeof PrivacidadeRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
-  '/studio': typeof StudioRoute
   '/uso': typeof UsoRoute
   '/auth/bridge': typeof AuthBridgeRoute
   '/post/$id': typeof PostIdRoute
-  '/redes/$username': typeof RedesUsernameRouteWithChildren
-  '/redes/nova': typeof RedesNovaRoute
   '/u/$username': typeof UUsernameRoute
-  '/redes/$username/definicoes': typeof RedesUsernameDefinicoesRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -166,14 +138,10 @@ export interface FileRoutesByTo {
   '/privacidade': typeof PrivacidadeRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
-  '/studio': typeof StudioRoute
   '/uso': typeof UsoRoute
   '/auth/bridge': typeof AuthBridgeRoute
   '/post/$id': typeof PostIdRoute
-  '/redes/$username': typeof RedesUsernameRouteWithChildren
-  '/redes/nova': typeof RedesNovaRoute
   '/u/$username': typeof UUsernameRoute
-  '/redes/$username/definicoes': typeof RedesUsernameDefinicoesRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -189,14 +157,10 @@ export interface FileRoutesById {
   '/privacidade': typeof PrivacidadeRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
-  '/studio': typeof StudioRoute
   '/uso': typeof UsoRoute
   '/auth/bridge': typeof AuthBridgeRoute
   '/post/$id': typeof PostIdRoute
-  '/redes/$username': typeof RedesUsernameRouteWithChildren
-  '/redes/nova': typeof RedesNovaRoute
   '/u/$username': typeof UUsernameRoute
-  '/redes/$username/definicoes': typeof RedesUsernameDefinicoesRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -213,14 +177,10 @@ export interface FileRouteTypes {
     | '/privacidade'
     | '/reset-password'
     | '/signup'
-    | '/studio'
     | '/uso'
     | '/auth/bridge'
     | '/post/$id'
-    | '/redes/$username'
-    | '/redes/nova'
     | '/u/$username'
-    | '/redes/$username/definicoes'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -235,14 +195,10 @@ export interface FileRouteTypes {
     | '/privacidade'
     | '/reset-password'
     | '/signup'
-    | '/studio'
     | '/uso'
     | '/auth/bridge'
     | '/post/$id'
-    | '/redes/$username'
-    | '/redes/nova'
     | '/u/$username'
-    | '/redes/$username/definicoes'
   id:
     | '__root__'
     | '/'
@@ -257,14 +213,10 @@ export interface FileRouteTypes {
     | '/privacidade'
     | '/reset-password'
     | '/signup'
-    | '/studio'
     | '/uso'
     | '/auth/bridge'
     | '/post/$id'
-    | '/redes/$username'
-    | '/redes/nova'
     | '/u/$username'
-    | '/redes/$username/definicoes'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -280,12 +232,9 @@ export interface RootRouteChildren {
   PrivacidadeRoute: typeof PrivacidadeRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SignupRoute: typeof SignupRoute
-  StudioRoute: typeof StudioRoute
   UsoRoute: typeof UsoRoute
   AuthBridgeRoute: typeof AuthBridgeRoute
   PostIdRoute: typeof PostIdRoute
-  RedesUsernameRoute: typeof RedesUsernameRouteWithChildren
-  RedesNovaRoute: typeof RedesNovaRoute
   UUsernameRoute: typeof UUsernameRoute
 }
 
@@ -296,13 +245,6 @@ declare module '@tanstack/react-router' {
       path: '/uso'
       fullPath: '/uso'
       preLoaderRoute: typeof UsoRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/studio': {
-      id: '/studio'
-      path: '/studio'
-      fullPath: '/studio'
-      preLoaderRoute: typeof StudioRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/signup': {
@@ -396,20 +338,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UUsernameRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/redes/nova': {
-      id: '/redes/nova'
-      path: '/redes/nova'
-      fullPath: '/redes/nova'
-      preLoaderRoute: typeof RedesNovaRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/redes/$username': {
-      id: '/redes/$username'
-      path: '/redes/$username'
-      fullPath: '/redes/$username'
-      preLoaderRoute: typeof RedesUsernameRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/post/$id': {
       id: '/post/$id'
       path: '/post/$id'
@@ -424,27 +352,8 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthBridgeRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/redes/$username/definicoes': {
-      id: '/redes/$username/definicoes'
-      path: '/definicoes'
-      fullPath: '/redes/$username/definicoes'
-      preLoaderRoute: typeof RedesUsernameDefinicoesRouteImport
-      parentRoute: typeof RedesUsernameRoute
-    }
   }
 }
-
-interface RedesUsernameRouteChildren {
-  RedesUsernameDefinicoesRoute: typeof RedesUsernameDefinicoesRoute
-}
-
-const RedesUsernameRouteChildren: RedesUsernameRouteChildren = {
-  RedesUsernameDefinicoesRoute: RedesUsernameDefinicoesRoute,
-}
-
-const RedesUsernameRouteWithChildren = RedesUsernameRoute._addFileChildren(
-  RedesUsernameRouteChildren,
-)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -459,12 +368,9 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacidadeRoute: PrivacidadeRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SignupRoute: SignupRoute,
-  StudioRoute: StudioRoute,
   UsoRoute: UsoRoute,
   AuthBridgeRoute: AuthBridgeRoute,
   PostIdRoute: PostIdRoute,
-  RedesUsernameRoute: RedesUsernameRouteWithChildren,
-  RedesNovaRoute: RedesNovaRoute,
   UUsernameRoute: UUsernameRoute,
 }
 export const routeTree = rootRouteImport

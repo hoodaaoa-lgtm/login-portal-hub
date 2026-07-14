@@ -15,7 +15,7 @@ import {
   Settings, LogOut, MessageCircle, Flag, X, Image, Type, Plus, Repeat2, Quote,
   BookOpen, ChevronRight, Lock, Shield, TrendingUp, Bookmark,
   Info, Camera, Link, MapPin, Calendar, Bell, HelpCircle, Globe,
-  Banknote, BarChart3, Users, Star, Heart, Share2,
+  Banknote, BarChart3, Star, Heart, Share2,
   MoreHorizontal, Trash2, Send, Copy, Moon, Sun, ExternalLink,
   Twitter, Instagram, Youtube, Facebook, Linkedin, Music2, Loader, Tv, Film,
   ArrowLeft, Check,
@@ -31,7 +31,6 @@ import { optimizeAvatar, optimizePostPhoto } from "@/lib/imageOptimize";
 import { uploadFeedVideo } from "@/lib/cloudinaryFeedVideo";
 import { fetchPostComments, sendPostComment, replyToPostComment, toggleCommentLike } from "@/lib/comments";
 import { deletePostForEveryone } from "@/lib/posts";
-import { fetchMinhasRedesCriadas } from "@/lib/redes";
 import { UniversalPostCard, normalizePost } from "@/components/UniversalPostCard";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { PhotoViewer } from "@/components/PhotoViewer";
@@ -737,66 +736,6 @@ function EditProfileModal({
 }
 
 /* ─── Painel ClickAds ─── */
-/* ─── Aba "Minhas Redes" no perfil — Redes criadas pelo utilizador ─── */
-const REDE_TAB_COLORS = ["#5B3FCF", "#F26B3A", "#1FAFA6", "#6BA547", "#E94B8A", "#FFC93C"];
-const redeTabColorFor = (s: string) => REDE_TAB_COLORS[(s?.charCodeAt(0) ?? 0) % REDE_TAB_COLORS.length];
-
-function MinhasRedesTab({ userId }: { userId: string }) {
-  const navigate = useNavigate();
-  const { data: redes, isLoading } = useQuery({
-    queryKey: ["minhas-redes-criadas", userId],
-    queryFn: () => fetchMinhasRedesCriadas(userId),
-    enabled: !!userId,
-    staleTime: 30_000,
-  });
-
-  if (isLoading) {
-    return (
-      <div className="flex justify-center py-14">
-        <div className="h-6 w-6 rounded-full border-2 animate-spin" style={{ borderColor: "#5B3FCF", borderTopColor: "transparent" }} />
-      </div>
-    );
-  }
-
-  if (!redes || redes.length === 0) {
-    return (
-      <div className="px-5 py-12 flex flex-col items-center gap-3 text-center">
-        <div className="w-16 h-16 rounded-full bg-[#5B3FCF]/10 flex items-center justify-center">
-          <Users className="h-7 w-7 text-[#5B3FCF]" />
-        </div>
-        <p className="text-sm font-semibold text-[var(--text-muted)]">Ainda não criaste nenhuma Rede</p>
-        <p className="text-xs text-[var(--text-muted)]">Cria a tua Rede para começares a publicar.</p>
-        <button onClick={() => navigate({ to: "/redes/nova" })}
-          className="mt-1 flex items-center gap-1.5 text-xs font-bold rounded-full px-4 py-2 text-white transition active:scale-95"
-          style={{ background: "#5B3FCF" }}>
-          <Plus className="h-3.5 w-3.5" /> Criar Rede
-        </button>
-      </div>
-    );
-  }
-
-  return (
-    <div className="px-3 pt-2 pb-6 space-y-2">
-      {redes.map((r) => (
-        <button key={r.id}
-          onClick={() => navigate({ to: "/redes/$username", params: { username: r.username } })}
-          className="w-full flex items-center gap-3 px-3 py-3 rounded-2xl border hover:bg-[var(--s2)] transition"
-          style={{ borderColor: "var(--border-subtle)" }}>
-          <div className="h-11 w-11 rounded-full overflow-hidden flex items-center justify-center font-bold text-white text-base shrink-0"
-            style={{ background: redeTabColorFor(r.nome) }}>
-            {r.avatar_url
-              ? <img src={r.avatar_url} alt="" className="w-full h-full object-cover" loading="lazy" />
-              : (r.nome?.[0] ?? "?").toUpperCase()}
-          </div>
-          <div className="flex-1 min-w-0 text-left">
-            <p className="text-sm font-bold truncate" style={{ color: "var(--text-primary)" }}>{r.nome}</p>
-            <p className="text-xs truncate" style={{ color: "var(--text-muted)" }}>@{r.username} · {r.membros_count} membro{r.membros_count === 1 ? "" : "s"}</p>
-          </div>
-        </button>
-      ))}
-    </div>
-  );
-}
 
 function MonetizationPanel() {
   return (
@@ -1538,7 +1477,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
     if (initialProfile) setProfile(initialProfile);
   }, [initialProfile]);
   const name = profile?.full_name || profile?.username || email?.split("@")[0] || "?";
-  const [tab, setTab] = useState<"redes" | "info">("redes");
+  const [tab, setTab] = useState<"info">("info");
   const [showSettings, setShowSettings] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [photoViewing, setPhotoViewing] = useState<string|null>(null);
@@ -1908,7 +1847,6 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
   }
 
   const tabs = [
-    { key: "redes", label: "Minhas Redes", icon: Users },
     { key: "info", label: "Info", icon: Info },
   ] as const;
 
@@ -2042,17 +1980,6 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
           </div>
         </div>
 
-        {/* Botão para criar nova Rede — só na aba "Minhas Redes" */}
-        {tab === "redes" && (
-          <div className="px-5 mb-2 flex justify-end">
-            <button onClick={() => navigate({ to: "/redes/nova" })}
-              className="flex items-center gap-1.5 text-xs font-bold rounded-full px-3.5 py-1.5 text-white transition active:scale-95"
-              style={{ background: ACCENT }}>
-              <Plus className="h-3.5 w-3.5" /> Criar Rede
-            </button>
-          </div>
-        )}
-
         {/* Tabs estilo X — texto, sublinhado fino */}
         <div className="px-1 flex border-b" style={{ borderColor: "var(--border-subtle)" }}>
           {tabs.map((tItem) => (
@@ -2069,10 +1996,6 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
         </div>
 
         {/* Conteúdo das tabs */}
-        {tab === "redes" && (
-          <MinhasRedesTab userId={myUserId} />
-        )}
-
         {tab === "info" && (
           <div className="px-5 py-4 space-y-3">
             <div className="bg-[var(--s2)] rounded-2xl border border-[var(--border-subtle)] shadow-sm overflow-hidden">

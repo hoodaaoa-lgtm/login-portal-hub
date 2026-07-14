@@ -8,9 +8,9 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useAvatar } from "@/contexts/AvatarContext";
 import { useBadges } from "@/contexts/BadgeContext";
 import { UserDrawer } from "@/components/UserDrawer";
-import { RedePickerModal } from "@/components/RedePickerModal";
+import { QuickPostModal } from "@/components/QuickComposer";
 import {
-  Home, Compass, MessageSquare, Users, User, Tv, Menu,
+  Home, Compass, MessageSquare, User, Tv, Menu,
   Moon, Sun, Bell, Feather, MoreHorizontal, ArrowLeft,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,7 +19,6 @@ import { optimizeAvatar } from "@/lib/imageOptimize";
 const NAV_ITEMS = [
   { to: "/home",       label: t("nav.home"),          Icon: Home,          search: undefined as Record<string, string> | undefined },
   { to: "/explorar",   label: t("nav.explore"),     Icon: Compass,       search: undefined as Record<string, string> | undefined },
-  { to: "/redes/nova", label: "Criar Rede",         Icon: Users,         search: undefined as Record<string, string> | undefined },
   { to: "/mensagens",  label: t("nav.messages"),    Icon: MessageSquare, search: undefined as Record<string, string> | undefined },
   { to: "/home",       label: "Notificações",  Icon: Bell,          search: { notifications: "1" } as Record<string, string> | undefined },
   { to: "/perfil",     label: t("nav.profile"),       Icon: User,          search: undefined as Record<string, string> | undefined },
@@ -28,7 +27,6 @@ const NAV_ITEMS = [
 const MOBILE_ITEMS = [
   { to: "/home",       label: t("nav.home"),      Icon: Home,          search: undefined as Record<string, string> | undefined },
   { to: "/explorar",   label: t("nav.explore"),  Icon: Compass,        search: undefined as Record<string, string> | undefined },
-  { to: "/redes/nova", label: "Criar Rede",     Icon: Users,           search: undefined as Record<string, string> | undefined },
   { to: "/mensagens",  label: t("nav.messages"), Icon: MessageSquare,   search: undefined as Record<string, string> | undefined },
   { to: null,          label: "Menu",      Icon: Menu,                  search: undefined as Record<string, string> | undefined }, // Menu Hamburger
 ] as const;
@@ -126,7 +124,7 @@ export function SideNav() {
           const isNotif = label === "Notificações";
           const active = isNotif
             ? false
-            : (to as string) === "/hoodatv" || (to as string) === "/studio"
+            : (to as string) === "/hoodatv"
               ? pathname.startsWith(to as string)
               : pathname === to;
           const isPerfil = to === "/perfil";
@@ -192,7 +190,13 @@ export function SideNav() {
       </nav>
 
       {showComposer && (
-        <RedePickerModal onClose={() => setShowComposer(false)} />
+        <QuickPostModal
+          name={name}
+          username={currentUsername}
+          avatarUrl={avatarUrl}
+          onClose={() => setShowComposer(false)}
+          onPublished={() => setShowComposer(false)}
+        />
       )}
 
       {/* Bottom user card — X style */}
@@ -257,7 +261,7 @@ export function BottomNav() {
             const isMenu = to === null;
             const isNotif = label === "Notificações";
             const active = !isMenu && !isNotif && (
-              (to as string) === "/hoodatv" || (to as string) === "/studio"
+              (to as string) === "/hoodatv"
                 ? pathname.startsWith(to as string)
                 : pathname === to
             );

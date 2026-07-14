@@ -34,19 +34,6 @@ import { LinkPreview } from "@/components/LinkPreview";
 
 export const ACCENT_COLOR = "#5B3FCF";
 
-/* Igual ao ProfileAvatarLink, mas navega para a página da Rede. */
-function RedeAvatarLink({ username, children, className }: { username: string; children: React.ReactNode; className?: string }) {
-  const navigate = useNavigate();
-  return (
-    <span
-      className={className}
-      onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (username) navigate({ to: "/redes/$username", params: { username } }); }}
-      style={{ display: "inline-flex", cursor: "pointer" }}
-    >
-      {children}
-    </span>
-  );
-}
 
 /* Legenda de publicação estilo Instagram: nome em negrito à frente do
    texto, e quando o texto é grande corta com "...ler mais" clicável que
@@ -122,17 +109,6 @@ export type NormalizedPost = {
   moderation_status?: string | null;
   is_sensitive?: boolean | null;
   is_verified?: boolean;
-  // Redes (comunidades) — quando presente, o cabeçalho mostra a Rede em
-  // vez do autor, com "Publicado por {user}" como linha secundária.
-  rede_id?: string | null;
-  rede_username?: string | null;
-  rede_nome?: string | null;
-  rede_avatar_url?: string | null;
-  rede_verificada?: boolean;
-  // true quando o autor é admin desta Rede — nesse caso o post aparece
-  // como voz oficial da Rede, sem a linha "Publicado por {user}"
-  // (igual ao Reddit: só aparece a atribuição pessoal para membros comuns).
-  author_is_rede_admin?: boolean;
 };
 
 /* ── normalizePost — converte os formatos de dados de cada página
@@ -1209,53 +1185,23 @@ export function UniversalPostCard({ post: p, onDeleted, onBookmarkChange }: {
 
       <div className="flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-2.5">
-          {p.rede_id ? (
-            <RedeAvatarLink username={p.rede_username ?? ""}>
-              <div className="w-10 h-10 rounded-full overflow-hidden shrink-0 flex items-center justify-center font-bold text-white text-sm"
-                style={{ background: p.color || "#5B3FCF" }}>
-                {p.rede_avatar_url
-                  ? <img loading="lazy" decoding="async" src={optimizeAvatar(p.rede_avatar_url, 48)} alt="" className="w-full h-full object-cover" />
-                  : (p.rede_nome?.[0] ?? "?").toUpperCase()}
-              </div>
-            </RedeAvatarLink>
-          ) : (
-            <ProfileAvatarLink userId={p.author_id ?? ""} username={p.author_username ?? ""}>
-              <div className="w-10 h-10 rounded-full overflow-hidden shrink-0 flex items-center justify-center font-bold text-white text-sm"
-                style={{ background: p.color || "#5B3FCF" }}>
-                {p.avatar_url
-                  ? <img loading="lazy" decoding="async" src={optimizeAvatar(p.avatar_url, 48)} alt="" className="w-full h-full object-cover" />
-                  : (p.user?.[0] ?? "?").toUpperCase()}
-              </div>
-            </ProfileAvatarLink>
-          )}
+          <ProfileAvatarLink userId={p.author_id ?? ""} username={p.author_username ?? ""}>
+            <div className="w-10 h-10 rounded-full overflow-hidden shrink-0 flex items-center justify-center font-bold text-white text-sm"
+              style={{ background: p.color || "#5B3FCF" }}>
+              {p.avatar_url
+                ? <img loading="lazy" decoding="async" src={optimizeAvatar(p.avatar_url, 48)} alt="" className="w-full h-full object-cover" />
+                : (p.user?.[0] ?? "?").toUpperCase()}
+            </div>
+          </ProfileAvatarLink>
           <div className="min-w-0">
-            {p.rede_id ? (
-              <RedeAvatarLink username={p.rede_username ?? ""} className="inline-flex">
-                <span className="text-sm font-bold hover:underline inline-flex items-center gap-1" style={{ color: "var(--text-primary)" }}>
-                  {p.rede_nome}
-                  {p.rede_verificada && <VerifiedBadge size={13} />}
-                </span>
-              </RedeAvatarLink>
-            ) : (
-              <ProfileAvatarLink userId={p.author_id ?? ""} username={p.author_username ?? ""} className="inline-flex">
-                <span className="text-sm font-bold hover:underline inline-flex items-center gap-1" style={{ color: "var(--text-primary)" }}>
-                  {p.user}
-                  {p.is_verified && <VerifiedBadge size={13} />}
-                  {isAd && <span className="text-[9px] uppercase bg-[var(--s2)] text-[var(--text-muted)] px-1.5 py-0.5 rounded font-semibold ml-1">Patrocinado</span>}
-                </span>
-              </ProfileAvatarLink>
-            )}
-            {p.rede_id ? (
-              <p className="text-[11px] leading-tight" style={{ color: "var(--text-muted)" }}>
-                {!p.author_is_rede_admin && (
-                  <>
-                    Publicado por <ProfileAvatarLink userId={p.author_id ?? ""} username={p.author_username ?? ""} className="inline"><span className="hover:underline">{p.user}</span></ProfileAvatarLink>
-                    {timeLabel ? " · " : ""}
-                  </>
-                )}
-                {timeLabel}
-              </p>
-            ) : (p.name || timeLabel) && (
+            <ProfileAvatarLink userId={p.author_id ?? ""} username={p.author_username ?? ""} className="inline-flex">
+              <span className="text-sm font-bold hover:underline inline-flex items-center gap-1" style={{ color: "var(--text-primary)" }}>
+                {p.user}
+                {p.is_verified && <VerifiedBadge size={13} />}
+                {isAd && <span className="text-[9px] uppercase bg-[var(--s2)] text-[var(--text-muted)] px-1.5 py-0.5 rounded font-semibold ml-1">Patrocinado</span>}
+              </span>
+            </ProfileAvatarLink>
+            {(p.name || timeLabel) && (
               <p className="text-[11px] leading-tight" style={{ color: "var(--text-muted)" }}>
                 {p.name}{p.name && timeLabel ? " · " : ""}{timeLabel}
               </p>
