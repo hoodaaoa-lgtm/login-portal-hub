@@ -445,47 +445,11 @@ async function checkMsgPermission(myId: string, targetId: string): Promise<"allo
     console.log(`[checkMsgPermission] Permissão de ${targetId}: "${perm}"`);
 
     if (perm === "todos") return "allowed";
-    // "aprovados" = sempre requer pedido de mensagem (independente de seguimento)
-    if (perm === "aprovados") return "request";
-
-    // Verificar se sou seguidor
-    const { data: myProfile, error: myProfErr } = await db
-      .from("profiles")
-      .select("username")
-      .eq("id", myId)
-      .single();
-
-    if (myProfErr) {
-      console.warn("[checkMsgPermission] Erro ao obter perfil próprio:", myProfErr.message);
-      return "allowed";
-    }
-
-    const myUsername = myProfile?.username ?? "";
-    const targetUsername = targetProfile?.username ?? "";
-
-    if (perm === "seguidores") {
-      // O alvo segue-me a mim?
-      const { data: follows, error: followErr } = await db
-        .from("follows")
-        .select("follower_id")
-        .eq("follower_id", targetId)
-        .eq("target_username", myUsername)
-        .maybeSingle();
-      if (followErr) console.warn("[checkMsgPermission] Erro ao verificar 'seguidores':", followErr.message);
-      return follows ? "allowed" : "request";
-    }
-
-    if (perm === "mutuos") {
-      // Verificar seguimento mútuo
-      const [{ data: iFollow, error: iFollowErr }, { data: theyFollow, error: theyFollowErr }] = await Promise.all([
-        db.from("follows").select("follower_id").eq("follower_id", myId).eq("target_username", targetUsername).maybeSingle(),
-        db.from("follows").select("follower_id").eq("follower_id", targetId).eq("target_username", myUsername).maybeSingle(),
-      ]);
-      if (iFollowErr) console.warn("[checkMsgPermission] Erro ao verificar iFollow:", iFollowErr.message);
-      if (theyFollowErr) console.warn("[checkMsgPermission] Erro ao verificar theyFollow:", theyFollowErr.message);
-      return (iFollow && theyFollow) ? "allowed" : "request";
-    }
-
+    // "aprovados" = sempre requer pedido de mensagem
+    // "seguidores"/"mutuos" já não existem como opções novas (o sistema de
+    // seguir foi removido), mas perfis antigos podem ainda ter um destes
+    // valores gravados — tratamos ambos como "aprovados" (sempre pedido),
+    // já que não há mais forma de saber quem "seguia" quem.
     return "request";
   } catch {
     return "allowed"; // fallback permissivo em caso de erro
@@ -3201,44 +3165,11 @@ function ChatPanel({ myId, contact, onBack, contacts }: {
       const { data: prof } = await db.from("profiles").select("msg_permission").eq("id", contact.id).maybeSingle();
       const perm = (prof as any)?.msg_permission ?? "todos";
       if (perm === "todos") { setMsgPermBlocked(false); return; }
-      if (perm === "aprovados") {
-        setMsgPermBlocked(true);
-        setMsgPermReason(`@${contact.username} só aceita mensagens de utilizadores aprovados.`);
-        return;
-      }
-      // "seguidores"/"mutuos" usam sempre target_username (nunca
-      // following_id): following_id só fica preenchido quando quem seguiu
-      // passou pela RPC toggle_follow com o id do alvo, e nem todos os
-      // sítios da app faziam isso — usar following_id aqui dava falsos
-      // "não segue" para follows válidos mas sem essa coluna preenchida.
-      // target_username é sempre gravado, por isso é a fonte fiável.
-      const { data: myProf } = await db.from("profiles").select("username").eq("id", myId).maybeSingle();
-      const myUsername = (myProf as any)?.username ?? "";
-
-      if (perm === "seguidores") {
-        // Verificar se o contacto me segue
-        const { data: follows } = await db.from("follows").select("follower_id")
-          .eq("follower_id", contact.id).eq("target_username", myUsername).maybeSingle();
-        if (!follows) {
-          setMsgPermBlocked(true);
-          setMsgPermReason(`@${contact.username} só aceita mensagens de acompanhantes.`);
-        } else {
-          setMsgPermBlocked(false);
-        }
-        return;
-      }
-      if (perm === "mutuos") {
-        const [{ data: iFollow }, { data: theyFollow }] = await Promise.all([
-          db.from("follows").select("follower_id").eq("follower_id", myId).eq("target_username", contact.username).maybeSingle(),
-          db.from("follows").select("follower_id").eq("follower_id", contact.id).eq("target_username", myUsername).maybeSingle(),
-        ]);
-        if (!iFollow || !theyFollow) {
-          setMsgPermBlocked(true);
-          setMsgPermReason(`@${contact.username} só aceita mensagens de utilizadores com acompanhamento mútuo.`);
-        } else {
-          setMsgPermBlocked(false);
-        }
-      }
+      // "aprovados" e valores antigos "seguidores"/"mutuos" (opções
+      // removidas junto com o sistema de seguir) tratam-se todos como
+      // "aprovados": requer sempre pedido de mensagem.
+      setMsgPermBlocked(true);
+      setMsgPermReason(`@${contact.username} só aceita mensagens de utilizadores aprovados.`);
     })();
   }, [myId, contact.id, contact.username]);
 

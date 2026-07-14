@@ -68,11 +68,10 @@ function DefinicoesPage() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
       const uid = session.user.id;
-      // Apagar dados do utilizador (posts, follows, likes, mensagens, perfil)
+      // Apagar dados do utilizador (posts, likes, mensagens, perfil)
       const db = supabase as any;
       await Promise.allSettled([
         db.from("posts").delete().eq("user_id", uid),
-        db.from("follows").delete().or(`follower_id.eq.${uid},following_id.eq.${uid}`),
         db.from("likes").delete().eq("user_id", uid),
         db.from("messages").delete().eq("sender_id", uid),
         db.from("comments").delete().eq("user_id", uid),

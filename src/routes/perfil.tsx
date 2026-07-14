@@ -1269,11 +1269,10 @@ export function MsgPrivacyPanel({ onBack, msgPermission, onMsgPermissionChange }
   const [err, setErr] = useState("");
   const [savedOk, setSavedOk] = useState(false);
 
-  // Valores que a constraint da DB aceita: todos, seguidores, mutuos, aprovados
+  // Valores que a constraint da DB aceita: todos, aprovados
+  // ("seguidores" e "mutuos" foram removidos junto com o sistema de seguir)
   const OPTIONS = [
     { value: "todos",      label: "Toda a gente",     desc: "Qualquer utilizador pode escrever-te" },
-    { value: "seguidores", label: t("profile.followers"),        desc: "Apenas quem te acompanha" },
-    { value: "mutuos",     label: "Acompanhamento mútuo", desc: "Quem acompanhas e te acompanha" },
     { value: "aprovados",  label: "Apenas aprovados", desc: "Tens de aceitar cada pedido" },
   ];
 
