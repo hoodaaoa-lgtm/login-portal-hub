@@ -1,15 +1,14 @@
+import snapperIcon from "../assets/splash/snapper-icon.png";
+
 export const SPLASH_EXIT_MS = 800;
 
 type Props = { leaving?: boolean };
-
-const COLORS  = ['#E94B8A','#F2874B','#1FAFA6','#7F5AF0'];
-const LETTERS = ['B','a','y','a'];
 
 export function SplashScreen({ leaving = false }: Props) {
   return (
     <main
       role="status"
-      aria-label="A carregar a Baya"
+      aria-label="A carregar a Snapper"
       style={{
         position: 'fixed', inset: 0, zIndex: 9999,
         background: '#ffffff',
@@ -28,19 +27,29 @@ export function SplashScreen({ leaving = false }: Props) {
         }
       `}</style>
 
-      <div className="_baya-logo" style={{ display:'flex', alignItems:'center', gap: 0 }}>
-        {LETTERS.map((ch, i) => (
-          <span key={i} style={{
-            fontSize: 52,
+      <div className="_baya-logo" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
+        <img src={snapperIcon} alt="" style={{ width: 96, height: 'auto' }} />
+        <span
+          style={{
+            fontSize: 40,
             fontWeight: 900,
-            color: COLORS[i],
-            fontFamily: "'Nunito','Quicksand',system-ui,sans-serif",
             lineHeight: 1,
             letterSpacing: -1,
-          }}>
-            {ch}
+            fontFamily: "'Nunito','Quicksand',system-ui,sans-serif",
+          }}
+        >
+          <span style={{ color: '#0B1220' }}>snap</span>
+          <span
+            style={{
+              background: 'linear-gradient(90deg,#E94B8A,#F2874B,#7F5AF0)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+            }}
+          >
+            per
           </span>
-        ))}
+        </span>
       </div>
     </main>
   );
