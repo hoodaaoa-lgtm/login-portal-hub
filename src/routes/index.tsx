@@ -11,7 +11,7 @@ import {
 export const Route = createFileRoute("/")(({
   head: () => ({
     meta: [
-      { title: "Baya" },
+      { title: "Snapper" },
       { name: "description", content: "Baya é a rede social para partilhares vídeos e fotos, conversares com amigos e descobrires conteúdo novo todos os dias. Cria a tua conta grátis." },
     ],
   }),
