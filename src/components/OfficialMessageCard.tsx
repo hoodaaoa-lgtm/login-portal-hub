@@ -98,7 +98,7 @@ function BayaInstallModal({ title, onConfirm, onClose, installing }: {
         </div>
         <p className="font-extrabold text-[17px] text-black mb-1">{title}</p>
         <p className="text-[13px] text-neutral-500 leading-snug mb-5">
-          Instala a Baya no teu ecrã inicial para nunca perderes uma mensagem, like ou acompanhante novo.
+          Instala a Baya no teu ecrã inicial para nunca perderes uma mensagem ou like novo.
         </p>
         <button
           onClick={onConfirm}

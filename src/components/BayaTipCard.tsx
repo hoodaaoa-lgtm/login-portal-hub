@@ -53,12 +53,12 @@ function buildTips(): Tip[] {
     },
     {
       icon: Users,
-      text: "Acompanha pessoas com interesses parecidos — encontra-as na aba Pessoas do Explorar.",
+      text: "Descobre pessoas com interesses parecidos na aba Pessoas do Explorar.",
       cta: { label: "Ver pessoas", action: ({ navigate }) => navigate({ to: "/explorar", search: { tab: "people" } }) },
     },
     {
       icon: Bell,
-      text: "Ativa as notificações para nunca perderes uma resposta ou um novo acompanhador.",
+      text: "Ativa as notificações para nunca perderes uma resposta ou uma mensagem nova.",
     },
     {
       icon: Sparkles,

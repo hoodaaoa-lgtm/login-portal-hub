@@ -294,7 +294,7 @@ function DefinicoesPage() {
             </div>
 
             <p className="text-sm mb-4" style={{ color: "var(--text-secondary)" }}>
-              Todos os teus dados serão apagados permanentemente: publicações, acompanhantes, mensagens e perfil.
+              Todos os teus dados serão apagados permanentemente: publicações, mensagens e perfil.
               <strong className="text-red-500"> Não é possível recuperar a conta depois de eliminar.</strong>
             </p>
 
