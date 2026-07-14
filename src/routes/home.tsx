@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { BayaLogo } from "@/components/BayaLogo";
+import snapperIcon from "@/assets/site/snapper-icon.png";
 import { BottomNav, SideNav, PageWrapper, FeedLayout } from "@/components/AppShell";
 import { RightSidebar } from "@/components/RightSidebar";
 import { useAvatar } from "@/contexts/AvatarContext";
@@ -676,7 +676,15 @@ function HomePage() {
       <header className="sticky top-0 z-30 border-b hooda-sticky-header"
         style={{ background: "var(--s0)", borderColor: "var(--border-subtle)", backdropFilter: "blur(20px)" }}>
         <div className="mx-auto px-4 h-14 flex items-center justify-between max-w-full">
-          <BayaLogo size="sm" className="lg:hidden" />
+          <span className="lg:hidden inline-flex items-center gap-1.5">
+            <img src={snapperIcon} alt="" className="h-7 w-auto" />
+            <span
+              className="text-foreground text-xl font-extrabold tracking-tight"
+              style={{ fontFamily: '"Nunito", "Quicksand", system-ui, sans-serif' }}
+            >
+              Snapper
+            </span>
+          </span>
           <span className="hidden lg:block" />
           <div className="lg:hidden flex items-center gap-1">
             <button className="p-2 hover:bg-[var(--s2)] rounded-full text-[var(--text-secondary)]"
