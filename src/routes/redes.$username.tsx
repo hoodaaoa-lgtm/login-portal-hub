@@ -225,7 +225,7 @@ function RedePage() {
             ) : (
               <button onClick={handleEntrar} disabled={joining}
                 className="mt-1 px-6 h-9 rounded-full text-xs font-bold text-white flex items-center gap-1.5" style={{ background: "#5B3FCF" }}>
-                {joining && <Loader2 className="h-3.5 w-3.5 animate-spin" />} Entrar
+                {joining && <Loader2 className="h-3.5 w-3.5 animate-spin" />} {rede.tipo === "canal" ? "Escrever-se" : "Entrar"}
               </button>
             )}
           </div>

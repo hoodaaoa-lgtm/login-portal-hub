@@ -2,10 +2,15 @@ import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { timeAgo } from "@/hooks/useTimeAgo";
-import { Send } from "lucide-react";
+import { Send, Image as ImageIcon, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { uploadMessageImage } from "@/lib/cloudinaryMessages";
+import { extractUrl } from "@/lib/linkPreview";
+import { LinkPreview } from "@/components/LinkPreview";
 
 type RedeMsg = {
   id: string; sender_id: string; content: string | null; created_at: string;
+  message_type?: string | null; media_url?: string | null;
   sender?: { username: string; full_name: string | null; avatar_url: string | null };
 };
 
@@ -23,7 +28,9 @@ export function RedeChatPanel({ conversationId }: { conversationId: string }) {
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [uploadingImg, setUploadingImg] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -31,7 +38,7 @@ export function RedeChatPanel({ conversationId }: { conversationId: string }) {
       setLoading(true);
       const { data } = await (supabase as any)
         .from("messages")
-        .select("id,sender_id,content,created_at")
+        .select("id,sender_id,content,created_at,message_type,media_url")
         .eq("conversation_id", conversationId)
         .eq("deleted_for_all", false)
         .order("created_at", { ascending: true })
@@ -77,6 +84,33 @@ export function RedeChatPanel({ conversationId }: { conversationId: string }) {
     if (error) { setText(t); console.error("[RedeChatPanel] erro ao enviar:", error); }
   }
 
+  async function handlePickImage() {
+    fileRef.current?.click();
+  }
+
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !user) return;
+    setUploadingImg(true);
+    try {
+      const { url } = await uploadMessageImage(file, `hooda/redes/${conversationId}`);
+      const { error } = await (supabase as any).from("messages").insert({
+        conversation_id: conversationId,
+        sender_id: user.id,
+        content: "📷 Imagem",
+        status: "sent",
+        message_type: "image",
+        media_url: url,
+      });
+      if (error) throw error;
+    } catch (err: any) {
+      toast.error("Erro ao enviar imagem: " + (err?.message ?? "desconhecido"));
+    } finally {
+      setUploadingImg(false);
+    }
+  }
+
   return (
     <div className="flex flex-col h-[60vh]">
       <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3">
@@ -97,11 +131,23 @@ export function RedeChatPanel({ conversationId }: { conversationId: string }) {
                 {!isMe && (
                   <span className="text-[10px] font-semibold px-1" style={{ color: "var(--text-muted)" }}>{m.sender?.full_name || m.sender?.username || "?"}</span>
                 )}
-                <div className="px-3 py-2 rounded-2xl text-sm" style={{
+                <div className="px-3 py-2 rounded-2xl text-sm max-w-full" style={{
                   background: isMe ? "#5B3FCF" : "var(--s2)",
                   color: isMe ? "#fff" : "var(--text-primary)",
+                  padding: m.message_type === "image" && m.media_url ? 4 : undefined,
                 }}>
-                  {m.content}
+                  {m.message_type === "image" && m.media_url ? (
+                    <img src={m.media_url} alt="" className="rounded-xl max-w-[220px] max-h-[280px] object-cover" />
+                  ) : (
+                    <>
+                      {m.content}
+                      {extractUrl(m.content ?? "") && (
+                        <div className="mt-1.5">
+                          <LinkPreview url={extractUrl(m.content ?? "")!} variant="message" isMe={isMe} />
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
                 <span className="text-[9px] px-1 mt-0.5" style={{ color: "var(--text-muted)" }}>{timeAgo(m.created_at)}</span>
               </div>
@@ -111,6 +157,12 @@ export function RedeChatPanel({ conversationId }: { conversationId: string }) {
         <div ref={endRef} />
       </div>
       <div className="flex items-center gap-2 px-3 py-2 border-t" style={{ borderColor: "var(--border-subtle)" }}>
+        <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+        <button onClick={handlePickImage} disabled={uploadingImg}
+          className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 disabled:opacity-40"
+          style={{ background: "var(--s2)" }}>
+          {uploadingImg ? <Loader2 className="h-4 w-4 animate-spin" style={{ color: "var(--text-secondary)" }} /> : <ImageIcon className="h-4 w-4" style={{ color: "var(--text-secondary)" }} />}
+        </button>
         <input
           value={text}
           onChange={(e) => setText(e.target.value)}
