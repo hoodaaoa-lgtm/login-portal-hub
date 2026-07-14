@@ -129,6 +129,10 @@ export type NormalizedPost = {
   rede_nome?: string | null;
   rede_avatar_url?: string | null;
   rede_verificada?: boolean;
+  // true quando o autor é admin desta Rede — nesse caso o post aparece
+  // como voz oficial da Rede, sem a linha "Publicado por {user}"
+  // (igual ao Reddit: só aparece a atribuição pessoal para membros comuns).
+  author_is_rede_admin?: boolean;
 };
 
 /* ── normalizePost — converte os formatos de dados de cada página
@@ -1243,8 +1247,13 @@ export function UniversalPostCard({ post: p, onDeleted, onBookmarkChange }: {
             )}
             {p.rede_id ? (
               <p className="text-[11px] leading-tight" style={{ color: "var(--text-muted)" }}>
-                Publicado por <ProfileAvatarLink userId={p.author_id ?? ""} username={p.author_username ?? ""} className="inline"><span className="hover:underline">{p.user}</span></ProfileAvatarLink>
-                {timeLabel ? ` · ${timeLabel}` : ""}
+                {!p.author_is_rede_admin && (
+                  <>
+                    Publicado por <ProfileAvatarLink userId={p.author_id ?? ""} username={p.author_username ?? ""} className="inline"><span className="hover:underline">{p.user}</span></ProfileAvatarLink>
+                    {timeLabel ? " · " : ""}
+                  </>
+                )}
+                {timeLabel}
               </p>
             ) : (p.name || timeLabel) && (
               <p className="text-[11px] leading-tight" style={{ color: "var(--text-muted)" }}>

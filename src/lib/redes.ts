@@ -125,6 +125,16 @@ export async function fetchPostsDaRede(redeId: string, cursor?: string | null) {
   return data ?? [];
 }
 
+/** IDs dos membros com papel 'admin' nesta Rede — usado para decidir se um
+ * post aparece como voz oficial da Rede (sem "Publicado por") ou como
+ * publicação de um membro comum (com atribuição, estilo Reddit). */
+export async function fetchAdminIdsDaRede(redeId: string): Promise<Set<string>> {
+  const { data, error } = await (supabase as any)
+    .from("rede_membros").select("user_id").eq("rede_id", redeId).eq("papel", "admin").eq("estado", "ativo");
+  if (error) throw error;
+  return new Set((data ?? []).map((m: any) => m.user_id as string));
+}
+
 export async function atualizarConfigRede(redeId: string, patch: Partial<Rede>): Promise<void> {
   const { error } = await (supabase as any).from("redes").update(patch).eq("id", redeId);
   if (error) throw error;

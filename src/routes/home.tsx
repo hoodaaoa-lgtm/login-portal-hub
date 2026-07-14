@@ -39,7 +39,6 @@ import { PollCard } from "@/components/PollCard";
 import { useTranslation } from "react-i18next";
 import i18n from "@/lib/i18n";
 import { useScrollLock } from "@/hooks/useScrollLock";
-import { ComposeBox } from "@/components/QuickComposer";
 import { RedeStoriesBar } from "@/components/RedeStoriesBar";
 import { getSeenPostIds, addSeenPostIds, getSeenVideoIds, addSeenVideoIds, diversifyByAuthor, diversifyByAuthorAndTopic } from "@/lib/feedSeen";
 function t(key: string, opts?: Record<string, unknown>) { return i18n.t(key, opts) as string; }
@@ -283,6 +282,8 @@ function HomePage() {
     const authorIds  = new Set<string>();
     eligiblePosts.forEach((p: any) => { const k = p.author_id || p.user_id; if (k) authorIds.add(k); });
     eligibleVideos.forEach((v: any) => { if (v.owner_id) authorIds.add(v.owner_id); });
+    const redeIds = new Set<string>();
+    eligiblePosts.forEach((p: any) => { if (p.rede_id) redeIds.add(p.rede_id); });
 
     // ── Sinais de exibição (likes/comentários/perfis) — sem influenciar ordem ──
     const [
@@ -290,6 +291,7 @@ function HomePage() {
       { data: commentsData },
       { data: authorProfiles },
       { data: videoLikesData },
+      { data: redeAdminData },
     ] = await Promise.all([
       postIds.length > 0
         ? supabase.from("post_likes").select("post_id,user_id").in("post_id", postIds)
@@ -303,6 +305,9 @@ function HomePage() {
       videoIds.length > 0 && uid
         ? (supabase as any).from("video_likes").select("video_id").eq("user_id", uid).in("video_id", videoIds)
         : Promise.resolve({ data: [] as any[] }),
+      redeIds.size > 0
+        ? (supabase as any).from("rede_membros").select("rede_id,user_id").in("rede_id", [...redeIds]).eq("papel", "admin").eq("estado", "ativo")
+        : Promise.resolve({ data: [] as any[] }),
     ]);
 
     const likedVideoSet = new Set((videoLikesData || []).map((l: any) => l.video_id));
@@ -314,6 +319,9 @@ function HomePage() {
     });
     const commentsByPost: Record<string, number> = {};
     (commentsData || []).forEach((c: any) => { commentsByPost[c.post_id] = (commentsByPost[c.post_id] || 0) + 1; });
+
+    const redeAdminKeys = new Set<string>();
+    (redeAdminData || []).forEach((m: any) => redeAdminKeys.add(`${m.rede_id}:${m.user_id}`));
 
     const avatarMap: Record<string, string | null> = {};
     const nameMap: Record<string, string> = {};
@@ -362,6 +370,7 @@ function HomePage() {
         rede_id: p.rede_id ?? null, rede_nome: p.rede_nome ?? null,
         rede_username: p.rede_username ?? null, rede_avatar_url: p.rede_avatar_url ?? null,
         rede_verificada: !!p.rede_verificada,
+        author_is_rede_admin: !!(p.rede_id && authorKey && redeAdminKeys.has(`${p.rede_id}:${authorKey}`)),
       };
     });
 
@@ -675,14 +684,8 @@ function HomePage() {
       </header>
 
       <main className="w-full max-w-full">
-        <div className="px-3 pt-3">
-          <ComposeBox
-            name={myDisplayName || "Utilizador"}
-            username={myUsername || "utilizador"}
-            avatarUrl={userAvatarUrl}
-            onPublished={() => qc.invalidateQueries({ queryKey: QUERY_KEYS.feed(effectiveUserId) })}
-          />
-        </div>
+        {/* A Home não tem caixa de publicar — publicar é uma ação dentro de
+            cada Rede (RedeStoriesBar abaixo leva às Redes que sigo). */}
         <RedeStoriesBar userId={effectiveUserId} />
         {/* Feed */}
         <section className="pt-1 pb-6 space-y-1 w-full px-3">

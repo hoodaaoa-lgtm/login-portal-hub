@@ -14,7 +14,7 @@ import { UniversalSkeleton } from "@/components/Skeletons";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   fetchRedeByUsername, fetchMinhaAdesao, entrarNaRede, sairDaRede,
-  fetchPostsDaRede, marcarRedeVista, type Rede, type RedeMembro,
+  fetchPostsDaRede, marcarRedeVista, fetchAdminIdsDaRede, type Rede, type RedeMembro,
 } from "@/lib/redes";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -26,7 +26,7 @@ export const Route = createFileRoute("/redes/$username")({
 const COLORS = ["#5B3FCF", "#F26B3A", "#1FAFA6", "#6BA547", "#E94B8A", "#FFC93C"];
 const colorFor = (s: string) => COLORS[(s?.charCodeAt(0) ?? 0) % COLORS.length];
 
-function rawToNormalizedPost(p: any): NormalizedPost {
+function rawToNormalizedPost(p: any, adminIds?: Set<string>): NormalizedPost {
   let text = p.content;
   let bg_color: string | null = null;
   if (p.kind === "bg") { try { const j = JSON.parse(p.content); text = j.text; bg_color = j.bgColor; } catch { /* noop */ } }
@@ -41,6 +41,7 @@ function rawToNormalizedPost(p: any): NormalizedPost {
     moderation_status: p.moderation_status, is_sensitive: !!p.is_sensitive,
     rede_id: p.rede_id, rede_nome: p.rede_nome, rede_username: p.rede_username,
     rede_avatar_url: p.rede_avatar_url, rede_verificada: !!p.rede_verificada,
+    author_is_rede_admin: !!(p.author_id && adminIds?.has(p.author_id)),
   };
 }
 
@@ -78,7 +79,14 @@ function RedePage() {
     getNextPageParam: (last) => (last.length > 0 ? last[last.length - 1].created_at : undefined),
   });
 
-  const posts = (postsData?.pages ?? []).flat().map(rawToNormalizedPost);
+  const { data: adminIds } = useQuery({
+    queryKey: ["rede-admin-ids", rede?.id],
+    queryFn: () => fetchAdminIdsDaRede(rede!.id),
+    enabled: !!rede?.id,
+    staleTime: 60_000,
+  });
+
+  const posts = (postsData?.pages ?? []).flat().map((p) => rawToNormalizedPost(p, adminIds));
 
   async function handleEntrar() {
     if (!rede || !user) { toast.error("Inicia sessão para entrar na Rede."); return; }
