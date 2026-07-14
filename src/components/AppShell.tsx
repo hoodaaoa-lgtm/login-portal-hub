@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { t } from "@/lib/useT";
 import { Link, useRouterState, useNavigate, useRouter } from "@tanstack/react-router";
-import { BayaLogo } from "@/components/BayaLogo";
+import snapperIcon from "@/assets/site/snapper-icon.png";
+import { useCountry } from "@/contexts/CountryContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useAvatar } from "@/contexts/AvatarContext";
 import { useBadges } from "@/contexts/BadgeContext";
@@ -67,6 +68,7 @@ export function SideNav() {
   const { theme, toggle } = useTheme();
   const { avatarUrl, name } = useAvatar();
   const { unreadMessages, unreadNotifications } = useBadges();
+  const { suffix, loading: countryLoading } = useCountry();
   const initial = (name?.[0] ?? "?").toUpperCase();
   const isPerfilActive = pathname === "/perfil";
   const [showDrawer, setShowDrawer] = React.useState(false);
@@ -96,7 +98,30 @@ export function SideNav() {
       }}>
       {/* Logo */}
       <div className="px-5 pt-5 pb-3">
-        <BayaLogo size="sm" animate={false} />
+        <span className="inline-flex items-center gap-1.5">
+          <img src={snapperIcon} alt="" className="h-8 w-auto" />
+          <span
+            className="text-foreground text-2xl font-extrabold tracking-tight"
+            style={{ fontFamily: '"Nunito", "Quicksand", system-ui, sans-serif' }}
+          >
+            Snapper
+          </span>
+          {!countryLoading && suffix && (
+            <span
+              className="text-[11px] font-black uppercase tracking-widest mb-[0.15em]"
+              style={{
+                color: "#ffffff",
+                background: "linear-gradient(135deg,#E94B8A,#7F5AF0)",
+                borderRadius: "5px",
+                padding: "1px 5px 1px 4px",
+                lineHeight: 1,
+                letterSpacing: "0.08em",
+              }}
+            >
+              {suffix}
+            </span>
+          )}
+        </span>
       </div>
 
       {/* Nav links */}
