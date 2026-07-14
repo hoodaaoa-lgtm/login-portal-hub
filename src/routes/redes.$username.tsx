@@ -201,33 +201,36 @@ function RedePage() {
           />
 
           {/* Cabeçalho da Rede */}
-          <div className="px-4 pt-4 pb-3 flex flex-col items-center text-center gap-2">
-            <div className="w-20 h-20 rounded-full overflow-hidden flex items-center justify-center font-bold text-white text-2xl"
+          <div className="px-4 pt-4 pb-3 flex items-start gap-3">
+            <div className="w-16 h-16 rounded-full overflow-hidden flex items-center justify-center font-bold text-white text-xl shrink-0"
               style={{ background: colorFor(rede.nome) }}>
               {rede.avatar_url ? <img src={rede.avatar_url} alt="" className="w-full h-full object-cover" /> : rede.nome[0]?.toUpperCase()}
             </div>
-            <p className="text-lg font-extrabold inline-flex items-center gap-1" style={{ color: "var(--text-primary)" }}>
-              {rede.nome}{rede.verificada && <VerifiedBadge size={15} />}
-            </p>
-            <p className="text-sm" style={{ color: "var(--text-muted)" }}>@{rede.username} · {rede.membros_count} membro{rede.membros_count === 1 ? "" : "s"}</p>
-            {rede.descricao && <p className="text-sm max-w-sm" style={{ color: "var(--text-secondary)" }}>{rede.descricao}</p>}
-
-            {souMembro ? (
-              <button onClick={handleSair} disabled={joining}
-                className="mt-1 px-6 h-9 rounded-full text-xs font-bold flex items-center gap-1.5"
-                style={{ background: "var(--s2)", color: "var(--text-primary)" }}>
-                {joining && <Loader2 className="h-3.5 w-3.5 animate-spin" />} Inscrito
-              </button>
-            ) : pendente ? (
-              <button disabled className="mt-1 px-6 h-9 rounded-full text-xs font-bold" style={{ background: "var(--s2)", color: "var(--text-muted)" }}>
-                Pedido enviado
-              </button>
-            ) : (
-              <button onClick={handleEntrar} disabled={joining}
-                className="mt-1 px-6 h-9 rounded-full text-xs font-bold text-white flex items-center gap-1.5" style={{ background: "#5B3FCF" }}>
-                {joining && <Loader2 className="h-3.5 w-3.5 animate-spin" />} {rede.tipo === "canal" ? "Escrever-se" : "Entrar"}
-              </button>
-            )}
+            <div className="flex-1 min-w-0">
+              <p className="text-base font-extrabold inline-flex items-center gap-1 truncate" style={{ color: "var(--text-primary)" }}>
+                {rede.nome}{rede.verificada && <VerifiedBadge size={15} />}
+              </p>
+              <p className="text-sm" style={{ color: "var(--text-muted)" }}>@{rede.username} · {rede.membros_count} membro{rede.membros_count === 1 ? "" : "s"}</p>
+              {rede.descricao && <p className="text-sm mt-1" style={{ color: "var(--text-secondary)" }}>{rede.descricao}</p>}
+            </div>
+            <div className="shrink-0">
+              {souMembro ? (
+                <button onClick={handleSair} disabled={joining}
+                  className="px-5 h-9 rounded-full text-xs font-bold flex items-center gap-1.5"
+                  style={{ background: "var(--s2)", color: "var(--text-primary)" }}>
+                  {joining && <Loader2 className="h-3.5 w-3.5 animate-spin" />} Inscrito
+                </button>
+              ) : pendente ? (
+                <button disabled className="px-5 h-9 rounded-full text-xs font-bold" style={{ background: "var(--s2)", color: "var(--text-muted)" }}>
+                  Pedido enviado
+                </button>
+              ) : (
+                <button onClick={handleEntrar} disabled={joining}
+                  className="px-5 h-9 rounded-full text-xs font-bold text-white flex items-center gap-1.5" style={{ background: "#5B3FCF" }}>
+                  {joining && <Loader2 className="h-3.5 w-3.5 animate-spin" />} {rede.tipo === "canal" ? "Escrever-se" : "Entrar"}
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Abas */}
