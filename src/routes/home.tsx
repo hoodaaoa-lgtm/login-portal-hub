@@ -676,10 +676,28 @@ function HomePage() {
         <div className="mx-auto px-4 h-14 flex items-center justify-between max-w-full">
           <BayaLogo size="sm" className="lg:hidden" />
           <span className="hidden lg:block" />
-          <button className="lg:hidden p-2 hover:bg-[var(--s2)] rounded-full text-[var(--text-secondary)]"
-            onClick={() => navigate({ to: "/explorar" })}>
-            <Search className="h-5 w-5" />
-          </button>
+          <div className="lg:hidden flex items-center gap-1">
+            <button className="p-2 hover:bg-[var(--s2)] rounded-full text-[var(--text-secondary)]"
+              onClick={() => navigate({ to: "/explorar" })}>
+              <Search className="h-5 w-5" />
+            </button>
+            <button className="relative p-2 hover:bg-[var(--s2)] rounded-full text-[var(--text-secondary)]"
+              onClick={() => setShowNotifCenter(true)}>
+              <Bell className="h-5 w-5" />
+              {unreadCount > 0 && (
+                <span className="absolute flex items-center justify-center rounded-full font-bold text-white"
+                  style={{
+                    top: 4, right: 4,
+                    minWidth: 15, height: 15, padding: "0 3px",
+                    fontSize: 8.5, lineHeight: 1,
+                    background: "#E94B8A",
+                    boxShadow: "0 0 0 2px var(--s0)",
+                  }}>
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              )}
+            </button>
+          </div>
         </div>
       </header>
 
