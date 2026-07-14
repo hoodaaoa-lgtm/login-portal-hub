@@ -1,7 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { fetchMinhasRedes } from "@/lib/redes";
-import { Plus } from "lucide-react";
 
 const COLORS = ["#5B3FCF", "#F26B3A", "#1FAFA6", "#6BA547", "#E94B8A", "#FFC93C"];
 const colorFor = (s: string) => COLORS[(s?.charCodeAt(0) ?? 0) % COLORS.length];
@@ -18,33 +17,12 @@ export function RedeStoriesBar({ userId }: { userId: string | null | undefined }
   });
 
   if (!userId) return null;
-  if (!redes || redes.length === 0) {
-    // Ainda sem Redes — mostra só o convite para criar/descobrir, discreto.
-    return (
-      <div className="px-3 pt-2">
-        <button
-          onClick={() => navigate({ to: "/explorar", search: { tab: "redes" } })}
-          className="text-xs font-semibold px-3 py-1.5 rounded-full"
-          style={{ background: "var(--s2)", color: "var(--text-secondary)" }}
-        >
-          + Descobrir Redes
-        </button>
-      </div>
-    );
-  }
+  // Ainda sem Redes — não mostra nada na Home. "Descobrir Redes" já vive
+  // dentro do Explorador (aba Redes), não precisa de duplicar aqui.
+  if (!redes || redes.length === 0) return null;
 
   return (
     <div className="px-3 pt-2 pb-1 flex gap-3 overflow-x-auto no-scrollbar">
-      <button
-        onClick={() => navigate({ to: "/explorar", search: { tab: "redes" } })}
-        className="shrink-0 flex flex-col items-center gap-1 w-16"
-      >
-        <div className="w-12 h-12 rounded-full flex items-center justify-center border-2"
-          style={{ borderColor: "var(--border-subtle)", color: "var(--text-muted)" }}>
-          <Plus className="h-5 w-5" />
-        </div>
-        <span className="text-[10px] truncate w-full text-center" style={{ color: "var(--text-muted)" }}>Redes</span>
-      </button>
       {redes.map((r) => (
         <button
           key={r.id}
