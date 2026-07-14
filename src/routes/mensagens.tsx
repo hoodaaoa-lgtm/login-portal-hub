@@ -3422,19 +3422,6 @@ function ChatPanel({ myId, contact, onBack, contacts }: {
     if (!contact.conversationId) return;
     setMsgsLoading(true);
 
-    // ── DIAGNÓSTICO: testar sessão e participação ──
-    const { data: sessionData } = await supabase.auth.getSession();
-    console.log("[DIAG] session uid:", sessionData?.session?.user?.id);
-    console.log("[DIAG] myId:", myId);
-    console.log("[DIAG] conversationId:", contact.conversationId);
-
-    const { data: partCheck, error: partErr } = await db
-      .from("conversation_participants")
-      .select("user_id")
-      .eq("conversation_id", contact.conversationId)
-      .eq("user_id", myId);
-    console.log("[DIAG] sou participante:", partCheck, "err:", partErr);
-
     const { data, error } = await db.from("messages")
       .select("*")
       .eq("conversation_id", contact.conversationId)
@@ -3446,8 +3433,6 @@ function ChatPanel({ myId, contact, onBack, contacts }: {
       setMsgsLoading(false);
       return;
     }
-    console.log("[loadMsgs] Rows recebidos:", data?.length ?? 0);
-    if (data?.length) console.log("[loadMsgs] Primeira row:", JSON.stringify(data[0]));
     if (!data) { setMsgsLoading(false); return; }
 
     // Carregar reações para todas as mensagens desta conversa
@@ -3484,82 +3469,148 @@ function ChatPanel({ myId, contact, onBack, contacts }: {
     queryClient.invalidateQueries({ queryKey: QUERY_KEYS.conversations(myId) });
   }, [contact.conversationId, myId, markMessagesRead, queryClient, parseRow]);
 
+  // ── Rede de segurança silenciosa: busca só mensagens novas (sem mexer no
+  // loading nem no scroll) a cada poucos segundos enquanto a conversa está
+  // aberta. Cobre o caso em que o canal de tempo real cai silenciosamente
+  // (ex: WiFi instável, mobile a suspender o socket) e a mensagem só
+  // apareceria antes com um refresh manual. ──
+  const quietSyncMsgs = useCallback(async () => {
+    if (!contact.conversationId) return;
+    const { data, error } = await db.from("messages")
+      .select("*")
+      .eq("conversation_id", contact.conversationId)
+      .order("created_at", { ascending: true })
+      .limit(200);
+    if (error || !data) return;
+    const msgIds = data.map((r: any) => r.id);
+    const reactionsMap: Record<string, { emoji: string; user_id: string }[]> = {};
+    if (msgIds.length > 0) {
+      const { data: rxData } = await (db as any).from("message_reactions")
+        .select("message_id,emoji,user_id")
+        .in("message_id", msgIds);
+      for (const rx of rxData ?? []) {
+        if (!reactionsMap[rx.message_id]) reactionsMap[rx.message_id] = [];
+        reactionsMap[rx.message_id].push(rx);
+      }
+    }
+    const enriched = data.map((r: any) => {
+      const rxList = reactionsMap[r.id] ?? [];
+      const counts: Record<string, number> = {};
+      for (const rx of rxList) counts[rx.emoji] = (counts[rx.emoji] ?? 0) + 1;
+      const myRx = rxList.find((rx: any) => rx.user_id === myId);
+      return { ...r, reactions: counts, myReaction: myRx?.emoji };
+    });
+    const parsed = await Promise.all(enriched.map(parseRow));
+    setMsgs(prev => {
+      // Só atualiza se algo realmente mudou (evita re-render/flicker à toa)
+      if (prev.length === parsed.length && prev.every((x, i) => x.id === parsed[i].id && x.status === parsed[i].status)) {
+        return prev;
+      }
+      saveCache(parsed);
+      return parsed;
+    });
+  }, [contact.conversationId, myId, parseRow]);
+
   // ── Realtime: INSERT + UPDATE + DELETE ──
   useEffect(() => {
     if (!contact.conversationId) return;
     loadMsgs();
 
-    const channelName = `dm-${contact.conversationId}-${myId ?? "anon"}-${++realtimeDmSeqRef.current}`;
+    let cancelled = false;
     let ch: ReturnType<typeof db.channel> | null = null;
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
-    try {
-      ch = db.channel(channelName)
-        .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages", filter: `conversation_id=eq.${contact.conversationId}` },
-          async (payload: any) => {
-            const m = await parseRow(payload.new);
-            setMsgs(prev => {
-              // já existe com o id real → nada a fazer
-              if (prev.some(x => x.id === m.id)) return prev;
-              // tentar fazer match com um optimistic temp do mesmo sender+tipo, próximo no tempo
-              const tempMatch = prev.find(x =>
-                x.id.startsWith("temp-") &&
-                x.senderId === m.senderId &&
-                x.type === m.type &&
-                Math.abs(new Date(m.time).getTime() - new Date(x.time).getTime()) < 10000
-              );
-              if (tempMatch) {
-                const n = prev.map(x => x.id === tempMatch.id ? { ...x, id: m.id, deliveryStatus: "sent" as const } : x);
-                saveCache(n);
-                return n;
-              }
-              const next = [...prev, m];
-              saveCache(next);
-              return next;
-            });
-            // marcar como lido imediatamente se sou o destinatário
-            if (payload.new.sender_id !== myId) {
-              db.from("messages").update({ status: "read" }).eq("id", payload.new.id).then(() => {});
-              markMessagesRead(contact.conversationId!);
-              queryClient.invalidateQueries({ queryKey: QUERY_KEYS.conversations(myId) });
-              // Som de notificação
-              playMsgSound();
-            }
-            if (atBottom.current) setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
-          }
-        )
-        .on("postgres_changes", { event: "UPDATE", schema: "public", table: "messages", filter: `conversation_id=eq.${contact.conversationId}` },
-          async (payload: any) => {
-            if (payload.new.deleted_for_all) {
+    function openChannel() {
+      if (cancelled) return;
+      const channelName = `dm-${contact.conversationId}-${myId ?? "anon"}-${++realtimeDmSeqRef.current}`;
+      try {
+        ch = db.channel(channelName)
+          .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages", filter: `conversation_id=eq.${contact.conversationId}` },
+            async (payload: any) => {
+              const m = await parseRow(payload.new);
               setMsgs(prev => {
-                const n = prev.map(x => x.id === payload.new.id ? { ...x, deletedForAll: true } : x);
+                // já existe com o id real → nada a fazer
+                if (prev.some(x => x.id === m.id)) return prev;
+                // tentar fazer match com um optimistic temp do mesmo sender+tipo, próximo no tempo
+                const tempMatch = prev.find(x =>
+                  x.id.startsWith("temp-") &&
+                  x.senderId === m.senderId &&
+                  x.type === m.type &&
+                  Math.abs(new Date(m.time).getTime() - new Date(x.time).getTime()) < 10000
+                );
+                if (tempMatch) {
+                  const n = prev.map(x => x.id === tempMatch.id ? { ...x, id: m.id, deliveryStatus: "sent" as const } : x);
+                  saveCache(n);
+                  return n;
+                }
+                const next = [...prev, m];
+                saveCache(next);
+                return next;
+              });
+              // marcar como lido imediatamente se sou o destinatário
+              if (payload.new.sender_id !== myId) {
+                db.from("messages").update({ status: "read" }).eq("id", payload.new.id).then(() => {});
+                markMessagesRead(contact.conversationId!);
+                queryClient.invalidateQueries({ queryKey: QUERY_KEYS.conversations(myId) });
+                // Som de notificação
+                playMsgSound();
+              }
+              if (atBottom.current) setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
+            }
+          )
+          .on("postgres_changes", { event: "UPDATE", schema: "public", table: "messages", filter: `conversation_id=eq.${contact.conversationId}` },
+            async (payload: any) => {
+              if (payload.new.deleted_for_all) {
+                setMsgs(prev => {
+                  const n = prev.map(x => x.id === payload.new.id ? { ...x, deletedForAll: true } : x);
+                  saveCache(n); return n;
+                });
+                return;
+              }
+              const newStatus = payload.new.status as string;
+              setMsgs(prev => {
+                const n = prev.map(x => x.id === payload.new.id
+                  ? { ...x, status: newStatus, deliveryStatus: newStatus === "read" ? "read" as const : "sent" as const }
+                  : x
+                );
                 saveCache(n); return n;
               });
-              return;
             }
-            const newStatus = payload.new.status as string;
-            setMsgs(prev => {
-              const n = prev.map(x => x.id === payload.new.id
-                ? { ...x, status: newStatus, deliveryStatus: newStatus === "read" ? "read" as const : "sent" as const }
-                : x
-              );
-              saveCache(n); return n;
-            });
-          }
-        )
-        .on("postgres_changes", { event: "DELETE", schema: "public", table: "messages", filter: `conversation_id=eq.${contact.conversationId}` },
-          (payload: any) => {
-            setMsgs(prev => { const n = prev.filter(x => x.id !== payload.old.id); saveCache(n); return n; });
-          }
-        )
-        .subscribe((status: string, err?: Error) => {
-          if (err) console.error(`[realtime dm] erro:`, err);
-          else console.log(`[realtime dm] status:`, status);
-        });
-    } catch (error) {
-      console.error("[realtime dm] falha ao iniciar canal:", error);
+          )
+          .on("postgres_changes", { event: "DELETE", schema: "public", table: "messages", filter: `conversation_id=eq.${contact.conversationId}` },
+            (payload: any) => {
+              setMsgs(prev => { const n = prev.filter(x => x.id !== payload.old.id); saveCache(n); return n; });
+            }
+          )
+          .subscribe((status: string, err?: Error) => {
+            if (err) console.error(`[realtime dm] erro:`, err);
+            else console.log(`[realtime dm] status:`, status);
+            // O canal caiu (rede instável, socket suspenso em mobile, etc.)
+            // — reabrir automaticamente em vez de ficar "morto" até a
+            // pessoa sair e voltar a entrar na conversa. Sem isto, uma
+            // mensagem podia já ter chegado à BD mas nunca aparecer no
+            // ecrã sem um refresh manual.
+            if ((status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") && !cancelled) {
+              if (ch) { db.removeChannel(ch); ch = null; }
+              if (reconnectTimer) clearTimeout(reconnectTimer);
+              reconnectTimer = setTimeout(() => { loadMsgs(); openChannel(); }, 1500);
+            }
+          });
+      } catch (error) {
+        console.error("[realtime dm] falha ao iniciar canal:", error);
+        if (!cancelled) reconnectTimer = setTimeout(openChannel, 1500);
+      }
     }
+    openChannel();
+
+    // Rede de segurança: mesmo com o canal ligado, confirma a cada 6s que
+    // não ficou nada por chegar (silencioso, sem loading/flicker).
+    const safetyInterval = setInterval(() => { quietSyncMsgs(); }, 6000);
 
     return () => {
+      cancelled = true;
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      clearInterval(safetyInterval);
       if (ch) db.removeChannel(ch);
     };
   }, [contact.conversationId, myId]);
