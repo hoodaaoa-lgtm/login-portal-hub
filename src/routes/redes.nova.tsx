@@ -1,11 +1,12 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useRef, useState } from "react";
-import { Camera, ChevronLeft, Loader2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Camera, Check, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 import { PageWrapper, PageHeader, SideNav } from "@/components/AppShell";
 import { uploadImageToCloudinary } from "@/lib/cloudinary";
 import { criarRede } from "@/lib/redes";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/redes/nova")({
   head: () => ({ meta: [{ title: "Criar Rede · Baya" }] }),
@@ -33,15 +34,59 @@ function NovaRedePage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const fileRef = useRef<HTMLInputElement>(null);
+  const coverRef = useRef<HTMLInputElement>(null);
 
   const [nome, setNome] = useState("");
   const [username, setUsername] = useState("");
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [capaFile, setCapaFile] = useState<File | null>(null);
+  const [capaPreview, setCapaPreview] = useState<string | null>(null);
   const [categoria, setCategoria] = useState<string>(CATEGORIAS[0]);
   const [tipo, setTipo] = useState<"publica" | "privada" | "canal">("publica");
   const [temChat, setTemChat] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | "ok" | "taken" | "invalid">("idle");
+  const usernameTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Verificar disponibilidade do @username da Rede em tempo real
+  useEffect(() => {
+    if (!username) { setUsernameStatus("idle"); return; }
+
+    if (!/^[a-z0-9_.]{3,20}$/i.test(username)) {
+      setUsernameStatus("invalid");
+      return;
+    }
+
+    setUsernameStatus("checking");
+    if (usernameTimeout.current) clearTimeout(usernameTimeout.current);
+    usernameTimeout.current = setTimeout(async () => {
+      const lower = username.toLowerCase();
+      const { data } = await (supabase as any)
+        .from("redes")
+        .select("id")
+        .eq("username", lower)
+        .maybeSingle();
+      setUsernameStatus(data ? "taken" : "ok");
+    }, 500);
+
+    return () => { if (usernameTimeout.current) clearTimeout(usernameTimeout.current); };
+  }, [username]);
+
+  const usernameRightIcon = () => {
+    if (usernameStatus === "checking") return <Loader2 className="h-4 w-4 animate-spin" style={{ color: "var(--text-muted)" }} />;
+    if (usernameStatus === "ok") return <Check className="h-4 w-4" style={{ color: "#16a34a" }} />;
+    if (usernameStatus === "taken" || usernameStatus === "invalid") return <X className="h-4 w-4" style={{ color: "#dc2626" }} />;
+    return null;
+  };
+
+  const usernameHint = usernameStatus === "ok"
+    ? <span style={{ color: "#16a34a" }}>@{username.toLowerCase()} está disponível ✓</span>
+    : usernameStatus === "taken"
+    ? <span style={{ color: "#dc2626" }}>Esse @username já está em uso.</span>
+    : usernameStatus === "invalid"
+    ? <span style={{ color: "#dc2626" }}>Só letras, números, "_" e "." (mín. 3 caracteres).</span>
+    : null;
 
   function pickAvatar(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
@@ -50,19 +95,41 @@ function NovaRedePage() {
     setAvatarPreview(URL.createObjectURL(f));
   }
 
-  const canSubmit = nome.trim().length >= 2 && username.trim().length >= 3 && !saving;
+  function pickCapa(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    setCapaFile(f);
+    setCapaPreview(URL.createObjectURL(f));
+  }
+
+  const canSubmit = nome.trim().length >= 2 && usernameStatus === "ok" && !saving;
 
   async function submit() {
     if (!canSubmit || !user) return;
     setSaving(true);
     try {
+      // Checagem final para evitar corrida (outra pessoa pode ter registado
+      // o mesmo @username entre a última verificação e o clique em "Criar").
+      const lower = username.toLowerCase();
+      const { data: finalCheck } = await (supabase as any).from("redes").select("id").eq("username", lower).maybeSingle();
+      if (finalCheck) {
+        setUsernameStatus("taken");
+        setSaving(false);
+        return;
+      }
+
       let avatarUrl: string | null = null;
       if (avatarFile) {
         const up = await uploadImageToCloudinary(avatarFile, "redes");
         avatarUrl = up.url;
       }
+      let capaUrl: string | null = null;
+      if (capaFile) {
+        const up = await uploadImageToCloudinary(capaFile, "redes");
+        capaUrl = up.url;
+      }
       const rede = await criarRede({
-        nome: nome.trim(), username, avatarUrl, categoria, tipo, temChat,
+        nome: nome.trim(), username, avatarUrl, capaUrl, categoria, tipo, temChat,
       });
       toast.success("Rede criada!");
       navigate({ to: "/redes/$username", params: { username: rede.username } });
@@ -84,17 +151,36 @@ function NovaRedePage() {
           <PageHeader title="Criar Rede" onBack={() => navigate({ to: "/explorar", search: { tab: "redes" } })} />
 
           <div className="px-4 py-5 space-y-6">
-            {/* Foto */}
-            <div className="flex justify-center">
-              <button onClick={() => fileRef.current?.click()}
-                className="w-24 h-24 rounded-full overflow-hidden flex items-center justify-center relative"
-                style={{ background: "var(--s2)", border: "2px dashed var(--border-subtle)" }}>
-                {avatarPreview
-                  ? <img src={avatarPreview} alt="" className="w-full h-full object-cover" />
-                  : <Camera className="h-6 w-6" style={{ color: "var(--text-muted)" }} />}
-              </button>
-              <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={pickAvatar} />
+            {/* Capa + Foto */}
+            <div className="relative">
+              <div className="h-32 rounded-xl overflow-hidden relative"
+                style={capaPreview ? undefined : { background: "linear-gradient(135deg,#5B3FCF 0%,#8B5CF6 55%,#E94B8A 100%)" }}>
+                {capaPreview && <img src={capaPreview} alt="" className="w-full h-full object-cover" />}
+                <button onClick={() => coverRef.current?.click()}
+                  className="absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center border-2 border-white shadow"
+                  style={{ background: "rgba(0,0,0,0.45)" }}>
+                  <Camera className="h-4 w-4 text-white" />
+                </button>
+                <input ref={coverRef} type="file" accept="image/*" className="hidden" onChange={pickCapa} />
+              </div>
+
+              <div className="absolute left-4" style={{ bottom: -32 }}>
+                <button onClick={() => fileRef.current?.click()}
+                  className="w-20 h-20 rounded-full overflow-hidden flex items-center justify-center relative border-4"
+                  style={{ background: "var(--s2)", borderColor: "var(--surface-0, #fff)" }}>
+                  {avatarPreview
+                    ? <img src={avatarPreview} alt="" className="w-full h-full object-cover" />
+                    : <Camera className="h-5 w-5" style={{ color: "var(--text-muted)" }} />}
+                  <span className="absolute -bottom-0.5 -right-0.5 w-6 h-6 rounded-full flex items-center justify-center border-2 border-white"
+                    style={{ background: "#5B3FCF" }}>
+                    <Camera className="h-3 w-3 text-white" />
+                  </span>
+                </button>
+                <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={pickAvatar} />
+              </div>
             </div>
+            <div className="h-8" />
+
 
             {/* Nome */}
             <div>
@@ -112,7 +198,9 @@ function NovaRedePage() {
                   onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_.]/g, ""))}
                   placeholder="musica_angola"
                   className="flex-1 bg-transparent outline-none text-sm ml-1" style={{ color: "var(--text-primary)" }} />
+                {usernameRightIcon()}
               </div>
+              {usernameHint && <p className="text-[11px] mt-1">{usernameHint}</p>}
             </div>
 
             {/* Categoria */}
