@@ -19,31 +19,18 @@ import { toast } from "sonner";
  * sem reload, sem re-fetch manual.
  */
 
-// ─── Seguir ───────────────────────────────────────────────────────────
-
-export const FOLLOW_KEYS = {
-  status: (myId: string | null | undefined, targetUsername: string | null | undefined) =>
-    ["follow-status", myId, targetUsername] as const,
-  counts: (username: string | null | undefined) => ["follow-counts", username] as const,
-};
-
 /**
  * Sincronização em tempo real: uma ÚNICA subscrição por sessão de app
  * (não uma por componente montado) ouve mudanças nas tabelas sociais
- * (follows, post_comments, post_likes, post_saves) e invalida a cache
+ * (post_comments, post_likes, post_saves, vídeos) e invalida a cache
  * partilhada certa. Assim, uma ação num dispositivo/aba reflete-se
  * automaticamente em qualquer outro sítio aberto, sem refresh.
  */
-let followRealtimeChannel: ReturnType<typeof supabase.channel> | null = null;
-function ensureFollowRealtimeSync(qc: ReturnType<typeof useQueryClient>) {
-  if (followRealtimeChannel) return;
-  followRealtimeChannel = supabase
+let socialRealtimeChannel: ReturnType<typeof supabase.channel> | null = null;
+function ensureSocialRealtimeSync(qc: ReturnType<typeof useQueryClient>) {
+  if (socialRealtimeChannel) return;
+  socialRealtimeChannel = supabase
     .channel("social-realtime-sync")
-    .on("postgres_changes", { event: "*", schema: "public", table: "follows" }, () => {
-      qc.invalidateQueries({ queryKey: ["follow-status"], exact: false });
-      qc.invalidateQueries({ queryKey: ["follow-counts"], exact: false });
-      qc.invalidateQueries({ queryKey: ["profile"], exact: false });
-    })
     .on("postgres_changes", { event: "*", schema: "public", table: "post_comments" }, (payload: any) => {
       const postId = payload?.new?.post_id ?? payload?.old?.post_id;
       if (postId) {
@@ -101,133 +88,6 @@ function ensureFollowRealtimeSync(qc: ReturnType<typeof useQueryClient>) {
     .subscribe();
 }
 
-async function fetchFollowStatus(myId: string, targetUsername: string): Promise<boolean> {
-  const { data, error } = await (supabase as any)
-    .from("follows")
-    .select("id")
-    .eq("follower_id", myId)
-    .eq("target_username", targetUsername)
-    .maybeSingle();
-  // Importante: se a consulta falhar (RLS, rede, etc.), NÃO podemos
-  // devolver "false" como se fosse resposta válida — isso faz o React
-  // Query gravar "não sigo" como sucesso e apagar o "sigo" correto que já
-  // estava em cache (era exatamente isto que fazia o botão "esquecer"
-  // que já se seguia alguém ao fim de um tempo, mesmo com o contador
-  // certo). Lançar o erro faz o React Query manter o último valor bom.
-  if (error) throw error;
-  return !!data;
-}
-
-async function fetchFollowCounts(username: string): Promise<{ followers: number; following: number }> {
-  const { data, error } = await (supabase as any)
-    .from("profiles")
-    .select("followers_count,following_count")
-    .eq("username", username)
-    .maybeSingle();
-  if (error) throw error;
-  return { followers: data?.followers_count ?? 0, following: data?.following_count ?? 0 };
-}
-
-/**
- * Estado de "seguir" partilhado e reativo para um alvo (username).
- * `myId` null/undefined = utilizador não autenticado (isFollowing sempre false).
- */
-export function useFollowState(myId: string | null | undefined, targetUsername: string | null | undefined, targetId?: string | null) {
-  const qc = useQueryClient();
-  const pendingRef = useRef(false);
-  const [isPending, setIsPending] = useState(false);
-
-  useEffect(() => { ensureFollowRealtimeSync(qc); }, [qc]);
-
-  const statusQuery = useQuery({
-    queryKey: FOLLOW_KEYS.status(myId, targetUsername),
-    queryFn: () => fetchFollowStatus(myId as string, targetUsername as string),
-    enabled: !!myId && !!targetUsername,
-    staleTime: 60_000,
-    gcTime: 10 * 60_000,
-    // Este pedido decide o estado do botão "Acompanhar" — vale a pena
-    // insistir mais que o default (1 tentativa) antes de desistir, já
-    // que uma falha aqui (RLS/rede) nunca deve resultar num falso
-    // "não sigo" mostrado com confiança ao utilizador.
-    retry: 3,
-    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 8000),
-  });
-
-  const countsQuery = useQuery({
-    queryKey: FOLLOW_KEYS.counts(targetUsername),
-    queryFn: () => fetchFollowCounts(targetUsername as string),
-    enabled: !!targetUsername,
-    staleTime: 30_000,
-    gcTime: 10 * 60_000,
-  });
-
-  const toggle = useCallback(async () => {
-    if (!myId || !targetUsername) return;
-    // Impede duplo-clique/duplicação: só um toggle de cada vez por hook
-    if (pendingRef.current) return;
-    pendingRef.current = true;
-    setIsPending(true);
-    const prevFollowing = !!qc.getQueryData(FOLLOW_KEYS.status(myId, targetUsername));
-    const prevCounts = qc.getQueryData<{ followers: number; following: number }>(FOLLOW_KEYS.counts(targetUsername));
-
-    // Otimista — atualiza já toda a UI que partilha esta chave
-    qc.setQueryData(FOLLOW_KEYS.status(myId, targetUsername), !prevFollowing);
-    qc.setQueryData(FOLLOW_KEYS.counts(targetUsername), (prev: any) => ({
-      followers: Math.max(0, (prev?.followers ?? prevCounts?.followers ?? 0) + (prevFollowing ? -1 : 1)),
-      following: prev?.following ?? prevCounts?.following ?? 0,
-    }));
-
-    try {
-      const { data, error } = await (supabase as any).rpc("toggle_follow", {
-        p_target_username: targetUsername,
-        p_target_id: targetId ?? null,
-      });
-      if (error) throw error;
-      qc.setQueryData(FOLLOW_KEYS.status(myId, targetUsername), !!data?.following);
-      qc.setQueryData(FOLLOW_KEYS.counts(targetUsername), (prev: any) => ({
-        followers: data?.followers_count ?? prev?.followers ?? 0,
-        following: prev?.following ?? 0,
-      }));
-      // A contagem "a seguir" de quem clicou também muda — invalida a dela
-      qc.invalidateQueries({ queryKey: ["follow-counts"], exact: false });
-      qc.invalidateQueries({ queryKey: ["profile"], exact: false });
-    } catch (err: any) {
-      console.error("[hooda:social] falha ao seguir/deixar de seguir:", err);
-      toast.error(err?.message ? `Não foi possível acompanhar: ${err.message}` : "Não foi possível acompanhar. Tenta novamente.");
-      // reverter otimismo
-      qc.setQueryData(FOLLOW_KEYS.status(myId, targetUsername), prevFollowing);
-      qc.setQueryData(FOLLOW_KEYS.counts(targetUsername), prevCounts);
-    } finally {
-      pendingRef.current = false;
-      setIsPending(false);
-    }
-  }, [myId, targetUsername, targetId, qc]);
-
-  return {
-    isFollowing: statusQuery.data ?? false,
-    isLoading: statusQuery.isLoading,
-    // Verdadeiro só quando a consulta ao estado de "sigo/não sigo" falhou
-    // (RLS, rede) E não há nenhum valor bom em cache para mostrar — isto
-    // é, o caso em que não temos como saber a verdade. Os consumidores
-    // devem usar isto para mostrar um estado neutro/"tentar novamente"
-    // em vez de "Acompanhar" com confiança, que convida a um novo clique
-    // sobre um registo que pode já existir na BD.
-    hasError: statusQuery.isError,
-    followersCount: countsQuery.data?.followers ?? 0,
-    followingCount: countsQuery.data?.following ?? 0,
-    // Loading real dos CONTADORES (followers/following) — distinto de
-    // `isLoading`, que só reflete se JÁ sigo o alvo. Sem isto, um
-    // consumidor não tem como saber se "0" é o valor real ou só ainda
-    // não chegou, e acaba a mostrar "0" durante o carregamento.
-    countsLoading: countsQuery.isLoading,
-    // Verdadeiro enquanto o pedido de seguir/deixar de seguir está em
-    // curso — usar para desativar o botão e impedir duplo-clique.
-    isPending,
-    toggle,
-    refetchStatus: statusQuery.refetch,
-  };
-}
-
 // ─── Comentários (contador) ────────────────────────────────────────────
 
 export const COMMENT_COUNT_KEYS = {
@@ -250,7 +110,7 @@ export function usePostCommentCount(postId: string, initial?: number) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [postId]);
 
-  useEffect(() => { ensureFollowRealtimeSync(qc); }, [qc]);
+  useEffect(() => { ensureSocialRealtimeSync(qc); }, [qc]);
 
   const query = useQuery({
     queryKey: key,
@@ -292,7 +152,7 @@ export function useBookmarkState(postId: string, myId: string | null | undefined
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [postId]);
 
-  useEffect(() => { ensureFollowRealtimeSync(qc); }, [qc]);
+  useEffect(() => { ensureSocialRealtimeSync(qc); }, [qc]);
 
   const query = useQuery({
     queryKey: key,
@@ -399,7 +259,7 @@ export function useVideoCommentCount(videoId: string, initial?: number) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [videoId]);
 
-  useEffect(() => { ensureFollowRealtimeSync(qc); }, [qc]);
+  useEffect(() => { ensureSocialRealtimeSync(qc); }, [qc]);
 
   const query = useQuery({
     queryKey: key,
@@ -429,7 +289,7 @@ export function useVideoViewsCount(videoId: string, initial?: number) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [videoId]);
 
-  useEffect(() => { ensureFollowRealtimeSync(qc); }, [qc]);
+  useEffect(() => { ensureSocialRealtimeSync(qc); }, [qc]);
 
   const query = useQuery({
     queryKey: key,
