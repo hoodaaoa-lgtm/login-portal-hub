@@ -1,5 +1,5 @@
 /**
- * BayaPlayer — player de vídeo oficial da Baya.
+ * SnapperPlayer — player de vídeo oficial da Snapper.
  * Usado em todo o site em vez do <video> nativo do browser.
  *
  * Comportamento (igual ao X/Instagram/Threads/Facebook):
@@ -81,7 +81,7 @@ export const SIGNATURE_FONTS: Record<string, string> = {
   maquina: "'Courier New', Courier, monospace",
 };
 
-interface BayaPlayerProps {
+interface SnapperPlayerProps {
   src: string;
   poster?: string;
   autoPlay?: boolean;
@@ -115,7 +115,7 @@ interface BayaPlayerProps {
  * dominar o ecrã largo. */
 const MOBILE_BREAKPOINT_PX = 768;
 
-export const BayaPlayer = forwardRef<HTMLVideoElement, BayaPlayerProps>(function BayaPlayer(
+export const SnapperPlayer = forwardRef<HTMLVideoElement, SnapperPlayerProps>(function SnapperPlayer(
   {
     src,
     poster,
@@ -141,7 +141,7 @@ export const BayaPlayer = forwardRef<HTMLVideoElement, BayaPlayerProps>(function
   const isInView = forceLoad ? true : _isInView;
   const hasEnteredOnceRaw = forceLoad ? true : _hasEnteredOnce;
 
-  // ─── Baya Leve (poupar dados): se estiver ativo, o vídeo NUNCA
+  // ─── Snapper Leve (poupar dados): se estiver ativo, o vídeo NUNCA
   // carrega/toca sozinho — fica preso na capa até o utilizador tocar
   // "Ver vídeo" para ESTE vídeo específico (manualUnlock). forceLoad
   // (modais/watch direto) ignora sempre o modo, porque aí a pessoa já
@@ -719,7 +719,7 @@ export const BayaPlayer = forwardRef<HTMLVideoElement, BayaPlayerProps>(function
         </div>
       )}
 
-      {/* Baya Leve: vídeo bloqueado a poupar dados — capa + cartão a
+      {/* Snapper Leve: vídeo bloqueado a poupar dados — capa + cartão a
           explicar porquê, com botão para ver este vídeo na mesma e um
           atalho para desativar o modo já ali. */}
       {dataSaverBlocking && poster && (
@@ -740,7 +740,7 @@ export const BayaPlayer = forwardRef<HTMLVideoElement, BayaPlayerProps>(function
               style={{ background: BRAND }}
             >
               <Zap className="w-3.5 h-3.5" fill="currentColor" />
-              Baya Leve ativo
+              Snapper Leve ativo
             </div>
             <p className="text-white/85 text-xs max-w-[220px] leading-snug">
               Vídeo não carrega sozinho para poupar os teus dados
@@ -762,7 +762,7 @@ export const BayaPlayer = forwardRef<HTMLVideoElement, BayaPlayerProps>(function
               }}
               className="text-white/70 text-[11px] underline underline-offset-2"
             >
-              Desativar Baya Leve
+              Desativar Snapper Leve
             </button>
           </div>
         </div>

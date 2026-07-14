@@ -11,13 +11,16 @@ const sizeMap = { sm: "text-3xl", md: "text-5xl", lg: "text-7xl", xl: "text-8xl 
 const suffixSizeMap = { sm: "text-[11px]", md: "text-[14px]", lg: "text-[18px]", xl: "text-[20px]" };
 
 const letters = [
-  { char: "B", color: "#E94B8A" },
-  { char: "a", color: "#F2874B" },
-  { char: "y", color: "#1FAFA6" },
-  { char: "a", color: "#7F5AF0" },
+  { char: "S", color: "#5B3FCF" },
+  { char: "n", color: "#F26B3A" },
+  { char: "a", color: "#1FAFA6" },
+  { char: "p", color: "#6BA547" },
+  { char: "p", color: "#E94B8A" },
+  { char: "e", color: "#FFC93C" },
+  { char: "r", color: "#7F5AF0" },
 ];
 
-export function BayaLogo({ className = "", size = "lg", animate = true }: Props) {
+export function SnapperLogo({ className = "", size = "lg", animate = true }: Props) {
   const [visible, setVisible] = useState(!animate);
   const { suffix, loading } = useCountry();
 
@@ -30,7 +33,7 @@ export function BayaLogo({ className = "", size = "lg", animate = true }: Props)
 
   return (
     <span
-      aria-label={suffix ? `baya ${suffix}` : "baya"}
+      aria-label={suffix ? `snapper ${suffix}` : "snapper"}
       className={`inline-flex items-end gap-1 font-extrabold tracking-tight leading-none ${sizeMap[size]} ${className}`}
       style={{ fontFamily: '"Nunito", "Quicksand", system-ui, sans-serif' }}
     >

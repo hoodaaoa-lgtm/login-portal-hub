@@ -7,7 +7,7 @@ import { toast } from "sonner";
  * Cartão de dica rotativa — preenche o espaço que ficava vazio no fim da
  * sidebar direita (computador) e, no telemóvel/tablet (onde essa sidebar
  * fica escondida), é intercalado no próprio feed. Mostra sempre uma dica
- * diferente ao carregar — ajuda a crescer a Baya, destaca funcionalidades,
+ * diferente ao carregar — ajuda a crescer a Snapper, destaca funcionalidades,
  * ou só uma curiosidade simpática — nunca fica um espaço morto.
  */
 
@@ -23,12 +23,12 @@ function buildTips(): Tip[] {
   return [
     {
       icon: Share2,
-      text: "Ajuda a Baya a crescer — convida um amigo para se juntar.",
+      text: "Ajuda a Snapper a crescer — convida um amigo para se juntar.",
       cta: {
         label: "Convidar",
         action: () => {
           const url = typeof window !== "undefined" ? window.location.origin : "https://hooda.ao";
-          const shareData = { title: "Baya", text: "Vem para a Baya, a rede social angolana!", url };
+          const shareData = { title: "Snapper", text: "Vem para a Snapper, a rede social angolana!", url };
           if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
             navigator.share(shareData).catch(() => {});
           } else if (typeof navigator !== "undefined" && navigator.clipboard) {
@@ -57,7 +57,7 @@ function buildTips(): Tip[] {
   ];
 }
 
-export function BayaTipCard({ variant = "sidebar" }: { variant?: "sidebar" | "feed" }) {
+export function SnapperTipCard({ variant = "sidebar" }: { variant?: "sidebar" | "feed" }) {
   const navigate = useNavigate();
   // Escolhe uma dica ao acaso a cada montagem — o cartão muda sempre que
   // reabres o feed, dando a sensação de "coisas novas" em vez de estático.

@@ -11,7 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { ProfileAvatarLink } from "@/components/ProfileAvatarLink";
 import { PostCommentsModal } from "@/components/PostCommentsModal";
 import { UniversalPostCard } from "@/components/UniversalPostCard";
-import { BayaTipCard } from "@/components/BayaTipCard";
+import { SnapperTipCard } from "@/components/SnapperTipCard";
 import { registerVideo, notifyVideoPlaying, pauseAllVideos } from "@/lib/mediaManager";
 import { useNetworkInfo } from "@/hooks/useNetworkInfo";
 import { fetchPostComments, sendPostComment, replyToPostComment, toggleCommentLike, notifyMentions } from "@/lib/comments";
@@ -44,7 +44,7 @@ import { getSeenPostIds, addSeenPostIds, getSeenVideoIds, addSeenVideoIds, diver
 function t(key: string, opts?: Record<string, unknown>) { return i18n.t(key, opts) as string; }
 
 export const Route = createFileRoute("/home")({
-  head: () => ({ meta: [{ title: "Baya" }] }),
+  head: () => ({ meta: [{ title: "Snapper" }] }),
   component: HomePage,
 });
 
@@ -716,7 +716,7 @@ function HomePage() {
                   aparece fixa na sidebar direita (RightSidebar). */}
               {idx === 7 && (
                 <div className="xl:hidden">
-                  <BayaTipCard variant="feed" />
+                  <SnapperTipCard variant="feed" />
                 </div>
               )}
             </React.Fragment>

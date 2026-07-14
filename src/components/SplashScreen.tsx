@@ -22,12 +22,12 @@ export function SplashScreen({ leaving = false }: Props) {
           from { opacity: 0; transform: scale(0.85); }
           to   { opacity: 1; transform: scale(1); }
         }
-        ._baya-logo {
+        ._snapper-logo {
           animation: _logoIn 0.6s cubic-bezier(0.34,1.2,0.64,1) both;
         }
       `}</style>
 
-      <div className="_baya-logo" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div className="_snapper-logo" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <img src={snapperLogo} alt="Snapper" style={{ width: 220, height: 'auto' }} />
       </div>
     </main>

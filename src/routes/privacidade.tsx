@@ -3,7 +3,7 @@ import { ChevronLeft, Shield, Lock, Eye, Database, Users, Mail } from "lucide-re
 import type { LucideIcon } from "lucide-react";
 
 export const Route = createFileRoute("/privacidade")({
-  head: () => ({ meta: [{ title: "Baya" }] }),
+  head: () => ({ meta: [{ title: "Snapper" }] }),
   component: PrivacidadePage,
 });
 
@@ -44,7 +44,7 @@ function PrivacidadePage() {
         </div>
 
         <Section icon={Shield} title="Introdução">
-          <p>A Baya respeita a tua privacidade. Esta política explica como recolhemos, usamos, guardamos e protegemos os teus dados pessoais. Ao usares a plataforma, concordas com estes termos.</p>
+          <p>A Snapper respeita a tua privacidade. Esta política explica como recolhemos, usamos, guardamos e protegemos os teus dados pessoais. Ao usares a plataforma, concordas com estes termos.</p>
         </Section>
 
         <Section icon={Database} title="Que dados recolhemos">

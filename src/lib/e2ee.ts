@@ -1,5 +1,5 @@
 /**
- * e2ee.ts — Encriptação ponta-a-ponta para mensagens diretas (DM) da Baya
+ * e2ee.ts — Encriptação ponta-a-ponta para mensagens diretas (DM) da Snapper
  *
  * ARQUITECTURA:
  * ─────────────

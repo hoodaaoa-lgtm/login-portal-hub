@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { FeedVideoPlayer } from "@/components/FeedVideoPlayer";
 import {
-  getYouTubeId, getBayaPostId, isDirectVideo, fetchOgData, fetchBayaPost,
-  type OgData, type BayaPostPreview,
+  getYouTubeId, getSnapperPostId, isDirectVideo, fetchOgData, fetchSnapperPost,
+  type OgData, type SnapperPostPreview,
 } from "@/lib/linkPreview";
 
 /**
@@ -15,19 +15,19 @@ export function LinkPreview({ url, isMe = false, variant = "post" }: { url: stri
   const navigate = useNavigate();
   const ytId = getYouTubeId(url);
   const isDirect = isDirectVideo(url);
-  const bayaPostId = getBayaPostId(url);
+  const snapperPostId = getSnapperPostId(url);
   const [og, setOg] = useState<OgData | null | "loading">("loading");
-  const [bayaPost, setBayaPost] = useState<BayaPostPreview | null | "loading">("loading");
+  const [snapperPost, setSnapperPost] = useState<SnapperPostPreview | null | "loading">("loading");
 
   useEffect(() => {
-    if (ytId || isDirect || bayaPostId) { setOg(null); return; }
+    if (ytId || isDirect || snapperPostId) { setOg(null); return; }
     fetchOgData(url).then(setOg);
-  }, [url, ytId, isDirect, bayaPostId]);
+  }, [url, ytId, isDirect, snapperPostId]);
 
   useEffect(() => {
-    if (!bayaPostId) { setBayaPost(null); return; }
-    fetchBayaPost(bayaPostId).then(setBayaPost);
-  }, [bayaPostId]);
+    if (!snapperPostId) { setSnapperPost(null); return; }
+    fetchSnapperPost(snapperPostId).then(setSnapperPost);
+  }, [snapperPostId]);
 
   const border = variant === "message" && isMe ? "rgba(255,255,255,0.15)" : "var(--border-subtle)";
   const bg = variant === "message" && isMe ? "rgba(0,0,0,0.2)" : "var(--s2)";
@@ -35,33 +35,33 @@ export function LinkPreview({ url, isMe = false, variant = "post" }: { url: stri
   const mutedColor = variant === "message" && isMe ? "rgba(255,255,255,0.6)" : "var(--text-muted)";
   const marginTop = variant === "message" ? "mt-2" : "mt-3";
 
-  if (bayaPostId) {
-    if (bayaPost === "loading") {
+  if (snapperPostId) {
+    if (snapperPost === "loading") {
       return (
         <div className={`${marginTop} rounded-xl overflow-hidden animate-pulse`} style={{ background: bg, border: `1px solid ${border}`, height: 96 }} />
       );
     }
-    if (!bayaPost) return null;
-    const img = bayaPost.photo_url || bayaPost.photos?.[0] || null;
+    if (!snapperPost) return null;
+    const img = snapperPost.photo_url || snapperPost.photos?.[0] || null;
     const mediaMaxH = variant === "message" ? 140 : 256;
     return (
       <div className={`${marginTop} rounded-xl overflow-hidden`} style={{ border: `1px solid ${border}`, maxWidth: variant === "message" ? 220 : undefined }}>
-        {bayaPost.video_url ? (
+        {snapperPost.video_url ? (
           <div style={{ maxHeight: mediaMaxH, overflow: "hidden" }}>
-            <FeedVideoPlayer src={bayaPost.video_url} rounded="rounded-none" />
+            <FeedVideoPlayer src={snapperPost.video_url} rounded="rounded-none" />
           </div>
         ) : img ? (
           <img src={img} alt="" className="w-full object-cover" style={{ maxHeight: mediaMaxH }}
             onError={e => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
         ) : null}
-        <button onClick={() => navigate({ to: "/post/$id", params: { id: bayaPostId } })}
+        <button onClick={() => navigate({ to: "/post/$id", params: { id: snapperPostId } })}
           className="w-full text-left p-2.5" style={{ background: bg }}>
           <p className="text-[10px] font-semibold uppercase tracking-wide truncate" style={{ color: mutedColor }}>
-            Baya · @{bayaPost.author_username}
+            Snapper · @{snapperPost.author_username}
           </p>
-          {bayaPost.content && (
+          {snapperPost.content && (
             <p className="text-xs font-medium leading-snug line-clamp-2 mt-0.5" style={{ color: textColor }}>
-              {bayaPost.content}
+              {snapperPost.content}
             </p>
           )}
         </button>

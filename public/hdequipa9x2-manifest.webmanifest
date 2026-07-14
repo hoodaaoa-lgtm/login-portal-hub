@@ -1,7 +1,7 @@
 {
-  "name": "Baya Admin",
-  "short_name": "Baya Admin",
-  "description": "Painel de administração e moderação da Baya — acesso restrito à equipa.",
+  "name": "Snapper Admin",
+  "short_name": "Snapper Admin",
+  "description": "Painel de administração e moderação da Snapper — acesso restrito à equipa.",
   "id": "/hdequipa9x2",
   "start_url": "/hdequipa9x2",
   "scope": "/hdequipa9x2",

@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { BayaLogo } from "@/components/BayaLogo";
+import { SnapperLogo } from "@/components/SnapperLogo";
 import { AuthLeftPanel } from "@/components/AuthLeftPanel";
 import { InstallPwaButton } from "@/components/InstallPwaButton";
 import {
@@ -12,7 +12,7 @@ export const Route = createFileRoute("/")(({
   head: () => ({
     meta: [
       { title: "Snapper" },
-      { name: "description", content: "Baya é a rede social para partilhares vídeos e fotos, conversares com amigos e descobrires conteúdo novo todos os dias. Cria a tua conta grátis." },
+      { name: "description", content: "Snapper é a rede social para partilhares vídeos e fotos, conversares com amigos e descobrires conteúdo novo todos os dias. Cria a tua conta grátis." },
     ],
   }),
   component: LoginPage,
@@ -83,7 +83,7 @@ function LoginPage() {
       >
         {/* Mobile logo */}
         <div className="lg:hidden mb-4">
-          <BayaLogo size="xl" animate={true} />
+          <SnapperLogo size="xl" animate={true} />
         </div>
 
         {/* Instalar app — funciona mesmo sem sessão, é o que torna o link

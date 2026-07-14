@@ -7,13 +7,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect, useMemo } from "react";
 import { Search, X, TrendingUp, FileText, MessageCircle, BookOpen, Download, Bookmark, Hash, RefreshCw } from "lucide-react";
 import { t } from "@/lib/useT";
-import { getBayaOfficialId } from "@/lib/hoodaOfficial";
+import { getSnapperOfficialId } from "@/lib/hoodaOfficial";
 import { UniversalSkeleton } from "@/components/Skeletons";
 import { optimizeImage, optimizeAvatar } from "@/lib/imageOptimize";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 
 export const Route = createFileRoute("/explorar")({
-  head: () => ({ meta: [{ title: "Baya" }] }),
+  head: () => ({ meta: [{ title: "Snapper" }] }),
   validateSearch: (search: Record<string, unknown>): { tab?: Tab; q?: string } => ({
     tab: TABS.some(t => t.key === search.tab) ? (search.tab as Tab) : undefined,
     q: typeof search.q === "string" ? search.q : undefined,
@@ -171,7 +171,7 @@ function ExplorePage() {
   const { data: searchPeople = [] } = useQuery({
     queryKey: ["explore-search-people", search],
     queryFn: async () => {
-      const officialId = await getBayaOfficialId();
+      const officialId = await getSnapperOfficialId();
       // Mesmo caso da busca de Redes: username no banco não tem "@",
       // mas a pessoa naturalmente digita "@algo" porque é assim que
       // aparece em todo o app.
@@ -180,7 +180,7 @@ function ExplorePage() {
         .select("id,username,full_name,avatar_url,bio")
         .or(`username.ilike.%${termoLimpo}%,full_name.ilike.%${termoLimpo}%`)
         .limit(20);
-      // A conta "Baya Oficial" nunca aparece em pesquisas de pessoas.
+      // A conta "Snapper Oficial" nunca aparece em pesquisas de pessoas.
       return (data ?? []).filter((p: any) => p.id !== officialId);
     },
     enabled: searchActive,
@@ -236,7 +236,7 @@ function ExplorePage() {
     return () => clearTimeout(timer);
   }, [search]);
 
-  /* ── Pesquisa: vídeos do Studio/BayaTV que batem com o termo pesquisado ── */
+  /* ── Pesquisa: vídeos do Studio/SnapperTV que batem com o termo pesquisado ── */
   const { data: searchChannelVideos = [] } = useQuery({
     queryKey: ["explore-search-videos", search],
     queryFn: async () => {

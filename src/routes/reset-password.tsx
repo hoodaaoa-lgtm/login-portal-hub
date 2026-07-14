@@ -2,13 +2,13 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { t } from "@/lib/useT";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { BayaLogo } from "@/components/BayaLogo";
+import { SnapperLogo } from "@/components/SnapperLogo";
 
 export const Route = createFileRoute("/reset-password")({
   head: () => ({
     meta: [
-      { title: "Baya" },
-      { name: "description", content: "Define uma nova palavra-passe para a tua conta Baya." },
+      { title: "Snapper" },
+      { name: "description", content: "Define uma nova palavra-passe para a tua conta Snapper." },
       { name: "robots", content: "noindex, nofollow" },
     ],
   }),
@@ -51,7 +51,7 @@ function ResetPasswordPage() {
   return (
     <main className="min-h-screen w-full bg-[#FFC93C] flex items-center justify-center px-6 py-10">
       <div className="w-full max-w-md rounded-3xl bg-white p-7 sm:p-9 shadow-[0_10px_40px_-12px_rgba(0,0,0,0.15)]">
-        <div className="flex justify-center mb-6"><BayaLogo size="lg" animate={true} /></div>
+        <div className="flex justify-center mb-6"><SnapperLogo size="lg" animate={true} /></div>
         <h1 className="text-2xl font-extrabold text-black">Nova senha</h1>
         <p className="mt-1.5 text-sm text-neutral-500">Define a tua nova senha abaixo.</p>
 

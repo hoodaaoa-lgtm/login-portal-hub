@@ -232,7 +232,7 @@ export function usePostLikeState(postId: string, myId: string | null | undefined
   return { liked: query.data?.liked ?? false, likeCount: query.data?.count ?? 0, toggle };
 }
 
-// ─── Comentários e views (vídeos do BayaTV) ───────────────────────────
+// ─── Comentários e views (vídeos do SnapperTV) ───────────────────────────
 
 export const VIDEO_COMMENT_COUNT_KEYS = {
   video: (videoId: string) => ["comment-count", "video", videoId] as const,
@@ -302,7 +302,7 @@ export function useVideoViewsCount(videoId: string, initial?: number) {
   return { count: query.data ?? 0 };
 }
 
-// ─── Gostar (vídeos do BayaTV) ────────────────────────────────────────
+// ─── Gostar (vídeos do SnapperTV) ────────────────────────────────────────
 
 export const VIDEO_LIKE_KEYS = {
   video: (videoId: string) => ["like-state", "video", videoId] as const,

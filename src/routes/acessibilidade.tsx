@@ -3,7 +3,7 @@ import { ChevronLeft, Accessibility, Eye, Keyboard, Volume2, MessageCircle } fro
 import type { LucideIcon } from "lucide-react";
 
 export const Route = createFileRoute("/acessibilidade")({
-  head: () => ({ meta: [{ title: "Baya" }] }),
+  head: () => ({ meta: [{ title: "Snapper" }] }),
   component: AcessibilidadePage,
 });
 
@@ -44,7 +44,7 @@ function AcessibilidadePage() {
         </div>
 
         <Section icon={Accessibility} title="O nosso compromisso">
-          <p>A Baya quer ser usável por todas as pessoas, incluindo quem vive com deficiência visual, auditiva, motora ou cognitiva. Trabalhamos continuamente para melhorar a acessibilidade da plataforma.</p>
+          <p>A Snapper quer ser usável por todas as pessoas, incluindo quem vive com deficiência visual, auditiva, motora ou cognitiva. Trabalhamos continuamente para melhorar a acessibilidade da plataforma.</p>
         </Section>
 
         <Section icon={Eye} title="Leitores de ecrã e contraste">
@@ -60,7 +60,7 @@ function AcessibilidadePage() {
         </Section>
 
         <Section icon={MessageCircle} title="Contacta-nos">
-          <p>Se encontrares uma barreira de acessibilidade na Baya, avisa-nos através do suporte dentro da app. O teu feedback ajuda-nos a priorizar melhorias.</p>
+          <p>Se encontrares uma barreira de acessibilidade na Snapper, avisa-nos através do suporte dentro da app. O teu feedback ajuda-nos a priorizar melhorias.</p>
         </Section>
       </div>
     </div>

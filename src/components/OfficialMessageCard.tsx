@@ -74,12 +74,12 @@ function IosInstallHelp({ onClose }: { onClose: () => void }) {
   );
 }
 
-/** Modal com a marca da Baya, mostrado ANTES do prompt nativo do browser.
+/** Modal com a marca da Snapper, mostrado ANTES do prompt nativo do browser.
  * O prompt nativo do Chrome/Edge (janela cinzenta "Instale o app") não pode
  * ser removido — é o browser que decide essa UI por segurança — mas assim o
  * utilizador vê primeiro o nosso ecrã, com a nossa mensagem, e só depois
  * aparece a confirmação do sistema. */
-function BayaInstallModal({ title, onConfirm, onClose, installing }: {
+function SnapperInstallModal({ title, onConfirm, onClose, installing }: {
   title: string;
   onConfirm: () => void;
   onClose: () => void;
@@ -98,7 +98,7 @@ function BayaInstallModal({ title, onConfirm, onClose, installing }: {
         </div>
         <p className="font-extrabold text-[17px] text-black mb-1">{title}</p>
         <p className="text-[13px] text-neutral-500 leading-snug mb-5">
-          Instala a Baya no teu ecrã inicial para nunca perderes uma mensagem ou like novo.
+          Instala a Snapper no teu ecrã inicial para nunca perderes uma mensagem ou like novo.
         </p>
         <button
           onClick={onConfirm}
@@ -138,7 +138,7 @@ export function OfficialMessageDetail({ item, onBack, onArchived }: {
     if (message.action_type === "install_pwa") {
       if (installed) return;
       if (isIos()) { setShowIosHelp(true); return; }
-      // Mostra primeiro o nosso modal com a marca da Baya — o prompt nativo
+      // Mostra primeiro o nosso modal com a marca da Snapper — o prompt nativo
       // do browser só aparece depois de o utilizador confirmar aqui.
       setShowInstallModal(true);
       return;
@@ -212,7 +212,7 @@ export function OfficialMessageDetail({ item, onBack, onArchived }: {
 
       {showIosHelp && <IosInstallHelp onClose={() => setShowIosHelp(false)} />}
       {showInstallModal && (
-        <BayaInstallModal
+        <SnapperInstallModal
           title={message.title}
           installing={installing}
           onConfirm={confirmInstall}

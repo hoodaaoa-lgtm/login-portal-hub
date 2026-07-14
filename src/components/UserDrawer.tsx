@@ -5,7 +5,7 @@ import {
   MessageCircle, Bell, Shield, HelpCircle, Info, BarChart2, User, Moon, Sun,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { signOutBaya } from "@/contexts/AuthContext";
+import { signOutSnapper } from "@/contexts/AuthContext";
 import { useNavigate } from "@tanstack/react-router";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useScrollLock } from "@/hooks/useScrollLock";
@@ -148,7 +148,7 @@ export function UserDrawer({ userId: _userId, onClose }: UserDrawerProps) {
   }
 
   async function logout() {
-    await signOutBaya();
+    await signOutSnapper();
     onClose();
     navigate({ to: "/" });
   }
@@ -193,7 +193,7 @@ export function UserDrawer({ userId: _userId, onClose }: UserDrawerProps) {
       title: "Ajuda & Info",
       items: [
         { icon: HelpCircle, label: "Ajuda & Suporte", color: "#6b7280", action: () => { onClose(); navigate({ to: "/definicoes", search: { panel: "help" } as any }); } },
-        { icon: Info, label: "Sobre a Baya", color: "#6b7280", action: () => { onClose(); navigate({ to: "/definicoes", search: { panel: "about" } as any }); } },
+        { icon: Info, label: "Sobre a Snapper", color: "#6b7280", action: () => { onClose(); navigate({ to: "/definicoes", search: { panel: "about" } as any }); } },
       ],
     },
   ];

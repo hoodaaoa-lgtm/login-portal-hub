@@ -88,7 +88,7 @@
     "support": "الدعم",
     "help": "المساعدة",
     "help_desc": "الأسئلة الشائعة",
-    "about": "عن Baya",
+    "about": "عن Snapper",
     "about_desc": "الإصدار والمعلومات القانونية",
     "msg_privacy": "خصوصية الرسائل",
     "msg_privacy_desc": "من يمكنه مراسلتك؟",
@@ -121,7 +121,7 @@
     "no_channels": "لا توجد قنوات متاحة.",
     "follow": "+ متابعة",
     "following_btn": "تتابع ✓",
-    "creators": "اكتشف منشئي Baya",
+    "creators": "اكتشف منشئي Snapper",
     "subscribers": "مشتركون",
     "subscribe": "اشتراك",
     "subscribed": "مشترك",
@@ -180,7 +180,7 @@
     "suggested": "مقترحون"
   },
   "studio": {
-    "title": "Baya Studio",
+    "title": "Snapper Studio",
     "dashboard": "لوحة التحكم",
     "content": "المحتوى",
     "upload": "رفع فيديو",

@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { signOutBaya } from "@/contexts/AuthContext";
+import { signOutSnapper } from "@/contexts/AuthContext";
 import { BottomNav, SideNav, PageWrapper, PageHeader } from "@/components/AppShell";
 import {
   ChevronRight, Bell, Lock, Shield, ShieldAlert, HelpCircle,
@@ -19,7 +19,7 @@ import { LanguagePanel } from "@/components/LanguageSwitcher";
 import { LANGUAGES, getCurrentLang } from "@/lib/i18n";
 
 export const Route = createFileRoute("/definicoes")({
-  head: () => ({ meta: [{ title: "Baya" }] }),
+  head: () => ({ meta: [{ title: "Snapper" }] }),
   component: DefinicoesPage,
 });
 
@@ -114,7 +114,7 @@ function DefinicoesPage() {
     {
       icon: <LogOut className="w-5 h-5"/>, color: "#F26B3A",
       label: "Terminar sessão", desc: "Sair da tua conta neste dispositivo",
-      action: async () => { await signOutBaya(); navigate({ to: "/" }); },
+      action: async () => { await signOutSnapper(); navigate({ to: "/" }); },
     },
     {
       icon: <Trash2 className="w-5 h-5"/>, color: "#ef4444",
@@ -187,7 +187,7 @@ function DefinicoesPage() {
               </div>
             ))}
 
-            {/* Baya Leve — modo de poupar dados. Fica fora do SECTIONS.map
+            {/* Snapper Leve — modo de poupar dados. Fica fora do SECTIONS.map
                 porque precisa de um switch em vez do chevron de navegação. */}
             <div>
               <p className="text-[11px] font-bold uppercase tracking-widest mb-2 px-1"
@@ -205,7 +205,7 @@ function DefinicoesPage() {
                     <Zap className="w-5 h-5" fill={dataSaverOn ? "currentColor" : "none"} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Baya Leve</p>
+                    <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Snapper Leve</p>
                     <p className="text-xs" style={{ color: "var(--text-muted)" }}>Vídeos só carregam quando tocas — poupa dados</p>
                   </div>
                   <div
@@ -222,7 +222,7 @@ function DefinicoesPage() {
             </div>
 
             <p className="text-center text-[11px] pb-2" style={{ color: "var(--text-muted)" }}>
-              © 2026 Baya · v1.0.0
+              © 2026 Snapper · v1.0.0
             </p>
 
             {/* Zona Perigosa */}

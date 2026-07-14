@@ -1,7 +1,7 @@
 import React from "react";
 import { Search } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
-import { BayaTipCard } from "@/components/BayaTipCard";
+import { SnapperTipCard } from "@/components/SnapperTipCard";
 
 export function RightSidebar() {
   const navigate = useNavigate();
@@ -15,11 +15,11 @@ export function RightSidebar() {
           className="w-full flex items-center gap-3 h-11 pl-11 pr-4 rounded-full text-left transition relative hover:border-[#5B3FCF]"
           style={{ background: "var(--s1)", border: "1px solid transparent" }}>
           <Search className="h-4 w-4 absolute left-4" style={{ color: "var(--text-muted)" }} />
-          <span className="text-sm" style={{ color: "var(--text-muted)" }}>Pesquisar no Baya</span>
+          <span className="text-sm" style={{ color: "var(--text-muted)" }}>Pesquisar no Snapper</span>
         </button>
       </div>
 
-      <BayaTipCard variant="sidebar" />
+      <SnapperTipCard variant="sidebar" />
 
       <div className="flex items-center justify-center flex-wrap gap-x-1.5 text-[11px]" style={{ color: "var(--text-muted)" }}>
         <a href="/uso" target="_blank" rel="noopener noreferrer" className="hover:underline">Termos</a>
@@ -28,7 +28,7 @@ export function RightSidebar() {
         <span>·</span>
         <a href="/acessibilidade" target="_blank" rel="noopener noreferrer" className="hover:underline">Acessibilidade</a>
       </div>
-      <p className="text-[11px] text-center" style={{ color: "var(--text-muted)" }}>© 2026 Baya</p>
+      <p className="text-[11px] text-center" style={{ color: "var(--text-muted)" }}>© 2026 Snapper</p>
     </div>
   );
 }

@@ -32,7 +32,7 @@ function Shimmer({ className = "", style }: { className?: string; style?: CSSPro
 export type UniversalSkeletonVariant =
   | "feed" // post do feed: avatar + linhas + corpo + mídia + ações (PostCard)
   | "profile" // cabeçalho de perfil: capa + avatar + botões + nome/bio + stats
-  | "video-grid" // grade de vídeos/mídia (Studio, BayaTV): aspect-square em grid
+  | "video-grid" // grade de vídeos/mídia (Studio, SnapperTV): aspect-square em grid
   | "messages" // linha de conversa: avatar + nome/hora + prévia (ContactList)
   | "chat-bubbles" // bolhas de mensagem alternadas esq/dir dentro de uma conversa aberta
   | "explorar" // linha de pessoa sugerida: avatar + nome/username + botão seguir
@@ -110,7 +110,7 @@ function ExplorarItem() {
 }
 
 function VideoGridItem() {
-  // Mesma grid do Studio/BayaTV: aspect-square dentro de um cartão
+  // Mesma grid do Studio/SnapperTV: aspect-square dentro de um cartão
   // arredondado com borda — grid-cols aplicado pelo wrapper do variant.
   return (
     <div

@@ -98,7 +98,7 @@ export type NormalizedPost = {
   music_artist?: string | null;
   poll?: { question?: string; options?: (string | { text: string })[] } | null;
   poll_ends_at?: string | null;
-  // Clipes / vídeos do BayaTV partilhados como publicação
+  // Clipes / vídeos do SnapperTV partilhados como publicação
   clip_video_id?: string | null;
   clip_start?: number;
   clip_end?: number;
@@ -756,7 +756,7 @@ function ForwardModal({ post, me, onClose }: { post: any; me: any; onClose: () =
                 onClick={() => {
                   navigator.share({
                     title: `Publicação de ${post.author_name ?? post.author_username}`,
-                    text: post.text || "Vê esta publicação na Baya",
+                    text: post.text || "Vê esta publicação na Snapper",
                     url: `${window.location.origin}/post/${post.id}`,
                   }).catch(() => {});
                 }}
@@ -845,11 +845,11 @@ function ClipCard({ p, liked, likeCount, viewCount, onLike, onComment }: {
         </div>
         <div className="flex-1 min-w-0">
           <p className="font-bold text-sm leading-tight truncate inline-flex items-center gap-1" style={{ color: "var(--text-primary)" }}>
-            {p.user ?? "Baya"}
+            {p.user ?? "Snapper"}
             {p.is_verified && <VerifiedBadge size={12} />}
           </p>
           <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
-            @{p.author_username} · BayaTV
+            @{p.author_username} · SnapperTV
           </p>
         </div>
         <span className="text-[10px] px-2.5 py-0.5 rounded-full font-bold shrink-0"
@@ -934,7 +934,7 @@ function ClipCard({ p, liked, likeCount, viewCount, onLike, onComment }: {
           </button>
           <button
             onClick={() => navigator.share?.({
-              title: p.clip_title ?? "Clipe BayaTV",
+              title: p.clip_title ?? "Clipe SnapperTV",
               url: `${window.location.origin}/hoodatv/watch/${p.clip_video_id}`,
             }).catch(() => {})}
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl transition active:scale-90">

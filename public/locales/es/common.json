@@ -88,7 +88,7 @@
     "support": "Soporte",
     "help": "Ayuda",
     "help_desc": "Preguntas frecuentes",
-    "about": "Sobre Baya",
+    "about": "Sobre Snapper",
     "about_desc": "Versión e información legal",
     "msg_privacy": "Privacidad de mensajes",
     "msg_privacy_desc": "¿Quién puede enviarte mensajes?",
@@ -121,7 +121,7 @@
     "no_channels": "No hay canales disponibles.",
     "follow": "+ Seguir",
     "following_btn": "Siguiendo ✓",
-    "creators": "Descubre creadores de Baya",
+    "creators": "Descubre creadores de Snapper",
     "subscribers": "suscriptores",
     "subscribe": "Suscribirse",
     "subscribed": "Suscrito",
@@ -180,7 +180,7 @@
     "suggested": "Sugeridos"
   },
   "studio": {
-    "title": "Baya Studio",
+    "title": "Snapper Studio",
     "dashboard": "Panel",
     "content": "Contenido",
     "upload": "Subir vídeo",

@@ -28,7 +28,7 @@ import {
 const db = supabase as any;
 
 export const Route = createFileRoute("/hdequipa9x2")({
-  head: () => ({ meta: [{ title: "Baya" }] }),
+  head: () => ({ meta: [{ title: "Snapper" }] }),
   component: AdminPage,
 });
 
@@ -210,18 +210,21 @@ type AdminMsg = {
   media_url?: string | null;
 };
 
-/** Nome "Baya" com as mesmas cores letra-a-letra usadas em todo o site
- * (ver BayaLogo.tsx) — versão compacta para caber em cabeçalhos do admin. */
-const BAYA_LETTERS = [
-  { c: "B", col: "#E94B8A" },
-  { c: "a", col: "#F2874B" },
-  { c: "y", col: "#1FAFA6" },
-  { c: "a", col: "#7F5AF0" },
+/** Nome "Snapper" com as mesmas cores letra-a-letra usadas em todo o site
+ * (ver SnapperLogo.tsx) — versão compacta para caber em cabeçalhos do admin. */
+const SNAPPER_LETTERS = [
+  { c: "S", col: "#5B3FCF" },
+  { c: "n", col: "#F26B3A" },
+  { c: "a", col: "#1FAFA6" },
+  { c: "p", col: "#6BA547" },
+  { c: "p", col: "#E94B8A" },
+  { c: "e", col: "#FFC93C" },
+  { c: "r", col: "#7F5AF0" },
 ];
-function BayaWordmark({ size = 18 }: { size?: number }) {
+function SnapperWordmark({ size = 18 }: { size?: number }) {
   return (
     <span style={{ display: "inline-flex", fontWeight: 900, fontSize: size, lineHeight: 1, fontFamily: '"Nunito","Quicksand",system-ui,sans-serif' }}>
-      {BAYA_LETTERS.map((l, i) => <span key={i} style={{ color: l.col }}>{l.c}</span>)}
+      {SNAPPER_LETTERS.map((l, i) => <span key={i} style={{ color: l.col }}>{l.c}</span>)}
     </span>
   );
 }
@@ -285,7 +288,7 @@ function AdminPostMedia({ p }: { p: PostRow }) {
   const photos = p.photos && p.photos.length > 0 ? p.photos : (p.photo_url ? [p.photo_url] : []);
 
   if (videoSrc) {
-    // Mesmo player do feed (BayaPlayer via FeedVideoPlayer): respeita a
+    // Mesmo player do feed (SnapperPlayer via FeedVideoPlayer): respeita a
     // proporção real do vídeo — encolhe em largura quando é vertical, em
     // vez de esticar a caixa toda como fazia o <video> nativo antes.
     return (
@@ -325,7 +328,7 @@ function AdminPage() {
   const [stage, setStage] = useState<Stage>("checking");
   const [adminId, setAdminId] = useState("");
 
-  // Ativa a identidade do PWA "Baya Admin" (manifest, ícones, Service
+  // Ativa a identidade do PWA "Snapper Admin" (manifest, ícones, Service
   // Worker próprio) assim que sabemos que é mesmo um admin — nunca antes
   // do gate de is_hooda_admin() responder.
   useAdminPwaShell(stage !== "checking" && stage !== "denied");
@@ -363,7 +366,7 @@ function AdminPage() {
         style={{ background: "#f7f7f9" }}>
         <ShieldAlert className="h-10 w-10" style={{ color: "#F26B3A" }} />
         <p className="text-neutral-900 font-bold text-lg">Acesso restrito</p>
-        <p className="text-neutral-400 text-sm">Esta área é apenas para a equipa Baya.</p>
+        <p className="text-neutral-400 text-sm">Esta área é apenas para a equipa Snapper.</p>
       </div>
     );
   }
@@ -720,7 +723,7 @@ function AdminDashboard({ adminId }: { adminId: string }) {
   }
 
   /**
-   * Envia uma mensagem oficial (conta "Baya Oficial") a um utilizador —
+   * Envia uma mensagem oficial (conta "Snapper Oficial") a um utilizador —
    * usado para avisar quando uma publicação/canal dele é removido.
    * Encontra ou cria a conversa oficial, igual à lógica de openUser().
    */
@@ -955,8 +958,8 @@ function AdminDashboard({ adminId }: { adminId: string }) {
     const text = broadcastText.trim();
     if (!text || broadcastSending) return;
     const confirmMsg = broadcastNoReply
-      ? `Isto envia esta mensagem, como Baya Oficial, para TODOS os ${users.length} utilizadores — e bloqueia respostas para todos eles (mesmo quem já podia responder antes). Confirmas?`
-      : `Isto envia esta mensagem, como Baya Oficial, para TODOS os ${users.length} utilizadores. Confirmas?`;
+      ? `Isto envia esta mensagem, como Snapper Oficial, para TODOS os ${users.length} utilizadores — e bloqueia respostas para todos eles (mesmo quem já podia responder antes). Confirmas?`
+      : `Isto envia esta mensagem, como Snapper Oficial, para TODOS os ${users.length} utilizadores. Confirmas?`;
     const confirmed = window.confirm(confirmMsg);
     if (!confirmed) return;
     setBroadcastSending(true);
@@ -1176,7 +1179,7 @@ function AdminDashboard({ adminId }: { adminId: string }) {
     }
   }
 
-  /** Envia uma foto como "Baya Oficial" na conversa aberta. */
+  /** Envia uma foto como "Snapper Oficial" na conversa aberta. */
   async function sendOfficialImage(file: File) {
     if (!selected || !convId || uploadingImg) return;
     if (!file.type.startsWith("image/")) { toast.error("Escolhe um ficheiro de imagem."); return; }
@@ -1216,7 +1219,7 @@ function AdminDashboard({ adminId }: { adminId: string }) {
             <img src={LOGO} alt="" className="w-full h-full object-contain p-1" />
           </div>
           <p className="hidden md:flex items-center gap-1.5 font-extrabold">
-            <BayaWordmark size={17} /><span className="text-neutral-500 text-sm">Oficial</span>
+            <SnapperWordmark size={17} /><span className="text-neutral-500 text-sm">Oficial</span>
           </p>
         </div>
         {([
@@ -1933,7 +1936,7 @@ function AdminDashboard({ adminId }: { adminId: string }) {
             </span>
           </div>
           <p className="text-neutral-400 text-sm mb-6">
-            Quem está no Baya neste momento, quando cada um esteve por último e quanto tempo já passou na app.
+            Quem está no Snapper neste momento, quando cada um esteve por último e quanto tempo já passou na app.
           </p>
           <div className="flex items-center gap-2 rounded-2xl px-3 py-2 mb-6 max-w-sm"
             style={{ background: "#f5f5f7" }}>
@@ -1990,7 +1993,7 @@ function AdminDashboard({ adminId }: { adminId: string }) {
         <div className="flex-1 overflow-y-auto p-6 md:p-10">
           <h1 className="text-2xl font-extrabold text-neutral-900 mb-1">Comunicados</h1>
           <p className="text-neutral-400 text-sm mb-6">
-            Envia uma mensagem como <strong>Baya Oficial</strong> para todos os {users.length} utilizadores da plataforma de uma só vez.
+            Envia uma mensagem como <strong>Snapper Oficial</strong> para todos os {users.length} utilizadores da plataforma de uma só vez.
           </p>
           <div className="max-w-xl rounded-2xl p-5" style={{ background: "#ffffff", border: "1px solid #ececf1" }}>
             <div className="flex items-center gap-2 mb-3">
@@ -1998,7 +2001,7 @@ function AdminDashboard({ adminId }: { adminId: string }) {
                 <img src={LOGO} alt="" className="w-full h-full object-contain p-1" />
               </div>
               <p className="flex items-center gap-1.5 font-extrabold text-sm">
-                <BayaWordmark size={15} /><span className="text-neutral-500">Oficial</span> <VerifiedBadge size={13} />
+                <SnapperWordmark size={15} /><span className="text-neutral-500">Oficial</span> <VerifiedBadge size={13} />
               </p>
             </div>
             <textarea
@@ -2087,13 +2090,13 @@ function AdminDashboard({ adminId }: { adminId: string }) {
 
             <p className="text-[12px] font-bold text-neutral-500 mb-2">Título</p>
             <input value={officialTitle} onChange={(e) => setOfficialTitle(e.target.value)}
-              placeholder='Ex.: "Instala a Baya"'
+              placeholder='Ex.: "Instala a Snapper"'
               className="w-full rounded-2xl px-4 py-2.5 text-sm outline-none text-neutral-900 placeholder:text-neutral-400 mb-4"
               style={{ background: "#f5f5f7" }} />
 
             <p className="text-[12px] font-bold text-neutral-500 mb-2">Descrição</p>
             <textarea value={officialDescription} onChange={(e) => setOfficialDescription(e.target.value)}
-              rows={3} placeholder="Ex.: Adiciona a Baya ao teu ecrã inicial para uma experiência melhor."
+              rows={3} placeholder="Ex.: Adiciona a Snapper ao teu ecrã inicial para uma experiência melhor."
               className="w-full rounded-2xl px-4 py-3 text-sm outline-none resize-none text-neutral-900 placeholder:text-neutral-400 mb-4"
               style={{ background: "#f5f5f7" }} />
 
@@ -2236,7 +2239,7 @@ function AdminDashboard({ adminId }: { adminId: string }) {
             </div>
             <div>
               <p className="font-extrabold text-sm leading-tight flex items-center gap-1.5">
-                <BayaWordmark size={15} /><span className="text-white/85">Oficial</span> <VerifiedBadge />
+                <SnapperWordmark size={15} /><span className="text-white/85">Oficial</span> <VerifiedBadge />
               </p>
               <p className="text-white/70 text-[11px] leading-tight">Painel de mensagens</p>
             </div>
@@ -2303,7 +2306,7 @@ function AdminDashboard({ adminId }: { adminId: string }) {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-bold text-white truncate">{selected.full_name || selected.username}</p>
-                <p className="text-[11px] text-white/70">@{selected.username} · a falar como Baya Oficial</p>
+                <p className="text-[11px] text-white/70">@{selected.username} · a falar como Snapper Oficial</p>
               </div>
               <div className="flex items-center gap-1 p-1 rounded-full shrink-0" style={{ background: "rgba(255,255,255,0.15)" }}>
                 <button onClick={() => setReplyAllowedTo(true)}
@@ -2353,7 +2356,7 @@ function AdminDashboard({ adminId }: { adminId: string }) {
                     <div className="max-w-[75%]">
                       {isAdmin && (
                         <p className="flex items-center gap-1 text-[11px] font-bold mb-1 justify-end">
-                          <BayaWordmark size={11} /><span style={{ color: "#5B3FCF" }}>Oficial</span> <VerifiedBadge size={11} />
+                          <SnapperWordmark size={11} /><span style={{ color: "#5B3FCF" }}>Oficial</span> <VerifiedBadge size={11} />
                         </p>
                       )}
                       {isImage ? (
@@ -2409,7 +2412,7 @@ function AdminDashboard({ adminId }: { adminId: string }) {
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendOfficial(); } }}
                 rows={1}
-                placeholder="Escrever como Baya Oficial..."
+                placeholder="Escrever como Snapper Oficial..."
                 className="flex-1 rounded-2xl px-4 py-3 text-sm outline-none resize-none text-neutral-900 placeholder:text-neutral-400 max-h-28"
                 style={{ background: "#f5f5f7" }}
               />

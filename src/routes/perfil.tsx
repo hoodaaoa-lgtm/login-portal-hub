@@ -5,12 +5,12 @@ import { useScrollLock } from "@/hooks/useScrollLock";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
-import { signOutBaya } from "@/contexts/AuthContext";
+import { signOutSnapper } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { STATIC_QUERY_OPTIONS } from "@/lib/queryClient";
 import { BottomNav, SideNav, PageWrapper, FeedLayout } from "@/components/AppShell";
 import { RightSidebar } from "@/components/RightSidebar";
-import { BayaLogo } from "@/components/BayaLogo";
+import { SnapperLogo } from "@/components/SnapperLogo";
 import {
   Settings, LogOut, MessageCircle, Flag, X, Image, Type, Plus, Repeat2, Quote,
   BookOpen, ChevronRight, Lock, Shield, TrendingUp, Bookmark,
@@ -39,7 +39,7 @@ import { PollCard } from "@/components/PollCard";
 import { UniversalSkeleton } from "@/components/Skeletons";
 
 export const Route = createFileRoute("/perfil")({
-  head: () => ({ meta: [{ title: "Baya" }] }),
+  head: () => ({ meta: [{ title: "Snapper" }] }),
   component: ProfilePage,
 });
 
@@ -1337,8 +1337,8 @@ export function AboutPanel({ onBack }: { onBack: () => void }) {
     <SettingsSubPanel title={t("settings.about")} onBack={onBack}>
       <div className="px-5 py-4 space-y-4">
         <div className="rounded-2xl border p-4 space-y-2" style={{ background: "var(--s2)", borderColor: "var(--border-subtle)" }}>
-          <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>Baya</p>
-          <p className="text-xs leading-relaxed" style={{ color: "var(--text-muted)" }}>A tua rede social angolana. Conecta, partilha e cresce com a comunidade Baya.</p>
+          <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>Snapper</p>
+          <p className="text-xs leading-relaxed" style={{ color: "var(--text-muted)" }}>A tua rede social angolana. Conecta, partilha e cresce com a comunidade Snapper.</p>
         </div>
         <div className="rounded-2xl border divide-y" style={{ background: "var(--s2)", borderColor: "var(--border-subtle)" }}>
           {[
@@ -1361,8 +1361,8 @@ export function AboutPanel({ onBack }: { onBack: () => void }) {
 export function HelpPanel({ onBack }: { onBack: () => void }) {
   const faqs = [
     { q: "Como altero a minha foto de perfil?", a: "Vai ao teu perfil e clica na foto de perfil para fazer upload de uma nova imagem." },
-    { q: "Como publico um vídeo?", a: "Vai ao BayaStudio e clica em 'Novo vídeo'. Podes fazer upload e definir título, descrição e visibilidade." },
-    { q: "Como acompanho um canal?", a: "Na BayaTV, clica no canal que queres acompanhar e depois no botão 'Acompanhar'." },
+    { q: "Como publico um vídeo?", a: "Vai ao SnapperStudio e clica em 'Novo vídeo'. Podes fazer upload e definir título, descrição e visibilidade." },
+    { q: "Como acompanho um canal?", a: "Na SnapperTV, clica no canal que queres acompanhar e depois no botão 'Acompanhar'." },
     { q: "Como altero a minha palavra-passe?", a: "Vai a Configurações → Segurança → Alterar palavra-passe." },
     { q: "Como torno o meu perfil privado?", a: "Vai a Configurações → Privacidade e ativa 'Conta privada'." },
     { q: "Como envio mensagens?", a: "Usa o separador Mensagens na barra de navegação. Podes enviar mensagens a outros utilizadores." },
@@ -1872,7 +1872,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
       {/* Header */}
       <header className="sticky top-0 z-30 border-b" style={{ background: "var(--surface-0)", borderColor: "var(--border-subtle)" }}>
         <div className="px-4 h-14 flex items-center gap-4">
-          <BayaLogo size="sm" className="lg:hidden" />
+          <SnapperLogo size="sm" className="lg:hidden" />
           <div className="hidden lg:block leading-tight">
             <p className="text-[15px] font-extrabold" style={{ color: "var(--text-primary)" }}>{name}</p>
             <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>
@@ -2110,7 +2110,7 @@ function PublicProfile({ profile, email }: { profile: Profile | null; email: str
     <PageWrapper className="pb-20 lg:pb-0">
       <header className="sticky top-0 z-30 border-b" style={{ background: "var(--surface-0)", borderColor: "var(--border-subtle)" }}>
         <div className="px-4 lg:pl-10 h-14 flex items-center">
-          <BayaLogo size="sm" />
+          <SnapperLogo size="sm" />
         </div>
       </header>
       <main className="w-full">
@@ -2266,7 +2266,7 @@ function ProfilePage() {
   }, [navigate]);
 
   async function signOut() {
-    await signOutBaya();
+    await signOutSnapper();
     navigate({ to: "/", replace: true });
   }
 
