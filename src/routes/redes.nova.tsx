@@ -12,7 +12,12 @@ export const Route = createFileRoute("/redes/nova")({
   component: NovaRedePage,
 });
 
-const CATEGORIAS = ["Música", "Tecnologia", "Futebol", "Notícias", "Educação", "Negócios", "Entretenimento", "Outra"];
+const CATEGORIAS = [
+  "Música", "Tecnologia", "Futebol", "Notícias", "Educação", "Negócios",
+  "Entretenimento", "Animes", "Doramas", "Novelas", "Filmes e Séries",
+  "Games", "Moda e Beleza", "Humor", "Religião", "Saúde", "Culinária",
+  "Viagens", "+18", "Outra",
+];
 
 function OpcaoCard({ selected, onClick, title, desc }: { selected: boolean; onClick: () => void; title: string; desc: string }) {
   return (
