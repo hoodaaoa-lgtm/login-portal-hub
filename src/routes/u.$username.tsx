@@ -14,10 +14,9 @@ import { fetchPostComments, sendPostComment, replyToPostComment, toggleCommentLi
 import { BottomNav, SideNav, PageWrapper, FeedLayout } from "@/components/AppShell";
 import { RightSidebar } from "@/components/RightSidebar";
 import { UniversalSkeleton } from "@/components/Skeletons";
-import { useFollowState, FOLLOW_KEYS } from "@/hooks/useSocialSystem";
 import {
   ChevronLeft, Flag, Share2, Ban,
-  MoreHorizontal, UserCheck, UserPlus, X, MapPin,
+  MoreHorizontal, X, MapPin,
   Link as LinkIcon, Calendar, Camera, MessageCircle,
   Copy, Check, RefreshCw,
 } from "lucide-react";
@@ -160,125 +159,6 @@ function ShareProfileModal({ username, name, onClose }: { username: string; name
           </button>
         </div>
       </div>
-    </div>
-  );
-}
-
-/* ─── Modal de Seguidores/Seguindo ─── */
-function FollowListModal({ userId, kind, onClose }:
-  { userId:string; kind:"followers"|"following"; onClose:()=>void }) {
-  const [myId, setMyId] = useState("");
-
-  useEffect(() => {
-    document.body.style.overflow = "hidden";
-    supabase.auth.getSession().then(({data:{session}})=>{ if(session) setMyId(session.user.id); });
-    return ()=>{ document.body.style.overflow=""; };
-  },[]);
-
-  const { data=[], isLoading } = useQuery({
-    queryKey:["followList",userId,kind],
-    queryFn: async () => {
-      const db = supabase as any;
-      // Nota: "follows" não tem foreign key para "profiles" (follower_id
-      // aponta para auth.users, e target_username é só texto) — por isso
-      // o embedding do PostgREST (select("profiles!follower_id(...)"))
-      // nunca funcionou aqui, dava sempre 400 Bad Request. Corrigido
-      // fazendo 2 queries separadas, tal como já é feito em UserDrawer.tsx.
-      if (kind==="followers") {
-        const {data:me}=await db.from("profiles").select("username").eq("id",userId).maybeSingle();
-        if (!me?.username) return [];
-        const {data:rows}=await db.from("follows").select("follower_id").eq("target_username",me.username);
-        const ids=[...new Set((rows??[]).map((r:any)=>r.follower_id).filter(Boolean))];
-        if (ids.length===0) return [];
-        const {data:profs}=await db.from("profiles").select("id,username,full_name,avatar_url").in("id",ids);
-        return profs ?? [];
-      } else {
-        const {data:rows}=await db.from("follows").select("target_username").eq("follower_id",userId);
-        const usernames=[...new Set((rows??[]).map((r:any)=>r.target_username).filter(Boolean))];
-        if (usernames.length===0) return [];
-        const {data:profs}=await db.from("profiles").select("id,username,full_name,avatar_url").in("username",usernames);
-        return profs ?? [];
-      }
-    },
-    staleTime:30_000,
-  });
-
-  // Estado de "já sigo" por linha — cada FollowRow usa useFollowState,
-  // a MESMA fonte de verdade partilhada com o resto da app (post cards,
-  // perfil, explorar, sugestões da home). Antes este modal tinha a sua
-  // própria cópia local (Set + toggleFollow duplicado), o que fazia
-  // seguir aqui não refletir sempre nos outros sítios e vice-versa.
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4"
-      style={{background:"rgba(0,0,0,0.6)",backdropFilter:"blur(4px)"}}
-      onClick={e=>e.target===e.currentTarget&&onClose()}>
-      <div className="w-full sm:max-w-sm rounded-3xl flex flex-col shadow-2xl"
-        style={{background:"var(--s0)",maxHeight:"80vh"}}>
-        <div className="flex items-center justify-between px-5 py-4 border-b shrink-0"
-          style={{borderColor:"var(--border-subtle)"}}>
-          <span className="font-bold text-base" style={{color:"var(--text-primary)"}}>
-            {kind==="followers"?"Acompanhantes":"Acompanhando"}
-          </span>
-          <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-[var(--s2)]">
-            <X className="h-4 w-4" style={{color:"var(--text-muted)"}} />
-          </button>
-        </div>
-        <div className="overflow-y-auto flex-1 py-2">
-          {isLoading ? (
-            [1,2,3].map(i=>(
-              <div key={i} className="flex items-center gap-3 px-4 py-3 animate-pulse">
-                <div className="w-10 h-10 rounded-full" style={{background:"var(--s3)"}}/>
-                <div className="flex-1 space-y-2">
-                  <div className="h-3 rounded-full w-1/2" style={{background:"var(--s3)"}}/>
-                  <div className="h-2.5 rounded-full w-1/3" style={{background:"var(--s3)"}}/>
-                </div>
-              </div>
-            ))
-          ) : data.length===0 ? (
-            <p className="text-center py-12 text-sm" style={{color:"var(--text-muted)"}}>
-              {kind==="followers"?"Ainda sem acompanhantes":"Não acompanha ninguém"}
-            </p>
-          ) : data.map((u:any)=>(
-            <FollowRow key={u.id} u={u} myId={myId} />
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* Linha individual da lista de seguidores/seguindo — botão "Acompanhar"
-   usa useFollowState (fonte única partilhada com toda a app). */
-function FollowRow({ u, myId }: { u: any; myId: string }) {
-  const { isFollowing, isPending, isLoading, hasError, toggle, refetchStatus } = useFollowState(myId || null, u.username, u.id);
-  return (
-    <div className="flex items-center gap-3 px-4 py-3 hover:bg-[var(--s1)] transition">
-      <Av name={u.full_name||u.username} src={u.avatar_url} size={42} />
-      <div className="flex-1 min-w-0">
-        <p className="font-semibold text-sm truncate" style={{color:"var(--text-primary)"}}>{u.full_name||u.username}</p>
-        <p className="text-xs" style={{color:"var(--text-muted)"}}>@{u.username}</p>
-      </div>
-      {myId && myId!==u.id && (
-        isLoading ? (
-          <div className="h-[26px] w-[68px] rounded-full animate-pulse" style={{background:"var(--s2)"}} />
-        ) : hasError ? (
-          // Não sabemos se já acompanha — nunca assumir "Acompanhar".
-          <button onClick={() => refetchStatus()}
-            className="px-3 py-1.5 rounded-full text-xs font-bold transition active:scale-95"
-            style={{background:"var(--s2)",color:"var(--text-secondary)",border:"1px solid var(--border-default)"}}>
-            <RefreshCw className="h-3.5 w-3.5" />
-          </button>
-        ) : (
-          <button onClick={toggle} disabled={isPending}
-            className="px-3 py-1.5 rounded-full text-xs font-bold transition active:scale-95 disabled:opacity-60"
-            style={isFollowing
-              ?{background:"var(--s2)",color:"var(--text-secondary)",border:"1px solid var(--border-default)"}
-              :{background:P,color:"#fff"}}>
-            {isFollowing?"Acompanhando":"Acompanhar"}
-          </button>
-        )
-      )}
     </div>
   );
 }
@@ -429,8 +309,6 @@ function UserProfilePage() {
   },[]);
 
   /* ─ UI state ─ */
-  const [showFollowers, setShowFollowers] = useState(false);
-  const [showFollowing, setShowFollowing] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [menuPos, setMenuPos] = useState<{top:number; right:number} | null>(null);
@@ -535,19 +413,6 @@ function UserProfilePage() {
 
   const posts = postsQuery.data??[];
 
-  /* ─ Valores derivados ─ */
-  /* ─ Seguir: fonte única de verdade, mesmo hook/cache/RPC de toda a app ─ */
-  const {
-    isFollowing: following,
-    isLoading: followLoading,
-    hasError: followHasError,
-    followersCount: followerCount,
-    followingCount,
-    countsLoading,
-    isPending: followTogglePending,
-    toggle: toggleFollow,
-    refetchStatus: refetchFollowStatus,
-  } = useFollowState(myId || null, username || null, profileId || null);
   const postCount = statsQuery.data?.postCount??0;
   const name = profile?.full_name||profile?.username||username;
   const avatarUrl = profile?.avatar_url||null;
@@ -716,30 +581,11 @@ function UserProfilePage() {
 
           {/* ── Botões de ação ── */}
           <div className="flex justify-end gap-2 px-4 pt-3 pb-2">
-            {(!sessionChecked || (!!myId && followLoading)) ? (
-              <div className="relative overflow-hidden h-[30px] w-[104px] rounded-full" style={{background:"var(--s2)"}}>
-                <div className="skeleton-shimmer absolute inset-0" />
-              </div>
-            ) : (!!myId && followHasError) ? (
-              // Não sabemos de verdade se já acompanha este perfil (falha
-              // ao consultar a BD) — nunca mostrar "Acompanhar" com
-              // confiança aqui, pois pode já existir o registo e isso
-              // convidaria a um clique redundante. Mostra estado neutro
-              // com opção de tentar de novo.
-              <button onClick={() => refetchFollowStatus()}
-                className="flex items-center gap-1.5 px-5 py-1.5 rounded-full text-sm font-bold transition active:scale-95 shadow-sm"
-                style={{background:"var(--s2)",border:"1px solid var(--border-default)",color:"var(--text-secondary)"}}>
-                <RefreshCw className="h-4 w-4"/>Tentar novamente
-              </button>
-            ) : (
-              <button onClick={toggleFollow} disabled={followTogglePending}
-                className="flex items-center gap-1.5 px-5 py-1.5 rounded-full text-sm font-bold transition active:scale-95 shadow-sm disabled:opacity-60"
-                style={following
-                  ?{background:"var(--s2)",border:"1px solid var(--border-default)",color:"var(--text-secondary)"}
-                  :{background:P,color:"#fff"}}>
-                {following ? <><UserCheck className="h-4 w-4"/>Acompanhando</> : <><UserPlus className="h-4 w-4"/>Acompanhar</>}
-              </button>
-            )}
+            <button onClick={() => navigate({ to: "/mensagens" })}
+              className="flex items-center gap-1.5 px-5 py-1.5 rounded-full text-sm font-bold transition active:scale-95 shadow-sm"
+              style={{background:"var(--s2)",border:"1px solid var(--border-default)",color:"var(--text-secondary)"}}>
+              <MessageCircle className="h-4 w-4"/>Mensagem
+            </button>
           </div>
 
           {/* ── Info ── */}
@@ -778,22 +624,6 @@ function UserProfilePage() {
             </div>
           </div>
 
-          {/* ── Stats ── */}
-          <div className="flex items-center gap-5 px-4 pb-4">
-            {[
-              {n:followingCount, l:"Acompanhando", action:()=>setShowFollowing(true)},
-              {n:followerCount, l:"Acompanhantes", action:()=>setShowFollowers(true)},
-            ].map(s=>(
-              <button key={s.l} onClick={s.action} disabled={!s.action}
-                className="flex items-center gap-1.5 text-sm transition active:opacity-70">
-                {countsLoading
-                  ? <div className="h-4 w-6 rounded-full animate-pulse" style={{background:"var(--s3)"}}/>
-                  : <span className="font-extrabold" style={{color:"var(--text-primary)"}}>{fmtNum(s.n)}</span>}
-                <span style={{color:"var(--text-muted)"}}>{s.l}</span>
-              </button>
-            ))}
-          </div>
-
           {/* ── Separador ── */}
           <div className="border-t mx-4 mb-2" style={{borderColor:"var(--border-subtle)"}}/>
 
@@ -810,7 +640,7 @@ function UserProfilePage() {
               </div>
               <p className="font-bold" style={{color:"var(--text-primary)"}}>Ainda sem publicações</p>
               <p className="text-sm" style={{color:"var(--text-muted)"}}>
-                {following?"Quando publicar, aparece aqui.":"Segue para ver as publicações."}
+                Quando publicar, aparece aqui.
               </p>
             </div>
           ) : (
@@ -845,8 +675,6 @@ function UserProfilePage() {
       </div>
 
       {/* ── Modais ── */}
-      {showFollowers && <FollowListModal userId={profileId!} kind="followers" onClose={()=>setShowFollowers(false)}/>}
-      {showFollowing && <FollowListModal userId={profileId!} kind="following" onClose={()=>setShowFollowing(false)}/>}
       {commentPostId && <CommentsModal postId={commentPostId} authorId={profileId ?? undefined} onClose={()=>setCommentPostId(null)}/>}
       {showReport && <ReportModal username={profile.username} userId={profileId!} onClose={()=>setShowReport(false)}/>}
 
@@ -857,7 +685,7 @@ function UserProfilePage() {
             onClick={e=>e.stopPropagation()}>
             <p className="font-extrabold text-base mb-1" style={{color:"var(--text-primary)"}}>Bloquear @{profile.username}?</p>
             <p className="text-sm mb-4" style={{color:"var(--text-muted)"}}>
-              @{profile.username} deixa de poder acompanhar-te, enviar-te mensagens ou ver o teu perfil.
+              @{profile.username} deixa de poder enviar-te mensagens ou ver o teu perfil.
             </p>
             <div className="flex gap-2">
               <button onClick={()=>setShowBlockConfirm(false)}

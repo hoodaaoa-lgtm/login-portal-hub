@@ -10,7 +10,6 @@ import {
   Heart, MessageCircle, Share2, Eye, Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
-import { FollowListSection } from "@/components/FollowList";
 import { UniversalPostCard, normalizePost } from "@/components/UniversalPostCard";
 import { UniversalSkeleton } from "@/components/Skeletons";
 
@@ -1018,9 +1017,6 @@ type ComunidadeStats = { views: number; likes: number; publications: number };
 
 function ComunidadeTab() {
   const [uid, setUid] = useState<string | null>(null);
-  const [username, setUsername] = useState<string>("");
-  const [followerCount, setFollowerCount] = useState(0);
-  const [followingCount, setFollowingCount] = useState(0);
   const [stats, setStats] = useState<ComunidadeStats>({ views: 0, likes: 0, publications: 0 });
   const [loading, setLoading] = useState(true);
 
@@ -1031,17 +1027,7 @@ function ComunidadeTab() {
       if (!id) { setLoading(false); return; }
       setUid(id);
 
-      const { data: prof } = await supabase.from("profiles").select("username").eq("id", id).maybeSingle();
-      const uname = (prof as any)?.username ?? "";
-      setUsername(uname);
-
-      const [{ count: fc }, { count: foc }, { data: postsAgg }] = await Promise.all([
-        supabase.from("follows").select("*", { count: "exact", head: true }).eq("target_username", uname),
-        supabase.from("follows").select("*", { count: "exact", head: true }).eq("follower_id", id),
-        (supabase as any).from("posts").select("views_count,likes_count").eq("author_id", id),
-      ]);
-      setFollowerCount(fc ?? 0);
-      setFollowingCount(foc ?? 0);
+      const { data: postsAgg } = await (supabase as any).from("posts").select("views_count,likes_count").eq("author_id", id);
 
       const rows = (postsAgg as any[] | null) ?? [];
       setStats({
@@ -1071,7 +1057,7 @@ function ComunidadeTab() {
     <div className="max-w-5xl lg:max-w-6xl mx-auto p-4 sm:p-6 lg:p-8 space-y-5">
       <div>
         <h1 className="text-2xl sm:text-3xl font-black" style={{ color: "var(--text-primary)" }}>Comunidade</h1>
-        <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>Acompanhantes, quem acompanhas, e o desempenho geral do teu conteúdo.</p>
+        <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>O desempenho geral do teu conteúdo.</p>
       </div>
 
       <div className="grid grid-cols-3 gap-3 lg:gap-4">
@@ -1083,11 +1069,6 @@ function ComunidadeTab() {
             <p className="text-xs" style={{ color: "var(--text-muted)" }}>{s.label}</p>
           </div>
         ))}
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <FollowListSection mode="followers" targetUsername={username} targetUserId={uid ?? ""} title="Acompanhantes" count={followerCount} />
-        <FollowListSection mode="following" targetUsername={username} targetUserId={uid ?? ""} title="Acompanhando" count={followingCount} />
       </div>
     </div>
   );

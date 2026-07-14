@@ -24,7 +24,6 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useAvatar } from "@/contexts/AvatarContext";
 import { ProfileAvatarLink } from "@/components/ProfileAvatarLink";
 import { PostCommentsModal } from "@/components/PostCommentsModal";
-import { useFollowState } from "@/hooks/useSocialSystem";
 import { LanguagePanel } from "@/components/LanguageSwitcher";
 import { LANGUAGES, getCurrentLang } from "@/lib/i18n";
 import { uploadImageToCloudinary } from "@/lib/cloudinary";
@@ -34,7 +33,6 @@ import { fetchPostComments, sendPostComment, replyToPostComment, toggleCommentLi
 import { deletePostForEveryone } from "@/lib/posts";
 import { UniversalPostCard, normalizePost } from "@/components/UniversalPostCard";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
-import { FollowListModal } from "@/components/FollowList";
 import { PhotoViewer } from "@/components/PhotoViewer";
 import { FeedVideoPlayer } from "@/components/FeedVideoPlayer";
 import { PollCard } from "@/components/PollCard";
@@ -99,36 +97,6 @@ function Avatar({ name, size = 72, src }: { name: string; size?: number; src?: s
   );
 }
 
-/* ─── Stats ─── */
-function StatsGrid({ publications, followers, following, loading, onFollowersClick, onFollowingClick }: {
-  publications: number; followers: number; following: number; loading?: boolean;
-  onFollowersClick?: () => void; onFollowingClick?: () => void;
-}) {
-  const items = [
-    { n: following, l: t("profile.following"), onClick: onFollowingClick },
-    { n: followers, l: t("profile.followers"), onClick: onFollowersClick },
-  ];
-  return (
-    <div className="flex items-center gap-5 px-5 pb-4">
-      {items.map((s) => (
-        <button key={s.l} onClick={s.onClick} disabled={!s.onClick || loading}
-          className="flex items-center gap-1.5 text-sm transition active:opacity-70 disabled:active:opacity-100"
-          style={{ cursor: s.onClick && !loading ? "pointer" : "default" }}>
-          {loading ? (
-            <span className="relative overflow-hidden inline-block h-4 w-6 rounded" style={{ background: "var(--surface-2,#e9e9e4)" }}>
-              <span className="skeleton-shimmer absolute inset-0" />
-            </span>
-          ) : (
-            <span className="font-extrabold text-[var(--text-primary)]">{fmtNum(s.n)}</span>
-          )}
-          <span className="text-[var(--text-muted)]">{s.l}</span>
-        </button>
-      ))}
-    </div>
-  );
-}
-
-/* ─── Lista de Seguidores / Seguindo — ver src/components/FollowList.tsx ─── */
 
 
 function PostsFeed({ posts, loading, name, username, avatarUrl, onDelete, myUserId, isVerified }: {
@@ -1050,7 +1018,7 @@ function ToggleRow({ icon: Icon, color, label, desc, checked, onChange }: {
 
 /* ─── Notificações ─── */
 export function NotificationsPanel({ onBack }: { onBack: () => void }) {
-  const [prefs, setPrefs] = useState({ likes: true, comments: true, follows: true, messages: true, mentions: true });
+  const [prefs, setPrefs] = useState({ likes: true, comments: true, messages: true, mentions: true });
   const [loading, setLoading] = useState(true);
   const [savingErr, setSavingErr] = useState("");
   const [savedOk, setSavedOk] = useState(false);
@@ -1084,7 +1052,6 @@ export function NotificationsPanel({ onBack }: { onBack: () => void }) {
   const ITEMS: { key: keyof typeof prefs; icon: React.ElementType; color: string; label: string; desc: string }[] = [
     { key: "likes",    icon: Heart,         color: "#E94B8A", label: "Gostos",           desc: "Quando alguém gosta das tuas publicações" },
     { key: "comments", icon: MessageCircle, color: "#1FAFA6", label: t("post.comments"),      desc: "Quando alguém comenta as tuas publicações" },
-    { key: "follows",  icon: Users,         color: "#6BA547", label: "Novos acompanhantes", desc: "Quando alguém começa a acompanhar-te" },
     { key: "messages", icon: Bell,          color: "#F26B3A", label: t("nav.messages"),        desc: "Quando recebes uma nova mensagem" },
     { key: "mentions", icon: Type,          color: ACCENT,    label: "Menções",          desc: "Quando alguém te menciona numa publicação" },
   ];
@@ -1129,21 +1096,12 @@ export function ActivityPanel({ onBack }: { onBack: () => void }) {
       if (!session) { setLoading(false); return; }
       const uid = session.user.id;
 
-      const [postsRes, followsRes] = await Promise.all([
-        supabase.from("posts").select("id,created_at").eq("author_id", uid).order("created_at", { ascending: false }).limit(10),
-        supabase.from("follows").select("target_username,follower_id").eq("follower_id", uid).limit(10),
-      ]);
+      const postsRes = await supabase.from("posts").select("id,created_at").eq("author_id", uid).order("created_at", { ascending: false }).limit(10);
 
       const list: { id: string; type: string; text: string; time: string }[] = [];
 
       (postsRes.data ?? []).forEach((p: any) => list.push({
         id: `p-${p.id}`, type: "post", text: "Criaste uma publicação", time: p.created_at,
-      }));
-
-      (followsRes.data ?? []).forEach((f: any, i: number) => list.push({
-        id: `f-${i}`, type: "follow",
-        text: `Estás a acompanhar @${f.target_username || "utilizador"}`,
-        time: new Date(Date.now() - i * 60000).toISOString(),
       }));
 
       list.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
@@ -1156,7 +1114,6 @@ export function ActivityPanel({ onBack }: { onBack: () => void }) {
   const ICONS: Record<string, { icon: React.ElementType; color: string }> = {
     post:   { icon: Type,     color: ACCENT },
     like:   { icon: Heart,    color: "#E94B8A" },
-    follow: { icon: Users,    color: "#6BA547" },
   };
 
   return (
@@ -1545,11 +1502,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
   const { setAvatarUrl: setGlobalAvatarUrl } = useAvatar();
-  const [followerCount, setFollowerCount] = useState(0);
-  const [followingCount, setFollowingCount] = useState(0);
-  const [statsLoading, setStatsLoading] = useState(true);
   const [msgPermission, setMsgPermission] = useState("todos");
-  const [followListMode, setFollowListMode] = useState<"followers" | "following" | null>(null);
   const [myUserId, setMyUserId] = useState<string>("");
   const [savedPosts, setSavedPosts] = useState<SavedPost[]>([]);
   const [savedLoading, setSavedLoading] = useState(false);
@@ -1610,16 +1563,6 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
       if ((profData as any)?.location) setLocation((profData as any).location);
       if ((profData as any)?.whatsapp) setWhatsapp((profData as any).whatsapp);
       if ((profData as any)?.cover_url) setCoverUrl((profData as any).cover_url);
-
-      // follows: target_username é texto (username), não UUID
-      const myUsername = (profData as any)?.username ?? "";
-      const [{ count: fc }, { count: foc }] = await Promise.all([
-        supabase.from("follows").select("*", { count: "exact", head: true }).eq("target_username", myUsername),
-        supabase.from("follows").select("*", { count: "exact", head: true }).eq("follower_id", session.user.id),
-      ]);
-      setFollowerCount(fc ?? 0);
-      setFollowingCount(foc ?? 0);
-      setStatsLoading(false);
 
       const { data } = await (supabase as any)
         .from("posts")
@@ -2042,8 +1985,6 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
           </div>
         </div>
 
-        <StatsGrid publications={posts.length} followers={followerCount} following={followingCount} loading={statsLoading} onFollowersClick={() => setFollowListMode("followers")} onFollowingClick={() => setFollowListMode("following")} />
-
         {/* Botão flutuante de criar publicação — só ícone, sem caixa duplicada */}
         {tab === "posts" && (
           <div className="px-5 mb-2 flex justify-end">
@@ -2249,14 +2190,6 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
         const { data: { session } } = await supabase.auth.getSession();
         if (session) await supabase.from("profiles").update({ msg_permission: v } as any).eq("id", session.user.id);
       }} />}
-      {followListMode && profile && (
-        <FollowListModal
-          mode={followListMode}
-          targetUsername={profile.username || ""}
-          targetUserId={profile.id || ""}
-          onClose={() => setFollowListMode(null)}
-        />
-      )}
       {showEditProfile && (
         <EditProfileModal
           profile={profile ? { ...profile, website, location, whatsapp } as any : profile}
@@ -2287,7 +2220,6 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
 function PublicProfile({ profile, email }: { profile: Profile | null; email: string }) {
   const [myUserId, setMyUserId] = useState("");
   const [sessionChecked, setSessionChecked] = useState(false);
-  const [followListMode, setFollowListMode] = useState<"followers" | "following" | null>(null);
   const navigate = useNavigate();
   const name = profile?.full_name || profile?.username || email?.split("@")[0] || "?";
 
@@ -2298,20 +2230,6 @@ function PublicProfile({ profile, email }: { profile: Profile | null; email: str
       setSessionChecked(true);
     })();
   }, []);
-
-  // Fonte única de verdade: mesmo hook/cache/RPC usado em todo o resto da
-  // app (feed, canal, u.$username...). O estado real vem sempre da BD
-  // logo ao montar — nunca assume "Seguir" por defeito enquanto carrega.
-  const {
-    isFollowing: following,
-    isLoading: followLoading,
-    followersCount: followerCount,
-    followingCount,
-    countsLoading,
-    isPending: followTogglePending,
-    toggle: toggleFollow,
-  } = useFollowState(myUserId || null, profile?.username || null, (profile as any)?.id || null);
-  const statsLoading = countsLoading;
 
   return (
     <>
@@ -2337,24 +2255,12 @@ function PublicProfile({ profile, email }: { profile: Profile | null; email: str
           >
             <MessageCircle className="h-4 w-4" style={{ color: "#5B3FCF" }} /> Mensagem
           </button>
-          {(!sessionChecked || (!!myUserId && followLoading)) ? (
-            <div className="relative overflow-hidden h-[30px] w-[92px] rounded-full" style={{ background: "var(--s2)" }}>
-              <div className="skeleton-shimmer absolute inset-0" />
-            </div>
-          ) : (
-            <button onClick={toggleFollow} disabled={followTogglePending}
-              className={`text-sm font-bold rounded-full px-5 py-1.5 transition shadow-sm disabled:opacity-60 ${following ? "border border-neutral-300 bg-[var(--s2)] text-black" : "text-white"}`}
-              style={{ background: following ? undefined : ACCENT }}>
-              {following ? t("profile.following") : t("profile.follow")}
-            </button>
-          )}
         </div>
         <div className="px-5 pt-9 pb-3">
           <p className="text-xl font-extrabold text-black">{name}</p>
           <p className="text-sm text-[var(--text-muted)] mt-0.5">@{profile?.username || "..."}</p>
           {profile?.bio && <p className="text-sm text-[var(--text-secondary)] mt-2 leading-relaxed">{profile.bio}</p>}
         </div>
-        <StatsGrid publications={0} followers={followerCount} following={followingCount} loading={statsLoading} onFollowersClick={() => setFollowListMode("followers")} onFollowingClick={() => setFollowListMode("following")} />
         <div className="px-5 py-12 flex flex-col items-center gap-3 text-center">
           <div className="w-16 h-16 rounded-full bg-[#5B3FCF]/10 flex items-center justify-center">
             <BookOpen className="h-7 w-7 text-[#5B3FCF]" />
@@ -2367,14 +2273,6 @@ function PublicProfile({ profile, email }: { profile: Profile | null; email: str
           </button>
         </div>
       </main>
-      {followListMode && profile && (
-        <FollowListModal
-          mode={followListMode}
-          targetUsername={profile.username || ""}
-          targetUserId={(profile as any).id || ""}
-          onClose={() => setFollowListMode(null)}
-        />
-      )}
     </PageWrapper>
     </>
   );

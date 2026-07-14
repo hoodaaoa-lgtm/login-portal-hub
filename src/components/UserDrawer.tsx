@@ -24,8 +24,6 @@ interface Profile {
 }
 
 interface Stats {
-  followers: number;
-  following: number;
   posts: number;
   rating: number;
   ratingCount: number;
@@ -80,11 +78,8 @@ export function UserDrawer({ userId: _userId, onClose }: UserDrawerProps) {
       const resolvedUid = _userId || session.user.id;
       setUid(resolvedUid);
 
-      const [profRes, followersRes, followingRes, postsRes, ratingsRes, myRatingRes] = await Promise.all([
+      const [profRes, postsRes, ratingsRes, myRatingRes] = await Promise.all([
         supabase.from("profiles").select("id,username,full_name,avatar_url,bio").eq("id", resolvedUid).maybeSingle(),
-        // followersRes preenchido abaixo depois de termos o username
-        Promise.resolve({ count: 0 }),
-        supabase.from("follows").select("follower_id", { count: "exact", head: true }).eq("follower_id", resolvedUid),
         supabase.from("posts").select("id", { count: "exact", head: true }).eq("author_id", resolvedUid),
         supabase.from("user_ratings").select("stars").eq("rated_user_id", resolvedUid),
         supabase.from("user_ratings").select("stars").eq("rated_user_id", resolvedUid).eq("rater_user_id", session.user.id).maybeSingle(),
@@ -92,19 +87,10 @@ export function UserDrawer({ userId: _userId, onClose }: UserDrawerProps) {
 
       if (profRes.data) setProfile(profRes.data as Profile);
 
-      // follows.target_username é TEXT (não há following_id) — contar seguidores
-      // exige saber o username do dono do perfil primeiro.
-      const myUsername = (profRes.data as any)?.username ?? "";
-      const { count: realFollowersCount } = myUsername
-        ? await supabase.from("follows").select("follower_id", { count: "exact", head: true }).eq("target_username", myUsername)
-        : { count: 0 };
-
       const allRatings = (ratingsRes.data ?? []) as { stars: number }[];
       const avg = allRatings.length > 0
         ? allRatings.reduce((s, r) => s + r.stars, 0) / allRatings.length : 0;
       setStats({
-        followers: realFollowersCount ?? 0,
-        following: followingRes.count ?? 0,
         posts: postsRes.count ?? 0,
         rating: avg,
         ratingCount: allRatings.length,
@@ -346,9 +332,6 @@ export function UserDrawer({ userId: _userId, onClose }: UserDrawerProps) {
                     <p className="text-sm truncate" style={{ color: "var(--text-secondary)" }}>@{profile.username}</p>
                     {stats && (
                       <div className="flex items-center gap-3 mt-1">
-                        <span className="text-xs" style={{ color: "var(--text-muted)" }}>
-                          <b style={{ color: "var(--text-primary)" }}>{stats.followers}</b> acompanhantes
-                        </span>
                         <span className="text-xs" style={{ color: "var(--text-muted)" }}>
                           <b style={{ color: "var(--text-primary)" }}>{stats.posts}</b> posts
                         </span>

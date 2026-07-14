@@ -16,7 +16,6 @@ import { useNetworkInfo } from "@/hooks/useNetworkInfo";
 import { fetchPostComments, sendPostComment, replyToPostComment, toggleCommentLike, notifyMentions } from "@/lib/comments";
 import { useNotifications } from "@/hooks/useNotifications";
 import { WelcomeInstallPrompt } from "@/components/WelcomeInstallPrompt";
-import { useFollowState } from "@/hooks/useSocialSystem";
 import {
   NotificationToast,
   NotificationCenter,
@@ -51,181 +50,6 @@ export const Route = createFileRoute("/home")({
 
 /* ─── Constants ─── */
 const POSTS: any[] = []; // feed carregado do Supabase em HomePage
-
-/* ══════════════════════════════════════════════
-   QUEM SEGUIR — card no feed
-══════════════════════════════════════════════ */
-function WhoToFollowCard({ myUserId, onDismiss, offset = 0 }: { myUserId: string; onDismiss: () => void; offset?: number }) {
-  const navigate = useNavigate();
-  const [suggestions, setSuggestions] = React.useState<any[]>([]);
-  const [loading, setLoading] = React.useState(true);
-  const scrollRef = React.useRef<HTMLDivElement>(null);
-
-  React.useEffect(() => {
-    async function load() {
-      try {
-        // 1 — quem eu sigo
-        const { data: myFollows } = await (supabase as any)
-          .from("follows").select("following_id").eq("follower_id", myUserId);
-        const myFollowIds = (myFollows ?? []).map((f: any) => f.following_id).filter(Boolean);
-        const excludeIds = new Set([myUserId, ...myFollowIds]);
-
-        // 2 — amigos de amigos
-        let candidates: any[] = [];
-        if (myFollowIds.length > 0) {
-          const { data: fof } = await (supabase as any)
-            .from("follows").select("following_id").in("follower_id", myFollowIds.slice(0, 20));
-          const fofIds = [...new Set((fof ?? []).map((f: any) => f.following_id))]
-            .filter(id => !excludeIds.has(id));
-          if (fofIds.length > 0) {
-            const { data: profiles } = await (supabase as any)
-              .from("profiles")
-              .select("id,username,full_name,avatar_url,bio,followers_count")
-              .in("id", fofIds.slice(0, 20))
-              .order("followers_count", { ascending: false });
-            candidates = profiles ?? [];
-          }
-        }
-
-        // 3 — se poucos, completa com populares ordenados por seguidores
-        if (candidates.length < 5) {
-          const excludeList = [...excludeIds].slice(0, 50);
-          const { data: popular } = await (supabase as any)
-            .from("profiles")
-            .select("id,username,full_name,avatar_url,bio,followers_count")
-            .not("id", "in", `(${excludeList.join(",")})`)
-            .order("followers_count", { ascending: false })
-            .limit(10);
-          const existIds = new Set(candidates.map((c: any) => c.id));
-          (popular ?? []).forEach((p: any) => { if (!existIds.has(p.id)) candidates.push(p); });
-        }
-
-        candidates.sort((a, b) => (b.followers_count ?? 0) - (a.followers_count ?? 0));
-        setSuggestions(candidates.slice(offset, offset + 4 > candidates.length ? candidates.length : offset + 4));
-      } catch {}
-      setLoading(false);
-    }
-    load();
-  }, [myUserId, offset]);
-
-  if (loading) return null;
-  if (!suggestions.length) return null;
-
-  const ACCENT = "#5B3FCF";
-  const AVATAR_COLORS = [ACCENT, "#F26B3A", "#1FAFA6", "#6BA547", "#E94B8A"];
-  const avatarColor = (name: string) => AVATAR_COLORS[(name?.charCodeAt(0) ?? 0) % AVATAR_COLORS.length];
-
-  return (
-    <div className="mx-0 my-1 border-b" style={{ borderColor: "var(--border-subtle, #f0f0f0)", background: "var(--s1, #fff)" }}>
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 pt-4 pb-3">
-        <div>
-          <p className="font-extrabold text-[15px]" style={{ color: "var(--text-primary)" }}>Quem acompanhar</p>
-          <p className="text-[12px] mt-0.5" style={{ color: "var(--text-muted)" }}>Pessoas que talvez conheças</p>
-        </div>
-        <button onClick={onDismiss}
-          className="w-7 h-7 rounded-full flex items-center justify-center transition hover:bg-[var(--s3)]"
-          style={{ color: "var(--text-muted)" }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-            <path d="M18 6L6 18M6 6l12 12"/>
-          </svg>
-        </button>
-      </div>
-
-      {/* Scroll horizontal */}
-      <div ref={scrollRef} className="flex gap-3 px-4 pb-4 overflow-x-auto"
-        style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
-        {suggestions.map((user) => (
-          <WhoToFollowSuggestionCard key={user.id} user={user} myUserId={myUserId} navigate={navigate} />
-        ))}
-
-        {/* Ver mais */}
-        <div className="shrink-0 flex flex-col items-center justify-center rounded-2xl p-3 border cursor-pointer transition hover:bg-[var(--s3)]"
-          style={{ width: 100, borderColor: "var(--border-default, #e8e8e8)", background: "var(--s2)" }}
-          onClick={() => navigate({ to: "/explorar" })}>
-          <div className="w-10 h-10 rounded-full flex items-center justify-center mb-2"
-            style={{ background: "#5B3FCF18" }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5B3FCF" strokeWidth="2.5" strokeLinecap="round">
-              <path d="M5 12h14M12 5l7 7-7 7"/>
-            </svg>
-          </div>
-          <p className="text-[11px] font-bold text-center" style={{ color: "#5B3FCF" }}>Ver mais</p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ══════════════════════════════════════════════
-   Cartão individual de sugestão — usa useFollowState,
-   a mesma fonte de verdade partilhada com o resto da
-   app (post cards, perfil, u/$username...). Sem isto,
-   clicar aqui não sincronizava com os outros sítios.
-══════════════════════════════════════════════ */
-function WhoToFollowSuggestionCard({ user, myUserId, navigate }: { user: any; myUserId: string; navigate: any }) {
-  const ACCENT = "#5B3FCF";
-  const AVATAR_COLORS = [ACCENT, "#F26B3A", "#1FAFA6", "#6BA547", "#E94B8A"];
-  const name = user.full_name || user.username || "Utilizador";
-  const bg = AVATAR_COLORS[(name?.charCodeAt(0) ?? 0) % AVATAR_COLORS.length];
-  const { isFollowing, isPending, isLoading: followLoading, hasError: followHasError, toggle, refetchStatus } = useFollowState(myUserId, user.username, user.id);
-
-  return (
-    <div className="shrink-0 flex flex-col items-center rounded-2xl p-3 border transition"
-      style={{
-        width: 148,
-        background: "var(--s2, #f9f9f9)",
-        borderColor: "var(--border-default, #e8e8e8)",
-      }}>
-      {/* Avatar */}
-      <div
-        className="w-14 h-14 rounded-full overflow-hidden flex items-center justify-center text-white font-bold text-xl cursor-pointer mb-2"
-        style={{ background: bg }}
-        onClick={() => navigate({ to: "/u/$username", params: { username: user.username } })}>
-        {user.avatar_url
-          ? <img src={user.avatar_url} alt={name} className="w-full h-full object-cover" />
-          : name[0]?.toUpperCase()}
-      </div>
-
-      {/* Nome */}
-      <p className="font-bold text-[13px] text-center leading-tight truncate w-full"
-        style={{ color: "var(--text-primary)" }}>
-        {name.length > 14 ? name.slice(0, 13) + "…" : name}
-      </p>
-      <p className="text-[11px] text-center truncate w-full mb-1"
-        style={{ color: "var(--text-muted)" }}>
-        @{(user.username || "").slice(0, 14)}
-      </p>
-      {user.bio && (
-        <p className="text-[11px] text-center leading-snug mb-2 line-clamp-2 w-full"
-          style={{ color: "var(--text-secondary)" }}>
-          {user.bio.slice(0, 40)}
-        </p>
-      )}
-
-      {/* Botão seguir — skeleton enquanto o estado real ainda não chegou,
-          para não piscar "Acompanhar" e depois saltar para "A acompanhar" */}
-      {followLoading ? (
-        <div className="relative overflow-hidden w-full h-8 rounded-full mt-auto" style={{ background: "var(--s2)" }}>
-          <div className="skeleton-shimmer absolute inset-0" />
-        </div>
-      ) : followHasError ? (
-        <button onClick={() => refetchStatus()}
-          className="w-full h-8 rounded-full text-[12px] font-bold transition active:scale-95 mt-auto flex items-center justify-center gap-1"
-          style={{ background: "var(--s3)", color: "var(--text-secondary)", border: "1.5px solid var(--border-default)" }}>
-          <RefreshCw className="h-3.5 w-3.5" /> Tentar de novo
-        </button>
-      ) : (
-        <button onClick={toggle} disabled={isPending}
-          className="w-full h-8 rounded-full text-[12px] font-bold transition active:scale-95 mt-auto disabled:opacity-60"
-          style={isFollowing
-            ? { background: "var(--s3)", color: "var(--text-secondary)", border: "1.5px solid var(--border-default)" }
-            : { background: ACCENT, color: "#fff", border: "none" }}>
-          {isFollowing ? "A acompanhar" : "Acompanhar"}
-        </button>
-      )}
-    </div>
-  );
-}
 
 /* SimpleVideoPlayer local foi substituído por FeedVideoPlayer (moldura + controles tipo YouTube) */
 
@@ -271,8 +95,6 @@ function HomePage() {
   }
 
   const feedSentinelRef = useRef<HTMLDivElement>(null);
-  const [showWhoToFollow, setShowWhoToFollow] = React.useState(true);
-  const [showWhoToFollow2, setShowWhoToFollow2] = React.useState(true);
   const [feedVisible, setFeedVisible] = useState(15);
   const [feedCursor, setFeedCursor] = useState<string | null>(null);
   const [hasMorePosts, setHasMorePosts] = useState(false);
@@ -774,22 +596,6 @@ function HomePage() {
 
     const channel = supabase
       .channel(`notifs-videos-${myUserId}`)
-      // ── Vídeos novos de canais seguidos ──
-      .on(
-        "postgres_changes" as any,
-        { event: "INSERT", schema: "public", table: "videos", filter: `status=eq.published` },
-        async (payload: any) => {
-          const video = payload.new;
-          if (video.owner_id === myUserId) return;
-          const { data: profileData } = await supabase
-            .from("profiles").select("id, full_name, username").eq("id", video.owner_id).maybeSingle();
-          if (!profileData) return;
-          const { data: followRow } = await (supabase as any)
-            .from("follows").select("follower_id").eq("follower_id", myUserId).eq("following_id", video.owner_id).maybeSingle();
-          if (!followRow) return;
-          insertNotif("video_new", video.owner_id, (profileData as any).full_name);
-        }
-      )
       // ── Likes nos meus vídeos ──
       .on(
         "postgres_changes" as any,
@@ -899,10 +705,6 @@ function HomePage() {
           {visibleFeedPosts.map((p, idx) => (
             <React.Fragment key={p.id}>
               <UniversalPostCard post={p} />
-              {/* Após o 5º post */}
-              {showWhoToFollow && myUserId && idx === 4 && (
-                <WhoToFollowCard myUserId={myUserId} onDismiss={() => setShowWhoToFollow(false)} offset={0} />
-              )}
               {/* Após o 8º post — dica/sugestão rotativa. Só no telemóvel/tablet
                   (abaixo de xl), porque no computador largo a mesma dica já
                   aparece fixa na sidebar direita (RightSidebar). */}
@@ -910,10 +712,6 @@ function HomePage() {
                 <div className="xl:hidden">
                   <BayaTipCard variant="feed" />
                 </div>
-              )}
-              {/* Após o 12º post */}
-              {showWhoToFollow2 && myUserId && idx === 11 && (
-                <WhoToFollowCard myUserId={myUserId} onDismiss={() => setShowWhoToFollow2(false)} offset={4} />
               )}
             </React.Fragment>
           ))}
