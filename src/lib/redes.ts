@@ -51,7 +51,13 @@ export async function fetchMinhaAdesao(redeId: string, userId: string): Promise<
 export async function fetchRedesPublicas(opts?: { categoria?: string; termo?: string }): Promise<Rede[]> {
   let q = (supabase as any).from("redes").select("*").eq("tipo", "publica").order("membros_count", { ascending: false }).limit(40);
   if (opts?.categoria) q = q.eq("categoria", opts.categoria);
-  if (opts?.termo) q = q.or(`nome.ilike.%${opts.termo}%,username.ilike.%${opts.termo}%`);
+  if (opts?.termo) {
+    // Username no banco nunca tem "@", mas em todo o app ele é mostrado
+    // como "@nome" — é natural a pessoa digitar "@nome" na busca. Sem
+    // isto, o "@" a mais faz o ilike nunca encontrar nada.
+    const termoLimpo = opts.termo.replace(/^@+/, "");
+    q = q.or(`nome.ilike.%${termoLimpo}%,username.ilike.%${termoLimpo}%`);
+  }
   const { data, error } = await q;
   if (error) throw error;
   return data ?? [];

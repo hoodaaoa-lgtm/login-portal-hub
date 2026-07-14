@@ -287,9 +287,13 @@ function ExplorePage() {
     queryKey: ["explore-search-people", search],
     queryFn: async () => {
       const officialId = await getBayaOfficialId();
+      // Mesmo caso da busca de Redes: username no banco não tem "@",
+      // mas a pessoa naturalmente digita "@algo" porque é assim que
+      // aparece em todo o app.
+      const termoLimpo = search.trim().replace(/^@+/, "");
       const { data } = await (supabase as any).from("profiles")
         .select("id,username,full_name,avatar_url,bio")
-        .or(`username.ilike.%${search}%,full_name.ilike.%${search}%`)
+        .or(`username.ilike.%${termoLimpo}%,full_name.ilike.%${termoLimpo}%`)
         .limit(20);
       // A conta "Baya Oficial" nunca aparece em pesquisas de pessoas.
       return (data ?? []).filter((p: any) => p.id !== officialId);
