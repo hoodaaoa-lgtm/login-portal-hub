@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { t } from "@/lib/useT";
 import { Link, useRouterState, useNavigate, useRouter } from "@tanstack/react-router";
 import snapperIcon from "@/assets/site/snapper-icon-only.png";
-import snapperWordmark from "@/assets/site/snapper-wordmark.png";
+import snapperWordmark from "@/assets/site/snapper-wordmark-v2.png";
 import { useCountry } from "@/contexts/CountryContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useAvatar } from "@/contexts/AvatarContext";
@@ -101,7 +101,7 @@ export function SideNav() {
       <div className="px-5 pt-5 pb-3">
         <span className="inline-flex items-center gap-1.5">
           <img src={snapperIcon} alt="" style={{ height: 30, width: "auto", display: "block" }} />
-          <img src={snapperWordmark} alt="Snapper" style={{ height: 14, width: "auto", display: "block" }} />
+          <img src={snapperWordmark} alt="Snapper" style={{ height: 24, width: "auto", display: "block" }} />
           {!countryLoading && suffix && (
             <span
               className="text-[11px] font-black uppercase tracking-widest mb-[0.15em]"

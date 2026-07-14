@@ -3,7 +3,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { supabase } from "@/integrations/supabase/client";
 import snapperIcon from "@/assets/site/snapper-icon-only.png";
-import snapperWordmark from "@/assets/site/snapper-wordmark.png";
+import snapperWordmark from "@/assets/site/snapper-wordmark-v2.png";
 import { BottomNav, SideNav, PageWrapper, FeedLayout } from "@/components/AppShell";
 import { RightSidebar } from "@/components/RightSidebar";
 import { useAvatar } from "@/contexts/AvatarContext";
@@ -679,7 +679,7 @@ function HomePage() {
         <div className="mx-auto px-4 h-14 flex items-center justify-between max-w-full">
           <span className="lg:hidden inline-flex items-center gap-1.5">
             <img src={snapperIcon} alt="" style={{ height: 26, width: "auto", display: "block" }} />
-            <img src={snapperWordmark} alt="Snapper" style={{ height: 12, width: "auto", display: "block" }} />
+            <img src={snapperWordmark} alt="Snapper" style={{ height: 21, width: "auto", display: "block" }} />
           </span>
           <span className="hidden lg:block" />
           <div className="lg:hidden flex items-center gap-1">
