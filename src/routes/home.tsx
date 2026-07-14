@@ -2,7 +2,8 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { supabase } from "@/integrations/supabase/client";
-import snapperIcon from "@/assets/site/snapper-icon.png";
+import snapperIcon from "@/assets/site/snapper-icon-only.png";
+import snapperWordmark from "@/assets/site/snapper-wordmark.png";
 import { BottomNav, SideNav, PageWrapper, FeedLayout } from "@/components/AppShell";
 import { RightSidebar } from "@/components/RightSidebar";
 import { useAvatar } from "@/contexts/AvatarContext";
@@ -678,12 +679,7 @@ function HomePage() {
         <div className="mx-auto px-4 h-14 flex items-center justify-between max-w-full">
           <span className="lg:hidden inline-flex items-center gap-1.5">
             <img src={snapperIcon} alt="" className="h-7 w-auto" />
-            <span
-              className="text-foreground text-xl font-extrabold tracking-tight"
-              style={{ fontFamily: '"Nunito", "Quicksand", system-ui, sans-serif' }}
-            >
-              Snapper
-            </span>
+            <img src={snapperWordmark} alt="Snapper" className="h-[18px] w-auto" />
           </span>
           <span className="hidden lg:block" />
           <div className="lg:hidden flex items-center gap-1">

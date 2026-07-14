@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { t } from "@/lib/useT";
 import { Link, useRouterState, useNavigate, useRouter } from "@tanstack/react-router";
-import snapperIcon from "@/assets/site/snapper-icon.png";
+import snapperIcon from "@/assets/site/snapper-icon-only.png";
+import snapperWordmark from "@/assets/site/snapper-wordmark.png";
 import { useCountry } from "@/contexts/CountryContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useAvatar } from "@/contexts/AvatarContext";
@@ -100,12 +101,7 @@ export function SideNav() {
       <div className="px-5 pt-5 pb-3">
         <span className="inline-flex items-center gap-1.5">
           <img src={snapperIcon} alt="" className="h-8 w-auto" />
-          <span
-            className="text-foreground text-2xl font-extrabold tracking-tight"
-            style={{ fontFamily: '"Nunito", "Quicksand", system-ui, sans-serif' }}
-          >
-            Snapper
-          </span>
+          <img src={snapperWordmark} alt="Snapper" className="h-5 w-auto" />
           {!countryLoading && suffix && (
             <span
               className="text-[11px] font-black uppercase tracking-widest mb-[0.15em]"
