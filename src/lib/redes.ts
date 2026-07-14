@@ -65,6 +65,15 @@ export async function fetchMinhasRedes(): Promise<MinhaRede[]> {
   return data ?? [];
 }
 
+/** Redes criadas pelo próprio utilizador — usado na aba "Minhas Redes"
+ * do perfil (perfil já não mostra publicações, só as Redes que criou). */
+export async function fetchMinhasRedesCriadas(userId: string): Promise<Rede[]> {
+  const { data, error } = await (supabase as any)
+    .from("redes").select("*").eq("criador_id", userId).order("created_at", { ascending: false });
+  if (error) throw error;
+  return data ?? [];
+}
+
 export async function marcarRedeVista(redeId: string) {
   await (supabase as any).rpc("rede_marcar_vista", { p_rede_id: redeId });
 }

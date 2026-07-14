@@ -178,7 +178,6 @@ export function UserDrawer({ userId: _userId, onClose }: UserDrawerProps) {
             setTimeout(() => window.dispatchEvent(new CustomEvent("hooda:open-notifications")), 60);
           } },
         { icon: BookOpen, label: "Livros", color: "#E94B8A", action: () => { onClose(); navigate({ to: "/livros" as any }); } },
-        { icon: BarChart2, label: "Baya Studio", color: "#F26B3A", action: () => { onClose(); navigate({ to: "/studio" as any }); } },
       ],
     },
     {

@@ -43,11 +43,6 @@ function buildTips(): Tip[] {
       cta: { label: "Experimentar", action: ({ navigate }) => navigate({ to: "/explorar" }) },
     },
     {
-      icon: Film,
-      text: "No Baya Studio podes agendar publicações para saírem na hora certa.",
-      cta: { label: "Abrir Studio", action: ({ navigate }) => navigate({ to: "/studio" }) },
-    },
-    {
       icon: Heart,
       text: "Gostar, comentar e guardar publicações ajuda o teu feed a mostrar mais do que gostas.",
     },

@@ -31,13 +31,12 @@ import { optimizeAvatar, optimizePostPhoto } from "@/lib/imageOptimize";
 import { uploadFeedVideo } from "@/lib/cloudinaryFeedVideo";
 import { fetchPostComments, sendPostComment, replyToPostComment, toggleCommentLike } from "@/lib/comments";
 import { deletePostForEveryone } from "@/lib/posts";
+import { fetchMinhasRedesCriadas } from "@/lib/redes";
 import { UniversalPostCard, normalizePost } from "@/components/UniversalPostCard";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { PhotoViewer } from "@/components/PhotoViewer";
 import { FeedVideoPlayer } from "@/components/FeedVideoPlayer";
 import { PollCard } from "@/components/PollCard";
-import { RedePickerModal } from "@/components/RedePickerModal";
-import { RedeStoriesBar } from "@/components/RedeStoriesBar";
 import { UniversalSkeleton } from "@/components/Skeletons";
 
 export const Route = createFileRoute("/perfil")({
@@ -738,6 +737,67 @@ function EditProfileModal({
 }
 
 /* ─── Painel ClickAds ─── */
+/* ─── Aba "Minhas Redes" no perfil — Redes criadas pelo utilizador ─── */
+const REDE_TAB_COLORS = ["#5B3FCF", "#F26B3A", "#1FAFA6", "#6BA547", "#E94B8A", "#FFC93C"];
+const redeTabColorFor = (s: string) => REDE_TAB_COLORS[(s?.charCodeAt(0) ?? 0) % REDE_TAB_COLORS.length];
+
+function MinhasRedesTab({ userId }: { userId: string }) {
+  const navigate = useNavigate();
+  const { data: redes, isLoading } = useQuery({
+    queryKey: ["minhas-redes-criadas", userId],
+    queryFn: () => fetchMinhasRedesCriadas(userId),
+    enabled: !!userId,
+    staleTime: 30_000,
+  });
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-14">
+        <div className="h-6 w-6 rounded-full border-2 animate-spin" style={{ borderColor: "#5B3FCF", borderTopColor: "transparent" }} />
+      </div>
+    );
+  }
+
+  if (!redes || redes.length === 0) {
+    return (
+      <div className="px-5 py-12 flex flex-col items-center gap-3 text-center">
+        <div className="w-16 h-16 rounded-full bg-[#5B3FCF]/10 flex items-center justify-center">
+          <Users className="h-7 w-7 text-[#5B3FCF]" />
+        </div>
+        <p className="text-sm font-semibold text-[var(--text-muted)]">Ainda não criaste nenhuma Rede</p>
+        <p className="text-xs text-[var(--text-muted)]">Cria a tua Rede para começares a publicar.</p>
+        <button onClick={() => navigate({ to: "/redes/nova" })}
+          className="mt-1 flex items-center gap-1.5 text-xs font-bold rounded-full px-4 py-2 text-white transition active:scale-95"
+          style={{ background: "#5B3FCF" }}>
+          <Plus className="h-3.5 w-3.5" /> Criar Rede
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="px-3 pt-2 pb-6 space-y-2">
+      {redes.map((r) => (
+        <button key={r.id}
+          onClick={() => navigate({ to: "/redes/$username", params: { username: r.username } })}
+          className="w-full flex items-center gap-3 px-3 py-3 rounded-2xl border hover:bg-[var(--s2)] transition"
+          style={{ borderColor: "var(--border-subtle)" }}>
+          <div className="h-11 w-11 rounded-full overflow-hidden flex items-center justify-center font-bold text-white text-base shrink-0"
+            style={{ background: redeTabColorFor(r.nome) }}>
+            {r.avatar_url
+              ? <img src={r.avatar_url} alt="" className="w-full h-full object-cover" loading="lazy" />
+              : (r.nome?.[0] ?? "?").toUpperCase()}
+          </div>
+          <div className="flex-1 min-w-0 text-left">
+            <p className="text-sm font-bold truncate" style={{ color: "var(--text-primary)" }}>{r.nome}</p>
+            <p className="text-xs truncate" style={{ color: "var(--text-muted)" }}>@{r.username} · {r.membros_count} membro{r.membros_count === 1 ? "" : "s"}</p>
+          </div>
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function MonetizationPanel() {
   return (
     <div className="px-5 py-16 flex flex-col items-center justify-center gap-4 text-center">
@@ -1478,8 +1538,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
     if (initialProfile) setProfile(initialProfile);
   }, [initialProfile]);
   const name = profile?.full_name || profile?.username || email?.split("@")[0] || "?";
-  const [tab, setTab] = useState<"posts" | "replies" | "saved" | "info" | "monetization">("posts");
-  const [showCreate, setShowCreate] = useState(false);
+  const [tab, setTab] = useState<"redes" | "info">("redes");
   const [showSettings, setShowSettings] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [photoViewing, setPhotoViewing] = useState<string|null>(null);
@@ -1849,11 +1908,8 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
   }
 
   const tabs = [
-    { key: "posts", label: t("profile.publications"), icon: Type },
-    { key: "replies", label: "Respostas", icon: Repeat2 },
-    { key: "saved", label: t("post.save"), icon: Bookmark },
+    { key: "redes", label: "Minhas Redes", icon: Users },
     { key: "info", label: "Info", icon: Info },
-    { key: "monetization", label: "Studio", icon: Tv },
   ] as const;
 
   /* Enquanto o perfil (nome/username) ainda não chegou do Supabase,
@@ -1986,16 +2042,13 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
           </div>
         </div>
 
-        {/* Redes de que sou membro — publicar é sempre dentro de uma Rede */}
-        {tab === "posts" && <RedeStoriesBar userId={myUserId} />}
-
-        {/* Botão flutuante de criar publicação — só ícone, sem caixa duplicada */}
-        {tab === "posts" && (
+        {/* Botão para criar nova Rede — só na aba "Minhas Redes" */}
+        {tab === "redes" && (
           <div className="px-5 mb-2 flex justify-end">
-            <button onClick={() => setShowCreate(true)}
+            <button onClick={() => navigate({ to: "/redes/nova" })}
               className="flex items-center gap-1.5 text-xs font-bold rounded-full px-3.5 py-1.5 text-white transition active:scale-95"
               style={{ background: ACCENT }}>
-              <Plus className="h-3.5 w-3.5" /> {t("post.placeholder")}
+              <Plus className="h-3.5 w-3.5" /> Criar Rede
             </button>
           </div>
         )}
@@ -2004,13 +2057,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
         <div className="px-1 flex border-b" style={{ borderColor: "var(--border-subtle)" }}>
           {tabs.map((tItem) => (
             <button key={tItem.key}
-              onClick={async () => {
-                if (tItem.key === "monetization") {
-                  navigate({ to: "/studio" });
-                  return;
-                }
-                setTab(tItem.key);
-              }}
+              onClick={() => setTab(tItem.key)}
               className="flex-1 min-w-0 relative py-4 px-1 text-[13px] sm:text-[14px] font-bold transition-colors hover:bg-[var(--s2)] truncate"
               style={{ color: tab === tItem.key ? "var(--text-primary)" : "var(--text-muted)" }}>
               <span className="truncate">{tItem.label}</span>
@@ -2022,100 +2069,8 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
         </div>
 
         {/* Conteúdo das tabs */}
-        {tab === "posts" && (
-          <PostsFeed posts={posts} loading={postsLoading} name={name} username={profile?.username || "utilizador"}
-            avatarUrl={avatarUrl} onDelete={deletePost}
-            myUserId={myUserId} isVerified={!!(profile as any)?.is_verified} />
-        )}
-
-        {tab === "replies" && (
-          activitiesLoading ? (
-            <div className="flex justify-center py-14">
-              <div className="h-6 w-6 rounded-full border-2 animate-spin" style={{ borderColor: ACCENT, borderTopColor: "transparent" }} />
-            </div>
-          ) : activities.length === 0 ? (
-            <div className="px-5 py-12 flex flex-col items-center gap-3 text-center">
-              <div className="w-16 h-16 rounded-full bg-[#1FAFA6]/10 flex items-center justify-center">
-                <Repeat2 className="h-7 w-7 text-[#1FAFA6]" />
-              </div>
-              <p className="text-sm font-semibold text-[var(--text-muted)]">Sem respostas ainda</p>
-              <p className="text-xs text-[var(--text-muted)]">As tuas respostas, reposts e citações aparecem aqui.</p>
-            </div>
-          ) : (
-            <div className="pb-6 space-y-3 w-full px-3 pt-2">
-              {activities.map((a) => (
-                <div key={a.id} className="px-4 py-4">
-                  {/* Tipo de actividade */}
-                  <div className="flex items-center gap-1.5 mb-2 text-xs font-bold"
-                    style={{ color: a.type === "repost" ? "#1FAFA6" : a.type === "quote" ? "#5B3FCF" : "var(--text-muted)" }}>
-                    {a.type === "repost" && <Repeat2 className="h-3.5 w-3.5" />}
-                    {a.type === "quote"  && <Quote className="h-3.5 w-3.5" />}
-                    {a.type === "reply"  && <MessageCircle className="h-3.5 w-3.5" />}
-                    <span>
-                      {a.type === "repost" ? "Repostaste" : a.type === "quote" ? "Citaste" : "Respondeste a um post"}
-                    </span>
-                    <span className="text-[11px] font-normal text-[var(--text-muted)]">· {timeAgo(new Date(a.createdAt))}</span>
-                  </div>
-
-                  {/* Conteúdo próprio (reply ou quote) */}
-                  {(a.type === "reply" || a.type === "quote") && a.content && (
-                    <p className="text-sm leading-snug mb-3" style={{ color: "var(--text-primary)" }}>{a.content}</p>
-                  )}
-                  {a.mediaUrl && (
-                    <img loading="lazy" decoding="async" src={optimizePostPhoto(a.mediaUrl, 600)} alt="" className="w-full rounded-xl mb-3 max-h-72 object-cover" />
-                  )}
-
-                  {/* Post original referenciado */}
-                  {a.original ? (
-                    <div className="rounded-2xl border p-3" style={{ borderColor: "var(--border-subtle)", background: "var(--s2)" }}>
-                      <p className="text-xs font-bold mb-1" style={{ color: a.original.authorColor || ACCENT }}>
-                        @{a.original.author || "utilizador"}
-                      </p>
-                      {a.original.text && (
-                        <p className="text-sm leading-snug line-clamp-3" style={{ color: "var(--text-secondary)" }}>{a.original.text}</p>
-                      )}
-                      {a.original.videoUrl ? (
-                        <div className="mt-2">
-                          <FeedVideoPlayer src={a.original.videoUrl} postId={a.original.id} kind="video" rounded="rounded-xl" autoPlay={false} />
-                        </div>
-                      ) : a.original.image && (
-                        <img loading="lazy" decoding="async" src={optimizePostPhoto(a.original.image, 500)} alt="" className="w-full rounded-xl mt-2 max-h-56 object-cover" />
-                      )}
-                    </div>
-                  ) : (
-                    <div className="rounded-2xl border p-3 text-xs" style={{ borderColor: "var(--border-subtle)", background: "var(--s2)", color: "var(--text-muted)" }}>
-                      Esta publicação original já não está disponível.
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )
-        )}
-
-        {tab === "saved" && (
-          savedLoading ? (
-            <div className="flex justify-center py-14">
-              <div className="h-6 w-6 rounded-full border-2 animate-spin" style={{ borderColor: ACCENT, borderTopColor: "transparent" }} />
-            </div>
-          ) : savedPosts.length === 0 ? (
-            <div className="px-5 py-12 flex flex-col items-center gap-3 text-center">
-              <div className="w-16 h-16 rounded-full bg-[#F26B3A]/10 flex items-center justify-center">
-                <Bookmark className="h-7 w-7 text-[#F26B3A]" />
-              </div>
-              <p className="text-sm font-semibold text-[var(--text-muted)]">Nada guardado ainda</p>
-              <p className="text-xs text-[var(--text-muted)]">As publicações que guardares aparecem aqui.</p>
-            </div>
-          ) : (
-            <div className="pb-6 space-y-3 w-full px-3 pt-2">
-              {savedPosts.map((sp) => (
-                <UniversalPostCard key={sp.id}
-                  post={normalizePost(sp, "profile", { name: sp.authorName, username: sp.authorUsername, avatarUrl: sp.authorAvatar, authorId: sp.authorId, isVerified: sp.authorIsVerified })}
-                  onDeleted={(id) => setSavedPosts(prev => prev.filter(p => p.id !== id))}
-                  onBookmarkChange={(id, bookmarked) => { if (!bookmarked) setSavedPosts(prev => prev.filter(p => p.id !== id)); }} />
-              ))}
-            </div>
-          )
+        {tab === "redes" && (
+          <MinhasRedesTab userId={myUserId} />
         )}
 
         {tab === "info" && (
@@ -2137,8 +2092,6 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
             </div>
           </div>
         )}
-
-        {tab === "monetization" && <MonetizationPanel />}
       </main>
       </>
       }
@@ -2201,9 +2154,6 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
           onClose={() => setShowEditProfile(false)}
           onSave={(data) => { saveProfile(data); setShowEditProfile(false); }}
         />
-      )}
-      {showCreate && (
-        <RedePickerModal onClose={() => setShowCreate(false)} />
       )}
       {showShareModal && (
         <ShareProfileModal username={profile?.username || "utilizador"} name={name} onClose={() => setShowShareModal(false)} />

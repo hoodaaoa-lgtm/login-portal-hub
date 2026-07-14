@@ -1,0 +1,14 @@
+-- ═══════════════════════════════════════════════════════════════════════
+-- APAGA PERMANENTEMENTE TODAS AS PUBLICAÇÕES DE TODOS OS USUÁRIOS.
+--
+-- Confirmado explicitamente pelo dono do produto em 2026-07-14. Isto é
+-- IRREVERSÍVEL: apaga todas as linhas de `posts` (perfil e Redes) e,
+-- por causa do ON DELETE CASCADE nas tabelas relacionadas, também apaga
+-- em cascata: likes, comentários, saves, impressions, views, reposts,
+-- classificações de conteúdo, qualidade de conteúdo, moderação,
+-- notificações ligadas a posts, etc.
+--
+-- Redes, perfis, mensagens, vídeos (tabela `videos`) e seguidores NÃO
+-- são afectados — só a tabela `posts`.
+-- ═══════════════════════════════════════════════════════════════════════
+DELETE FROM public.posts;
