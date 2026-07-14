@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Camera, Check, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 import { PageWrapper, PageHeader, SideNav } from "@/components/AppShell";
@@ -32,6 +33,7 @@ function OpcaoCard({ selected, onClick, title, desc }: { selected: boolean; onCl
 
 function NovaRedePage() {
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const { user } = useAuth();
   const fileRef = useRef<HTMLInputElement>(null);
   const coverRef = useRef<HTMLInputElement>(null);
@@ -131,6 +133,11 @@ function NovaRedePage() {
       const rede = await criarRede({
         nome: nome.trim(), username, avatarUrl, capaUrl, categoria, tipo, temChat,
       });
+      // Garante que a página da Rede não mostra um "não existe" em cache
+      // de uma tentativa anterior com o mesmo @username (ex: se o RPC
+      // tinha falhado antes por outro motivo e ficou null em cache).
+      qc.setQueryData(["rede", rede.username], rede);
+      qc.invalidateQueries({ queryKey: ["rede", rede.username] });
       toast.success("Rede criada!");
       navigate({ to: "/redes/$username", params: { username: rede.username } });
     } catch (e: any) {
