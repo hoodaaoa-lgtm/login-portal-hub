@@ -2171,7 +2171,8 @@ function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit
   const studioCard = m.style?.card ? (STUDIO_CARDS.find(c => c.id === m.style!.card) ?? null) : null;
   const bubbleBg   = studioCard ? studioCard.bg : (isMe ? "linear-gradient(135deg,#9231EA 0%,#7B5CE8 100%)" : "var(--s1)");
   const bubbleText = studioCard ? studioCard.defaultTextColor : (isMe ? "white" : "var(--text-primary)");
-  const br         = isMe ? "18px 18px 4px 18px" : "18px 18px 18px 4px";
+  const br         = isMe ? "20px 20px 5px 20px" : "20px 20px 20px 5px";
+  const bubbleShadow = studioCard ? undefined : (isMe ? "0 2px 10px rgba(146,49,234,0.25)" : "0 1px 4px rgba(0,0,0,0.06)");
 
   // ✨ Message Studio: animação de entrada suave, uma única vez, na primeira
   // vez que esta bolha com estilo aparece no ecrã.
@@ -2433,7 +2434,7 @@ function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit
         {/* Bubble */}
         <div className="rounded-2xl overflow-hidden shadow-sm"
           style={{
-            background: bubbleBg, color: bubbleText, borderRadius: br,
+            background: bubbleBg, color: bubbleText, borderRadius: br, boxShadow: bubbleShadow,
             opacity: (isMe && m.deliveryStatus === "sending") ? 0.65 : (m.style ? (studioEntered ? 1 : 0) : 1),
             transform: isPressing
               ? "scale(0.97)"
@@ -4251,8 +4252,8 @@ function ChatPanel({ myId, contact, onBack, contacts }: {
           style={{ background: "rgba(255,255,255,0.15)" }}>
           <ChevronLeft className="h-5 w-5 text-white" />
         </button>
-        {/* Avatar com anel branco */}
-        <div className="rounded-full p-[2px] shrink-0" style={{ background: "rgba(255,255,255,0.3)" }}>
+        {/* Avatar com anel branco + leve sombra para dar profundidade */}
+        <div className="rounded-full p-[2px] shrink-0" style={{ background: "rgba(255,255,255,0.35)", boxShadow: "0 2px 8px rgba(0,0,0,0.15)" }}>
           <div className="h-10 w-10 rounded-full overflow-hidden flex items-center justify-center text-white font-bold"
             style={{ background: colorFor(contact.username ?? "") }}>
             {contact.avatar_url
@@ -4807,8 +4808,8 @@ function ChatPanel({ myId, contact, onBack, contacts }: {
         </button>
         {/* Campo de texto — igual ao WhatsApp, com destaque em tempo real
             (URLs/emails/telefones/@menções/#hashtags) por trás do texto */}
-        <div className="flex-1 flex items-end rounded-3xl px-4 py-2 gap-2 min-h-[44px]"
-          style={{ background: "var(--s2)", boxShadow: "0 1px 4px rgba(0,0,0,0.1)" }}>
+        <div className="flex-1 flex items-end rounded-3xl px-4 py-2 gap-2 min-h-[44px] transition-shadow focus-within:shadow-[0_0_0_2px_rgba(146,49,234,0.25)]"
+          style={{ background: "var(--s2)", boxShadow: "0 1px 6px rgba(0,0,0,0.08)" }}>
           <div className="relative flex-1">
             <div
               ref={composerBackdropRef}
@@ -5023,36 +5024,45 @@ function ContactList({ contacts, loading, refreshing, search, setSearch, active,
 
   return (
     <div className="flex flex-col h-full" style={{ background: "var(--surface-0,#fff)" }}>
-      {/* Header estilo WhatsApp — fundo gradiente roxo hooda */}
-      <div className="px-4 pt-5 pb-3 shrink-0"
-        style={{ background: "linear-gradient(135deg,#9231EA 0%,#7B5CE8 100%)" }}>
-        <div className="flex items-center justify-between mb-4">
+      {/* Header — gradiente hooda com profundidade e glow decorativo */}
+      <div className="relative px-4 pt-6 pb-4 shrink-0 overflow-hidden"
+        style={{
+          background: "linear-gradient(150deg,#9231EA 0%,#7B5CE8 55%,#5B6EE8 100%)",
+          boxShadow: "0 4px 24px rgba(146,49,234,0.28)",
+        }}>
+        {/* Glows decorativos, subtis, sem interferir com o conteúdo */}
+        <div aria-hidden className="pointer-events-none absolute rounded-full"
+          style={{ width: 180, height: 180, top: -90, right: -50, background: "radial-gradient(circle,rgba(253,8,103,0.35),transparent 70%)", filter: "blur(6px)" }} />
+        <div aria-hidden className="pointer-events-none absolute rounded-full"
+          style={{ width: 140, height: 140, bottom: -70, left: -40, background: "radial-gradient(circle,rgba(255,255,255,0.12),transparent 70%)", filter: "blur(4px)" }} />
+
+        <div className="relative flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <h1 className="text-xl font-extrabold text-white">Mensagens</h1>
+            <h1 className="text-2xl font-extrabold text-white tracking-tight" style={{ textShadow: "0 2px 10px rgba(0,0,0,0.12)" }}>Mensagens</h1>
             {refreshing && <BackgroundRefreshDot show />}
           </div>
-          <div className="flex gap-1">
+          <div className="flex gap-1.5">
             <button onClick={() => setShowRequests(true)} className="relative p-2 rounded-full transition active:scale-90"
-              style={{ background: "rgba(255,255,255,0.15)" }}>
+              style={{ background: "rgba(255,255,255,0.16)", backdropFilter: "blur(6px)" }}>
               <Bell className="h-5 w-5 text-white" />
               {pendingRequestCount > 0 && (
                 <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full text-[10px] font-bold text-white flex items-center justify-center"
-                  style={{ background: "#FD0867" }}>
+                  style={{ background: "#FD0867", boxShadow: "0 0 0 2px #7B5CE8" }}>
                   {pendingRequestCount > 9 ? "9+" : pendingRequestCount}
                 </span>
               )}
             </button>
             <button onClick={() => setShowAddContact(true)}
               className="p-2 rounded-full transition active:scale-90"
-              style={{ background: "rgba(255,255,255,0.15)" }}>
+              style={{ background: "rgba(255,255,255,0.16)", backdropFilter: "blur(6px)" }}>
               <UserPlus className="h-5 w-5 text-white" />
             </button>
           </div>
         </div>
-        {/* Barra de pesquisa estilo WhatsApp */}
-        <div className="flex items-center gap-2 px-3 h-10 rounded-full"
-          style={{ background: "rgba(255,255,255,0.18)", backdropFilter: "blur(8px)" }}>
-          <Search className="h-4 w-4 text-white/70 shrink-0" />
+        {/* Barra de pesquisa — vidro fosco com anel subtil */}
+        <div className="relative flex items-center gap-2 px-3.5 h-11 rounded-full transition-shadow focus-within:shadow-[0_0_0_3px_rgba(255,255,255,0.25)]"
+          style={{ background: "rgba(255,255,255,0.16)", backdropFilter: "blur(10px)", border: "1px solid rgba(255,255,255,0.18)" }}>
+          <Search className="h-4 w-4 text-white/75 shrink-0" />
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
@@ -5105,18 +5115,22 @@ function ContactList({ contacts, loading, refreshing, search, setSearch, active,
             onTouchStart={() => handleItemTouchStart(c)}
             onTouchMove={handleItemTouchMove}
             onTouchEnd={handleItemTouchEnd}
-            className="w-full flex items-center gap-3 px-4 py-3.5 text-left transition-colors active:bg-[var(--s1)]"
+            className="w-full flex items-center gap-3 px-3.5 py-3 mx-2 my-0.5 text-left rounded-2xl transition-all duration-150 active:scale-[0.99]"
             style={{
-              borderBottom: "1px solid var(--border-subtle,#f0f0f0)",
-              background: active?.conversationId === c.conversationId ? "rgba(146,49,234,0.06)" : "transparent",
-            }}>
-            {/* Avatar com anel roxo se activo */}
+              width: "calc(100% - 16px)",
+              background: active?.conversationId === c.conversationId ? "rgba(146,49,234,0.08)" : "transparent",
+              boxShadow: active?.conversationId === c.conversationId ? "0 1px 3px rgba(146,49,234,0.08)" : "none",
+            }}
+            onMouseOver={e => { if (active?.conversationId !== c.conversationId) e.currentTarget.style.background = "var(--s1,rgba(0,0,0,0.03))"; }}
+            onMouseOut={e => { if (active?.conversationId !== c.conversationId) e.currentTarget.style.background = "transparent"; }}>
+            {/* Avatar com anel gradiente se activo + sombra suave sempre */}
             <div className="relative shrink-0">
-              <div className="rounded-full"
-                style={{
+              <div className="rounded-full" style={{
                   padding: active?.conversationId === c.conversationId ? 2 : 0,
                   background: active?.conversationId === c.conversationId
                     ? "linear-gradient(135deg,#9231EA,#FD0867)" : "transparent",
+                  boxShadow: "0 2px 6px rgba(0,0,0,0.08)",
+                  borderRadius: "50%",
                 }}>
                 <div style={{ borderRadius: "50%", padding: active?.conversationId === c.conversationId ? 1.5 : 0, background: "var(--s2)" }}>
                   <Av name={c.username} color={c.color} size={46} src={c.avatar_url} />
@@ -5124,7 +5138,7 @@ function ContactList({ contacts, loading, refreshing, search, setSearch, active,
               </div>
               {c.is_online && (
                 <span className="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-white"
-                  style={{ background: "#22c55e" }} />
+                  style={{ background: "#22c55e", boxShadow: "0 0 0 1px rgba(34,197,94,0.3)" }} />
               )}
             </div>
             <div className="flex-1 min-w-0">
@@ -5133,7 +5147,7 @@ function ContactList({ contacts, loading, refreshing, search, setSearch, active,
                   <span className="truncate">{c.full_name || c.username}</span>
                   {c.isOfficial && <VerifiedBadge />}
                 </p>
-                <p className="text-[11px] shrink-0" style={{ color: c.unread > 0 ? "#9231EA" : "var(--text-muted,#aaa)" }}>
+                <p className="text-[11px] shrink-0 font-medium" style={{ color: c.unread > 0 ? "#9231EA" : "var(--text-muted,#aaa)" }}>
                   {c.lastTime}
                 </p>
               </div>
@@ -5146,7 +5160,7 @@ function ContactList({ contacts, loading, refreshing, search, setSearch, active,
                 </p>
                 {c.unread > 0 && (
                   <span className="min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-bold text-white flex items-center justify-center shrink-0"
-                    style={{ background: "linear-gradient(135deg,#9231EA,#FD0867)" }}>
+                    style={{ background: "linear-gradient(135deg,#9231EA,#FD0867)", boxShadow: "0 2px 6px rgba(253,8,103,0.35)" }}>
                     {c.unread > 9 ? "9+" : c.unread}
                   </span>
                 )}
