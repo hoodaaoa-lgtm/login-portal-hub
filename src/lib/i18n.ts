@@ -19,7 +19,7 @@ const resources = {
         "explore": "Explorar",
         "tv": "SnapperTV",
         "messages": "Mensagens",
-        "profile": "Perfil"
+        "profile": "Canal"
       },
       "auth": {
         "signin": "Entrar",
@@ -34,7 +34,7 @@ const resources = {
         "loading": "A carregar..."
       },
       "profile": {
-        "edit": "Editar perfil",
+        "edit": "Editar canal",
         "followers": "Acompanhantes",
         "following": "Acompanhando",
         "publications": "Publicações",
@@ -260,7 +260,7 @@ const resources = {
         "explore": "Explore",
         "tv": "SnapperTV",
         "messages": "Messages",
-        "profile": "Profile"
+        "profile": "Channel"
       },
       "auth": {
         "signin": "Sign in",
@@ -275,7 +275,7 @@ const resources = {
         "loading": "Loading..."
       },
       "profile": {
-        "edit": "Edit profile",
+        "edit": "Edit channel",
         "followers": "Followers",
         "following": "Following",
         "publications": "Posts",
@@ -501,7 +501,7 @@ const resources = {
         "explore": "Explorer",
         "tv": "SnapperTV",
         "messages": "Messages",
-        "profile": "Profil"
+        "profile": "Chaîne"
       },
       "auth": {
         "signin": "Se connecter",
@@ -516,7 +516,7 @@ const resources = {
         "loading": "Chargement..."
       },
       "profile": {
-        "edit": "Modifier le profil",
+        "edit": "Modifier la chaîne",
         "followers": "Abonnés",
         "following": "Abonnements",
         "publications": "Publications",
@@ -742,7 +742,7 @@ const resources = {
         "explore": "Explorar",
         "tv": "SnapperTV",
         "messages": "Mensajes",
-        "profile": "Perfil"
+        "profile": "Canal"
       },
       "auth": {
         "signin": "Iniciar sesión",
@@ -757,7 +757,7 @@ const resources = {
         "loading": "Cargando..."
       },
       "profile": {
-        "edit": "Editar perfil",
+        "edit": "Editar canal",
         "followers": "Seguidores",
         "following": "Siguiendo",
         "publications": "Publicaciones",
@@ -983,7 +983,7 @@ const resources = {
         "explore": "استكشاف",
         "tv": "SnapperTV",
         "messages": "الرسائل",
-        "profile": "الملف الشخصي"
+        "profile": "القناة"
       },
       "auth": {
         "signin": "تسجيل الدخول",
@@ -998,7 +998,7 @@ const resources = {
         "loading": "جاري التحميل..."
       },
       "profile": {
-        "edit": "تعديل الملف الشخصي",
+        "edit": "تعديل القناة",
         "followers": "المتابعون",
         "following": "يتابع",
         "publications": "المنشورات",
