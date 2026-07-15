@@ -7,6 +7,7 @@ import { RightSidebar } from "@/components/RightSidebar";
 import { UniversalPostCard, normalizePost, type NormalizedPost } from "@/components/UniversalPostCard";
 import { UniversalSkeleton } from "@/components/Skeletons";
 import { QuickPostModal } from "@/components/QuickComposer";
+import { CanalEditModal } from "@/components/CanalEditModal";
 import { ChevronLeft, Settings, Camera, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -28,6 +29,7 @@ function CanalPage() {
   const qc = useQueryClient();
   const [myId, setMyId] = useState<string | null>(null);
   const [showComposer, setShowComposer] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
   const [followBusy, setFollowBusy] = useState(false);
 
   useEffect(() => {
@@ -152,15 +154,25 @@ function CanalPage() {
 
               <div className="px-4">
                 <div className="flex items-end justify-between -mt-8 mb-2">
-                  <div className="w-[68px] h-[68px] rounded-full overflow-hidden flex items-center justify-center"
+                  <button
+                    onClick={() => isOwner && setShowEdit(true)}
+                    disabled={!isOwner}
+                    className="w-[68px] h-[68px] rounded-full overflow-hidden flex items-center justify-center relative group"
                     style={{ background: P, border: "3px solid var(--surface-2)" }}>
                     {channel.avatar_url
                       ? <img src={channel.avatar_url} alt="" className="w-full h-full object-cover" />
                       : <span className="text-white font-bold text-lg">{channel.name?.[0]?.toUpperCase()}</span>}
-                  </div>
+                    {isOwner && (
+                      <span className="absolute inset-0 flex items-center justify-center transition-opacity opacity-0 group-hover:opacity-100"
+                        style={{ background: "rgba(0,0,0,0.4)" }}>
+                        <Camera className="h-4 w-4 text-white" />
+                      </span>
+                    )}
+                  </button>
 
                   {isOwner ? (
-                    <button className="flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold mb-1"
+                    <button onClick={() => setShowEdit(true)}
+                      className="flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold mb-1"
                       style={{ border: "1px solid var(--border-default)", color: "var(--text-primary)" }}>
                       <Settings className="h-3.5 w-3.5" />Editar
                     </button>
@@ -228,6 +240,17 @@ function CanalPage() {
                   avatarUrl={channel.avatar_url}
                   onClose={() => setShowComposer(false)}
                   onPublished={() => { setShowComposer(false); qc.invalidateQueries({ queryKey: ["channel-posts", channel.id] }); }}
+                />
+              )}
+
+              {showEdit && (
+                <CanalEditModal
+                  channel={channel}
+                  onClose={() => setShowEdit(false)}
+                  onSaved={() => {
+                    qc.invalidateQueries({ queryKey: ["channel", username] });
+                    qc.invalidateQueries({ queryKey: ["channel-posts", channel.id] });
+                  }}
                 />
               )}
             </>
