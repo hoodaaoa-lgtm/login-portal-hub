@@ -24,12 +24,6 @@ const NAV_ITEMS = [
   { to: "/perfil",     label: t("nav.profile"),       Icon: User,          search: undefined as Record<string, string> | undefined },
 ] as const;
 
-// Comunidades — mock visual apenas; sem tabela no Supabase ainda
-const SNAPPER_COMMUNITIES = [
-  { name: "Futebol Angola" },
-  { name: "Gamers 244" },
-] as const;
-
 const MOBILE_ITEMS = [
   { to: "/home",       label: t("nav.home"),      Icon: Home,          search: undefined as Record<string, string> | undefined },
   { to: "/explorar",   label: t("nav.explore"),  Icon: Compass,        search: undefined as Record<string, string> | undefined },
@@ -183,19 +177,6 @@ export function SideNav() {
             </Link>
           );
         })}
-
-        {/* Comunidades — visual, dados estáticos por agora */}
-        <div className="pt-4 pb-1 px-3">
-          <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Comunidades</p>
-        </div>
-        {SNAPPER_COMMUNITIES.map((c) => (
-          <button key={c.name}
-            className="w-full flex items-center gap-3 px-3 py-2 rounded-full text-[13px] font-medium transition-colors hover:bg-[color-mix(in_oklab,var(--text-primary)_6%,transparent)]"
-            style={{ color: "var(--text-primary)" }}>
-            <span className="h-5 w-5 rounded-md shrink-0" style={{ background: "#2F6FED" }} />
-            <span className="truncate">{c.name}</span>
-          </button>
-        ))}
 
         {/* + Criar — fixo no fundo da nav, como no design */}
         <div className="mt-auto px-1 pt-3">
