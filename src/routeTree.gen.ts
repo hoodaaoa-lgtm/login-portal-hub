@@ -24,8 +24,6 @@ import { Route as AcessibilidadeRouteImport } from './routes/acessibilidade'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
 import { Route as PostIdRouteImport } from './routes/post.$id'
-import { Route as CanalNovoRouteImport } from './routes/canal.novo'
-import { Route as CUsernameRouteImport } from './routes/c.$username'
 import { Route as AuthBridgeRouteImport } from './routes/auth.bridge'
 
 const UsoRoute = UsoRouteImport.update({
@@ -103,16 +101,6 @@ const PostIdRoute = PostIdRouteImport.update({
   path: '/post/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
-const CanalNovoRoute = CanalNovoRouteImport.update({
-  id: '/canal/novo',
-  path: '/canal/novo',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CUsernameRoute = CUsernameRouteImport.update({
-  id: '/c/$username',
-  path: '/c/$username',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AuthBridgeRoute = AuthBridgeRouteImport.update({
   id: '/auth/bridge',
   path: '/auth/bridge',
@@ -134,8 +122,6 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/uso': typeof UsoRoute
   '/auth/bridge': typeof AuthBridgeRoute
-  '/c/$username': typeof CUsernameRoute
-  '/canal/novo': typeof CanalNovoRoute
   '/post/$id': typeof PostIdRoute
   '/u/$username': typeof UUsernameRoute
 }
@@ -154,8 +140,6 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/uso': typeof UsoRoute
   '/auth/bridge': typeof AuthBridgeRoute
-  '/c/$username': typeof CUsernameRoute
-  '/canal/novo': typeof CanalNovoRoute
   '/post/$id': typeof PostIdRoute
   '/u/$username': typeof UUsernameRoute
 }
@@ -175,8 +159,6 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/uso': typeof UsoRoute
   '/auth/bridge': typeof AuthBridgeRoute
-  '/c/$username': typeof CUsernameRoute
-  '/canal/novo': typeof CanalNovoRoute
   '/post/$id': typeof PostIdRoute
   '/u/$username': typeof UUsernameRoute
 }
@@ -197,8 +179,6 @@ export interface FileRouteTypes {
     | '/signup'
     | '/uso'
     | '/auth/bridge'
-    | '/c/$username'
-    | '/canal/novo'
     | '/post/$id'
     | '/u/$username'
   fileRoutesByTo: FileRoutesByTo
@@ -217,8 +197,6 @@ export interface FileRouteTypes {
     | '/signup'
     | '/uso'
     | '/auth/bridge'
-    | '/c/$username'
-    | '/canal/novo'
     | '/post/$id'
     | '/u/$username'
   id:
@@ -237,8 +215,6 @@ export interface FileRouteTypes {
     | '/signup'
     | '/uso'
     | '/auth/bridge'
-    | '/c/$username'
-    | '/canal/novo'
     | '/post/$id'
     | '/u/$username'
   fileRoutesById: FileRoutesById
@@ -258,8 +234,6 @@ export interface RootRouteChildren {
   SignupRoute: typeof SignupRoute
   UsoRoute: typeof UsoRoute
   AuthBridgeRoute: typeof AuthBridgeRoute
-  CUsernameRoute: typeof CUsernameRoute
-  CanalNovoRoute: typeof CanalNovoRoute
   PostIdRoute: typeof PostIdRoute
   UUsernameRoute: typeof UUsernameRoute
 }
@@ -371,20 +345,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PostIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/canal/novo': {
-      id: '/canal/novo'
-      path: '/canal/novo'
-      fullPath: '/canal/novo'
-      preLoaderRoute: typeof CanalNovoRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/c/$username': {
-      id: '/c/$username'
-      path: '/c/$username'
-      fullPath: '/c/$username'
-      preLoaderRoute: typeof CUsernameRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/auth/bridge': {
       id: '/auth/bridge'
       path: '/auth/bridge'
@@ -410,8 +370,6 @@ const rootRouteChildren: RootRouteChildren = {
   SignupRoute: SignupRoute,
   UsoRoute: UsoRoute,
   AuthBridgeRoute: AuthBridgeRoute,
-  CUsernameRoute: CUsernameRoute,
-  CanalNovoRoute: CanalNovoRoute,
   PostIdRoute: PostIdRoute,
   UUsernameRoute: UUsernameRoute,
 }
