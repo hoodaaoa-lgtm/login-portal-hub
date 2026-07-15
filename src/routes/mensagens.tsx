@@ -233,7 +233,10 @@ function ExpandableMessageText({ text, isMe }: { text: string; isMe: boolean }) 
           transition: "max-height 0.35s ease",
         }}
       >
-        <p className="break-words text-sm leading-relaxed whitespace-pre-wrap">
+        <p
+          className="text-sm leading-relaxed whitespace-pre-wrap"
+          style={{ overflowWrap: "anywhere", wordBreak: "break-word" }}
+        >
           <LinkifiedText text={shown} isMe={isMe} />
         </p>
       </div>
@@ -2375,7 +2378,7 @@ function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit
         <Av name={contact.full_name || contact.username} color={(contact as Contact).color} size={26} src={contact.avatar_url} />
       )}
       <div
-        className="max-w-[82%] sm:max-w-[75%] relative"
+        className="max-w-[82%] sm:max-w-[75%] min-w-0 relative"
         onTouchStart={handleBubbleTouchStart}
         onTouchMove={handleBubbleTouchMove}
         onTouchEnd={handleBubbleTouchEnd}
