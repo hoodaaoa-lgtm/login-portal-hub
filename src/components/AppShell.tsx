@@ -11,7 +11,7 @@ import { UserDrawer } from "@/components/UserDrawer";
 import { QuickPostModal } from "@/components/QuickComposer";
 import {
   Home, Compass, MessageSquare, User, Tv, Menu,
-  Moon, Sun, Bell, Feather, MoreHorizontal, ArrowLeft,
+  Moon, Sun, Bell, Feather, MoreHorizontal, ArrowLeft, Plus,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { optimizeAvatar } from "@/lib/imageOptimize";
@@ -22,6 +22,12 @@ const NAV_ITEMS = [
   { to: "/mensagens",  label: t("nav.messages"),    Icon: MessageSquare, search: undefined as Record<string, string> | undefined },
   { to: "/home",       label: "Notificações",  Icon: Bell,          search: { notifications: "1" } as Record<string, string> | undefined },
   { to: "/perfil",     label: t("nav.profile"),       Icon: User,          search: undefined as Record<string, string> | undefined },
+] as const;
+
+// Comunidades — mock visual apenas; sem tabela no Supabase ainda
+const SNAPPER_COMMUNITIES = [
+  { name: "Futebol Angola" },
+  { name: "Gamers 244" },
 ] as const;
 
 const MOBILE_ITEMS = [
@@ -176,6 +182,25 @@ export function SideNav() {
             </Link>
           );
         })}
+
+        {/* Comunidades — visual, dados estáticos por agora */}
+        <div className="pt-4 pb-1 px-3">
+          <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Comunidades</p>
+        </div>
+        {SNAPPER_COMMUNITIES.map((c) => (
+          <button key={c.name}
+            className="w-full flex items-center gap-3 px-3 py-2 rounded-full text-[13px] font-medium transition-colors hover:bg-[color-mix(in_oklab,var(--text-primary)_6%,transparent)]"
+            style={{ color: "var(--text-primary)" }}>
+            <span className="h-5 w-5 rounded-md shrink-0" style={{ background: "#2F6FED" }} />
+            <span className="truncate">{c.name}</span>
+          </button>
+        ))}
+        <div className="px-3 pt-2 pb-1">
+          <button className="w-full h-8 rounded-full text-white text-[12px] font-bold flex items-center justify-center gap-1.5 transition active:scale-[0.98]"
+            style={{ background: "#2F6FED" }}>
+            <Plus className="h-3.5 w-3.5" /> Criar comunidade
+          </button>
+        </div>
 
         {/* Botão Publicar — estilo X */}
         <div className="pt-3 px-1">
