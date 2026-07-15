@@ -2139,9 +2139,20 @@ function PublicProfile({ profile, email }: { profile: Profile | null; email: str
           </button>
         </div>
         <div className="px-5 pt-9 pb-3">
-          <p className="text-xl font-extrabold text-black">{name}</p>
-          <p className="text-sm text-[var(--text-muted)] mt-0.5">@{profile?.username || "..."}</p>
-          {profile?.bio && <p className="text-sm text-[var(--text-secondary)] mt-2 leading-relaxed">{profile.bio}</p>}
+          <p className="text-xl font-extrabold leading-tight inline-flex items-center gap-1.5" style={{ color: "var(--text-primary)" }}>
+            {name}{(profile as any)?.is_verified && <VerifiedBadge size={17} />}
+          </p>
+          <span className="inline-flex items-center gap-1 mt-1.5 px-2.5 py-1 rounded-full text-xs font-semibold" style={{ background: ACCENT + "14", color: ACCENT }}>
+            @{profile?.username || "utilizador"}
+          </span>
+          {profile?.bio && (
+            <div className="mt-3 rounded-xl px-3.5 py-3" style={{ background: "var(--s2)" }}>
+              <p className="text-[11px] font-semibold flex items-center gap-1.5 mb-1.5" style={{ color: "var(--text-muted)" }}>
+                <AlignLeft className="h-3.5 w-3.5" /> Descrição
+              </p>
+              <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>{profile.bio}</p>
+            </div>
+          )}
         </div>
         <div className="px-5 py-12 flex flex-col items-center gap-3 text-center">
           <div className="w-16 h-16 rounded-full bg-[#2F6FED]/10 flex items-center justify-center">
