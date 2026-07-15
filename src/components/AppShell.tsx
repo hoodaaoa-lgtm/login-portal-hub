@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { t } from "@/lib/useT";
 import { Link, useRouterState, useNavigate, useRouter } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import snapperIcon from "@/assets/site/snapper-icon-only.png";
 import snapperWordmark from "@/assets/site/snapper-wordmark-v2.png";
 import { useCountry } from "@/contexts/CountryContext";
@@ -84,6 +85,20 @@ export function SideNav() {
       }
     });
   }, []);
+
+  const { data: meusCanais = [] } = useQuery({
+    queryKey: ["sidenav-meus-canais", currentUserId],
+    enabled: !!currentUserId,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("channels")
+        .select("id,username,name,avatar_url")
+        .eq("owner_id", currentUserId)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as { id: string; username: string; name: string; avatar_url: string | null }[];
+    },
+  });
 
   return (
     <>
@@ -177,6 +192,36 @@ export function SideNav() {
             </Link>
           );
         })}
+
+        {meusCanais.length > 0 && (
+          <div className="pt-3 mt-1">
+            <p className="px-3 pb-1.5 text-[12px] font-bold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
+              Meus canais
+            </p>
+            <div className="space-y-0.5">
+              {meusCanais.map((c) => {
+                const active = pathname === `/c/${c.username}`;
+                return (
+                  <Link key={c.id} to="/c/$username" params={{ username: c.username }}
+                    className="flex items-center gap-3 px-3 py-2 rounded-full text-[14px] transition-colors"
+                    style={{
+                      color: active ? "#2F6FED" : "var(--text-primary)",
+                      background: active ? "#2F6FED14" : "transparent",
+                      fontWeight: active ? 700 : 500,
+                    }}>
+                    <div className="h-7 w-7 rounded-full overflow-hidden flex items-center justify-center text-white text-[11px] font-bold shrink-0"
+                      style={{ background: c.avatar_url ? "transparent" : "#2F6FED" }}>
+                      {c.avatar_url
+                        ? <img loading="lazy" decoding="async" src={c.avatar_url} alt="" className="w-full h-full object-cover" />
+                        : c.name?.[0]?.toUpperCase()}
+                    </div>
+                    <span className="truncate">{c.name}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* + Criar — fixo no fundo da nav, como no design */}
         <div className="mt-auto px-1 pt-3">
