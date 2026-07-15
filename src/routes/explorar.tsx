@@ -5,7 +5,7 @@ import { UniversalPostCard, type NormalizedPost } from "@/components/UniversalPo
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect, useMemo } from "react";
-import { Search, X, TrendingUp, FileText, MessageCircle, BookOpen, Download, Bookmark, Hash, RefreshCw } from "lucide-react";
+import { Search, X, TrendingUp, MessageCircle, Hash } from "lucide-react";
 import { t } from "@/lib/useT";
 import { getSnapperOfficialId } from "@/lib/hoodaOfficial";
 import { UniversalSkeleton } from "@/components/Skeletons";
@@ -31,7 +31,6 @@ const fmtNum = (n: number) => n >= 1_000_000 ? `${(n/1_000_000).toFixed(1)}M` : 
 
 const TABS = [
   { key: "trending", label: "Tendência",  icon: TrendingUp },
-  { key: "books",    label: "Livros",     icon: BookOpen   },
 ] as const;
 type Tab = typeof TABS[number]["key"];
 
@@ -43,84 +42,6 @@ type Tab = typeof TABS[number]["key"];
  *  abaixo disto, fica invisível para o utilizador em vez de mostrar
  *  uma lista curta e esquisita. */
 const MIN_TRENDING_HASHTAGS = 5;
-
-const BOOK_COLORS = ["#2F6FED","#2F6FED","#2F6FED","#1FAFA6","#6BA547","#FFC93C"];
-const bookColor = (s: string) => BOOK_COLORS[(s?.charCodeAt(0) ?? 0) % BOOK_COLORS.length];
-const fmtB = (n: number) => n >= 1000 ? `${(n/1000).toFixed(1)}K` : String(n ?? 0);
-
-function BooksSection({ search, navigate }: { search: string; navigate: any }) {
-  const { data: books = [], isLoading } = useQuery({
-    queryKey: ["books", "explorar", search],
-    queryFn: async () => {
-      let q = (supabase as any).from("books").select("*").order("created_at", { ascending: false }).limit(500);
-      if (search) q = q.or(`title.ilike.%${search}%,author_name.ilike.%${search}%,category.ilike.%${search}%`);
-      const { data } = await q;
-      return data ?? [];
-    },
-  });
-
-  if (isLoading) return (
-    <div className="px-4 py-4 grid grid-cols-3 sm:grid-cols-4 gap-3">
-      {Array.from({ length: 9 }).map((_, i) => (
-        <div key={i} className="rounded-xl animate-pulse" style={{ background: "var(--s2)", aspectRatio: "2/3" }} />
-      ))}
-    </div>
-  );
-
-  if (books.length === 0) return (
-    <div className="flex flex-col items-center py-20 gap-3">
-      <BookOpen className="w-10 h-10 opacity-20" style={{ color: "#2F6FED" }} />
-      <p className="font-bold text-sm" style={{ color: "var(--text-muted)" }}>
-        {search ? "Nenhum livro encontrado" : "Ainda não há livros"}
-      </p>
-      <button onClick={() => navigate({ to: "/livros" })}
-        className="px-4 h-9 rounded-full text-sm font-bold text-white"
-        style={{ background: "#2F6FED" }}>
-        Adicionar um livro
-      </button>
-    </div>
-  );
-
-  return (
-    <div className="px-4 py-4">
-      <p className="text-[11px] font-bold uppercase tracking-wider mb-3" style={{ color: "var(--text-muted)" }}>
-        Livros · {fmtB(books.length)} resultado{books.length !== 1 ? "s" : ""}
-      </p>
-      <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-        {books.map((book: any) => {
-          const color = bookColor(book.title);
-          return (
-            <button key={book.id} onClick={() => navigate({ to: "/livros" })}
-              className="text-left rounded-2xl overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-lg"
-              style={{ background: "var(--s0)", border: "1px solid var(--border-subtle)" }}>
-              <div style={{ aspectRatio: "2/3", background: "var(--s2)", position: "relative" }}>
-                {book.cover_url
-                  ? <img loading="lazy" decoding="async" src={optimizeImage(book.cover_url, { width: 300, height: 450, crop: "fill" })} alt={book.title} className="w-full h-full object-cover" />
-                  : <div className="w-full h-full flex flex-col items-center justify-center p-2 gap-1"
-                      style={{ background: `linear-gradient(135deg,${color}22,${color}44)` }}>
-                      <BookOpen className="w-6 h-6 opacity-50" style={{ color }} />
-                      <p className="text-[8px] font-bold text-center line-clamp-3 leading-tight" style={{ color }}>{book.title}</p>
-                    </div>}
-              </div>
-              <div className="p-2">
-                <p className="text-[11px] font-bold line-clamp-2 leading-tight mb-0.5" style={{ color: "var(--text-primary)" }}>{book.title}</p>
-                <p className="text-[10px] line-clamp-1" style={{ color: "var(--text-muted)" }}>{book.author_name || "—"}</p>
-                <div className="flex gap-2 mt-1">
-                  <span className="flex items-center gap-0.5 text-[9px]" style={{ color: "var(--text-muted)" }}>
-                    <Download className="w-2.5 h-2.5" />{fmtB(book.downloads ?? 0)}
-                  </span>
-                  <span className="flex items-center gap-0.5 text-[9px]" style={{ color: "var(--text-muted)" }}>
-                    <Bookmark className="w-2.5 h-2.5" />{fmtB(book.saves ?? 0)}
-                  </span>
-                </div>
-              </div>
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
 
 function Av({ name, src, size = 40, color }: { name: string; src?: string | null; size?: number; color?: string }) {
   const bg = color || colorFor(name || "?");
@@ -562,13 +483,16 @@ function ExplorePage() {
         {/* ── Barra de pesquisa ── */}
         <div className="sticky top-0 z-30 border-b"
           style={{ background: "var(--s0)", borderColor: "var(--border-subtle)" }}>
+          <div className="px-4 pt-4 pb-1 w-full">
+            <h1 className="text-2xl font-extrabold" style={{ color: "var(--text-primary)" }}>Explorar Snapper</h1>
+          </div>
           <div className="px-4 py-3 w-full">
             <div className="relative flex items-center">
               <Search className="absolute left-3.5 h-4 w-4 pointer-events-none" style={{ color: "var(--text-muted)" }} />
               <input
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                placeholder="Pesquisar pessoas, posts, vídeos..."
+                placeholder="Pesquisar na Snapper"
                 className="w-full h-10 pl-10 pr-9 rounded-full text-sm outline-none transition-all"
                 style={{
                   background: "var(--s2)",
@@ -585,22 +509,6 @@ function ExplorePage() {
                 </button>
               )}
             </div>
-          </div>
-
-          {/* ── Tabs ── */}
-          <div className="flex overflow-x-auto no-scrollbar border-t"
-            style={{ borderColor: "var(--border-subtle)" }}>
-            {TABS.map(({ key, label }) => (
-              <button key={key} onClick={() => setTab(key)}
-                className="flex-shrink-0 px-4 py-2.5 text-[13px] font-medium transition-colors relative"
-                style={{ color: tab === key ? P : "var(--text-muted)" }}>
-                {label}
-                {tab === key && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full"
-                    style={{ background: P }} />
-                )}
-              </button>
-            ))}
           </div>
         </div>
 
@@ -691,7 +599,6 @@ function ExplorePage() {
         /* ══════════ TENDÊNCIA (default) ══════════ */
         ) : tab === "trending" ? (
           <div className="py-3 space-y-5">
-
             {/* Tags em tendência — extraídas de verdade dos posts recentes.
                 Só aparece com um mínimo de tags (evita mostrar uma secção
                 "Em tendência" com 1-2 hashtags, que fica esquisito/vazio
@@ -718,9 +625,6 @@ function ExplorePage() {
             {/* Posts — removidos daqui: só devem aparecer quando o usuário pesquisa */}
           </div>
 
-        /* ══════════ CANAIS ══════════ */
-        ) : tab === "books" ? (
-          <BooksSection search={search} navigate={navigate} />
         ) : null}
         </div>
 
