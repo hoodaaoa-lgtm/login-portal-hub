@@ -18,7 +18,7 @@ import {
   Banknote, BarChart3, Star, Heart, Share2,
   MoreHorizontal, Trash2, Send, Copy, Moon, Sun, ExternalLink,
   Twitter, Instagram, Youtube, Facebook, Linkedin, Music2, Loader, Tv, Film,
-  ArrowLeft, Check,
+  ArrowLeft, Check, AlignLeft, AtSign, Mail, User as UserIcon,
 } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useAvatar } from "@/contexts/AvatarContext";
@@ -1950,10 +1950,19 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
               {name}{(profile as any)?.is_verified && <VerifiedBadge size={17} />}
             </p>
           </div>
-          <p className="text-sm text-[var(--text-muted)] font-medium mt-0.5">@{profile?.username || "utilizador"}</p>
+          <span className="inline-flex items-center gap-1 mt-1.5 px-2.5 py-1 rounded-full text-xs font-semibold" style={{ background: ACCENT + "14", color: ACCENT }}>
+            @{profile?.username || "utilizador"}
+          </span>
+
           {profile?.bio && (
-            <p className="text-sm text-[var(--text-secondary)] mt-3 leading-relaxed">{profile.bio}</p>
+            <div className="mt-3 rounded-xl px-3.5 py-3" style={{ background: "var(--s2)" }}>
+              <p className="text-[11px] font-semibold flex items-center gap-1.5 mb-1.5" style={{ color: "var(--text-muted)" }}>
+                <AlignLeft className="h-3.5 w-3.5" /> Descrição
+              </p>
+              <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>{profile.bio}</p>
+            </div>
           )}
+
           <div className="flex flex-wrap gap-3 mt-3">
             {location && (
               <span className="flex items-center gap-1 text-xs text-[var(--text-muted)]">
@@ -1997,19 +2006,19 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
 
         {/* Conteúdo das tabs */}
         {tab === "info" && (
-          <div className="px-5 py-4 space-y-3">
-            <div className="bg-[var(--s2)] rounded-2xl border border-[var(--border-subtle)] shadow-sm overflow-hidden">
-              <p className="px-5 py-3 text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider border-b border-[var(--border-subtle)]">Sobre</p>
+          <div className="px-5 py-4">
+            <div className="flex flex-col gap-2">
               {[
-                { label: t("profile.full_name"), value: name },
-                { label: "Username", value: `@${profile?.username || "—"}` },
-                { label: t("auth.email"), value: email },
-                { label: t("profile.location"), value: location || "—" },
-                { label: t("profile.website"), value: website || "—" },
-              ].map((row, i) => (
-                <div key={row.label} className={`flex items-center justify-between px-5 py-3.5 ${i > 0 ? "border-t border-[var(--border-subtle)]" : ""}`}>
-                  <span className="text-xs text-[var(--text-muted)] font-medium">{row.label}</span>
-                  <span className="text-sm font-semibold text-black text-right max-w-[60%] truncate">{row.value}</span>
+                { icon: UserIcon, label: t("profile.full_name"), value: name, accent: false },
+                { icon: AtSign, label: "Username", value: `@${profile?.username || "—"}`, accent: true },
+                { icon: Mail, label: t("auth.email"), value: email, accent: false },
+                { icon: MapPin, label: t("profile.location"), value: location || "—", accent: false },
+                { icon: Link, label: t("profile.website"), value: website || "—", accent: false },
+              ].map((row) => (
+                <div key={row.label} className="flex items-center gap-2.5 px-3.5 py-3 rounded-xl" style={{ background: "var(--s2)" }}>
+                  <row.icon className="h-4 w-4 shrink-0" style={{ color: "var(--text-muted)" }} />
+                  <span className="text-xs flex-1 text-[var(--text-muted)] font-medium">{row.label}</span>
+                  <span className="text-sm font-semibold text-right max-w-[55%] truncate" style={{ color: row.accent ? ACCENT : "var(--text-primary)" }}>{row.value}</span>
                 </div>
               ))}
             </div>

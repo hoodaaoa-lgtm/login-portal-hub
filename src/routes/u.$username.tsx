@@ -13,7 +13,7 @@ import {
   ChevronLeft, Flag, Share2, Ban,
   MoreHorizontal, X, MapPin,
   Link as LinkIcon, Calendar, MessageCircle,
-  Copy, Check, RefreshCw,
+  Copy, Check, RefreshCw, AlignLeft, AtSign, User as UserIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -459,11 +459,20 @@ function UserProfilePage() {
             <h1 className="text-xl font-extrabold inline-flex items-center gap-1.5" style={{color:"var(--text-primary)"}}>
               {name}{profile.is_verified && <VerifiedBadge size={17} />}
             </h1>
-            <p className="text-sm mt-0.5" style={{color:"var(--text-muted)"}}>@{profile.username}</p>
+            <span className="inline-flex items-center gap-1 mt-1.5 px-2.5 py-1 rounded-full text-xs font-semibold" style={{background:P+"14",color:P}}>
+              @{profile.username}
+            </span>
+
             {profile.bio && (
-              <p className="text-sm mt-2 leading-relaxed" style={{color:"var(--text-secondary)"}}>{profile.bio}</p>
+              <div className="mt-3 rounded-xl px-3.5 py-3" style={{background:"var(--s2)"}}>
+                <p className="text-[11px] font-semibold flex items-center gap-1.5 mb-1.5" style={{color:"var(--text-muted)"}}>
+                  <AlignLeft className="h-3.5 w-3.5" /> Descrição
+                </p>
+                <p className="text-sm leading-relaxed" style={{color:"var(--text-secondary)"}}>{profile.bio}</p>
+              </div>
             )}
-            <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2">
+
+            <div className="flex flex-wrap gap-x-4 gap-y-1 mt-3">
               {profile.location && (
                 <span className="flex items-center gap-1 text-xs" style={{color:"var(--text-muted)"}}>
                   <MapPin className="h-3.5 w-3.5"/>{profile.location}
@@ -495,17 +504,17 @@ function UserProfilePage() {
 
           {/* ── Sobre ── */}
           <div className="px-4 pb-4">
-            <div className="rounded-2xl border shadow-sm overflow-hidden" style={{background:"var(--s2)",borderColor:"var(--border-subtle)"}}>
-              <p className="px-5 py-3 text-xs font-bold uppercase tracking-wider border-b" style={{color:"var(--text-muted)",borderColor:"var(--border-subtle)"}}>Sobre</p>
+            <div className="flex flex-col gap-2">
               {[
-                { label:"Nome", value: name },
-                { label:"Username", value: `@${profile.username}` },
-                { label:"Localização", value: profile.location || "—" },
-                { label:"Website", value: profile.website ? profile.website.replace(/^https?:\/\//,"") : "—" },
-              ].map((row,i)=>(
-                <div key={row.label} className={`flex items-center justify-between px-5 py-3.5 ${i>0?"border-t":""}`} style={{borderColor:"var(--border-subtle)"}}>
-                  <span className="text-xs font-medium" style={{color:"var(--text-muted)"}}>{row.label}</span>
-                  <span className="text-sm font-semibold text-right max-w-[60%] truncate" style={{color:"var(--text-primary)"}}>{row.value}</span>
+                { icon: UserIcon, label:"Nome", value: name, accent:false },
+                { icon: AtSign, label:"Username", value: `@${profile.username}`, accent:true },
+                { icon: MapPin, label:"Localização", value: profile.location || "—", accent:false },
+                { icon: LinkIcon, label:"Website", value: profile.website ? profile.website.replace(/^https?:\/\//,"") : "—", accent:false },
+              ].map((row)=>(
+                <div key={row.label} className="flex items-center gap-2.5 px-3.5 py-3 rounded-xl" style={{background:"var(--s2)"}}>
+                  <row.icon className="h-4 w-4 shrink-0" style={{color:"var(--text-muted)"}} />
+                  <span className="text-xs flex-1" style={{color:"var(--text-muted)"}}>{row.label}</span>
+                  <span className="text-sm font-semibold text-right max-w-[55%] truncate" style={{color: row.accent ? P : "var(--text-primary)"}}>{row.value}</span>
                 </div>
               ))}
             </div>
