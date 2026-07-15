@@ -8,11 +8,11 @@ import { useScrollLock } from "@/hooks/useScrollLock";
 import { extractUrl } from "@/lib/linkPreview";
 import { LinkPreview } from "@/components/LinkPreview";
 
-const ACCENT = "#5B3FCF";
+const ACCENT = "#9231EA";
 
 /** Avatar simples e leve — evita depender de outros ficheiros de rota. */
 function MiniAvatar({ name, src, size = 40 }: { name: string; src?: string | null; size?: number }) {
-  const colors = ["#5B3FCF", "#F26B3A", "#1FAFA6", "#6BA547", "#E94B8A"];
+  const colors = ["#9231EA", "#FDA50E", "#1FAFA6", "#6BA547", "#FD0867"];
   const color = colors[(name?.charCodeAt(0) ?? 0) % colors.length];
   return (
     <div className="shrink-0 rounded-full overflow-hidden flex items-center justify-center font-bold text-white"
@@ -312,7 +312,7 @@ export function QuickPostModal({ name, username, avatarUrl, onClose, onPublished
           {pollActive && (
             <div className="mt-2 mb-3 p-3 rounded-2xl" style={{ background: "var(--s2)", border: "1px solid var(--border-subtle)" }}>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold flex items-center gap-1.5" style={{ color: "#F26B3A" }}>
+                <span className="text-xs font-bold flex items-center gap-1.5" style={{ color: "#FDA50E" }}>
                   <BarChart3 className="h-3.5 w-3.5" /> Enquete
                 </span>
                 <button onClick={togglePoll} className="p-1 rounded-full hover:bg-black/5">
@@ -340,7 +340,7 @@ export function QuickPostModal({ name, username, avatarUrl, onClose, onPublished
               </div>
               {pollOptions.length < MAX_POLL_OPTIONS && (
                 <button onClick={addPollOption}
-                  className="text-xs font-semibold flex items-center gap-1 mb-3" style={{ color: "#F26B3A" }}>
+                  className="text-xs font-semibold flex items-center gap-1 mb-3" style={{ color: "#FDA50E" }}>
                   <Plus className="h-3.5 w-3.5" /> Adicionar opção
                 </button>
               )}
@@ -349,9 +349,9 @@ export function QuickPostModal({ name, username, avatarUrl, onClose, onPublished
                   <button key={d} onClick={() => setPollDurationDays(d)}
                     className="px-3 py-1.5 rounded-full text-xs font-semibold border transition"
                     style={{
-                      borderColor: pollDurationDays === d ? "#F26B3A" : "var(--border-subtle)",
-                      background: pollDurationDays === d ? "#F26B3A18" : "transparent",
-                      color: pollDurationDays === d ? "#F26B3A" : "var(--text-secondary)",
+                      borderColor: pollDurationDays === d ? "#FDA50E" : "var(--border-subtle)",
+                      background: pollDurationDays === d ? "#FDA50E18" : "transparent",
+                      color: pollDurationDays === d ? "#FDA50E" : "var(--text-secondary)",
                     }}>
                     {d} {d === 1 ? "dia" : "dias"}
                   </button>
@@ -371,12 +371,12 @@ export function QuickPostModal({ name, username, avatarUrl, onClose, onPublished
             <button onClick={() => videoRef.current?.click()} disabled={pollActive}
               className="flex items-center gap-1.5 px-3 py-2 rounded-xl transition text-sm font-semibold active:scale-95 disabled:opacity-40"
               style={{ background: "var(--s2)", color: "var(--text-secondary)" }}>
-              <Film className="h-4 w-4 text-[#E94B8A]" /> Vídeo
+              <Film className="h-4 w-4 text-[#FD0867]" /> Vídeo
             </button>
             <button onClick={togglePoll}
               className="flex items-center gap-1.5 px-3 py-2 rounded-xl transition text-sm font-semibold active:scale-95"
-              style={{ background: pollActive ? "#F26B3A18" : "var(--s2)", color: pollActive ? "#F26B3A" : "var(--text-secondary)" }}>
-              <BarChart3 className="h-4 w-4" style={{ color: "#F26B3A" }} /> Enquete
+              style={{ background: pollActive ? "#FDA50E18" : "var(--s2)", color: pollActive ? "#FDA50E" : "var(--text-secondary)" }}>
+              <BarChart3 className="h-4 w-4" style={{ color: "#FDA50E" }} /> Enquete
             </button>
           </div>
           <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={pickPhoto} />
@@ -396,7 +396,7 @@ export function QuickPostModal({ name, username, avatarUrl, onClose, onPublished
               </div>
               <div className="h-2 rounded-full overflow-hidden" style={{ background: "var(--s3)" }}>
                 <div className="h-full rounded-full transition-all duration-300"
-                  style={{ width: stage === "saving" ? "90%" : stage === "moderating" ? "97%" : stage === "done" ? "100%" : `${progress}%`, background: `linear-gradient(90deg, ${ACCENT}, #E94B8A)` }} />
+                  style={{ width: stage === "saving" ? "90%" : stage === "moderating" ? "97%" : stage === "done" ? "100%" : `${progress}%`, background: `linear-gradient(90deg, ${ACCENT}, #FD0867)` }} />
               </div>
             </div>
           )}
@@ -425,8 +425,8 @@ export function ComposeBox({ name, username, avatarUrl, onPublished, redeContext
 
   const quickActions = [
     { label: "Foto", Icon: Image, color: "#6BA547", onClick: () => { setOpenWithPoll(false); setOpen(true); } },
-    { label: "Vídeo", Icon: Film, color: "#E94B8A", onClick: () => { setOpenWithPoll(false); setOpen(true); } },
-    { label: "Enquete", Icon: BarChart3, color: "#F26B3A", onClick: () => { setOpenWithPoll(true); setOpen(true); } },
+    { label: "Vídeo", Icon: Film, color: "#FD0867", onClick: () => { setOpenWithPoll(false); setOpen(true); } },
+    { label: "Enquete", Icon: BarChart3, color: "#FDA50E", onClick: () => { setOpenWithPoll(true); setOpen(true); } },
   ];
 
   return (

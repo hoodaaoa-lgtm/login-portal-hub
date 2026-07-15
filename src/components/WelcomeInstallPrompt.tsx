@@ -3,7 +3,7 @@ import { Download, Bell, X, Sparkles, Check } from "lucide-react";
 import { enablePushNotifications, isPushSupported } from "@/lib/pushNotifications";
 import { promptInstall, isRunningStandalone } from "@/lib/pwaInstall";
 
-const ACCENT = "#5B3FCF";
+const ACCENT = "#9231EA";
 const SEEN_KEY = "hooda_welcome_seen";
 const INSTALLED_KEY = "hooda_app_installed_notice_shown";
 

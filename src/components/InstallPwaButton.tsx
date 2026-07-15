@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Download, Share, PlusSquare, X } from "lucide-react";
 import { canPromptInstall, promptInstall, isIos, isRunningStandalone, onInstallable } from "@/lib/pwaInstall";
 
-const ACCENT = "#5B3FCF";
+const ACCENT = "#9231EA";
 
 /**
  * Botão "Instalar app" para páginas onde ainda não há sessão (ex.: a

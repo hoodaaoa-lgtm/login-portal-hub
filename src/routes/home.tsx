@@ -134,7 +134,7 @@ function HomePage() {
           author_username: p.author_username || null,
           user: p.author_name || p.author_username || "hooda",
           name: `@${p.author_username || "?"}`,
-          color: p.author_color || "#5B3FCF",
+          color: p.author_color || "#9231EA",
           avatar_url: null,
           text, photo: p.photo_url ?? null,
           photos: Array.isArray(p.photos) && p.photos.length > 0 ? p.photos : (p.photo_url ? [p.photo_url] : null),
@@ -152,7 +152,7 @@ function HomePage() {
   }
 
   const FEED_CHUNK_SIZE = 30;
-  const ACCENT_LOCAL = ["#5B3FCF","#F26B3A","#1FAFA6","#6BA547","#E94B8A","#FFC93C"];
+  const ACCENT_LOCAL = ["#9231EA","#FDA50E","#1FAFA6","#6BA547","#FD0867","#FFC93C"];
   const POST_SELECT_FIELDS = "id,author_id,author_username,author_name,author_color,content,kind,is_ad,created_at,photo_url,photos,video_url,thumbnail_url,clip_video_id,clip_start,clip_end,clip_title,clip_thumb_url,views_count,reposts_count,poll,poll_ends_at,moderation_status,is_sensitive";
   const VIDEO_SELECT_FIELDS = "id,title,thumbnail_url,duration_seconds,views_count,likes_count,comments_count,created_at,owner_id";
 
@@ -673,7 +673,7 @@ function HomePage() {
                     top: 4, right: 4,
                     minWidth: 15, height: 15, padding: "0 3px",
                     fontSize: 8.5, lineHeight: 1,
-                    background: "#E94B8A",
+                    background: "#FD0867",
                     boxShadow: "0 0 0 2px var(--s0)",
                   }}>
                   {unreadCount > 99 ? "99+" : unreadCount}
@@ -692,7 +692,7 @@ function HomePage() {
           {!loadingFeed && realPosts.length === 0 && (
             refreshingFeedInBackground ? (
               <div className="flex flex-col items-center gap-3 py-16 text-center">
-                <div className="h-6 w-6 rounded-full border-2 animate-spin" style={{ borderColor: "var(--s3)", borderTopColor: "#5B3FCF" }} />
+                <div className="h-6 w-6 rounded-full border-2 animate-spin" style={{ borderColor: "var(--s3)", borderTopColor: "#9231EA" }} />
                 <p className="text-sm" style={{ color: "var(--text-muted)" }}>A carregar publicações…</p>
               </div>
             ) : (
@@ -723,7 +723,7 @@ function HomePage() {
           ))}
           <div ref={feedSentinelRef} className="py-4 flex justify-center">
             {(loadingMore || (hasMorePosts && feedVisible >= realPosts.length)) && (
-              <div className="h-5 w-5 rounded-full border-2 animate-spin" style={{ borderColor: "#5B3FCF44", borderTopColor: "#5B3FCF" }} />
+              <div className="h-5 w-5 rounded-full border-2 animate-spin" style={{ borderColor: "#9231EA44", borderTopColor: "#9231EA" }} />
             )}
             {!hasMorePosts && realPosts.length > 5 && (
               <p className="text-xs" style={{ color: "var(--text-muted,#888)" }}>Chegaste ao fim 🎉</p>

@@ -59,7 +59,7 @@ export function MusicLibrary({ onSelect, onClose }: { onSelect: (s: Song) => voi
       <div className="bg-[#18181b] w-full rounded-t-3xl flex flex-col" style={{ maxHeight: "80vh" }}>
         <div className="flex items-center justify-between px-5 py-4 border-b border-white/10">
           <span className="text-white font-bold flex items-center gap-2">
-            <Music className="h-4 w-4 text-[#5B3FCF]" /> Biblioteca Musical
+            <Music className="h-4 w-4 text-[#9231EA]" /> Biblioteca Musical
           </span>
           <button onClick={() => { preview?.audio.pause(); onClose(); }} className="p-1.5 rounded-full hover:bg-[var(--s2)]/10">
             <X className="h-5 w-5 text-white/60" />
@@ -72,7 +72,7 @@ export function MusicLibrary({ onSelect, onClose }: { onSelect: (s: Song) => voi
         <div className="overflow-y-auto flex-1 divide-y divide-white/5">
           {loading ? (
             <div className="flex justify-center py-12">
-              <div className="h-6 w-6 rounded-full border-2 border-[#5B3FCF] border-t-transparent animate-spin" />
+              <div className="h-6 w-6 rounded-full border-2 border-[#9231EA] border-t-transparent animate-spin" />
             </div>
           ) : error && songs.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 px-6 text-center gap-3">
@@ -80,7 +80,7 @@ export function MusicLibrary({ onSelect, onClose }: { onSelect: (s: Song) => voi
               <p className="text-white/70 text-sm">{error}</p>
               <button onClick={load}
                 className="text-xs font-bold px-4 py-2 rounded-full text-white"
-                style={{ background: "#5B3FCF" }}>
+                style={{ background: "#9231EA" }}>
                 Tentar novamente
               </button>
             </div>
@@ -104,7 +104,7 @@ export function MusicLibrary({ onSelect, onClose }: { onSelect: (s: Song) => voi
               </button>
               <button onClick={() => { preview?.audio.pause(); onSelect(song); }}
                 className="text-xs font-bold px-3 py-1.5 rounded-full text-white"
-                style={{ background: "#5B3FCF" }}>
+                style={{ background: "#9231EA" }}>
                 Usar
               </button>
             </div>

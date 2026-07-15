@@ -83,7 +83,7 @@ class CommentsErrorBoundary extends React.Component<
               <button
                 onClick={this.props.onClose}
                 className="mt-2 px-5 py-2 rounded-xl text-sm font-bold text-white"
-                style={{ background: "linear-gradient(135deg,#5B3FCF,#E94B8A)" }}
+                style={{ background: "linear-gradient(135deg,#9231EA,#FD0867)" }}
               >
                 Fechar
               </button>
@@ -299,7 +299,7 @@ function PostCommentsModalInner({
   loading,
   sending,
   inputPlaceholder = "Escreve um comentário…",
-  accent = "#5B3FCF",
+  accent = "#9231EA",
   title = "Publicação",
   creatorId,
   hasMedia: hasMediaProp,

@@ -54,15 +54,15 @@ type Post = {
 };
 type SavedPost = Post & { authorId: string; authorName: string; authorUsername: string; authorAvatar: string | null; authorIsVerified?: boolean };
 
-const ACCENT = "#5B3FCF";
-const ACCENT_COLORS = ["#5B3FCF", "#F26B3A", "#1FAFA6", "#6BA547", "#E94B8A"];
+const ACCENT = "#9231EA";
+const ACCENT_COLORS = ["#9231EA", "#FDA50E", "#1FAFA6", "#6BA547", "#FD0867"];
 const BG_COLORS: { label: string; value: string | null; preview: string }[] = [
   { label: "Sem cor",  value: null,      preview: "#f0f0f0" },
-  { label: "Roxo",    value: "#5B3FCF", preview: "#5B3FCF" },
-  { label: "Laranja", value: "#F26B3A", preview: "#F26B3A" },
+  { label: "Roxo",    value: "#9231EA", preview: "#9231EA" },
+  { label: "Laranja", value: "#FDA50E", preview: "#FDA50E" },
   { label: "Teal",    value: "#1FAFA6", preview: "#1FAFA6" },
   { label: "Verde",   value: "#6BA547", preview: "#6BA547" },
-  { label: "Rosa",    value: "#E94B8A", preview: "#E94B8A" },
+  { label: "Rosa",    value: "#FD0867", preview: "#FD0867" },
 ];
 
 function textColorForBg(bg: string | null): string { if (!bg) return "#0f0f14"; return "#ffffff"; }
@@ -116,8 +116,8 @@ function PostsFeed({ posts, loading, name, username, avatarUrl, onDelete, myUser
   );
   if (posts.length === 0) return (
     <div className="px-5 py-14 flex flex-col items-center gap-3 text-center">
-      <div className="w-16 h-16 rounded-full bg-[#5B3FCF]/10 flex items-center justify-center">
-        <BookOpen className="h-7 w-7 text-[#5B3FCF]" />
+      <div className="w-16 h-16 rounded-full bg-[#9231EA]/10 flex items-center justify-center">
+        <BookOpen className="h-7 w-7 text-[#9231EA]" />
       </div>
       <p className="text-sm font-semibold text-[var(--text-muted)]">Ainda não tens publicações</p>
       <p className="text-xs text-[var(--text-muted)]">Cria a tua primeira publicação acima!</p>
@@ -225,7 +225,7 @@ function CreatePostModal({
           author_id: session.user.id,
           author_username: prof?.username ?? session.user.email?.split("@")[0] ?? "",
           author_name: prof?.full_name ?? session.user.email ?? "",
-          author_color: "#5B3FCF",
+          author_color: "#9231EA",
           content: contentJson,
           kind: videoUrl ? "video" : bgColor ? "bg" : imageUrl ? "photo" : "post",
           photo_url: imageUrl,
@@ -319,7 +319,7 @@ function CreatePostModal({
               </button>
               <button onClick={() => videoRef.current?.click()}
                 className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[var(--s2)] hover:bg-[var(--s3)] transition text-sm font-semibold text-[var(--text-secondary)] active:scale-95">
-                <Film className="h-4 w-4 text-[#E94B8A]" /> {"Vídeo"}
+                <Film className="h-4 w-4 text-[#FD0867]" /> {"Vídeo"}
               </button>
             </div>
           </div>
@@ -346,7 +346,7 @@ function CreatePostModal({
                   className="h-full rounded-full transition-all duration-300"
                   style={{
                     width: uploadStage === "saving" ? "95%" : uploadStage === "done" ? "100%" : `${uploadProgress}%`,
-                    background: `linear-gradient(90deg, ${ACCENT}, #E94B8A)`,
+                    background: `linear-gradient(90deg, ${ACCENT}, #FD0867)`,
                     boxShadow: `0 0 8px ${ACCENT}80`,
                   }}
                 />
@@ -546,7 +546,7 @@ function EditProfileModal({
 
           {/* Avatar + capa */}
           <div className="relative mb-12">
-            <div className="h-28 w-full" style={{ background: "linear-gradient(135deg,#5B3FCF,#1FAFA6,#FFC93C)" }} />
+            <div className="h-28 w-full" style={{ background: "linear-gradient(135deg,#9231EA,#1FAFA6,#FFC93C)" }} />
             <button className="absolute top-3 right-3 bg-black/50 rounded-full p-2">
               <Camera className="h-4 w-4 text-white" />
             </button>
@@ -567,7 +567,7 @@ function EditProfileModal({
               <label className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Nome</label>
               <input value={name} onChange={(e) => setName(e.target.value)}
                 placeholder="O teu nome completo"
-                className="mt-1 w-full border border-[var(--border-default)] rounded-xl px-4 py-2.5 text-sm font-medium outline-none focus:border-[#5B3FCF] focus:ring-2 focus:ring-[#5B3FCF]/20 transition"
+                className="mt-1 w-full border border-[var(--border-default)] rounded-xl px-4 py-2.5 text-sm font-medium outline-none focus:border-[#9231EA] focus:ring-2 focus:ring-[#9231EA]/20 transition"
                 style={{ background: "var(--s2)", color: "var(--text-primary)" }}
               />
             </div>
@@ -577,7 +577,7 @@ function EditProfileModal({
               <div className="flex items-center justify-between mb-1">
                 <label className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Nome de utilizador</label>
                 {usernameCooldownDays > 0 ? (
-                  <span className="text-[11px] flex items-center gap-1 font-semibold" style={{ color: "#F26B3A" }}>
+                  <span className="text-[11px] flex items-center gap-1 font-semibold" style={{ color: "#FDA50E" }}>
                     🔒 Bloqueado {usernameCooldownDays} dia{usernameCooldownDays !== 1 ? "s" : ""}
                   </span>
                 ) : !editingUsername ? (
@@ -629,9 +629,9 @@ function EditProfileModal({
               </div>
               {/* Mensagem de cooldown */}
               {usernameCooldownDays > 0 && (
-                <div className="flex items-center gap-1.5 mt-1.5 px-3 py-2 rounded-xl" style={{ background: "#F26B3A12" }}>
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#F26B3A" strokeWidth="2.5" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
-                  <p className="text-[11px] font-semibold" style={{ color: "#F26B3A" }}>
+                <div className="flex items-center gap-1.5 mt-1.5 px-3 py-2 rounded-xl" style={{ background: "#FDA50E12" }}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#FDA50E" strokeWidth="2.5" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+                  <p className="text-[11px] font-semibold" style={{ color: "#FDA50E" }}>
                     Podes trocar o username daqui a <strong>{usernameCooldownDays} dia{usernameCooldownDays !== 1 ? "s" : ""}</strong>
                   </p>
                 </div>
@@ -674,7 +674,7 @@ function EditProfileModal({
               <textarea value={bio} onChange={(e) => setBio(e.target.value)}
                 placeholder="Fala um pouco sobre ti..."
                 rows={3}
-                className="mt-1 w-full border border-[var(--border-default)] rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#5B3FCF] focus:ring-2 focus:ring-[#5B3FCF]/20 transition resize-none leading-relaxed" style={{ background: "var(--s2)", color: "var(--text-primary)" }}
+                className="mt-1 w-full border border-[var(--border-default)] rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#9231EA] focus:ring-2 focus:ring-[#9231EA]/20 transition resize-none leading-relaxed" style={{ background: "var(--s2)", color: "var(--text-primary)" }}
               />
               <p className="text-[11px] text-[var(--text-muted)] text-right mt-1">{bio.length}/160</p>
             </div>
@@ -686,7 +686,7 @@ function EditProfileModal({
                 <Link className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-muted)]" />
                 <input value={website} onChange={(e) => setWebsite(e.target.value)}
                   placeholder="https://..."
-                  className="w-full border border-[var(--border-default)] rounded-xl pl-10 pr-4 py-2.5 text-sm outline-none focus:border-[#5B3FCF] focus:ring-2 focus:ring-[#5B3FCF]/20 transition"
+                  className="w-full border border-[var(--border-default)] rounded-xl pl-10 pr-4 py-2.5 text-sm outline-none focus:border-[#9231EA] focus:ring-2 focus:ring-[#9231EA]/20 transition"
                   style={{ background: "var(--s2)", color: "var(--text-primary)" }}
                 />
               </div>
@@ -700,7 +700,7 @@ function EditProfileModal({
                 <input value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)}
                   placeholder="+244 900 000 000"
                   inputMode="tel"
-                  className="w-full border border-[var(--border-default)] rounded-xl pl-10 pr-4 py-2.5 text-sm outline-none focus:border-[#5B3FCF] focus:ring-2 focus:ring-[#5B3FCF]/20 transition"
+                  className="w-full border border-[var(--border-default)] rounded-xl pl-10 pr-4 py-2.5 text-sm outline-none focus:border-[#9231EA] focus:ring-2 focus:ring-[#9231EA]/20 transition"
                   style={{ background: "var(--s2)", color: "var(--text-primary)" }}
                 />
               </div>
@@ -714,7 +714,7 @@ function EditProfileModal({
                 <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-muted)]" />
                 <input value={location} onChange={(e) => setLocation(e.target.value)}
                   placeholder="Lisboa, Portugal"
-                  className="w-full border border-[var(--border-default)] rounded-xl pl-10 pr-4 py-2.5 text-sm outline-none focus:border-[#5B3FCF] focus:ring-2 focus:ring-[#5B3FCF]/20 transition"
+                  className="w-full border border-[var(--border-default)] rounded-xl pl-10 pr-4 py-2.5 text-sm outline-none focus:border-[#9231EA] focus:ring-2 focus:ring-[#9231EA]/20 transition"
                   style={{ background: "var(--s2)", color: "var(--text-primary)" }}
                 />
               </div>
@@ -741,12 +741,12 @@ function MonetizationPanel() {
   return (
     <div className="px-5 py-16 flex flex-col items-center justify-center gap-4 text-center">
       <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
-        style={{ background: "linear-gradient(135deg,#5B3FCF,#E94B8A)" }}>
+        style={{ background: "linear-gradient(135deg,#9231EA,#FD0867)" }}>
         <TrendingUp className="h-8 w-8 text-white" />
       </div>
       <p className="text-xl font-extrabold text-black">ClickAds</p>
       <div className="flex items-center gap-2 bg-[var(--s2)] rounded-full px-5 py-2.5">
-        <div className="w-2 h-2 rounded-full bg-[#E94B8A] animate-pulse" />
+        <div className="w-2 h-2 rounded-full bg-[#FD0867] animate-pulse" />
         <p className="text-sm font-bold text-[var(--text-secondary)]">Em breve</p>
       </div>
     </div>
@@ -797,7 +797,7 @@ export function SettingsDrawer({
       title: t("settings.account", "Conta"),
       items: [
         { icon: Settings, label: t("settings.edit_profile"), desc: t("settings.edit_profile_desc", "Nome, foto, bio e mais"), action: () => { handleClose(); setTimeout(onEditProfile, 300); }, color: ACCENT },
-        { icon: Bell, label: t("settings.notifications"), desc: t("settings.notifications_desc", "Gere os teus alertas"), action: onOpenNotifications, color: "#F26B3A" },
+        { icon: Bell, label: t("settings.notifications"), desc: t("settings.notifications_desc", "Gere os teus alertas"), action: onOpenNotifications, color: "#FDA50E" },
         { icon: Calendar, label: t("settings.activity"), desc: t("settings.activity_desc", "Histórico de ações"), action: onOpenActivity, color: "#1FAFA6" },
       ],
     },
@@ -805,7 +805,7 @@ export function SettingsDrawer({
       title: t("settings.privacy_security", "Privacidade & Segurança"),
       items: [
         { icon: Lock, label: t("settings.privacy"), desc: t("settings.privacy_desc", "Quem pode ver o teu perfil"), action: onOpenPrivacy, color: "#6BA547" },
-        { icon: Shield, label: t("settings.security"), desc: t("settings.security_desc", "Palavra-passe e autenticação"), action: onOpenSecurity, color: "#5B3FCF" },
+        { icon: Shield, label: t("settings.security"), desc: t("settings.security_desc", "Palavra-passe e autenticação"), action: onOpenSecurity, color: "#9231EA" },
         { icon: MessageCircle, label: t("settings.msg_privacy"), desc: t("settings.msg_privacy_desc", "Quem pode enviar-te mensagens"), action: onOpenMsgPrivacy, color: "#1FAFA6" },
       ],
     },
@@ -813,13 +813,13 @@ export function SettingsDrawer({
       title: t("settings.support", "Suporte"),
       items: [
         { icon: HelpCircle, label: t("settings.help"), desc: t("settings.help_desc", "Perguntas frequentes"), action: onOpenHelp, color: "#1FAFA6" },
-        { icon: Info, label: t("settings.about"), desc: t("settings.about_desc", "Versão e informações legais"), action: onOpenAbout, color: "#E94B8A" },
+        { icon: Info, label: t("settings.about"), desc: t("settings.about_desc", "Versão e informações legais"), action: onOpenAbout, color: "#FD0867" },
       ],
     },
     {
       title: t("settings.language"),
       items: [
-        { icon: Globe, label: t("settings.language"), desc: (() => { const l = LANGUAGES.find(l => l.code === getCurrentLang()); return `${l?.flag ?? "🇵🇹"} ${l?.label ?? "Português"}`; })(), action: onOpenLanguage, color: "#F26B3A" },
+        { icon: Globe, label: t("settings.language"), desc: (() => { const l = LANGUAGES.find(l => l.code === getCurrentLang()); return `${l?.flag ?? "🇵🇹"} ${l?.label ?? "Português"}`; })(), action: onOpenLanguage, color: "#FDA50E" },
       ],
     },
   ];
@@ -851,7 +851,7 @@ export function SettingsDrawer({
       >
         {/* Header gradiente com avatar */}
         <div className="shrink-0 px-5 pt-6 pb-5"
-          style={{ background: `linear-gradient(135deg, ${ACCENT}, #E94B8A)` }}>
+          style={{ background: `linear-gradient(135deg, ${ACCENT}, #FD0867)` }}>
           <div className="flex items-center justify-between mb-5">
             <span className="text-white font-extrabold text-lg tracking-tight">{t("settings.title")}</span>
             <button onClick={handleClose}
@@ -1051,9 +1051,9 @@ export function NotificationsPanel({ onBack }: { onBack: () => void }) {
   }
 
   const ITEMS: { key: keyof typeof prefs; icon: React.ElementType; color: string; label: string; desc: string }[] = [
-    { key: "likes",    icon: Heart,         color: "#E94B8A", label: "Gostos",           desc: "Quando alguém gosta das tuas publicações" },
+    { key: "likes",    icon: Heart,         color: "#FD0867", label: "Gostos",           desc: "Quando alguém gosta das tuas publicações" },
     { key: "comments", icon: MessageCircle, color: "#1FAFA6", label: t("post.comments"),      desc: "Quando alguém comenta as tuas publicações" },
-    { key: "messages", icon: Bell,          color: "#F26B3A", label: t("nav.messages"),        desc: "Quando recebes uma nova mensagem" },
+    { key: "messages", icon: Bell,          color: "#FDA50E", label: t("nav.messages"),        desc: "Quando recebes uma nova mensagem" },
     { key: "mentions", icon: Type,          color: ACCENT,    label: "Menções",          desc: "Quando alguém te menciona numa publicação" },
   ];
 
@@ -1114,7 +1114,7 @@ export function ActivityPanel({ onBack }: { onBack: () => void }) {
 
   const ICONS: Record<string, { icon: React.ElementType; color: string }> = {
     post:   { icon: Type,     color: ACCENT },
-    like:   { icon: Heart,    color: "#E94B8A" },
+    like:   { icon: Heart,    color: "#FD0867" },
   };
 
   return (
@@ -1447,7 +1447,7 @@ function ShareProfileModal({ username, name, onClose }: { username: string; name
             <span className="flex-1 text-xs truncate" style={{ color: "var(--text-muted)" }}>{url}</span>
             <button onClick={copy}
               className="px-3 py-1.5 rounded-xl text-xs font-bold transition active:scale-95 shrink-0 flex items-center gap-1"
-              style={{ background: copied ? "#6BA547" : "#5B3FCF", color: "#fff" }}>
+              style={{ background: copied ? "#6BA547" : "#9231EA", color: "#fff" }}>
               {copied ? (<><Check className="h-3.5 w-3.5" /> Copiado</>) : "Copiar"}
             </button>
           </div>
@@ -1895,7 +1895,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
         {/* Capa */}
         <div className="relative">
           <div className="h-52 relative overflow-hidden"
-            style={coverUrl ? undefined : { background: "linear-gradient(135deg,#5B3FCF 0%,#8B5CF6 55%,#E94B8A 100%)" }}>
+            style={coverUrl ? undefined : { background: "linear-gradient(135deg,#9231EA 0%,#8B5CF6 55%,#FD0867 100%)" }}>
             {coverUrl && <img src={optimizePostPhoto(coverUrl, 1200)} alt="capa" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = "none"; }} />}
             {/* Botão câmera da capa */}
             <button onClick={() => pickFile(coverInputRef, setCoverUrl, "cover")}
@@ -2114,7 +2114,7 @@ function PublicProfile({ profile, email }: { profile: Profile | null; email: str
         </div>
       </header>
       <main className="w-full">
-        <div className="h-52 relative" style={{ background: "linear-gradient(135deg,#5B3FCF 0%,#8B5CF6 55%,#E94B8A 100%)" }}>
+        <div className="h-52 relative" style={{ background: "linear-gradient(135deg,#9231EA 0%,#8B5CF6 55%,#FD0867 100%)" }}>
           <div className="absolute left-5" style={{ bottom: -60 }}>
             <div style={{ border: "4px solid var(--surface-0)", borderRadius: "50%" }}>
               <Avatar name={name} size={124} />
@@ -2126,7 +2126,7 @@ function PublicProfile({ profile, email }: { profile: Profile | null; email: str
             onClick={() => navigate({ to: "/mensagens" })}
             className="text-sm font-semibold border border-neutral-300 rounded-full px-4 py-1.5 bg-[var(--s2)] hover:bg-[var(--s1)] flex items-center gap-1.5 shadow-sm active:scale-95 transition-transform"
           >
-            <MessageCircle className="h-4 w-4" style={{ color: "#5B3FCF" }} /> Mensagem
+            <MessageCircle className="h-4 w-4" style={{ color: "#9231EA" }} /> Mensagem
           </button>
         </div>
         <div className="px-5 pt-9 pb-3">
@@ -2135,8 +2135,8 @@ function PublicProfile({ profile, email }: { profile: Profile | null; email: str
           {profile?.bio && <p className="text-sm text-[var(--text-secondary)] mt-2 leading-relaxed">{profile.bio}</p>}
         </div>
         <div className="px-5 py-12 flex flex-col items-center gap-3 text-center">
-          <div className="w-16 h-16 rounded-full bg-[#5B3FCF]/10 flex items-center justify-center">
-            <BookOpen className="h-7 w-7 text-[#5B3FCF]" />
+          <div className="w-16 h-16 rounded-full bg-[#9231EA]/10 flex items-center justify-center">
+            <BookOpen className="h-7 w-7 text-[#9231EA]" />
           </div>
           <p className="text-sm font-semibold text-[var(--text-muted)]">Ainda não há publicações.</p>
         </div>

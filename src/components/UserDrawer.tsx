@@ -47,7 +47,7 @@ function Avatar({ user, size = 38 }: { user: { full_name?: string | null; userna
   const initial = (user.full_name?.[0] ?? user.username?.[0] ?? "?").toUpperCase();
   return (
     <div className="rounded-full overflow-hidden shrink-0 flex items-center justify-center text-white font-bold"
-      style={{ width: size, height: size, background: user.avatar_url ? "transparent" : "#5B3FCF", fontSize: size * 0.42 }}>
+      style={{ width: size, height: size, background: user.avatar_url ? "transparent" : "#9231EA", fontSize: size * 0.42 }}>
       {user.avatar_url
         ? <img src={user.avatar_url} alt="" className="w-full h-full object-cover" />
         : initial}
@@ -171,13 +171,13 @@ export function UserDrawer({ userId: _userId, onClose }: UserDrawerProps) {
     {
       title: "O teu espaço",
       items: [
-        { icon: User, label: "O meu perfil", color: "#5B3FCF", action: () => { onClose(); navigate({ to: "/perfil" }); } },
-        { icon: Bell, label: "Notificações", color: "#E94B8A", action: () => {
+        { icon: User, label: "O meu perfil", color: "#9231EA", action: () => { onClose(); navigate({ to: "/perfil" }); } },
+        { icon: Bell, label: "Notificações", color: "#FD0867", action: () => {
             onClose();
             navigate({ to: "/home" });
             setTimeout(() => window.dispatchEvent(new CustomEvent("hooda:open-notifications")), 60);
           } },
-        { icon: BookOpen, label: "Livros", color: "#E94B8A", action: () => { onClose(); navigate({ to: "/livros" as any }); } },
+        { icon: BookOpen, label: "Livros", color: "#FD0867", action: () => { onClose(); navigate({ to: "/livros" as any }); } },
       ],
     },
     {
@@ -221,8 +221,8 @@ export function UserDrawer({ userId: _userId, onClose }: UserDrawerProps) {
   const emptyState = (label: string, Icon: any) => (
     <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
       <div className="w-14 h-14 rounded-full flex items-center justify-center mb-3"
-        style={{ background: "rgba(91,63,207,0.10)" }}>
-        <Icon className="h-6 w-6" style={{ color: "#5B3FCF" }} />
+        style={{ background: "rgba(146,49,234,0.10)" }}>
+        <Icon className="h-6 w-6" style={{ color: "#9231EA" }} />
       </div>
       <p className="text-sm font-semibold" style={{ color: "var(--text-muted)" }}>{label}</p>
     </div>
@@ -264,7 +264,7 @@ export function UserDrawer({ userId: _userId, onClose }: UserDrawerProps) {
               </div>
             )}
             {ratings === null
-              ? <div className="py-8 flex justify-center"><div className="h-6 w-6 rounded-full border-2 animate-spin" style={{ borderColor: "#5B3FCF", borderTopColor: "transparent" }} /></div>
+              ? <div className="py-8 flex justify-center"><div className="h-6 w-6 rounded-full border-2 animate-spin" style={{ borderColor: "#9231EA", borderTopColor: "transparent" }} /></div>
               : ratings.length === 0
                 ? emptyState("Ainda sem avaliações", Star)
                 : <div className="space-y-0.5">
@@ -321,7 +321,7 @@ export function UserDrawer({ userId: _userId, onClose }: UserDrawerProps) {
                   className="w-full flex items-center gap-3 rounded-2xl p-3 transition text-left"
                   style={{ background: "var(--surface-1)" }}>
                   <div className="w-14 h-14 rounded-full overflow-hidden shrink-0 flex items-center justify-center text-white font-bold text-xl"
-                    style={{ background: profile.avatar_url ? "transparent" : "#5B3FCF" }}>
+                    style={{ background: profile.avatar_url ? "transparent" : "#9231EA" }}>
                     {profile.avatar_url
                       ? <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
                       : initial}
@@ -409,10 +409,10 @@ export function UserDrawer({ userId: _userId, onClose }: UserDrawerProps) {
                 onMouseEnter={e => (e.currentTarget.style.background = "var(--surface-2)")}
                 onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                  style={{ background: "rgba(91,63,207,0.12)" }}>
+                  style={{ background: "rgba(146,49,234,0.12)" }}>
                   {theme === "dark"
                     ? <Sun className="h-5 w-5" style={{ color: "#FFC93C" }} strokeWidth={1.8} />
-                    : <Moon className="h-5 w-5" style={{ color: "#5B3FCF" }} strokeWidth={1.8} />}
+                    : <Moon className="h-5 w-5" style={{ color: "#9231EA" }} strokeWidth={1.8} />}
                 </div>
                 <span className="text-sm font-medium">{theme === "dark" ? "Modo claro" : "Modo escuro"}</span>
               </button>

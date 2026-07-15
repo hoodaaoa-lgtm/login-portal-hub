@@ -11,24 +11,24 @@ export function AuthLeftPanel() {
       {/* ── Decorative outline circles (scattered, brand colors) ── */}
       {/* top-right area */}
       <div style={{ position:"absolute", top:48, right:80, width:54, height:54, borderRadius:"50%", border:"2px solid #FFC93C", opacity:0.8 }} />
-      <div style={{ position:"absolute", top:120, right:200, width:34, height:34, borderRadius:"50%", border:"2px solid #5B3FCF", opacity:0.5 }} />
+      <div style={{ position:"absolute", top:120, right:200, width:34, height:34, borderRadius:"50%", border:"2px solid #9231EA", opacity:0.5 }} />
       {/* top-center */}
-      <div style={{ position:"absolute", top:30, left:"45%", width:44, height:44, borderRadius:"50%", border:"2px solid #5B3FCF", opacity:0.35 }} />
+      <div style={{ position:"absolute", top:30, left:"45%", width:44, height:44, borderRadius:"50%", border:"2px solid #9231EA", opacity:0.35 }} />
       <div style={{ position:"absolute", top:100, left:"55%", width:26, height:26, borderRadius:"50%", border:"2px solid #6BA547", opacity:0.5 }} />
       {/* left side */}
-      <div style={{ position:"absolute", top:220, left:18, width:60, height:60, borderRadius:"50%", border:"2.5px solid #5B3FCF", opacity:0.18 }} />
-      <div style={{ position:"absolute", top:340, left:48, width:30, height:30, borderRadius:"50%", border:"2px solid #E94B8A", opacity:0.4 }} />
+      <div style={{ position:"absolute", top:220, left:18, width:60, height:60, borderRadius:"50%", border:"2.5px solid #9231EA", opacity:0.18 }} />
+      <div style={{ position:"absolute", top:340, left:48, width:30, height:30, borderRadius:"50%", border:"2px solid #FD0867", opacity:0.4 }} />
       {/* bottom area */}
       <div style={{ position:"absolute", bottom:180, left:60, width:38, height:38, borderRadius:"50%", border:"2px solid #FFC93C", opacity:0.7 }} />
       <div style={{ position:"absolute", bottom:100, left:160, width:22, height:22, borderRadius:"50%", border:"2px solid #6BA547", opacity:0.55 }} />
-      <div style={{ position:"absolute", bottom:80, right:100, width:42, height:42, borderRadius:"50%", border:"2px solid #E94B8A", opacity:0.3 }} />
-      <div style={{ position:"absolute", bottom:40, left:"30%", width:28, height:28, borderRadius:"50%", border:"2px solid #5B3FCF", opacity:0.3 }} />
+      <div style={{ position:"absolute", bottom:80, right:100, width:42, height:42, borderRadius:"50%", border:"2px solid #FD0867", opacity:0.3 }} />
+      <div style={{ position:"absolute", bottom:40, left:"30%", width:28, height:28, borderRadius:"50%", border:"2px solid #9231EA", opacity:0.3 }} />
       {/* right-center */}
-      <div style={{ position:"absolute", top:"50%", right:30, width:50, height:50, borderRadius:"50%", border:"2px solid #E94B8A", opacity:0.25 }} />
+      <div style={{ position:"absolute", top:"50%", right:30, width:50, height:50, borderRadius:"50%", border:"2px solid #FD0867", opacity:0.25 }} />
 
       {/* ── Large soft blurred bg circles (colour hints) ── */}
-      <div style={{ position:"absolute", top:-60, left:-60, width:320, height:320, borderRadius:"50%", background:"rgba(91,63,207,0.05)" }} />
-      <div style={{ position:"absolute", bottom:-80, right:-60, width:360, height:360, borderRadius:"50%", background:"rgba(233,75,138,0.05)" }} />
+      <div style={{ position:"absolute", top:-60, left:-60, width:320, height:320, borderRadius:"50%", background:"rgba(146,49,234,0.05)" }} />
+      <div style={{ position:"absolute", bottom:-80, right:-60, width:360, height:360, borderRadius:"50%", background:"rgba(253,8,103,0.05)" }} />
 
       {/* ── Content area ── */}
       <div className="relative z-10 flex flex-col justify-between h-full px-12 py-12">
@@ -43,7 +43,7 @@ export function AuthLeftPanel() {
           <h1 className="font-extrabold tracking-tight leading-[1.1]" style={{ fontSize: "clamp(36px, 4vw, 52px)", color: "#0d0d14" }}>
             Conecta.<br />
             Partilha.<br />
-            <span style={{ color: "#E94B8A" }}>Descobre.</span>
+            <span style={{ color: "#FD0867" }}>Descobre.</span>
           </h1>
           <p className="mt-4 text-[15px] leading-relaxed max-w-[320px]" style={{ color: "#6b6b7a" }}>
             A tua rede social para explorar o que importa, partilhar momentos e criar conexões reais.
@@ -107,9 +107,9 @@ export function AuthLeftPanel() {
           {/* Dashed connection lines (SVG overlay) */}
           <svg style={{ position:"absolute", inset:0, width:"100%", height:"100%", pointerEvents:"none" }}
             viewBox="0 0 400 320" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M 100 180 Q 180 120 210 60" stroke="#5B3FCF" strokeWidth="1.5" strokeDasharray="6,5" fill="none" opacity="0.35"/>
-            <path d="M 100 180 Q 200 200 220 230" stroke="#5B3FCF" strokeWidth="1.5" strokeDasharray="6,5" fill="none" opacity="0.35"/>
-            <path d="M 210 60 Q 280 140 220 230" stroke="#5B3FCF" strokeWidth="1.5" strokeDasharray="6,5" fill="none" opacity="0.25"/>
+            <path d="M 100 180 Q 180 120 210 60" stroke="#9231EA" strokeWidth="1.5" strokeDasharray="6,5" fill="none" opacity="0.35"/>
+            <path d="M 100 180 Q 200 200 220 230" stroke="#9231EA" strokeWidth="1.5" strokeDasharray="6,5" fill="none" opacity="0.35"/>
+            <path d="M 210 60 Q 280 140 220 230" stroke="#9231EA" strokeWidth="1.5" strokeDasharray="6,5" fill="none" opacity="0.25"/>
           </svg>
 
           {/* Feature icon bubbles */}
@@ -117,9 +117,9 @@ export function AuthLeftPanel() {
           <div style={{
             position:"absolute", top:80, left:"22%",
             width:44, height:44, borderRadius:"50%",
-            background:"#E94B8A",
+            background:"#FD0867",
             display:"flex", alignItems:"center", justifyContent:"center",
-            boxShadow:"0 4px 12px rgba(233,75,138,0.4)",
+            boxShadow:"0 4px 12px rgba(253,8,103,0.4)",
           }}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
@@ -129,9 +129,9 @@ export function AuthLeftPanel() {
           <div style={{
             position:"absolute", top:"50%", left:"55%",
             width:44, height:44, borderRadius:"50%",
-            background:"#5B3FCF",
+            background:"#9231EA",
             display:"flex", alignItems:"center", justifyContent:"center",
-            boxShadow:"0 4px 12px rgba(91,63,207,0.4)",
+            boxShadow:"0 4px 12px rgba(146,49,234,0.4)",
           }}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>

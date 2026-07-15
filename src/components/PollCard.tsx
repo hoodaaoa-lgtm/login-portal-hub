@@ -14,7 +14,7 @@ import { useEffect, useState } from "react";
 import { Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
-const ACCENT = "#5B3FCF";
+const ACCENT = "#9231EA";
 
 export type PollOption = string | { text: string };
 

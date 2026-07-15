@@ -235,11 +235,11 @@ function SignupPage() {
             <div className="flex items-center justify-center mb-6">
               <div className="relative">
                 <div className="w-24 h-24 rounded-full flex items-center justify-center"
-                  style={{ background: "linear-gradient(135deg,#5B3FCF18,#E94B8A18)" }}>
+                  style={{ background: "linear-gradient(135deg,#9231EA18,#FD086718)" }}>
                   <svg className="w-12 h-12" viewBox="0 0 24 24" fill="none">
-                    <rect x="2" y="4" width="20" height="16" rx="3" fill="#5B3FCF" opacity="0.12"/>
-                    <rect x="2" y="4" width="20" height="16" rx="3" stroke="#5B3FCF" strokeWidth="1.8"/>
-                    <path d="M2 8l10 6 10-6" stroke="#5B3FCF" strokeWidth="1.8" strokeLinecap="round"/>
+                    <rect x="2" y="4" width="20" height="16" rx="3" fill="#9231EA" opacity="0.12"/>
+                    <rect x="2" y="4" width="20" height="16" rx="3" stroke="#9231EA" strokeWidth="1.8"/>
+                    <path d="M2 8l10 6 10-6" stroke="#9231EA" strokeWidth="1.8" strokeLinecap="round"/>
                     {/* Check badge */}
                     <circle cx="18" cy="18" r="5" fill="#6BA547"/>
                     <path d="M15.5 18l1.5 1.5 2.5-2.5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
@@ -247,7 +247,7 @@ function SignupPage() {
                 </div>
                 {/* Pulse ring */}
                 <div className="absolute inset-0 rounded-full animate-ping opacity-20"
-                  style={{ background: "#5B3FCF", animationDuration: "2s" }} />
+                  style={{ background: "#9231EA", animationDuration: "2s" }} />
               </div>
             </div>
 
@@ -257,7 +257,7 @@ function SignupPage() {
             <p className="text-[15px] text-[var(--text-muted)] mb-2 leading-relaxed">
               Enviámos um link de confirmação para
             </p>
-            <p className="text-[16px] font-bold mb-6" style={{ color: "#5B3FCF" }}>
+            <p className="text-[16px] font-bold mb-6" style={{ color: "#9231EA" }}>
               {email}
             </p>
             <p className="text-[14px] text-[var(--text-muted)] leading-relaxed mb-8">
@@ -269,7 +269,7 @@ function SignupPage() {
               <a
                 href={`mailto:${email}`}
                 className="w-full h-[52px] rounded-xl text-white font-bold text-[15px] flex items-center justify-center gap-2 transition-all hover:-translate-y-0.5"
-                style={{ background: "#5B3FCF", boxShadow: "0 4px 14px rgba(91,63,207,0.3)" }}
+                style={{ background: "#9231EA", boxShadow: "0 4px 14px rgba(146,49,234,0.3)" }}
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <rect x="2" y="4" width="20" height="16" rx="3"/><path d="M2 8l10 6 10-6"/>
@@ -291,7 +291,7 @@ function SignupPage() {
                   alert("Email reenviado! Verifica a tua caixa de entrada.");
                 }}
                 className="font-semibold hover:underline"
-                style={{ color: "#5B3FCF" }}
+                style={{ color: "#9231EA" }}
               >
                 Reenviar
               </button>
@@ -302,7 +302,7 @@ function SignupPage() {
           <div className="mb-8">
             <h2 className="text-[30px] font-extrabold tracking-tight text-[var(--text-primary)]">Criar conta</h2>
             <p className="mt-1.5 text-[15px] text-[var(--text-muted)]">
-              Junte-se à <span className="font-bold text-[#5B3FCF]">hooda</span> e faça parte da comunidade.
+              Junte-se à <span className="font-bold text-[#9231EA]">hooda</span> e faça parte da comunidade.
             </p>
           </div>
 
@@ -333,9 +333,9 @@ function SignupPage() {
                         onClick={() => setUsername(s)}
                         className="text-[11px] px-2.5 py-1 rounded-full border font-semibold transition active:scale-95"
                         style={{
-                          borderColor: username === s ? "#5B3FCF" : "#d1d5db",
-                          background: username === s ? "#5B3FCF12" : "var(--s2)",
-                          color: username === s ? "#5B3FCF" : "var(--text-secondary)",
+                          borderColor: username === s ? "#9231EA" : "#d1d5db",
+                          background: username === s ? "#9231EA12" : "var(--s2)",
+                          color: username === s ? "#9231EA" : "var(--text-secondary)",
                         }}>
                         @{s}
                       </button>
@@ -382,13 +382,13 @@ function SignupPage() {
               <input
                 type="checkbox" checked={agreed}
                 onChange={(e) => setAgreed(e.target.checked)}
-                className="mt-0.5 h-4 w-4 rounded border-neutral-300 text-[#5B3FCF] focus:ring-[#5B3FCF] focus:ring-offset-0 cursor-pointer"
+                className="mt-0.5 h-4 w-4 rounded border-neutral-300 text-[#9231EA] focus:ring-[#9231EA] focus:ring-offset-0 cursor-pointer"
               />
               <span className="text-[13px] text-[var(--text-muted)] leading-relaxed">
                 Ao continuar, você concorda com os{" "}
-                <a href="/uso" target="_blank" rel="noopener noreferrer" className="text-[#5B3FCF] font-medium hover:underline">Termos</a>{" "}
+                <a href="/uso" target="_blank" rel="noopener noreferrer" className="text-[#9231EA] font-medium hover:underline">Termos</a>{" "}
                 e a{" "}
-                <a href="/privacidade" target="_blank" rel="noopener noreferrer" className="text-[#5B3FCF] font-medium hover:underline">Política de Privacidade</a>{" "}
+                <a href="/privacidade" target="_blank" rel="noopener noreferrer" className="text-[#9231EA] font-medium hover:underline">Política de Privacidade</a>{" "}
                 da hooda.
               </span>
             </label>
@@ -407,7 +407,7 @@ function SignupPage() {
               type="submit"
               disabled={loading || usernameStatus === "taken" || usernameStatus === "checking"}
               className="w-full h-[52px] rounded-xl text-white font-bold text-[15px] tracking-wide flex items-center justify-center gap-2 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99] disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none"
-              style={{ background: "#5B3FCF", boxShadow: "0 4px 14px rgba(91,63,207,0.35)" }}
+              style={{ background: "#9231EA", boxShadow: "0 4px 14px rgba(146,49,234,0.35)" }}
             >
               {loading ? (
                 <span className="inline-flex items-center justify-center gap-2">
@@ -423,7 +423,7 @@ function SignupPage() {
             {/* Login link */}
             <p className="text-center text-[14px] text-[var(--text-muted)] pt-1">
               Já tem uma conta?{" "}
-              <Link to="/" className="font-bold text-[#5B3FCF] hover:text-[#4a2db5] transition-colors">
+              <Link to="/" className="font-bold text-[#9231EA] hover:text-[#4a2db5] transition-colors">
                 Entrar
               </Link>
             </p>

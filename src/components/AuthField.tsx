@@ -89,7 +89,7 @@ export function Field({
         <input
           id={id} type={type} value={value} autoComplete={autoComplete} placeholder={placeholder}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full h-[52px] rounded-xl border border-neutral-200 bg-white px-4 text-[15px] text-neutral-900 placeholder:text-neutral-400 outline-none transition-all duration-200 focus:border-[#5B3FCF] focus:shadow-[0_0_0_3px_rgba(91,63,207,0.10)] hover:border-neutral-300"
+          className="w-full h-[52px] rounded-xl border border-neutral-200 bg-white px-4 text-[15px] text-neutral-900 placeholder:text-neutral-400 outline-none transition-all duration-200 focus:border-[#9231EA] focus:shadow-[0_0_0_3px_rgba(146,49,234,0.10)] hover:border-neutral-300"
           style={{
             paddingLeft: icon ? "44px" : "16px",
             paddingRight: isPassword || rightIcon ? "48px" : "16px",

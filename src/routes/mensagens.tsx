@@ -118,7 +118,7 @@ function tokenizeContent(text: string): ContentToken[] {
 function LinkifiedText({ text, isMe }: { text: string; isMe: boolean }) {
   const navigate = useNavigate();
   const tokens = useMemo(() => tokenizeContent(text), [text]);
-  const linkColor = isMe ? "#FFE9A8" : "#5B3FCF";
+  const linkColor = isMe ? "#FFE9A8" : "#9231EA";
   const linkStyle: React.CSSProperties = {
     color: linkColor, fontWeight: 600, textDecoration: "underline",
     textUnderlineOffset: 2, cursor: "pointer", wordBreak: "break-word",
@@ -222,7 +222,7 @@ function ExpandableMessageText({ text, isMe }: { text: string; isMe: boolean }) 
   const [expanded, setExpanded] = useState(false);
   const long = useMemo(() => isTextLong(text), [text]);
   const shown = expanded || !long ? text : truncateText(text) + "…";
-  const toggleColor = isMe ? "rgba(255,255,255,0.85)" : "#5B3FCF";
+  const toggleColor = isMe ? "rgba(255,255,255,0.85)" : "#9231EA";
 
   return (
     <div>
@@ -255,7 +255,7 @@ function ExpandableMessageText({ text, isMe }: { text: string; isMe: boolean }) 
 // (o texto ainda está a ser escrito).
 const COMPOSER_HIGHLIGHT_COLORS: Record<string, string> = {
   url: "#3B82F6", domain: "#3B82F6", email: "#1FAFA6",
-  phone: "#6BA547", mention: "#E94B8A", hashtag: "#5B3FCF",
+  phone: "#6BA547", mention: "#FD0867", hashtag: "#9231EA",
 };
 
 function ComposerHighlightOverlay({ text }: { text: string }) {
@@ -280,7 +280,7 @@ export const Route = createFileRoute("/mensagens")({
   component: MensagensPage,
 });
 
-const ACCENT = ["#5B3FCF", "#F26B3A", "#1FAFA6", "#6BA547", "#E94B8A"];
+const ACCENT = ["#9231EA", "#FDA50E", "#1FAFA6", "#6BA547", "#FD0867"];
 const colorFor = (s: string) => ACCENT[(s?.charCodeAt(0) ?? 0) % ACCENT.length];
 
 /* ── Som de notificação (gerado via Web Audio API — sem ficheiro externo) ── */
@@ -349,11 +349,11 @@ type Contact = Profile & {
 // Cores da identidade visual da Snapper — usadas para colorir a palavra
 // "Snapper" letra a letra, igual ao logótipo (ver SnapperLogo.tsx).
 const HOODA_BRAND_LETTERS = [
-  { char: "H", color: "#5B3FCF" },
-  { char: "o", color: "#F26B3A" },
+  { char: "H", color: "#9231EA" },
+  { char: "o", color: "#FDA50E" },
   { char: "o", color: "#1FAFA6" },
   { char: "d", color: "#6BA547" },
-  { char: "a", color: "#E94B8A" },
+  { char: "a", color: "#FD0867" },
 ];
 
 /**
@@ -373,7 +373,7 @@ function OfficialSenderName({ size = 13 }: { size?: number }) {
           <span key={i} style={{ color: l.color }}>{l.char}</span>
         ))}
       </span>
-      <span style={{ fontSize: size, fontWeight: 700, color: "#5B3FCF" }}>Oficial</span>
+      <span style={{ fontSize: size, fontWeight: 700, color: "#9231EA" }}>Oficial</span>
       <VerifiedBadge size={Math.round(size * 0.95)} />
     </div>
   );
@@ -418,7 +418,7 @@ function Av({ name, color, size = 40, src }: { name: string; color?: string; siz
 function AvatarRing({ name, color, size = 46, src }: { name: string; color?: string; size?: number; src?: string | null }) {
   const { t } = useTranslation();
   return (
-    <div style={{ borderRadius: "50%", padding: 2, background: "linear-gradient(135deg,#5B3FCF 0%,#E94B8A 50%,#FFC93C 100%)", flexShrink: 0 }}>
+    <div style={{ borderRadius: "50%", padding: 2, background: "linear-gradient(135deg,#9231EA 0%,#FD0867 50%,#FFC93C 100%)", flexShrink: 0 }}>
       <div style={{ borderRadius: "50%", padding: 2, background: "var(--bg-card,white)" }}>
         <Av name={name} color={color} size={size} src={src} />
       </div>
@@ -719,7 +719,7 @@ function AddContactModal({ myId, onClose, onAdd, existingContacts }: {
               onClick={sendRequest}
               disabled={sendingRequest}
               className="w-full h-11 rounded-2xl font-bold text-sm text-white flex items-center justify-center gap-2 transition active:scale-95"
-              style={{ background: "#5B3FCF", opacity: sendingRequest ? 0.7 : 1 }}>
+              style={{ background: "#9231EA", opacity: sendingRequest ? 0.7 : 1 }}>
               {sendingRequest ? <Loader className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
               {sendingRequest ? "A enviar..." : "Enviar pedido"}
             </button>
@@ -752,7 +752,7 @@ function AddContactModal({ myId, onClose, onAdd, existingContacts }: {
 
           {searching && (
             <div className="flex justify-center py-4">
-              <Loader className="h-4 w-4 animate-spin" style={{ color: "#5B3FCF" }} />
+              <Loader className="h-4 w-4 animate-spin" style={{ color: "#9231EA" }} />
             </div>
           )}
 
@@ -776,12 +776,12 @@ function AddContactModal({ myId, onClose, onAdd, existingContacts }: {
                       <p className="text-xs" style={{ color: "var(--text-muted,#888)" }}>@{r.username}</p>
                     </div>
                     {isAdding && <Loader className="h-4 w-4 animate-spin" />}
-                    {reqSent && <span className="text-xs font-semibold" style={{ color: "#F26B3A" }}>Pedido enviado</span>}
-                    {isExisting && !reqSent && <Check className="h-4 w-4" style={{ color: "#5B3FCF" }} />}
+                    {reqSent && <span className="text-xs font-semibold" style={{ color: "#FDA50E" }}>Pedido enviado</span>}
+                    {isExisting && !reqSent && <Check className="h-4 w-4" style={{ color: "#9231EA" }} />}
                     {!isAdding && !isExisting && !reqSent && (
                       needsRequest
-                        ? <Clock className="h-4 w-4" style={{ color: "#F26B3A" }} />
-                        : <UserPlus className="h-4 w-4" style={{ color: "#5B3FCF" }} />
+                        ? <Clock className="h-4 w-4" style={{ color: "#FDA50E" }} />
+                        : <UserPlus className="h-4 w-4" style={{ color: "#9231EA" }} />
                     )}
                   </button>
                 );
@@ -905,14 +905,14 @@ function RequestsPanel({ myId, onApprove, onClose }: {
         style={{ background: "var(--bg-card,white)", maxHeight: "80vh", display: "flex", flexDirection: "column" }}>
         <div className="flex items-center justify-between px-5 py-4 border-b shrink-0" style={{ borderColor: "var(--border,#f0f0f0)" }}>
           <div className="flex items-center gap-2">
-            <Bell className="h-5 w-5" style={{ color: "#5B3FCF" }} />
+            <Bell className="h-5 w-5" style={{ color: "#9231EA" }} />
             <p className="font-extrabold text-base">Pedidos de mensagem</p>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-full hover:bg-[var(--s2)] dark:hover:bg-[var(--s3)]"><X className="h-5 w-5" /></button>
         </div>
 
         <div className="overflow-y-auto flex-1 px-5 py-4 space-y-3">
-          {loading && <div className="flex justify-center py-8"><Loader className="h-5 w-5 animate-spin" style={{ color: "#5B3FCF" }} /></div>}
+          {loading && <div className="flex justify-center py-8"><Loader className="h-5 w-5 animate-spin" style={{ color: "#9231EA" }} /></div>}
 
           {!loading && requests.length === 0 && (
             <div className="text-center py-10">
@@ -936,7 +936,7 @@ function RequestsPanel({ myId, onApprove, onClose }: {
               <div className="flex gap-2">
                 <button onClick={() => approve(req)} disabled={acting === req.id}
                   className="flex-1 flex items-center justify-center gap-1.5 h-9 rounded-xl text-sm font-bold text-white transition active:scale-95"
-                  style={{ background: "#5B3FCF" }}>
+                  style={{ background: "#9231EA" }}>
                   {acting === req.id ? <Loader className="h-3.5 w-3.5 animate-spin" /> : <UserCheck className="h-3.5 w-3.5" />}
                   Aceitar
                 </button>
@@ -956,7 +956,7 @@ function RequestsPanel({ myId, onApprove, onClose }: {
 }
 
 // ── Constantes do chat (igual à comunidade) ──
-const CHAT_ACCENT      = "#5B3FCF";
+const CHAT_ACCENT      = "#9231EA";
 const CHAT_PANEL = "var(--s2)";
 const CHAT_INPUT_BG    = "var(--bg-secondary, #f5f5f5)";
 const CHAT_BORDER      = "var(--border, #e5e5e5)";
@@ -1122,9 +1122,9 @@ const STUDIO_FONTS: { key: StudioFontKey; label: string; family: string }[] = [
 const STUDIO_TEXT_COLORS = [
   { key: "white",   label: "Branco",  value: "#FFFFFF" },
   { key: "gold",    label: "Dourado", value: "linear-gradient(135deg,#F5D67A,#D9A441)" },
-  { key: "pink",    label: "Rosa",    value: "linear-gradient(135deg,#F6A6C1,#E94B8A)" },
-  { key: "violet",  label: "Violeta", value: "linear-gradient(135deg,#C4B5FD,#5B3FCF)" },
-  { key: "sunset",  label: "Pôr do sol", value: "linear-gradient(135deg,#FDBA74,#F26B3A)" },
+  { key: "pink",    label: "Rosa",    value: "linear-gradient(135deg,#F6A6C1,#FD0867)" },
+  { key: "violet",  label: "Violeta", value: "linear-gradient(135deg,#C4B5FD,#9231EA)" },
+  { key: "sunset",  label: "Pôr do sol", value: "linear-gradient(135deg,#FDBA74,#FDA50E)" },
   { key: "mint",    label: "Menta",   value: "linear-gradient(135deg,#A7F3D0,#1FAFA6)" },
   { key: "ink",     label: "Tinta",   value: "#1A1A2E" },
 ];
@@ -1138,11 +1138,11 @@ type StudioCard = {
 
 const STUDIO_CARDS: StudioCard[] = [
   { id: "birthday",     label: "Aniversário",   emoji: "🎂", bg: "linear-gradient(135deg,#FF6FA5 0%,#7C3AED 100%)", defaultTextColor: "#FFFFFF", accent: "🎉" },
-  { id: "invite",       label: "Convite",       emoji: "🎟️", bg: "linear-gradient(135deg,#1F2937 0%,#5B3FCF 100%)", defaultTextColor: "#F5D67A", accent: "✨" },
-  { id: "love",         label: "Amor",          emoji: "❤️", bg: "linear-gradient(135deg,#F6416C 0%,#E94B8A 60%,#7C3AED 100%)", defaultTextColor: "#FFFFFF", accent: "💗" },
+  { id: "invite",       label: "Convite",       emoji: "🎟️", bg: "linear-gradient(135deg,#1F2937 0%,#9231EA 100%)", defaultTextColor: "#F5D67A", accent: "✨" },
+  { id: "love",         label: "Amor",          emoji: "❤️", bg: "linear-gradient(135deg,#F6416C 0%,#FD0867 60%,#7C3AED 100%)", defaultTextColor: "#FFFFFF", accent: "💗" },
   { id: "thanks",       label: "Agradecimento", emoji: "🙏", bg: "linear-gradient(135deg,#1FAFA6 0%,#0EA5A0 60%,#134E4A 100%)", defaultTextColor: "#FFFFFF", accent: "✦" },
-  { id: "event",        label: "Evento",        emoji: "📅", bg: "linear-gradient(135deg,#2563EB 0%,#5B3FCF 100%)", defaultTextColor: "#FFFFFF", accent: "🗓️" },
-  { id: "announcement", label: "Anúncio",       emoji: "📣", bg: "linear-gradient(135deg,#F26B3A 0%,#E94B8A 100%)", defaultTextColor: "#FFFFFF", accent: "★" },
+  { id: "event",        label: "Evento",        emoji: "📅", bg: "linear-gradient(135deg,#2563EB 0%,#9231EA 100%)", defaultTextColor: "#FFFFFF", accent: "🗓️" },
+  { id: "announcement", label: "Anúncio",       emoji: "📣", bg: "linear-gradient(135deg,#FDA50E 0%,#FD0867 100%)", defaultTextColor: "#FFFFFF", accent: "★" },
 ];
 
 function studioFontFamily(key?: StudioFontKey): string {
@@ -1287,8 +1287,8 @@ function AudioMsg({ url, isMe, knownDur }: { url: string; isMe: boolean; knownDu
 
   // cores WhatsApp-style
   const bg          = isMe ? "#005C4B" : "#ffffff";
-  const playBg      = isMe ? "rgba(255,255,255,0.2)" : "#5B3FCF";
-  const barFilled   = isMe ? "#5B3FCF" : "#5B3FCF";
+  const playBg      = isMe ? "rgba(255,255,255,0.2)" : "#9231EA";
+  const barFilled   = isMe ? "#9231EA" : "#9231EA";
   const barEmpty    = isMe ? "rgba(255,255,255,0.25)" : "#CBCBCB";
   const textColor   = isMe ? "rgba(255,255,255,0.75)" : "#8696A0";
   const speedBg     = isMe ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.06)";
@@ -1564,7 +1564,7 @@ function MessageStudioModal({ onClose, onSend }: {
         <button disabled={!canSend}
           onClick={() => canSend && onSend(text.trim(), { font, textColor: effectiveTextColor, card })}
           className="w-full py-3 rounded-2xl font-bold text-white transition active:scale-[0.99] disabled:opacity-40"
-          style={{ background: "linear-gradient(135deg,#8B5CF6,#5B3FCF)" }}>
+          style={{ background: "linear-gradient(135deg,#8B5CF6,#9231EA)" }}>
           ✨ Enviar Mensagem
         </button>
       </div>
@@ -1618,9 +1618,9 @@ function SurpriseComposerModal({ onClose, onSend }: {
               onClick={() => { setType(o.key); setFile(null); setPreview(null); }}
               className="flex flex-col items-center gap-1.5 py-3 rounded-2xl border transition"
               style={{
-                borderColor: type === o.key ? "#F26B3A" : "var(--border-default)",
-                background: type === o.key ? "#F26B3A15" : "var(--s2)",
-                color: type === o.key ? "#F26B3A" : "var(--text-secondary)",
+                borderColor: type === o.key ? "#FDA50E" : "var(--border-default)",
+                background: type === o.key ? "#FDA50E15" : "var(--s2)",
+                color: type === o.key ? "#FDA50E" : "var(--text-secondary)",
               }}>
               {o.icon}
               <span className="text-xs font-semibold">{o.label}</span>
@@ -1669,7 +1669,7 @@ function SurpriseComposerModal({ onClose, onSend }: {
         <button disabled={!canSend}
           onClick={() => canSend && onSend({ type, text, file: file ?? undefined, teaser: teaser.trim() || "🎁 Tenho uma surpresa para ti" })}
           className="w-full py-3 rounded-2xl font-bold text-white transition active:scale-[0.99] disabled:opacity-40"
-          style={{ background: "linear-gradient(135deg,#F26B3A,#E94B8A)" }}>
+          style={{ background: "linear-gradient(135deg,#FDA50E,#FD0867)" }}>
           🎁 Enviar Surpresa
         </button>
       </div>
@@ -1798,7 +1798,7 @@ function ChatMediaSendPreview({ item, onCancel, onSend, sending }: {
           </button>
           <button onClick={() => !sending && onSend(caption, edit)} disabled={sending}
             className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 transition-all active:scale-90 disabled:opacity-50"
-            style={{ background: "#5B3FCF" }}>
+            style={{ background: "#9231EA" }}>
             {sending
               ? <Loader className="h-5 w-5 animate-spin text-white" />
               : <Send className="h-5 w-5 text-white" style={{ marginLeft: 2 }} />}
@@ -2000,7 +2000,7 @@ function ChatMediaLightbox({ items, index, onIndexChange, onClose, onReact, cont
               className="relative shrink-0 rounded-lg overflow-hidden transition-all"
               style={{
                 width: 56, height: 56,
-                outline: i === index ? "2px solid #5B3FCF" : "2px solid transparent",
+                outline: i === index ? "2px solid #9231EA" : "2px solid transparent",
                 outlineOffset: 2,
                 opacity: i === index ? 1 : 0.6,
               }}>
@@ -2025,7 +2025,7 @@ function ChatMediaLightbox({ items, index, onIndexChange, onClose, onReact, cont
 
 // ── Opções de fundo do chat ──
 const BG_OPTIONS = [
-  { id: "default",   label: "Padrão",      bg: "#f0ece8", style: { backgroundImage: "radial-gradient(circle, rgba(91,63,207,0.06) 1px, transparent 1px)", backgroundSize: "22px 22px" } },
+  { id: "default",   label: "Padrão",      bg: "#f0ece8", style: { backgroundImage: "radial-gradient(circle, rgba(146,49,234,0.06) 1px, transparent 1px)", backgroundSize: "22px 22px" } },
   { id: "white",     label: "Branco",      bg: "#ffffff", style: {} },
   { id: "dark",      label: "Escuro",      bg: "#1a1a2e", style: {} },
   { id: "purple",    label: "Púrpura",     bg: "linear-gradient(160deg,#2d1b69 0%,#11041f 100%)", style: {} },
@@ -2033,9 +2033,9 @@ const BG_OPTIONS = [
   { id: "rose",      label: "Rosa",        bg: "linear-gradient(160deg,#fce4ec 0%,#f8bbd0 100%)", style: {} },
   { id: "mint",      label: "Menta",       bg: "linear-gradient(160deg,#e0f7fa 0%,#b2ebf2 100%)", style: {} },
   { id: "sunset",    label: "Pôr do sol",  bg: "linear-gradient(160deg,#fff3e0 0%,#ffe0b2 100%)", style: {} },
-  { id: "dots",      label: "Pontos",      bg: "#f5f0ff", style: { backgroundImage: "radial-gradient(circle, rgba(91,63,207,0.15) 1.5px, transparent 1.5px)", backgroundSize: "18px 18px" } },
-  { id: "lines",     label: "Linhas",      bg: "#f0f4ff", style: { backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 22px, rgba(91,63,207,0.08) 22px, rgba(91,63,207,0.08) 23px)" } },
-  { id: "grid",      label: "Grelha",      bg: "#f8f8f8", style: { backgroundImage: "linear-gradient(rgba(91,63,207,0.07) 1px,transparent 1px),linear-gradient(90deg,rgba(91,63,207,0.07) 1px,transparent 1px)", backgroundSize: "20px 20px" } },
+  { id: "dots",      label: "Pontos",      bg: "#f5f0ff", style: { backgroundImage: "radial-gradient(circle, rgba(146,49,234,0.15) 1.5px, transparent 1.5px)", backgroundSize: "18px 18px" } },
+  { id: "lines",     label: "Linhas",      bg: "#f0f4ff", style: { backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 22px, rgba(146,49,234,0.08) 22px, rgba(146,49,234,0.08) 23px)" } },
+  { id: "grid",      label: "Grelha",      bg: "#f8f8f8", style: { backgroundImage: "linear-gradient(rgba(146,49,234,0.07) 1px,transparent 1px),linear-gradient(90deg,rgba(146,49,234,0.07) 1px,transparent 1px)", backgroundSize: "20px 20px" } },
   { id: "waves",     label: "Ondas",       bg: "linear-gradient(160deg,#667eea 0%,#764ba2 100%)", style: {} },
 ] as const;
 
@@ -2070,8 +2070,8 @@ function ReactionBar({ reactions, myReaction, onReact }: {
         <button key={emoji} onClick={() => onReact(emoji)}
           className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[12px] transition active:scale-90"
           style={{
-            background: myReaction===emoji ? "#5B3FCF20" : "var(--s3)",
-            border: myReaction===emoji ? "1px solid #5B3FCF50" : "1px solid var(--border-subtle)",
+            background: myReaction===emoji ? "#9231EA20" : "var(--s3)",
+            border: myReaction===emoji ? "1px solid #9231EA50" : "1px solid var(--border-subtle)",
           }}>
           {emoji} <span style={{ fontSize:10, color:"var(--text-secondary)" }}>{count}</span>
         </button>
@@ -2105,7 +2105,7 @@ function ScrollToBottomBtn({ show, onClick }: { show: boolean; onClick: () => vo
     <button onClick={onClick}
       className="flex items-center justify-center w-10 h-10 rounded-full shadow-lg transition-all active:scale-90"
       style={{
-        background: "#5B3FCF",
+        background: "#9231EA",
         opacity: show ? 1 : 0,
         pointerEvents: show ? "all" : "none",
         transform: show ? "scale(1) translateY(0)" : "scale(0.8) translateY(8px)",
@@ -2169,7 +2169,7 @@ function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit
   }, [showMenu]);
 
   const studioCard = m.style?.card ? (STUDIO_CARDS.find(c => c.id === m.style!.card) ?? null) : null;
-  const bubbleBg   = studioCard ? studioCard.bg : (isMe ? "linear-gradient(135deg,#5B3FCF 0%,#7B5CE8 100%)" : "var(--s1)");
+  const bubbleBg   = studioCard ? studioCard.bg : (isMe ? "linear-gradient(135deg,#9231EA 0%,#7B5CE8 100%)" : "var(--s1)");
   const bubbleText = studioCard ? studioCard.defaultTextColor : (isMe ? "white" : "var(--text-primary)");
   const br         = isMe ? "18px 18px 4px 18px" : "18px 18px 18px 4px";
 
@@ -2210,7 +2210,7 @@ function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit
     return (
       <div className={`flex ${isMe ? "justify-end" : "justify-start"} px-1`}>
         <div className="flex items-center gap-1.5 px-3 py-2 rounded-2xl text-xs italic"
-          style={{ background: isMe ? "#5B3FCF22" : "var(--s2)", color: "var(--text-muted)" }}>
+          style={{ background: isMe ? "#9231EA22" : "var(--s2)", color: "var(--text-muted)" }}>
           <EyeOff className="h-3.5 w-3.5" />
           <span>{isMe ? "Enviado" : "Visionado"} · ver uma vez</span>
         </div>
@@ -2303,7 +2303,7 @@ function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit
         className="w-full flex items-center gap-2.5 px-4 py-3.5 text-sm transition active:opacity-70"
         onMouseOver={e => e.currentTarget.style.background = "var(--s2)"}
         onMouseOut={e => e.currentTarget.style.background = "transparent"}>
-        <Reply className="h-4 w-4" style={{ color: "#5B3FCF" }} />
+        <Reply className="h-4 w-4" style={{ color: "#9231EA" }} />
         <span style={{ color: "var(--text-primary)" }}>Responder</span>
       </button>
 
@@ -2326,7 +2326,7 @@ function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit
           style={{ borderColor: "var(--border-subtle)" }}
           onMouseOver={e => e.currentTarget.style.background = "var(--s2)"}
           onMouseOut={e => e.currentTarget.style.background = "transparent"}>
-          <Forward className="h-4 w-4" style={{ color: "#F26B3A" }} />
+          <Forward className="h-4 w-4" style={{ color: "#FDA50E" }} />
           <span style={{ color: "var(--text-primary)" }}>Encaminhar</span>
         </button>
       )}
@@ -2338,7 +2338,7 @@ function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit
           style={{ borderColor: "var(--border-subtle)" }}
           onMouseOver={e => e.currentTarget.style.background = "var(--s2)"}
           onMouseOut={e => e.currentTarget.style.background = "transparent"}>
-          <Pencil className="h-4 w-4" style={{ color: "#5B3FCF" }} />
+          <Pencil className="h-4 w-4" style={{ color: "#9231EA" }} />
           <span style={{ color: "var(--text-primary)" }}>Editar</span>
         </button>
       )}
@@ -2456,8 +2456,8 @@ function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit
           {replied && (
             <div className="px-3 pt-2 pb-0">
               <div className="px-2 py-1 rounded-lg text-xs"
-                style={{ background: isMe ? "rgba(255,255,255,0.2)" : "var(--s3)", borderLeft: "3px solid " + (isMe ? "white" : "#5B3FCF") }}>
-                <p className="font-bold mb-0.5" style={{ color: isMe ? "rgba(255,255,255,0.9)" : "#5B3FCF" }}>
+                style={{ background: isMe ? "rgba(255,255,255,0.2)" : "var(--s3)", borderLeft: "3px solid " + (isMe ? "white" : "#9231EA") }}>
+                <p className="font-bold mb-0.5" style={{ color: isMe ? "rgba(255,255,255,0.9)" : "#9231EA" }}>
                   {replied.senderId === myId ? "Tu" : contact.username}
                 </p>
                 <p className="truncate" style={{ color: isMe ? "rgba(255,255,255,0.75)" : "var(--text-secondary)" }}>
@@ -2480,7 +2480,7 @@ function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit
                 }}
                 className="relative flex flex-col items-center justify-center gap-2 w-full py-6 px-4 rounded-2xl overflow-hidden transition active:scale-[0.97]"
                 style={{
-                  background: "linear-gradient(135deg,#F26B3A,#E94B8A)",
+                  background: "linear-gradient(135deg,#FDA50E,#FD0867)",
                   minWidth: 200,
                 }}>
                 <span
@@ -2516,7 +2516,7 @@ function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit
             <>
             {m.isSurprise && m.surpriseOpened && (
               <div className="flex items-center gap-1 mb-1.5 text-[11px] font-semibold"
-                style={{ color: isMe ? "rgba(255,255,255,0.85)" : "#F26B3A" }}>
+                style={{ color: isMe ? "rgba(255,255,255,0.85)" : "#FDA50E" }}>
                 🎁 Caixa Surpresa
               </div>
             )}
@@ -2527,7 +2527,7 @@ function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit
             {m.viewOnce && !m.viewOnceOpened && (m.type === "image" || m.type === "video") && (
               <button onClick={onOpenViewOnce}
                 className="flex items-center gap-2 px-3 py-2 rounded-xl transition active:scale-95"
-                style={{ background: isMe ? "rgba(255,255,255,0.15)" : "#5B3FCF15", color: isMe ? "white" : "#5B3FCF" }}>
+                style={{ background: isMe ? "rgba(255,255,255,0.15)" : "#9231EA15", color: isMe ? "white" : "#9231EA" }}>
                 <Eye className="h-5 w-5" />
                 <span className="text-sm font-semibold">{m.type === "video" ? "Vídeo" : "Foto"} · Ver uma vez</span>
               </button>
@@ -2569,7 +2569,7 @@ function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit
               <button type="button" onClick={() => downloadChatFile(m.mediaUrl!, m.text)}
                 className="flex items-center gap-2 py-1 w-full text-left">
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-                  style={{ background: isMe ? "rgba(255,255,255,0.2)" : "#5B3FCF" }}>
+                  style={{ background: isMe ? "rgba(255,255,255,0.2)" : "#9231EA" }}>
                   <FileText className="h-4 w-4 text-white" />
                 </div>
                 <span className="text-sm font-medium truncate max-w-[140px]">{m.text}</span>
@@ -2715,13 +2715,13 @@ function BgPickerModal({ current, onPick, onClose }: {
                 style={{
                   background: opt.bg,
                   ...opt.style,
-                  outline: current === opt.id ? "3px solid #5B3FCF" : "2px solid transparent",
+                  outline: current === opt.id ? "3px solid #9231EA" : "2px solid transparent",
                   outlineOffset: 2,
-                  boxShadow: current === opt.id ? "0 0 0 4px #5B3FCF22" : undefined,
+                  boxShadow: current === opt.id ? "0 0 0 4px #9231EA22" : undefined,
                 }}
               />
               <span className="text-[10px] font-semibold text-center leading-tight"
-                style={{ color: current === opt.id ? "#5B3FCF" : "var(--text-muted,#888)" }}>
+                style={{ color: current === opt.id ? "#9231EA" : "var(--text-muted,#888)" }}>
                 {opt.label}
               </span>
             </button>
@@ -2813,7 +2813,7 @@ function ForwardModal({ message, contacts, sending, onClose, onConfirm }: {
           return (
             <button key={c.id} onClick={() => toggle(c.id)}
               className="w-full flex items-center gap-3 px-3 py-2 rounded-xl transition active:scale-[0.99]"
-              style={{ background: isSelected ? "#5B3FCF15" : "transparent" }}>
+              style={{ background: isSelected ? "#9231EA15" : "transparent" }}>
               <Av name={c.full_name || c.username} color={c.color} size={isMobile ? 34 : 38} src={c.avatar_url} />
               <div className="flex-1 min-w-0 text-left">
                 <p className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>{c.full_name || c.username}</p>
@@ -2821,7 +2821,7 @@ function ForwardModal({ message, contacts, sending, onClose, onConfirm }: {
               </div>
               <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
                 style={{
-                  background: isSelected ? "#5B3FCF" : "transparent",
+                  background: isSelected ? "#9231EA" : "transparent",
                   border: isSelected ? "none" : "2px solid var(--border-default)",
                 }}>
                 {isSelected && <Check className="h-3.5 w-3.5 text-white" />}
@@ -2842,7 +2842,7 @@ function ForwardModal({ message, contacts, sending, onClose, onConfirm }: {
           disabled={selected.size === 0 || sending}
           onClick={() => onConfirm(contacts.filter(c => selected.has(c.id)))}
           className={`flex-1 ${isMobile ? "py-3" : "py-4"} text-sm font-bold transition disabled:opacity-40`}
-          style={{ color: "#5B3FCF" }}>
+          style={{ color: "#9231EA" }}>
           {sending ? "A enviar..." : `Enviar${selected.size ? ` (${selected.size})` : ""}`}
         </button>
       </div>
@@ -4246,7 +4246,7 @@ function ChatPanel({ myId, contact, onBack, contacts }: {
 
       {/* ── HEADER estilo WhatsApp com cores hooda ── */}
       <div className="flex items-center gap-3 px-3 py-2.5 shrink-0 z-10"
-        style={{ background: "linear-gradient(135deg,#5B3FCF 0%,#7B5CE8 100%)", boxShadow: "0 2px 12px rgba(91,63,207,0.3)" }}>
+        style={{ background: "linear-gradient(135deg,#9231EA 0%,#7B5CE8 100%)", boxShadow: "0 2px 12px rgba(146,49,234,0.3)" }}>
         <button onClick={onBack} className="lg:hidden p-1.5 rounded-full transition active:scale-90"
           style={{ background: "rgba(255,255,255,0.15)" }}>
           <ChevronLeft className="h-5 w-5 text-white" />
@@ -4306,13 +4306,13 @@ function ChatPanel({ myId, contact, onBack, contacts }: {
               <button onClick={e => { e.stopPropagation(); toggleReadReceipts(); }}
                 className="w-full flex items-center justify-between px-4 py-3 hover:bg-[var(--s2)] transition text-left">
                 <div className="flex items-center gap-3">
-                  <CheckCheck className="h-4 w-4" style={{ color: readReceipts ? "#5B3FCF" : "var(--text-muted)" }} />
+                  <CheckCheck className="h-4 w-4" style={{ color: readReceipts ? "#9231EA" : "var(--text-muted)" }} />
                   <div>
                     <p className="text-sm font-medium" style={{ color:"var(--text-primary)" }}>Confirmações de leitura</p>
                     <p className="text-[11px]" style={{ color:"var(--text-muted)" }}>Ticks azuis quando lido</p>
                   </div>
                 </div>
-                <div className={`w-10 h-5 rounded-full transition-colors relative shrink-0 ${readReceipts ? "bg-[#5B3FCF]" : "bg-neutral-400"}`}>
+                <div className={`w-10 h-5 rounded-full transition-colors relative shrink-0 ${readReceipts ? "bg-[#9231EA]" : "bg-neutral-400"}`}>
                   <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-[var(--s2)] shadow transition-transform ${readReceipts ? "translate-x-5" : "translate-x-0.5"}`} />
                 </div>
               </button>
@@ -4321,13 +4321,13 @@ function ChatPanel({ myId, contact, onBack, contacts }: {
                 className="w-full flex items-center justify-between px-4 py-3 hover:bg-[var(--s2)] transition text-left border-t"
                 style={{ borderColor:"var(--border-default)" }}>
                 <div className="flex items-center gap-3">
-                  <Eye className="h-4 w-4" style={{ color: showLastSeen ? "#5B3FCF" : "var(--text-muted)" }} />
+                  <Eye className="h-4 w-4" style={{ color: showLastSeen ? "#9231EA" : "var(--text-muted)" }} />
                   <div>
                     <p className="text-sm font-medium" style={{ color:"var(--text-primary)" }}>Última vez ativo</p>
                     <p className="text-[11px]" style={{ color:"var(--text-muted)" }}>Mostrar quando estiveste online</p>
                   </div>
                 </div>
-                <div className={`w-10 h-5 rounded-full transition-colors relative shrink-0 ${showLastSeen ? "bg-[#5B3FCF]" : "bg-neutral-400"}`}>
+                <div className={`w-10 h-5 rounded-full transition-colors relative shrink-0 ${showLastSeen ? "bg-[#9231EA]" : "bg-neutral-400"}`}>
                   <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-[var(--s2)] shadow transition-transform ${showLastSeen ? "translate-x-5" : "translate-x-0.5"}`} />
                 </div>
               </button>
@@ -4336,13 +4336,13 @@ function ChatPanel({ myId, contact, onBack, contacts }: {
                 className="w-full flex items-center justify-between px-4 py-3 hover:bg-[var(--s2)] transition text-left border-t"
                 style={{ borderColor:"var(--border-default)" }}>
                 <div className="flex items-center gap-3">
-                  <Bell className="h-4 w-4" style={{ color: mutedConv ? "var(--text-muted)" : "#5B3FCF" }} />
+                  <Bell className="h-4 w-4" style={{ color: mutedConv ? "var(--text-muted)" : "#9231EA" }} />
                   <div>
                     <p className="text-sm font-medium" style={{ color:"var(--text-primary)" }}>{mutedConv ? "Ativar notificações" : "Silenciar conversa"}</p>
                     <p className="text-[11px]" style={{ color:"var(--text-muted)" }}>Notificações desta conversa</p>
                   </div>
                 </div>
-                <div className={`w-10 h-5 rounded-full transition-colors relative shrink-0 ${mutedConv ? "bg-neutral-400" : "bg-[#5B3FCF]"}`}>
+                <div className={`w-10 h-5 rounded-full transition-colors relative shrink-0 ${mutedConv ? "bg-neutral-400" : "bg-[#9231EA]"}`}>
                   <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-[var(--s2)] shadow transition-transform ${mutedConv ? "translate-x-5" : "translate-x-0.5"}`} />
                 </div>
               </button>
@@ -4423,7 +4423,7 @@ function ChatPanel({ myId, contact, onBack, contacts }: {
             return (
               <div key={merged.id} className={`flex ${isMe ? "justify-end" : "justify-start"} px-1`}>
                 <div className="flex items-center gap-1.5 px-3 py-2 rounded-2xl text-xs italic"
-                  style={{ background: isMe ? "#5B3FCF15" : "var(--s2)", color: "var(--text-muted)" }}>
+                  style={{ background: isMe ? "#9231EA15" : "var(--s2)", color: "var(--text-muted)" }}>
                   <Trash2 className="h-3.5 w-3.5" />
                   <span>Esta mensagem foi eliminada</span>
                 </div>
@@ -4458,7 +4458,7 @@ function ChatPanel({ myId, contact, onBack, contacts }: {
                       ? <img loading="lazy" decoding="async" src={optimizeAvatar(contact.avatar_url, 16)} alt="" className="w-full h-full object-cover" />
                       : (
                         <div className="w-full h-full flex items-center justify-center text-[8px] font-bold text-white"
-                          style={{ background: contact.color || "#5B3FCF" }}>
+                          style={{ background: contact.color || "#9231EA" }}>
                           {(contact.full_name || contact.username || "?")[0]?.toUpperCase()}
                         </div>
                       )}
@@ -4477,7 +4477,7 @@ function ChatPanel({ myId, contact, onBack, contacts }: {
       {showScrollBtn && (
         <button onClick={() => { atBottom.current = true; setShowScrollBtn(false); bottomRef.current?.scrollIntoView({ behavior:"smooth" }); }}
           className="absolute bottom-24 right-4 w-10 h-10 rounded-full flex items-center justify-center shadow-lg z-10 transition active:scale-90"
-          style={{ background:"linear-gradient(135deg,#5B3FCF,#7B5CE8)", color:"white", position:"sticky" }}>
+          style={{ background:"linear-gradient(135deg,#9231EA,#7B5CE8)", color:"white", position:"sticky" }}>
           <ChevronDown className="h-5 w-5" />
         </button>
       )}
@@ -4485,14 +4485,14 @@ function ChatPanel({ myId, contact, onBack, contacts }: {
       {/* ── EDIT BAR ── */}
       {editingMsgId && (
         <div className="flex items-center gap-2 px-3 py-2 shrink-0 border-t"
-          style={{ background:"var(--s2)", borderColor:"#5B3FCF44" }}>
-          <Pencil className="h-4 w-4 shrink-0" style={{ color:"#5B3FCF" }} />
+          style={{ background:"var(--s2)", borderColor:"#9231EA44" }}>
+          <Pencil className="h-4 w-4 shrink-0" style={{ color:"#9231EA" }} />
           <input autoFocus value={editingText} onChange={e => setEditingText(e.target.value)}
             onKeyDown={e => { if (e.key==="Enter") confirmEdit(); if (e.key==="Escape") setEditingMsgId(null); }}
             className="flex-1 text-sm outline-none bg-transparent" style={{ color:"var(--text-primary)" }} />
           <button onClick={confirmEdit}
             className="px-3 py-1 rounded-xl text-xs font-bold text-white"
-            style={{ background:"linear-gradient(135deg,#5B3FCF,#7B5CE8)" }}>Guardar</button>
+            style={{ background:"linear-gradient(135deg,#9231EA,#7B5CE8)" }}>Guardar</button>
           <button onClick={() => setEditingMsgId(null)}><X className="h-4 w-4 text-[var(--text-muted)]" /></button>
         </div>
       )}
@@ -4532,11 +4532,11 @@ function ChatPanel({ myId, contact, onBack, contacts }: {
         <div className="px-3 py-4 grid grid-cols-6 gap-2 shrink-0 border-t"
           style={{ background:"var(--s2)", borderColor:"var(--border-default)" }}>
           {[
-            { icon: <ImageIcon className="h-5 w-5 text-white"/>, label:"Galeria", color:"#E94B8A", action:() => imgInputRef.current?.click() },
+            { icon: <ImageIcon className="h-5 w-5 text-white"/>, label:"Galeria", color:"#FD0867", action:() => imgInputRef.current?.click() },
             { icon: <VideoIcon className="h-5 w-5 text-white"/>, label:"Vídeo",   color:"#1FAFA6", action:() => videoInputRef.current?.click() },
-            { icon: <FileText  className="h-5 w-5 text-white"/>, label:"Ficheiro",color:"#5B3FCF", action:() => fileInputRef.current?.click() },
+            { icon: <FileText  className="h-5 w-5 text-white"/>, label:"Ficheiro",color:"#9231EA", action:() => fileInputRef.current?.click() },
             { icon: <Eye       className="h-5 w-5 text-white"/>, label:"Ver 1x",  color:"#7C3AED", action:() => (document.getElementById("viewonce-input-dm") as HTMLInputElement)?.click() },
-            { icon: <span className="text-lg leading-none">🎁</span>, label:"Surpresa", color:"#F26B3A", action:() => { setShowAttach(false); setShowSurpriseComposer(true); } },
+            { icon: <span className="text-lg leading-none">🎁</span>, label:"Surpresa", color:"#FDA50E", action:() => { setShowAttach(false); setShowSurpriseComposer(true); } },
             { icon: <span className="text-lg leading-none">✨</span>, label:"Studio",   color:"#8B5CF6", action:() => { setShowAttach(false); setShowMessageStudio(true); } },
           ].map(a => (
             <button key={a.label} onClick={a.action}
@@ -4624,7 +4624,7 @@ function ChatPanel({ myId, contact, onBack, contacts }: {
                       <div key={i} className="flex-1 rounded-full transition-colors duration-75"
                         style={{
                           height:`${h}%`,
-                          background: !inTrim ? "rgba(255,255,255,0.12)" : played ? "#5B3FCF" : "rgba(255,255,255,0.28)",
+                          background: !inTrim ? "rgba(255,255,255,0.12)" : played ? "#9231EA" : "rgba(255,255,255,0.28)",
                         }} />
                     );
                   })}
@@ -4642,24 +4642,24 @@ function ChatPanel({ myId, contact, onBack, contacts }: {
             {/* Enviar */}
             <button onClick={sendAudioPreview}
               className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition active:scale-90"
-              style={{ background:"#5B3FCF", color:"white", boxShadow:"0 2px 8px #5B3FCF55" }}>
+              style={{ background:"#9231EA", color:"white", boxShadow:"0 2px 8px #9231EA55" }}>
               <Send className="h-5 w-5" style={{ marginLeft:1 }} />
             </button>
           </div>
           {/* Linha de corte — compacta, abaixo da bolha */}
           <div className="flex items-center gap-2 mt-2.5 px-1">
-            <span className="text-[9px] shrink-0" style={{ color:"#5B3FCF", minWidth:28, textAlign:"right" }}>
+            <span className="text-[9px] shrink-0" style={{ color:"#9231EA", minWidth:28, textAlign:"right" }}>
               ✂️ {fmtSecs(Math.round(audioPreview.dur * trimStart / 100))}
             </span>
             <div className="flex-1 flex flex-col gap-1">
               <input type="range" min={0} max={trimEnd - 2} value={trimStart}
                 onChange={e => { const v = Number(e.target.value); setTrimStart(v); trimStartRef.current = v; if (previewAudioRef.current) previewAudioRef.current.currentTime = audioPreview.dur * v / 100; setPreviewPos(v); }}
-                className="w-full h-1 accent-[#5B3FCF]" style={{ cursor:"pointer" }} />
+                className="w-full h-1 accent-[#9231EA]" style={{ cursor:"pointer" }} />
               <input type="range" min={trimStart + 2} max={100} value={trimEnd}
                 onChange={e => { const v = Number(e.target.value); setTrimEnd(v); trimEndRef.current = v; }}
-                className="w-full h-1" style={{ cursor:"pointer", accentColor:"#E94B8A" }} />
+                className="w-full h-1" style={{ cursor:"pointer", accentColor:"#FD0867" }} />
             </div>
-            <span className="text-[9px] shrink-0" style={{ color:"#E94B8A", minWidth:28 }}>
+            <span className="text-[9px] shrink-0" style={{ color:"#FD0867", minWidth:28 }}>
               {fmtSecs(Math.round(audioPreview.dur * trimEnd / 100))} ✂️
             </span>
           </div>
@@ -4719,7 +4719,7 @@ function ChatPanel({ myId, contact, onBack, contacts }: {
             {[0,1,2].map(i => (
               <div key={i} className="w-1.5 h-1.5 rounded-full"
                 style={{
-                  background: "#5B3FCF",
+                  background: "#9231EA",
                   animation: `typing-bounce 1.2s ease-in-out ${i * 0.2}s infinite`,
                 }} />
             ))}
@@ -4799,8 +4799,8 @@ function ChatPanel({ myId, contact, onBack, contacts }: {
         <button onClick={() => { setShowAttach(v=>!v); setShowEmoji(false); }}
           className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition active:scale-90 mb-0.5"
           style={{
-            background: showAttach ? "linear-gradient(135deg,#5B3FCF,#E94B8A)" : "white",
-            color: showAttach ? "white" : "#5B3FCF",
+            background: showAttach ? "linear-gradient(135deg,#9231EA,#FD0867)" : "white",
+            color: showAttach ? "white" : "#9231EA",
             boxShadow: "0 1px 6px rgba(0,0,0,0.12)"
           }}>
           <Plus className="h-5 w-5" />
@@ -4827,7 +4827,7 @@ function ChatPanel({ myId, contact, onBack, contacts }: {
           </div>
           <button onClick={() => { setShowEmoji(v=>!v); setShowAttach(false); }}
             className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center transition active:scale-90 mb-0.5"
-            style={{ color: showEmoji ? "#5B3FCF" : "#aaa" }}>
+            style={{ color: showEmoji ? "#9231EA" : "#aaa" }}>
             <Smile className="h-5 w-5" />
           </button>
         </div>
@@ -4838,14 +4838,14 @@ function ChatPanel({ myId, contact, onBack, contacts }: {
           ? (
             <button onClick={() => send()} disabled={sending}
               className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 transition active:scale-90 mb-0.5"
-              style={{ background:`linear-gradient(135deg,#5B3FCF,#7B5CE8)`, color:"white", boxShadow:`0 4px 14px rgba(91,63,207,0.4)` }}>
+              style={{ background:`linear-gradient(135deg,#9231EA,#7B5CE8)`, color:"white", boxShadow:`0 4px 14px rgba(146,49,234,0.4)` }}>
               {sending ? <Loader className="h-4 w-4 animate-spin"/> : <Send className="h-4 w-4" style={{ marginLeft: 2 }} />}
             </button>
           ) : (
             <button
               onClick={() => { if (recording) stopRecording(); else startRecording(); }}
               className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 transition active:scale-90 mb-0.5"
-              style={{ background: recording ? "#EF4444" : "#5B3FCF", color:"white", boxShadow: recording ? "0 4px 14px #EF444455" : "0 4px 14px #5B3FCF55" }}>
+              style={{ background: recording ? "#EF4444" : "#9231EA", color:"white", boxShadow: recording ? "0 4px 14px #EF444455" : "0 4px 14px #9231EA55" }}>
               {recording ? <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="2" y="2" width="4" height="10" rx="1" fill="white"/><rect x="8" y="2" width="4" height="10" rx="1" fill="white"/></svg> : <Mic className="h-5 w-5" />}
             </button>
           )
@@ -5025,7 +5025,7 @@ function ContactList({ contacts, loading, refreshing, search, setSearch, active,
     <div className="flex flex-col h-full" style={{ background: "var(--surface-0,#fff)" }}>
       {/* Header estilo WhatsApp — fundo gradiente roxo hooda */}
       <div className="px-4 pt-5 pb-3 shrink-0"
-        style={{ background: "linear-gradient(135deg,#5B3FCF 0%,#7B5CE8 100%)" }}>
+        style={{ background: "linear-gradient(135deg,#9231EA 0%,#7B5CE8 100%)" }}>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <h1 className="text-xl font-extrabold text-white">Mensagens</h1>
@@ -5037,7 +5037,7 @@ function ContactList({ contacts, loading, refreshing, search, setSearch, active,
               <Bell className="h-5 w-5 text-white" />
               {pendingRequestCount > 0 && (
                 <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full text-[10px] font-bold text-white flex items-center justify-center"
-                  style={{ background: "#E94B8A" }}>
+                  style={{ background: "#FD0867" }}>
                   {pendingRequestCount > 9 ? "9+" : pendingRequestCount}
                 </span>
               )}
@@ -5090,7 +5090,7 @@ function ContactList({ contacts, loading, refreshing, search, setSearch, active,
             {!search && (
               <button onClick={() => setShowAddContact(true)}
                 className="mt-4 px-5 py-2.5 rounded-full text-sm font-bold text-white"
-                style={{ background: "linear-gradient(135deg,#5B3FCF,#E94B8A)" }}>
+                style={{ background: "linear-gradient(135deg,#9231EA,#FD0867)" }}>
                 Iniciar conversa
               </button>
             )}
@@ -5108,7 +5108,7 @@ function ContactList({ contacts, loading, refreshing, search, setSearch, active,
             className="w-full flex items-center gap-3 px-4 py-3.5 text-left transition-colors active:bg-[var(--s1)]"
             style={{
               borderBottom: "1px solid var(--border-subtle,#f0f0f0)",
-              background: active?.conversationId === c.conversationId ? "rgba(91,63,207,0.06)" : "transparent",
+              background: active?.conversationId === c.conversationId ? "rgba(146,49,234,0.06)" : "transparent",
             }}>
             {/* Avatar com anel roxo se activo */}
             <div className="relative shrink-0">
@@ -5116,7 +5116,7 @@ function ContactList({ contacts, loading, refreshing, search, setSearch, active,
                 style={{
                   padding: active?.conversationId === c.conversationId ? 2 : 0,
                   background: active?.conversationId === c.conversationId
-                    ? "linear-gradient(135deg,#5B3FCF,#E94B8A)" : "transparent",
+                    ? "linear-gradient(135deg,#9231EA,#FD0867)" : "transparent",
                 }}>
                 <div style={{ borderRadius: "50%", padding: active?.conversationId === c.conversationId ? 1.5 : 0, background: "var(--s2)" }}>
                   <Av name={c.username} color={c.color} size={46} src={c.avatar_url} />
@@ -5133,7 +5133,7 @@ function ContactList({ contacts, loading, refreshing, search, setSearch, active,
                   <span className="truncate">{c.full_name || c.username}</span>
                   {c.isOfficial && <VerifiedBadge />}
                 </p>
-                <p className="text-[11px] shrink-0" style={{ color: c.unread > 0 ? "#5B3FCF" : "var(--text-muted,#aaa)" }}>
+                <p className="text-[11px] shrink-0" style={{ color: c.unread > 0 ? "#9231EA" : "var(--text-muted,#aaa)" }}>
                   {c.lastTime}
                 </p>
               </div>
@@ -5146,7 +5146,7 @@ function ContactList({ contacts, loading, refreshing, search, setSearch, active,
                 </p>
                 {c.unread > 0 && (
                   <span className="min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-bold text-white flex items-center justify-center shrink-0"
-                    style={{ background: "linear-gradient(135deg,#5B3FCF,#E94B8A)" }}>
+                    style={{ background: "linear-gradient(135deg,#9231EA,#FD0867)" }}>
                     {c.unread > 9 ? "9+" : c.unread}
                   </span>
                 )}
@@ -5557,7 +5557,7 @@ function MensagensPage() {
         toast(
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-full overflow-hidden shrink-0 flex items-center justify-center text-white font-bold text-sm"
-              style={{ background: "#5B3FCF" }}>
+              style={{ background: "#9231EA" }}>
               {avatarUrl
                 ? <img loading="lazy" decoding="async" src={optimizeAvatar(avatarUrl, 36)} alt="" className="w-full h-full object-cover" />
                 : (name[0] ?? "?").toUpperCase()}
@@ -5645,7 +5645,7 @@ function MensagensPage() {
     return (
       <PageWrapper>
         <div className="flex items-center justify-center h-screen">
-          <Loader className="h-8 w-8 animate-spin" style={{ color: "#5B3FCF" }} />
+          <Loader className="h-8 w-8 animate-spin" style={{ color: "#9231EA" }} />
         </div>
       </PageWrapper>
     );

@@ -10,7 +10,7 @@ export const Route = createFileRoute("/post/$id")({
   component: SinglePostPage,
 });
 
-const ACCENT = "#5B3FCF";
+const ACCENT = "#9231EA";
 
 function SinglePostPage() {
   const { id } = useParams({ from: "/post/$id" });

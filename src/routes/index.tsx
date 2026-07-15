@@ -100,7 +100,7 @@ function LoginPage() {
               <div className="mb-8">
                 <h2 className="text-[30px] font-extrabold tracking-tight text-[var(--text-primary)]">Entrar</h2>
                 <p className="mt-1.5 text-[15px] text-[var(--text-muted)]">
-                  Bem-vindo de volta à <span className="font-bold text-[#5B3FCF]">hooda</span>.
+                  Bem-vindo de volta à <span className="font-bold text-[#9231EA]">hooda</span>.
                 </p>
               </div>
 
@@ -123,7 +123,7 @@ function LoginPage() {
                     <button
                       type="button"
                       onClick={() => { setShowForgot(true); setForgotEmail(email); }}
-                      className="text-[13px] font-semibold text-[#5B3FCF] hover:text-[#4a2db5] transition-colors mt-1"
+                      className="text-[13px] font-semibold text-[#9231EA] hover:text-[#4a2db5] transition-colors mt-1"
                     >
                       Esqueceu a senha?
                     </button>
@@ -155,7 +155,7 @@ function LoginPage() {
                 {/* Sign up link */}
                 <p className="text-center text-[14px] text-[var(--text-muted)] pt-1">
                   Ainda não tem uma conta?{" "}
-                  <Link to="/signup" className="font-bold text-[#5B3FCF] hover:text-[#4a2db5] transition-colors">
+                  <Link to="/signup" className="font-bold text-[#9231EA] hover:text-[#4a2db5] transition-colors">
                     Crie agora
                   </Link>
                 </p>
@@ -164,9 +164,9 @@ function LoginPage() {
               {/* Terms */}
               <p className="mt-8 text-center text-[12px] text-[var(--text-muted)] leading-relaxed">
                 Ao continuar, você concorda com os{" "}
-                <a href="/uso" target="_blank" rel="noopener noreferrer" className="text-[#5B3FCF] font-medium hover:underline">Termos</a>{" "}
+                <a href="/uso" target="_blank" rel="noopener noreferrer" className="text-[#9231EA] font-medium hover:underline">Termos</a>{" "}
                 e a{" "}
-                <a href="/privacidade" target="_blank" rel="noopener noreferrer" className="text-[#5B3FCF] font-medium hover:underline">Política de Privacidade</a>{" "}
+                <a href="/privacidade" target="_blank" rel="noopener noreferrer" className="text-[#9231EA] font-medium hover:underline">Política de Privacidade</a>{" "}
                 da hooda.
               </p>
             </>
@@ -183,7 +183,7 @@ function LoginPage() {
 
               <div className="mb-8">
                 <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-5"
-                  style={{ background: "#5B3FCF" }}>
+                  style={{ background: "#9231EA" }}>
                   <LockIcon />
                   <span className="sr-only">Cadeado</span>
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white absolute" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">

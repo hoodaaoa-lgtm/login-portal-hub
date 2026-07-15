@@ -46,7 +46,7 @@ function NavCountBadge({ count, compact = false }: { count: number; compact?: bo
     <span
       className="flex items-center justify-center rounded-full font-bold text-white shrink-0"
       style={{
-        background: "#E94B8A",
+        background: "#FD0867",
         minWidth: compact ? 16 : 18,
         height: compact ? 16 : 18,
         padding: compact ? "0 4px" : "0 5px",
@@ -105,7 +105,7 @@ export function SideNav() {
               className="text-[11px] font-black uppercase tracking-widest mb-[0.15em]"
               style={{
                 color: "#ffffff",
-                background: "linear-gradient(135deg,#E94B8A,#7F5AF0)",
+                background: "linear-gradient(135deg,#FD0867,#7F5AF0)",
                 borderRadius: "5px",
                 padding: "1px 5px 1px 4px",
                 lineHeight: 1,
@@ -158,7 +158,7 @@ export function SideNav() {
               }}>
               {isPerfil ? (
                 <div className="shrink-0 h-7 w-7 rounded-full overflow-hidden flex items-center justify-center text-[11px] font-extrabold text-white"
-                  style={{ background: avatarUrl ? "transparent" : "#5B3FCF" }}>
+                  style={{ background: avatarUrl ? "transparent" : "#9231EA" }}>
                   {avatarUrl
                     ? <img loading="lazy" decoding="async" src={optimizeAvatar(avatarUrl, 40)} alt={name} className="w-full h-full object-cover" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
                     : initial}
@@ -182,7 +182,7 @@ export function SideNav() {
           <button
             onClick={() => setShowComposer(true)}
             className="w-full h-[52px] rounded-full text-white font-extrabold text-[16px] flex items-center justify-center gap-2 transition active:scale-[0.98]"
-            style={{ background: "#5B3FCF", boxShadow: "0 6px 18px rgba(91,63,207,0.35)" }}>
+            style={{ background: "#9231EA", boxShadow: "0 6px 18px rgba(146,49,234,0.35)" }}>
             <Feather className="h-5 w-5" />
             <span>Publicar</span>
           </button>
@@ -205,7 +205,7 @@ export function SideNav() {
           onClick={() => setShowDrawer(true)}
           className="flex-1 min-w-0 flex items-center gap-3 px-3 py-2.5 rounded-full transition hover:bg-[color-mix(in_oklab,var(--text-primary)_6%,transparent)]">
           <div className="h-10 w-10 rounded-full overflow-hidden flex items-center justify-center text-white text-sm font-bold shrink-0"
-            style={{ background: avatarUrl ? "transparent" : "#5B3FCF" }}>
+            style={{ background: avatarUrl ? "transparent" : "#9231EA" }}>
             {avatarUrl
               ? <img loading="lazy" decoding="async" src={optimizeAvatar(avatarUrl, 40)} alt={name} className="w-full h-full object-cover" />
               : initial}
@@ -308,7 +308,7 @@ export function BottomNav() {
                             top: 2, right: 2,
                             minWidth: 15, height: 15, padding: "0 3px",
                             fontSize: 8.5, lineHeight: 1,
-                            background: "#E94B8A",
+                            background: "#FD0867",
                             boxShadow: "0 0 0 2px var(--surface-0)",
                           }}>
                           {badgeCount > 99 ? "99+" : badgeCount}
@@ -320,11 +320,11 @@ export function BottomNav() {
                 ) : (
                   <Link to={to as string} search={search}
                     className="flex flex-col items-center justify-center gap-1 h-full w-full min-w-0 px-0.5 transition-all duration-150 active:scale-90"
-                    style={{ color: active ? "#5B3FCF" : "var(--text-muted)" }}>
+                    style={{ color: active ? "#9231EA" : "var(--text-muted)" }}>
                     <div className="relative flex items-center justify-center"
                       style={{
                         width: 38, height: 28, borderRadius: 12,
-                        background: active ? "rgba(91,63,207,0.12)" : "transparent",
+                        background: active ? "rgba(146,49,234,0.12)" : "transparent",
                         transition: "background 0.2s",
                       }}>
                       <Icon className="h-[20px] w-[20px]" strokeWidth={active ? 2.5 : 1.8} />
@@ -334,7 +334,7 @@ export function BottomNav() {
                             top: 2, right: 2,
                             minWidth: 15, height: 15, padding: "0 3px",
                             fontSize: 8.5, lineHeight: 1,
-                            background: "#E94B8A",
+                            background: "#FD0867",
                             boxShadow: "0 0 0 2px var(--surface-0)",
                           }}>
                           {badgeCount > 99 ? "99+" : badgeCount}

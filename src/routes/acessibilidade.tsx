@@ -7,7 +7,7 @@ export const Route = createFileRoute("/acessibilidade")({
   component: AcessibilidadePage,
 });
 
-const P = "#5B3FCF";
+const P = "#9231EA";
 
 function Section({ icon: Icon, title, children }: { icon: LucideIcon; title: string; children: React.ReactNode }) {
   return (

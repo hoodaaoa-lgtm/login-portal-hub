@@ -47,7 +47,7 @@ export function useAdminPwaShell(enabled: boolean) {
 
     // ── 3) Meta theme-color / apple-mobile-web-app-title ──
     const themeMeta = head.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
-    const previousTheme = themeMeta?.getAttribute("content") ?? "#5B3FCF";
+    const previousTheme = themeMeta?.getAttribute("content") ?? "#9231EA";
     themeMeta?.setAttribute("content", "#1a162e");
 
     const appleTitleMeta = head.querySelector<HTMLMetaElement>('meta[name="apple-mobile-web-app-title"]');
