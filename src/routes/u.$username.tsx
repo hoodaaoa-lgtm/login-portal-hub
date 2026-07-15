@@ -9,11 +9,13 @@ import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { BottomNav, SideNav, PageWrapper, FeedLayout } from "@/components/AppShell";
 import { RightSidebar } from "@/components/RightSidebar";
 import { UniversalSkeleton } from "@/components/Skeletons";
+import { UniversalPostCard, normalizePost } from "@/components/UniversalPostCard";
 import {
   ChevronLeft, Flag, Share2, Ban,
   MoreHorizontal, X, MapPin,
   Link as LinkIcon, Calendar, MessageCircle,
-  Copy, Check, RefreshCw, AlignLeft, AtSign, User as UserIcon,
+  Copy, Check, RefreshCw, AlignLeft,
+  BookOpen, Archive,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -285,6 +287,26 @@ function UserProfilePage() {
   const coverUrl = profile?.cover_url||null;
   const color = colorFor(username);
 
+  /* ─ Abas: só Início e Arquivos ─ */
+  const [tab, setTab] = useState<"inicio"|"arquivos">("inicio");
+  const POST_SELECT_FIELDS = "id,author_id,author_username,author_name,author_color,content,kind,created_at,photo_url,photos,video_url,thumbnail_url,clip_video_id,clip_start,clip_end,clip_title,clip_thumb_url,views_count,reposts_count,poll,poll_ends_at,moderation_status,is_sensitive";
+
+  /* ─ Query 2: Publicações (aba Início) ─ */
+  const postsQuery = useQuery({
+    queryKey: ["userPagePosts", profileId],
+    queryFn: async () => {
+      const { data } = await (supabase as any).from("posts")
+        .select(POST_SELECT_FIELDS)
+        .eq("author_id", profileId)
+        .order("created_at", { ascending: false })
+        .limit(30);
+      return data ?? [];
+    },
+    enabled: !!profileId && tab === "inicio",
+    staleTime: 60_000,
+  });
+  const posts = postsQuery.data ?? [];
+
   /* ─ Bloqueio: mesma tabela/lógica usada em mensagens.tsx ─ */
   useEffect(()=>{
     if (!myId||!profileId) { setIsBlocked(false); return; }
@@ -499,26 +521,63 @@ function UserProfilePage() {
             </div>
           </div>
 
-          {/* ── Separador ── */}
-          <div className="border-t mx-4 mb-2" style={{borderColor:"var(--border-subtle)"}}/>
-
-          {/* ── Sobre ── */}
-          <div className="px-4 pb-4">
-            <div className="flex flex-col gap-2">
-              {[
-                { icon: UserIcon, label:"Nome", value: name, accent:false },
-                { icon: AtSign, label:"Username", value: `@${profile.username}`, accent:true },
-                { icon: MapPin, label:"Localização", value: profile.location || "—", accent:false },
-                { icon: LinkIcon, label:"Website", value: profile.website ? profile.website.replace(/^https?:\/\//,"") : "—", accent:false },
-              ].map((row)=>(
-                <div key={row.label} className="flex items-center gap-2.5 px-3.5 py-3 rounded-xl" style={{background:"var(--s2)"}}>
-                  <row.icon className="h-4 w-4 shrink-0" style={{color:"var(--text-muted)"}} />
-                  <span className="text-xs flex-1" style={{color:"var(--text-muted)"}}>{row.label}</span>
-                  <span className="text-sm font-semibold text-right max-w-[55%] truncate" style={{color: row.accent ? P : "var(--text-primary)"}}>{row.value}</span>
-                </div>
-              ))}
-            </div>
+          {/* ── Abas: Início e Arquivos ── */}
+          <div className="px-1 flex border-b" style={{borderColor:"var(--border-subtle)"}}>
+            {[
+              { key:"inicio" as const, label:"Início" },
+              { key:"arquivos" as const, label:"Arquivos" },
+            ].map((tItem)=>(
+              <button key={tItem.key}
+                onClick={()=>setTab(tItem.key)}
+                className="flex-1 min-w-0 relative py-4 px-1 text-[13px] sm:text-[14px] font-bold transition-colors hover:bg-[var(--s2)] truncate"
+                style={{color: tab===tItem.key ? "var(--text-primary)" : "var(--text-muted)"}}>
+                <span className="truncate">{tItem.label}</span>
+                {tab===tItem.key && (
+                  <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[3px] w-14 rounded-full" style={{background:P}} />
+                )}
+              </button>
+            ))}
           </div>
+
+          {/* ── Conteúdo da aba Início ── */}
+          {tab==="inicio" && (
+            postsQuery.isLoading ? (
+              <div className="px-3 py-3 space-y-3">
+                {Array.from({length:3}).map((_,i)=>(
+                  <div key={i} className="rounded-2xl overflow-hidden animate-pulse" style={{background:"var(--s2)"}}>
+                    <div className="h-40" style={{background:"var(--s3)"}} />
+                  </div>
+                ))}
+              </div>
+            ) : posts.length===0 ? (
+              <div className="px-5 py-14 flex flex-col items-center gap-3 text-center">
+                <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{background:P+"14"}}>
+                  <BookOpen className="h-7 w-7" style={{color:P}} />
+                </div>
+                <p className="text-sm font-semibold" style={{color:"var(--text-muted)"}}>Ainda não há publicações</p>
+              </div>
+            ) : (
+              <div className="pb-6 space-y-2 w-full px-3 pt-2">
+                {posts.map((post:any)=>(
+                  <UniversalPostCard key={post.id}
+                    post={normalizePost(post, "single", {
+                      name, username: profile.username, avatarUrl,
+                      authorId: profileId, isVerified: profile.is_verified,
+                    })} />
+                ))}
+              </div>
+            )
+          )}
+
+          {/* ── Conteúdo da aba Arquivos ── */}
+          {tab==="arquivos" && (
+            <div className="px-5 py-14 flex flex-col items-center gap-3 text-center">
+              <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{background:P+"14"}}>
+                <Archive className="h-7 w-7" style={{color:P}} />
+              </div>
+              <p className="text-sm font-semibold" style={{color:"var(--text-muted)"}}>Ainda não há nada no arquivo</p>
+            </div>
+          )}
 
           {/* ── Denunciar perfil ── */}
           <div className="px-4 pb-8">
