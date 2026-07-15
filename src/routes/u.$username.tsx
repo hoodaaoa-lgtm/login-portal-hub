@@ -1,23 +1,18 @@
 import { createFileRoute, useNavigate, useParams } from "@tanstack/react-router";
 import { useEffect, useRef, useState, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PhotoViewer } from "@/components/PhotoViewer";
 import { useScrollLock } from "@/hooks/useScrollLock";
-import { RichText } from "@/components/RichText";
-import { PostCommentsModal } from "@/components/PostCommentsModal";
-import { UniversalPostCard, normalizePost } from "@/components/UniversalPostCard";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
-import { FeedVideoPlayer } from "@/components/FeedVideoPlayer";
-import { fetchPostComments, sendPostComment, replyToPostComment, toggleCommentLike } from "@/lib/comments";
 import { BottomNav, SideNav, PageWrapper, FeedLayout } from "@/components/AppShell";
 import { RightSidebar } from "@/components/RightSidebar";
 import { UniversalSkeleton } from "@/components/Skeletons";
 import {
   ChevronLeft, Flag, Share2, Ban,
   MoreHorizontal, X, MapPin,
-  Link as LinkIcon, Calendar, Camera, MessageCircle,
+  Link as LinkIcon, Calendar, MessageCircle,
   Copy, Check, RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -163,59 +158,6 @@ function ShareProfileModal({ username, name, onClose }: { username: string; name
   );
 }
 
-/* ─── Modal de Comentários ─── */
-function CommentsModal({ postId, authorId, onClose }:{ postId:string; authorId?:string; onClose:()=>void }) {
-  const [myId, setMyId] = useState("");
-  const [comments, setComments] = useState<import("@/components/PostCommentsModal").PostComment[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [sending, setSending] = useState(false);
-
-  useEffect(()=>{
-    (async()=>{
-      const {data:{session}}=await supabase.auth.getSession();
-      if (session) setMyId(session.user.id);
-      const list = await fetchPostComments(postId, session?.user?.id);
-      setComments(list);
-      setLoading(false);
-    })();
-  },[postId]);
-
-  async function handleSend(text: string) {
-    if (!myId) { toast.error("Inicia sessão para comentar."); return; }
-    setSending(true);
-    const {data:{session}}=await supabase.auth.getSession();
-    const {data:p}=await (supabase as any).from("profiles").select("username").eq("id",myId).maybeSingle();
-    const created = await sendPostComment({ postId, userId: myId, username: p?.username || "utilizador", text });
-    if (created) setComments(prev=>[created, ...prev]);
-    setSending(false);
-  }
-
-  async function handleReply(parentId: string, text: string) {
-    if (!myId) { toast.error("Inicia sessão para responder."); return; }
-    const {data:p}=await (supabase as any).from("profiles").select("username").eq("id",myId).maybeSingle();
-    await replyToPostComment({ postId, parentCommentId: parentId, userId: myId, username: p?.username || "utilizador", text });
-  }
-
-  async function handleLike(commentId: string) {
-    if (!myId) { toast.error("Inicia sessão para curtir."); return; }
-    const target = comments.flatMap(c => [c, ...(c.replies||[])]).find(c => c.id === commentId);
-    await toggleCommentLike(commentId, myId, !!target?.likedByMe);
-  }
-
-  return (
-    <PostCommentsModal
-      onClose={onClose}
-      creatorId={authorId}
-      comments={comments}
-      loading={loading}
-      sending={sending}
-      onSend={handleSend}
-      onReply={handleReply}
-      onLikeComment={handleLike}
-    />
-  );
-}
-
 /* ─── Modal Denunciar ─── */
 function ReportModal({ username, userId, onClose }:{ username:string; userId:string; onClose:()=>void }) {
   const [reason, setReason] = useState("");
@@ -296,7 +238,6 @@ function ReportModal({ username, userId, onClose }:{ username:string; userId:str
 function UserProfilePage() {
   const { username } = useParams({ from: "/u/$username" });
   const navigate = useNavigate();
-  const qc = useQueryClient();
 
   /* ─ Sessão (perfil é público — não bloqueia visitantes sem sessão) ─ */
   const [myId, setMyId] = useState("");
@@ -315,7 +256,6 @@ function UserProfilePage() {
   const menuBtnRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const [showShareModal, setShowShareModal] = useState(false);
-  const [commentPostId, setCommentPostId] = useState<string|null>(null);
   const [photoViewing, setPhotoViewing] = useState<string|null>(null);
   const [isBlocked, setIsBlocked] = useState(false);
   const [showBlockConfirm, setShowBlockConfirm] = useState(false);
@@ -340,80 +280,6 @@ function UserProfilePage() {
       navigate({to:"/perfil",replace:true});
   },[sessionChecked,myId,profileId,navigate]);
 
-  /* ─ Query 2: Contagem de publicações (o resto do social vem do hook central) ─ */
-  const statsQuery = useQuery({
-    queryKey:["profilePostCount2", profileId],
-    queryFn: async ()=>{
-      const {count:pc} = await (supabase as any).from("posts").select("*",{count:"exact",head:true}).eq("author_id",profileId);
-      return { postCount:pc??0 };
-    },
-    enabled:!!profileId,
-    staleTime:30_000,
-  });
-
-  /* ─ Query 3: Posts ─ */
-  const postsQuery = useQuery({
-    queryKey:["profilePosts2", profileId],
-    queryFn: async ()=>{
-      const {data}=await (supabase as any).from("posts")
-        .select("id,author_id,content,kind,created_at,photo_url,image_url,photos,video_url,clip_title,clip_thumb_url,clip_video_id,clip_start,clip_end,likes_count,views_count,is_draft,scheduled_at")
-        .eq("author_id",profileId)
-        .eq("is_draft", false)
-        .or(`scheduled_at.is.null,scheduled_at.lte.${new Date().toISOString()}`)
-        .order("created_at",{ascending:false})
-        .limit(30);
-
-      const posts = (data??[]).filter((p:any) => p.kind !== "clip" || p.author_id === profileId);
-
-      // Buscar cf_stream_url dos vídeos referenciados pelos clips
-      const clipVideoIds = [...new Set(posts.filter((p:any)=>p.clip_video_id).map((p:any)=>p.clip_video_id))];
-      const streamMap: Record<string, string> = {};
-      if (clipVideoIds.length > 0) {
-        const {data: vids} = await (supabase as any).from("videos")
-          .select("id,cf_stream_url,cf_embed_url").in("id", clipVideoIds);
-        (vids??[]).forEach((v:any) => {
-          streamMap[v.id] = v.cf_stream_url || v.cf_embed_url || "";
-        });
-      }
-
-      // Contagem de comentários por post
-      const postIds = posts.map((p:any)=>p.id);
-      const commentsCountMap: Record<string, number> = {};
-      if (postIds.length > 0) {
-        const {data: commentsData} = await (supabase as any).from("post_comments")
-          .select("post_id").in("post_id", postIds);
-        (commentsData??[]).forEach((c:any) => {
-          commentsCountMap[c.post_id] = (commentsCountMap[c.post_id] ?? 0) + 1;
-        });
-      }
-
-      return posts.map((p:any)=>{
-        let text=p.content, bgColor:string|null=null;
-        if (p.kind==="bg"){ try{const j=JSON.parse(p.content);text=j.text;bgColor=j.bgColor;}catch(_){} }
-        return {
-          id:p.id, text, bgColor,
-          createdAt:p.created_at, kind:p.kind,
-          photo:p.photo_url||p.image_url||null,
-          photos: Array.isArray(p.photos) && p.photos.length > 0 ? p.photos : null,
-          videoUrl:p.video_url||null,
-          clipTitle:p.clip_title||null,
-          clipThumb:p.clip_thumb_url||null,
-          clipVideoId:p.clip_video_id||null,
-          clipStart:p.clip_start??0, clipEnd:p.clip_end??0,
-          videoStreamUrl: p.clip_video_id ? (streamMap[p.clip_video_id]||null) : null,
-          likesCount:p.likes_count??0,
-          viewsCount:(p as any).views_count??0,
-          commentsCount: commentsCountMap[p.id] ?? 0,
-        };
-      });
-    },
-    enabled:!!profileId,
-    staleTime:30_000,
-  });
-
-  const posts = postsQuery.data??[];
-
-  const postCount = statsQuery.data?.postCount??0;
   const name = profile?.full_name||profile?.username||username;
   const avatarUrl = profile?.avatar_url||null;
   const coverUrl = profile?.cover_url||null;
@@ -518,7 +384,7 @@ function UserProfilePage() {
             </button>
             <div className="flex-1 min-w-0">
               <p className="font-bold text-sm truncate" style={{color:"var(--text-primary)"}}>{name}</p>
-              <p className="text-[11px]" style={{color:"var(--text-muted)"}}>{postCount} publicações</p>
+              <p className="text-[11px]" style={{color:"var(--text-muted)"}}>@{profile?.username||username}</p>
             </div>
             <div className="relative">
               <button ref={menuBtnRef} onClick={()=>{
@@ -627,43 +493,32 @@ function UserProfilePage() {
           {/* ── Separador ── */}
           <div className="border-t mx-4 mb-2" style={{borderColor:"var(--border-subtle)"}}/>
 
-          {/* ── Posts ── */}
-          {postsQuery.isLoading ? (
-            <div className="px-4 py-2">
-              <UniversalSkeleton variant="feed" count={2} />
-            </div>
-          ) : posts.length===0 ? (
-            <div className="py-16 flex flex-col items-center gap-3 text-center px-8">
-              <div className="w-16 h-16 rounded-full flex items-center justify-center"
-                style={{background:P+"12"}}>
-                <Camera className="h-7 w-7" style={{color:P}}/>
-              </div>
-              <p className="font-bold" style={{color:"var(--text-primary)"}}>Ainda sem publicações</p>
-              <p className="text-sm" style={{color:"var(--text-muted)"}}>
-                Quando publicar, aparece aqui.
-              </p>
-            </div>
-          ) : (
-            <div className="pb-6 space-y-3 w-full px-3 pt-2">
-              {posts.map((post:any)=>(
-                <UniversalPostCard key={post.id}
-                  post={normalizePost(post, "userPage", { name, username: profile.username, avatarUrl, authorId: profileId, isVerified: !!profile.is_verified })}
-                  onDeleted={()=>qc.invalidateQueries({queryKey:["profilePosts2", profileId]})}
-                />
+          {/* ── Sobre ── */}
+          <div className="px-4 pb-4">
+            <div className="rounded-2xl border shadow-sm overflow-hidden" style={{background:"var(--s2)",borderColor:"var(--border-subtle)"}}>
+              <p className="px-5 py-3 text-xs font-bold uppercase tracking-wider border-b" style={{color:"var(--text-muted)",borderColor:"var(--border-subtle)"}}>Sobre</p>
+              {[
+                { label:"Nome", value: name },
+                { label:"Username", value: `@${profile.username}` },
+                { label:"Localização", value: profile.location || "—" },
+                { label:"Website", value: profile.website ? profile.website.replace(/^https?:\/\//,"") : "—" },
+              ].map((row,i)=>(
+                <div key={row.label} className={`flex items-center justify-between px-5 py-3.5 ${i>0?"border-t":""}`} style={{borderColor:"var(--border-subtle)"}}>
+                  <span className="text-xs font-medium" style={{color:"var(--text-muted)"}}>{row.label}</span>
+                  <span className="text-sm font-semibold text-right max-w-[60%] truncate" style={{color:"var(--text-primary)"}}>{row.value}</span>
+                </div>
               ))}
             </div>
-          )}
+          </div>
 
           {/* ── Denunciar perfil ── */}
-          {!postsQuery.isLoading && (
-            <div className="px-4 pb-8">
-              <button onClick={()=>setShowReport(true)}
-                className="w-full h-11 rounded-xl border text-sm flex items-center justify-center gap-2 transition hover:bg-red-50 hover:border-red-200 hover:text-red-500"
-                style={{borderColor:"var(--border-default)",color:"var(--text-muted)"}}>
-                <Flag className="h-4 w-4"/> Denunciar perfil
-              </button>
-            </div>
-          )}
+          <div className="px-4 pb-8">
+            <button onClick={()=>setShowReport(true)}
+              className="w-full h-11 rounded-xl border text-sm flex items-center justify-center gap-2 transition hover:bg-red-50 hover:border-red-200 hover:text-red-500"
+              style={{borderColor:"var(--border-default)",color:"var(--text-muted)"}}>
+              <Flag className="h-4 w-4"/> Denunciar perfil
+            </button>
+          </div>
         </main>
 
         <BottomNav />
@@ -675,7 +530,6 @@ function UserProfilePage() {
       </div>
 
       {/* ── Modais ── */}
-      {commentPostId && <CommentsModal postId={commentPostId} authorId={profileId ?? undefined} onClose={()=>setCommentPostId(null)}/>}
       {showReport && <ReportModal username={profile.username} userId={profileId!} onClose={()=>setShowReport(false)}/>}
 
       {showBlockConfirm && (
