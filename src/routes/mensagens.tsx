@@ -280,7 +280,7 @@ export const Route = createFileRoute("/mensagens")({
   component: MensagensPage,
 });
 
-const ACCENT = ["#2F6FED", "#FDA50E", "#1FAFA6", "#6BA547", "#2F6FED"];
+const ACCENT = ["#2F6FED", "#2F6FED", "#1FAFA6", "#6BA547", "#2F6FED"];
 const colorFor = (s: string) => ACCENT[(s?.charCodeAt(0) ?? 0) % ACCENT.length];
 
 /* ── Som de notificação (gerado via Web Audio API — sem ficheiro externo) ── */
@@ -350,7 +350,7 @@ type Contact = Profile & {
 // "Snapper" letra a letra, igual ao logótipo (ver SnapperLogo.tsx).
 const HOODA_BRAND_LETTERS = [
   { char: "H", color: "#2F6FED" },
-  { char: "o", color: "#FDA50E" },
+  { char: "o", color: "#2F6FED" },
   { char: "o", color: "#1FAFA6" },
   { char: "d", color: "#6BA547" },
   { char: "a", color: "#2F6FED" },
@@ -776,11 +776,11 @@ function AddContactModal({ myId, onClose, onAdd, existingContacts }: {
                       <p className="text-xs" style={{ color: "var(--text-muted,#888)" }}>@{r.username}</p>
                     </div>
                     {isAdding && <Loader className="h-4 w-4 animate-spin" />}
-                    {reqSent && <span className="text-xs font-semibold" style={{ color: "#FDA50E" }}>Pedido enviado</span>}
+                    {reqSent && <span className="text-xs font-semibold" style={{ color: "#2F6FED" }}>Pedido enviado</span>}
                     {isExisting && !reqSent && <Check className="h-4 w-4" style={{ color: "#2F6FED" }} />}
                     {!isAdding && !isExisting && !reqSent && (
                       needsRequest
-                        ? <Clock className="h-4 w-4" style={{ color: "#FDA50E" }} />
+                        ? <Clock className="h-4 w-4" style={{ color: "#2F6FED" }} />
                         : <UserPlus className="h-4 w-4" style={{ color: "#2F6FED" }} />
                     )}
                   </button>
@@ -1124,7 +1124,7 @@ const STUDIO_TEXT_COLORS = [
   { key: "gold",    label: "Dourado", value: "linear-gradient(135deg,#F5D67A,#D9A441)" },
   { key: "pink",    label: "Rosa",    value: "linear-gradient(135deg,#F6A6C1,#2F6FED)" },
   { key: "violet",  label: "Violeta", value: "linear-gradient(135deg,#C4B5FD,#2F6FED)" },
-  { key: "sunset",  label: "Pôr do sol", value: "linear-gradient(135deg,#FDBA74,#FDA50E)" },
+  { key: "sunset",  label: "Pôr do sol", value: "linear-gradient(135deg,#FDBA74,#2F6FED)" },
   { key: "mint",    label: "Menta",   value: "linear-gradient(135deg,#A7F3D0,#1FAFA6)" },
   { key: "ink",     label: "Tinta",   value: "#1A1A2E" },
 ];
@@ -1142,7 +1142,7 @@ const STUDIO_CARDS: StudioCard[] = [
   { id: "love",         label: "Amor",          emoji: "❤️", bg: "linear-gradient(135deg,#F6416C 0%,#2F6FED 60%,#7C3AED 100%)", defaultTextColor: "#FFFFFF", accent: "💗" },
   { id: "thanks",       label: "Agradecimento", emoji: "🙏", bg: "linear-gradient(135deg,#1FAFA6 0%,#0EA5A0 60%,#134E4A 100%)", defaultTextColor: "#FFFFFF", accent: "✦" },
   { id: "event",        label: "Evento",        emoji: "📅", bg: "linear-gradient(135deg,#2563EB 0%,#2F6FED 100%)", defaultTextColor: "#FFFFFF", accent: "🗓️" },
-  { id: "announcement", label: "Anúncio",       emoji: "📣", bg: "linear-gradient(135deg,#FDA50E 0%,#2F6FED 100%)", defaultTextColor: "#FFFFFF", accent: "★" },
+  { id: "announcement", label: "Anúncio",       emoji: "📣", bg: "linear-gradient(135deg,#2F6FED 0%,#2F6FED 100%)", defaultTextColor: "#FFFFFF", accent: "★" },
 ];
 
 function studioFontFamily(key?: StudioFontKey): string {
@@ -1618,9 +1618,9 @@ function SurpriseComposerModal({ onClose, onSend }: {
               onClick={() => { setType(o.key); setFile(null); setPreview(null); }}
               className="flex flex-col items-center gap-1.5 py-3 rounded-2xl border transition"
               style={{
-                borderColor: type === o.key ? "#FDA50E" : "var(--border-default)",
-                background: type === o.key ? "#FDA50E15" : "var(--s2)",
-                color: type === o.key ? "#FDA50E" : "var(--text-secondary)",
+                borderColor: type === o.key ? "#2F6FED" : "var(--border-default)",
+                background: type === o.key ? "#2F6FED15" : "var(--s2)",
+                color: type === o.key ? "#2F6FED" : "var(--text-secondary)",
               }}>
               {o.icon}
               <span className="text-xs font-semibold">{o.label}</span>
@@ -1669,7 +1669,7 @@ function SurpriseComposerModal({ onClose, onSend }: {
         <button disabled={!canSend}
           onClick={() => canSend && onSend({ type, text, file: file ?? undefined, teaser: teaser.trim() || "🎁 Tenho uma surpresa para ti" })}
           className="w-full py-3 rounded-2xl font-bold text-white transition active:scale-[0.99] disabled:opacity-40"
-          style={{ background: "linear-gradient(135deg,#FDA50E,#2F6FED)" }}>
+          style={{ background: "linear-gradient(135deg,#2F6FED,#2F6FED)" }}>
           🎁 Enviar Surpresa
         </button>
       </div>
@@ -2327,7 +2327,7 @@ function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit
           style={{ borderColor: "var(--border-subtle)" }}
           onMouseOver={e => e.currentTarget.style.background = "var(--s2)"}
           onMouseOut={e => e.currentTarget.style.background = "transparent"}>
-          <Forward className="h-4 w-4" style={{ color: "#FDA50E" }} />
+          <Forward className="h-4 w-4" style={{ color: "#2F6FED" }} />
           <span style={{ color: "var(--text-primary)" }}>Encaminhar</span>
         </button>
       )}
@@ -2481,7 +2481,7 @@ function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit
                 }}
                 className="relative flex flex-col items-center justify-center gap-2 w-full py-6 px-4 rounded-2xl overflow-hidden transition active:scale-[0.97]"
                 style={{
-                  background: "linear-gradient(135deg,#FDA50E,#2F6FED)",
+                  background: "linear-gradient(135deg,#2F6FED,#2F6FED)",
                   minWidth: 200,
                 }}>
                 <span
@@ -2517,7 +2517,7 @@ function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit
             <>
             {m.isSurprise && m.surpriseOpened && (
               <div className="flex items-center gap-1 mb-1.5 text-[11px] font-semibold"
-                style={{ color: isMe ? "rgba(255,255,255,0.85)" : "#FDA50E" }}>
+                style={{ color: isMe ? "rgba(255,255,255,0.85)" : "#2F6FED" }}>
                 🎁 Caixa Surpresa
               </div>
             )}
@@ -4542,7 +4542,7 @@ function ChatPanel({ myId, contact, onBack, contacts }: {
             { icon: <VideoIcon className="h-5 w-5 text-white"/>, label:"Vídeo",   color:"#1FAFA6", action:() => videoInputRef.current?.click() },
             { icon: <FileText  className="h-5 w-5 text-white"/>, label:"Ficheiro",color:"#2F6FED", action:() => fileInputRef.current?.click() },
             { icon: <Eye       className="h-5 w-5 text-white"/>, label:"Ver 1x",  color:"#7C3AED", action:() => (document.getElementById("viewonce-input-dm") as HTMLInputElement)?.click() },
-            { icon: <span className="text-lg leading-none">🎁</span>, label:"Surpresa", color:"#FDA50E", action:() => { setShowAttach(false); setShowSurpriseComposer(true); } },
+            { icon: <span className="text-lg leading-none">🎁</span>, label:"Surpresa", color:"#2F6FED", action:() => { setShowAttach(false); setShowSurpriseComposer(true); } },
             { icon: <span className="text-lg leading-none">✨</span>, label:"Studio",   color:"#8B5CF6", action:() => { setShowAttach(false); setShowMessageStudio(true); } },
           ].map(a => (
             <button key={a.label} onClick={a.action}

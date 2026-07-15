@@ -41,7 +41,7 @@ export function OfficialMessageListItem({ item, active, onClick }: {
           {item.message.title}
         </p>
       </div>
-      {!item.is_read && <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: "#FD0867" }} />}
+      {!item.is_read && <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: "#2F6FED" }} />}
     </button>
   );
 }
@@ -56,17 +56,17 @@ function IosInstallHelp({ onClose }: { onClose: () => void }) {
         <p className="font-extrabold text-[16px] text-black mb-4">Instalar no iPhone</p>
         <div className="flex items-center gap-3 mb-3">
           <div className="w-9 h-9 rounded-xl bg-neutral-100 flex items-center justify-center shrink-0">
-            <Share className="h-4.5 w-4.5" style={{ color: "#9231EA" }} />
+            <Share className="h-4.5 w-4.5" style={{ color: "#2F6FED" }} />
           </div>
           <p className="text-[13px] text-neutral-600 leading-snug">Toca no ícone de <b>Partilhar</b> na barra do Safari</p>
         </div>
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-neutral-100 flex items-center justify-center shrink-0">
-            <PlusSquare className="h-4.5 w-4.5" style={{ color: "#9231EA" }} />
+            <PlusSquare className="h-4.5 w-4.5" style={{ color: "#2F6FED" }} />
           </div>
           <p className="text-[13px] text-neutral-600 leading-snug">Escolhe <b>"Adicionar ao Ecrã Principal"</b></p>
         </div>
-        <button onClick={onClose} className="w-full mt-5 py-2.5 rounded-2xl font-bold text-sm text-white" style={{ background: "#9231EA" }}>
+        <button onClick={onClose} className="w-full mt-5 py-2.5 rounded-2xl font-bold text-sm text-white" style={{ background: "#2F6FED" }}>
           Entendi
         </button>
       </div>
@@ -93,7 +93,7 @@ function SnapperInstallModal({ title, onConfirm, onClose, installing }: {
         <button onClick={onClose} className="absolute top-4 right-4 w-7 h-7 rounded-full bg-neutral-100 flex items-center justify-center">
           <X className="h-3.5 w-3.5 text-neutral-500" />
         </button>
-        <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3" style={{ background: "#9231EA" }}>
+        <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3" style={{ background: "#2F6FED" }}>
           <Sparkles className="h-6 w-6 text-white" />
         </div>
         <p className="font-extrabold text-[17px] text-black mb-1">{title}</p>
@@ -104,7 +104,7 @@ function SnapperInstallModal({ title, onConfirm, onClose, installing }: {
           onClick={onConfirm}
           disabled={installing}
           className="w-full flex items-center justify-center gap-2 rounded-2xl py-3 font-bold text-[14px] text-white transition active:scale-95 disabled:opacity-60"
-          style={{ background: "linear-gradient(135deg,#9231EA,#7B5CE8)" }}
+          style={{ background: "#2F6FED" }}
         >
           {installing ? "A instalar…" : (<><Download className="h-4 w-4" /> Instalar app</>)}
         </button>
@@ -200,7 +200,7 @@ export function OfficialMessageDetail({ item, onBack, onArchived }: {
             ) : canShowButton ? (
               <button onClick={handleAction}
                 className="w-full py-3 rounded-2xl font-bold text-sm text-white transition active:scale-95"
-                style={{ background: "linear-gradient(135deg,#9231EA,#7B5CE8)" }}>
+                style={{ background: "#2F6FED" }}>
                 {message.button_text}
               </button>
             ) : null}

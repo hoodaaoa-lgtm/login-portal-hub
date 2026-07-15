@@ -68,7 +68,7 @@ export async function fetchPostComments(postId: string, myUserId?: string): Prom
       id: c.id,
       authorId: c.user_id || undefined,
       authorName: c.author_username ? `@${c.author_username}` : "Anónimo",
-      authorColor: c.author_color || "#9231EA",
+      authorColor: c.author_color || "#2F6FED",
       authorPhoto: (c.user_id && avatarMap[c.user_id]) || undefined,
       text: c.content,
       time: timeAgo(c.created_at),
@@ -107,7 +107,7 @@ export async function sendPostComment(opts: {
       user_id: opts.userId,       // obrigatório para RLS: WITH CHECK (auth.uid() = user_id)
       author_id: opts.userId,     // coluna original — manter preenchida por consistência
       author_username: opts.username,
-      author_color: opts.color || "#9231EA",
+      author_color: opts.color || "#2F6FED",
       content: opts.text.trim(),
     })
     .select()
@@ -125,7 +125,7 @@ export async function sendPostComment(opts: {
   return {
     id: row.id,
     authorName: `@${opts.username}`,
-    authorColor: opts.color || "#9231EA",
+    authorColor: opts.color || "#2F6FED",
     text: row.content,
     time: timeAgo(row.created_at),
     likeCount: 0,
@@ -146,7 +146,7 @@ export async function replyToPostComment(opts: {
       user_id: opts.userId,
       author_id: opts.userId,
       author_username: opts.username,
-      author_color: opts.color || "#9231EA",
+      author_color: opts.color || "#2F6FED",
       content: opts.text.trim(),
     })
     .select()
@@ -163,7 +163,7 @@ export async function replyToPostComment(opts: {
   return {
     id: row.id,
     authorName: `@${opts.username}`,
-    authorColor: opts.color || "#9231EA",
+    authorColor: opts.color || "#2F6FED",
     text: row.content,
     time: timeAgo(row.created_at),
     likeCount: 0,

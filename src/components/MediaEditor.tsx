@@ -47,7 +47,7 @@ export const DEFAULT_EDIT: MediaEditState = {
 };
 
 /* ─── Constants ─── */
-const ACCENT = "#9231EA";
+const ACCENT = "#2F6FED";
 
 export const EDITOR_FILTERS = [
   { id: "none",     label: "Original",  css: "none" },
@@ -77,7 +77,7 @@ const TEXT_SIZES = [
   { label: "XL", px: 42 },
 ];
 
-const TEXT_COLORS = ["#ffffff", "#111111", "#FFC93C", "#FD0867", "#9231EA", "#10b981", "#FDA50E", "#3B82F6"];
+const TEXT_COLORS = ["#ffffff", "#111111", "#FFC93C", "#2F6FED", "#2F6FED", "#10b981", "#2F6FED", "#3B82F6"];
 
 const STICKERS = [
   "🥳","🤯","🥺","😤","🤩","🤑","🥹","😎","❤️","🔥","⭐","🌈","💎","🏆","🎉","🎊",

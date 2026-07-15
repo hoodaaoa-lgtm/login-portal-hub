@@ -87,7 +87,7 @@ export function RichText({ text, className = "", style, onHashtagClick }: RichTe
     } else if (mention) {
       const username = mention.slice(1);
       nodes.push(
-        <span key={key++} className="font-semibold cursor-pointer hover:underline" style={{ color: "#9231EA" }}
+        <span key={key++} className="font-semibold cursor-pointer hover:underline" style={{ color: "#2F6FED" }}
           onClick={(e) => { e.stopPropagation(); navigate({ to: "/u/$username", params: { username } }); }}>
           {mention}
         </span>

@@ -5,7 +5,7 @@ import {
 } from "lucide-react";
 import { useScrollLock } from "@/hooks/useScrollLock";
 
-const ACCENT = "#9231EA";
+const ACCENT = "#2F6FED";
 
 export type NotifType =
   | "follow" | "like" | "comment" | "mention"
@@ -45,17 +45,17 @@ function notifIcon(type: NotifType) {
 
 function notifBg(type: NotifType) {
   switch (type) {
-    case "follow":       return "#9231EA";
-    case "like":         return "#FD0867";
-    case "comment":      return "#FDA50E";
+    case "follow":       return "#2F6FED";
+    case "like":         return "#2F6FED";
+    case "comment":      return "#2F6FED";
     case "mention":      return "#1FAFA6";
-    case "message":      return "#9231EA";
-    case "share":        return "#FDA50E";
-    case "system":       return "#9231EA";
+    case "message":      return "#2F6FED";
+    case "share":        return "#2F6FED";
+    case "system":       return "#2F6FED";
     case "video_new":    return "#1FAFA6";
-    case "video_like":   return "#FD0867";
-    case "video_comment": return "#FDA50E";
-    default:             return "#9231EA";
+    case "video_like":   return "#2F6FED";
+    case "video_comment": return "#2F6FED";
+    default:             return "#2F6FED";
   }
 }
 
@@ -92,7 +92,7 @@ export function NotificationToast({ notif, onClose, onClick }: { notif: Notif; o
         right: 16,
         background: "rgba(255,255,255,0.97)",
         backdropFilter: "blur(20px)",
-        border: "1px solid rgba(146,49,234,0.12)",
+        border: "1px solid rgba(47,111,237,0.12)",
         animation: "slideInRight 0.3s ease",
         cursor: onClick ? "pointer" : "default",
       }}
@@ -197,7 +197,7 @@ export function NotificationCenter({
               {unreadCount > 0 && (
                 <span
                   className="px-1.5 py-0.5 rounded-full text-[10px] font-bold text-white leading-none"
-                  style={{ background: "#FD0867" }}
+                  style={{ background: "#2F6FED" }}
                 >
                   {unreadCount}
                 </span>

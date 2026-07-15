@@ -4,7 +4,7 @@ import { useSensitivityMode, SENSITIVITY_LABELS, type SensitivityMode } from "@/
 import { toast } from "sonner";
 import { useState } from "react";
 
-const ACCENT = "#9231EA";
+const ACCENT = "#2F6FED";
 
 const OPTION_ICON: Record<SensitivityMode, React.ReactNode> = {
   auto: <Eye className="h-5 w-5" />,

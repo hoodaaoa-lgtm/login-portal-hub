@@ -23,8 +23,8 @@ export const Route = createFileRoute("/definicoes")({
   component: DefinicoesPage,
 });
 
-const ACCENT = "#9231EA";
-const GRAD   = "linear-gradient(135deg,#9231EA,#FD0867)";
+const ACCENT = "#2F6FED";
+const GRAD   = "#2F6FED";
 
 function DefinicoesPage() {
   const navigate  = useNavigate();
@@ -89,7 +89,7 @@ function DefinicoesPage() {
     {
       title: "Conta",
       items: [
-        { icon: <Bell className="w-5 h-5"/>, color: "#FD0867", label: "Notificações", desc: "Gere os teus alertas", action: () => setPanel("notifications") },
+        { icon: <Bell className="w-5 h-5"/>, color: "#2F6FED", label: "Notificações", desc: "Gere os teus alertas", action: () => setPanel("notifications") },
         { icon: <Activity className="w-5 h-5"/>, color: "#1FAFA6", label: "Atividade", desc: "Histórico de ações", action: () => setPanel("activity") },
       ],
     },
@@ -99,20 +99,20 @@ function DefinicoesPage() {
         { icon: <Lock className="w-5 h-5"/>, color: "#6BA547", label: "Privacidade", desc: "Quem pode ver o teu perfil", action: () => setPanel("privacy") },
         { icon: <Shield className="w-5 h-5"/>, color: ACCENT, label: "Segurança", desc: "Palavra-passe e autenticação", action: () => setPanel("security") },
         { icon: <MessageSquare className="w-5 h-5"/>, color: "#1FAFA6", label: "Privacidade de Mensagens", desc: "Quem pode enviar-te mensagens?", action: () => setPanel("msgprivacy") },
-        { icon: <ShieldAlert className="w-5 h-5"/>, color: "#FDA50E", label: "Conteúdo Sensível", desc: "Como mostrar conteúdo sensível no feed", action: () => setPanel("sensitive-content") },
+        { icon: <ShieldAlert className="w-5 h-5"/>, color: "#2F6FED", label: "Conteúdo Sensível", desc: "Como mostrar conteúdo sensível no feed", action: () => setPanel("sensitive-content") },
       ],
     },
     {
       title: "Idioma",
       items: [
-        { icon: <Globe className="w-5 h-5"/>, color: "#FDA50E", label: "Idioma", desc: `${currentLang?.flag ?? "🇵🇹"} ${currentLang?.label ?? "Português"}`, action: () => setPanel("language") },
+        { icon: <Globe className="w-5 h-5"/>, color: "#2F6FED", label: "Idioma", desc: `${currentLang?.flag ?? "🇵🇹"} ${currentLang?.label ?? "Português"}`, action: () => setPanel("language") },
       ],
     },
   ];
 
   const DANGER_ITEMS = [
     {
-      icon: <LogOut className="w-5 h-5"/>, color: "#FDA50E",
+      icon: <LogOut className="w-5 h-5"/>, color: "#2F6FED",
       label: "Terminar sessão", desc: "Sair da tua conta neste dispositivo",
       action: async () => { await signOutSnapper(); navigate({ to: "/" }); },
     },

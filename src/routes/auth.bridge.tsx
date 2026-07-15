@@ -55,7 +55,7 @@ function AuthBridge() {
             <button
               onClick={() => navigate({ to: "/", replace: true })}
               className="text-sm font-medium underline underline-offset-4"
-              style={{ color: "#9231EA" }}
+              style={{ color: "#2F6FED" }}
             >
               Ir para a página inicial
             </button>

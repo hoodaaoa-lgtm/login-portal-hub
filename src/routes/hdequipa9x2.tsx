@@ -182,9 +182,9 @@ type SensitiveContentRow = {
 
 const MODERATION_CATEGORY_META: Record<string, { label: string; color: string }> = {
   sensitive:  { label: "Sensível",  color: "#8b8b95" },
-  nudity:     { label: "Nudez",     color: "#FD0867" },
+  nudity:     { label: "Nudez",     color: "#2F6FED" },
   violence:   { label: "Violência", color: "#EF4444" },
-  harassment: { label: "Assédio",   color: "#FDA50E" },
+  harassment: { label: "Assédio",   color: "#2F6FED" },
   spam:       { label: "Spam",      color: "#FFC93C" },
   scam:       { label: "Golpe",     color: "#B45309" },
   illegal:    { label: "Ilegal",    color: "#7F1D1D" },
@@ -194,10 +194,10 @@ const MODERATION_CATEGORY_META: Record<string, { label: string; color: string }>
 const DISTRIBUTION_STATE_META: Record<string, { label: string; color: string }> = {
   em_analise:           { label: "Em análise",           color: "#8b8b95" },
   em_teste:             { label: "Em teste",             color: "#1FAFA6" },
-  distribuicao_normal:  { label: "Distribuição normal",  color: "#9231EA" },
+  distribuicao_normal:  { label: "Distribuição normal",  color: "#2F6FED" },
   em_crescimento:       { label: "Em crescimento",       color: "#6BA547" },
   tendencia:            { label: "Tendência",             color: "#FFC93C" },
-  viral:                { label: "Viral",                 color: "#FD0867" },
+  viral:                { label: "Viral",                 color: "#2F6FED" },
   distribuicao_reduzida:{ label: "Distribuição reduzida", color: "#F87171" },
 };
 
@@ -213,11 +213,11 @@ type AdminMsg = {
 /** Nome "Snapper" com as mesmas cores letra-a-letra usadas em todo o site
  * (ver SnapperLogo.tsx) — versão compacta para caber em cabeçalhos do admin. */
 const SNAPPER_LETTERS = [
-  { c: "S", col: "#9231EA" },
-  { c: "n", col: "#FDA50E" },
+  { c: "S", col: "#2F6FED" },
+  { c: "n", col: "#2F6FED" },
   { c: "a", col: "#1FAFA6" },
   { c: "p", col: "#6BA547" },
-  { c: "p", col: "#FD0867" },
+  { c: "p", col: "#2F6FED" },
   { c: "e", col: "#FFC93C" },
   { c: "r", col: "#7F5AF0" },
 ];
@@ -364,7 +364,7 @@ function AdminPage() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-3 px-6 text-center"
         style={{ background: "#f7f7f9" }}>
-        <ShieldAlert className="h-10 w-10" style={{ color: "#FDA50E" }} />
+        <ShieldAlert className="h-10 w-10" style={{ color: "#2F6FED" }} />
         <p className="text-neutral-900 font-bold text-lg">Acesso restrito</p>
         <p className="text-neutral-400 text-sm">Esta área é apenas para a equipa Snapper.</p>
       </div>
@@ -1236,7 +1236,7 @@ function AdminDashboard({ adminId }: { adminId: string }) {
         ]).map(({ key, Icon, label, badge }) => (
           <button key={key} onClick={() => setSection(key)} title={label}
             className="relative flex items-center gap-3 px-2.5 md:px-3 py-2.5 rounded-2xl transition active:scale-[0.98] w-full"
-            style={{ background: section === key ? "linear-gradient(135deg,#9231EA,#7B5CE8)" : "transparent" }}>
+            style={{ background: section === key ? "#2F6FED" : "transparent" }}>
             <Icon className="h-5 w-5 shrink-0" style={{ color: section === key ? "white" : "#6b6b76" }} strokeWidth={section === key ? 2.3 : 1.9} />
             <span className="hidden md:inline text-[14px] truncate flex-1 text-left"
               style={{ color: section === key ? "white" : "#3a3a42", fontWeight: section === key ? 800 : 500 }}>
@@ -1244,7 +1244,7 @@ function AdminDashboard({ adminId }: { adminId: string }) {
             </span>
             {!!badge && (
               <span className="absolute top-1.5 right-1.5 md:static min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0"
-                style={{ background: section === key ? "rgba(255,255,255,0.25)" : "#FD0867" }}>{badge > 99 ? "99+" : badge}</span>
+                style={{ background: section === key ? "rgba(255,255,255,0.25)" : "#2F6FED" }}>{badge > 99 ? "99+" : badge}</span>
             )}
           </button>
         ))}
@@ -1273,12 +1273,12 @@ function AdminDashboard({ adminId }: { adminId: string }) {
           ) : (
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               {[
-                { label: "Utilizadores totais", value: stats.totalUsers, Icon: UsersRound, color: "#9231EA" },
+                { label: "Utilizadores totais", value: stats.totalUsers, Icon: UsersRound, color: "#2F6FED" },
                 { label: "Novos hoje", value: stats.newToday, Icon: TrendingUp, color: "#6BA547" },
                 { label: "Novos esta semana", value: stats.newWeek, Icon: TrendingUp, color: "#1FAFA6" },
-                { label: "Publicações totais", value: stats.totalPosts, Icon: FileText, color: "#FDA50E" },
+                { label: "Publicações totais", value: stats.totalPosts, Icon: FileText, color: "#2F6FED" },
                 { label: "Publicações hoje", value: stats.postsToday, Icon: FileText, color: "#FFC93C" },
-                { label: "Vídeos publicados", value: stats.totalVideos, Icon: Radio, color: "#FD0867" },
+                { label: "Vídeos publicados", value: stats.totalVideos, Icon: Radio, color: "#2F6FED" },
                 { label: "Denúncias pendentes", value: stats.pendingReports, Icon: Flag, color: "#F87171" },
               ].map((c) => (
                 <div key={c.label} className="rounded-2xl p-5 flex flex-col gap-3"
@@ -1315,7 +1315,7 @@ function AdminDashboard({ adminId }: { adminId: string }) {
               <button key={t.key} onClick={() => setAiTab(t.key)}
                 className="px-3.5 py-2 rounded-xl text-sm font-semibold transition"
                 style={{
-                  background: aiTab === t.key ? "linear-gradient(135deg,#9231EA,#7B5CE8)" : "#ffffff",
+                  background: aiTab === t.key ? "#2F6FED" : "#ffffff",
                   color: aiTab === t.key ? "white" : "#3a3a42",
                   border: aiTab === t.key ? "none" : "1px solid #ececf1",
                 }}>{t.label}</button>
@@ -1336,13 +1336,13 @@ function AdminDashboard({ adminId }: { adminId: string }) {
               <>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                   {[
-                    { label: "Utilizadores ativos (7d)", value: aiStats.usuarios_ativos_7d, Icon: UsersRound, color: "#9231EA" },
+                    { label: "Utilizadores ativos (7d)", value: aiStats.usuarios_ativos_7d, Icon: UsersRound, color: "#2F6FED" },
                     { label: "Novos registos hoje", value: aiStats.novos_registos_hoje, Icon: TrendingUp, color: "#6BA547" },
-                    { label: "Publicações hoje", value: aiStats.publicacoes_hoje, Icon: FileText, color: "#FDA50E" },
+                    { label: "Publicações hoje", value: aiStats.publicacoes_hoje, Icon: FileText, color: "#2F6FED" },
                     { label: "Visualizações hoje", value: aiStats.visualizacoes_hoje, Icon: Eye, color: "#1FAFA6" },
-                    { label: "Curtidas hoje", value: aiStats.curtidas_hoje, Icon: ThumbsUp, color: "#FD0867" },
+                    { label: "Curtidas hoje", value: aiStats.curtidas_hoje, Icon: ThumbsUp, color: "#2F6FED" },
                     { label: "Comentários hoje", value: aiStats.comentarios_hoje, Icon: MessageCircle, color: "#FFC93C" },
-                    { label: "Partilhas hoje", value: aiStats.partilhas_hoje, Icon: Share2, color: "#9231EA" },
+                    { label: "Partilhas hoje", value: aiStats.partilhas_hoje, Icon: Share2, color: "#2F6FED" },
                   ].map((c) => (
                     <div key={c.label} className="rounded-2xl p-5 flex flex-col gap-3" style={{ background: "#ffffff", border: "1px solid #ececf1" }}>
                       <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: `${c.color}22` }}>
@@ -1405,7 +1405,7 @@ function AdminDashboard({ adminId }: { adminId: string }) {
             ) : (
               <div className="max-w-2xl">
                 <div className="rounded-2xl p-5 mb-5" style={{ background: "#ffffff", border: "1px solid #ececf1" }}>
-                  <p className="font-bold text-neutral-900 mb-1 text-sm flex items-center gap-2"><Sliders className="h-4 w-4" style={{ color: "#9231EA" }} />Composição do feed</p>
+                  <p className="font-bold text-neutral-900 mb-1 text-sm flex items-center gap-2"><Sliders className="h-4 w-4" style={{ color: "#2F6FED" }} />Composição do feed</p>
                   <p className="text-neutral-400 text-xs mb-4">Percentagem relativa de cada fonte no feed. Não precisam de somar 100 — são normalizadas automaticamente.</p>
                   {([
                     ["weight_interesses", "Interesses (afinidade por autor)"],
@@ -1421,7 +1421,7 @@ function AdminDashboard({ adminId }: { adminId: string }) {
                       </div>
                       <input type="range" min={0} max={100} value={aiWeights[key]}
                         onChange={e => setAiWeights({ ...aiWeights, [key]: Number(e.target.value) })}
-                        className="w-full accent-[#9231EA]" />
+                        className="w-full accent-[#2F6FED]" />
                     </div>
                   ))}
                 </div>
@@ -1442,7 +1442,7 @@ function AdminDashboard({ adminId }: { adminId: string }) {
                       </div>
                       <input type="range" min={0} max={10} step={0.5} value={aiWeights[key]}
                         onChange={e => setAiWeights({ ...aiWeights, [key]: Number(e.target.value) })}
-                        className="w-full accent-[#9231EA]" />
+                        className="w-full accent-[#2F6FED]" />
                     </div>
                   ))}
                   <div className="mb-1">
@@ -1452,13 +1452,13 @@ function AdminDashboard({ adminId }: { adminId: string }) {
                     </div>
                     <input type="range" min={0} max={100} value={aiWeights.weight_retencao}
                       onChange={e => setAiWeights({ ...aiWeights, weight_retencao: Number(e.target.value) })}
-                      className="w-full accent-[#9231EA]" />
+                      className="w-full accent-[#2F6FED]" />
                   </div>
                 </div>
 
                 <button onClick={saveAiWeights} disabled={aiWeightsSaving}
                   className="px-5 py-2.5 rounded-xl font-bold text-sm text-white transition active:scale-[0.98] disabled:opacity-60"
-                  style={{ background: "linear-gradient(135deg,#9231EA,#7B5CE8)" }}>
+                  style={{ background: "#2F6FED" }}>
                   {aiWeightsSaving ? "A gravar..." : "Gravar alterações"}
                 </button>
               </div>
@@ -1490,7 +1490,7 @@ function AdminDashboard({ adminId }: { adminId: string }) {
                     <div key={m.id} className={`flex ${m.role === "admin" ? "justify-end" : "justify-start"}`}>
                       <div className="max-w-[85%] rounded-2xl px-4 py-2.5 text-sm"
                         style={{
-                          background: m.role === "admin" ? "linear-gradient(135deg,#9231EA,#7B5CE8)" : "#f5f5f7",
+                          background: m.role === "admin" ? "#2F6FED" : "#f5f5f7",
                           color: m.role === "admin" ? "#ffffff" : "#1f1f23",
                         }}>
                         <p className="whitespace-pre-wrap">{m.content}</p>
@@ -1510,7 +1510,7 @@ function AdminDashboard({ adminId }: { adminId: string }) {
                             ) : (
                               <button onClick={() => applyProposedWeights(m)} disabled={applyingProposalId === m.id}
                                 className="w-full py-1.5 rounded-lg text-[11px] font-bold text-white disabled:opacity-60"
-                                style={{ background: "linear-gradient(135deg,#9231EA,#7B5CE8)" }}>
+                                style={{ background: "#2F6FED" }}>
                                 {applyingProposalId === m.id ? "A aplicar..." : "Aplicar estes pesos"}
                               </button>
                             )}
@@ -1535,7 +1535,7 @@ function AdminDashboard({ adminId }: { adminId: string }) {
                   className="flex-1 px-3.5 py-2.5 rounded-xl text-sm outline-none" style={{ border: "1px solid #ececf1" }} />
                 <button onClick={sendFeedChatMessage} disabled={feedChatSending || !feedChatInput.trim()}
                   className="px-4 py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-60"
-                  style={{ background: "linear-gradient(135deg,#9231EA,#7B5CE8)" }}>Enviar</button>
+                  style={{ background: "#2F6FED" }}>Enviar</button>
               </div>
             </div>
           )}
@@ -1548,16 +1548,16 @@ function AdminDashboard({ adminId }: { adminId: string }) {
                   placeholder="Nome da nova categoria" onKeyDown={e => e.key === "Enter" && createCategory()}
                   className="flex-1 px-3.5 py-2.5 rounded-xl text-sm outline-none" style={{ border: "1px solid #ececf1" }} />
                 <button onClick={createCategory} className="px-4 py-2.5 rounded-xl text-sm font-bold text-white"
-                  style={{ background: "linear-gradient(135deg,#9231EA,#7B5CE8)" }}>Criar</button>
+                  style={{ background: "#2F6FED" }}>Criar</button>
               </div>
               <div className="rounded-2xl overflow-hidden" style={{ background: "#ffffff", border: "1px solid #ececf1" }}>
                 {aiCategories.map((c, i) => (
                   <div key={c.id} className="flex items-center justify-between px-4 py-3"
                     style={{ borderTop: i === 0 ? "none" : "1px solid #f2f2f5" }}>
                     <div className="flex items-center gap-2.5">
-                      <Tag className="h-4 w-4" style={{ color: "#9231EA" }} />
+                      <Tag className="h-4 w-4" style={{ color: "#2F6FED" }} />
                       <span className="text-sm font-semibold text-neutral-800">{c.name}</span>
-                      {c.is_auto && <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold" style={{ background: "#FDA50E22", color: "#FDA50E" }}>auto</span>}
+                      {c.is_auto && <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold" style={{ background: "#2F6FED22", color: "#2F6FED" }}>auto</span>}
                     </div>
                     <button onClick={() => deleteCategory(c.id)} className="text-xs font-semibold" style={{ color: "#F87171" }}>Remover</button>
                   </div>
@@ -1700,7 +1700,7 @@ function AdminDashboard({ adminId }: { adminId: string }) {
               <button key={f.key} onClick={() => setReportFilter(f.key)}
                 className="px-4 py-2 rounded-full text-xs font-bold transition"
                 style={{
-                  background: reportFilter === f.key ? "linear-gradient(135deg,#9231EA,#7B5CE8)" : "#f5f5f7",
+                  background: reportFilter === f.key ? "#2F6FED" : "#f5f5f7",
                   color: reportFilter === f.key ? "white" : "#6b6b76",
                 }}>
                 {f.label}
@@ -1725,7 +1725,7 @@ function AdminDashboard({ adminId }: { adminId: string }) {
                       <a href={r.reported?.username ? `/u/${r.reported.username}` : undefined} target="_blank" rel="noreferrer"
                         className="flex items-center gap-2.5 group">
                         <div className="w-9 h-9 rounded-full overflow-hidden flex items-center justify-center text-white font-bold shrink-0"
-                          style={{ background: "#FD0867" }}>
+                          style={{ background: "#2F6FED" }}>
                           {r.reported?.avatar_url
                             ? <img src={r.reported.avatar_url} alt="" className="w-full h-full object-cover" />
                             : (r.reported?.username?.[0] ?? "?").toUpperCase()}
@@ -1733,7 +1733,7 @@ function AdminDashboard({ adminId }: { adminId: string }) {
                         <div className="min-w-0">
                           <p className="text-sm text-neutral-900 flex items-center gap-1.5 flex-wrap">
                             <span className="font-bold group-hover:underline">@{r.reported?.username ?? "?"}</span>
-                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: "rgba(253,8,103,0.15)", color: "#FD0867" }}>Denunciado</span>
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: "rgba(47,111,237,0.15)", color: "#2F6FED" }}>Denunciado</span>
                             {r.reported?.is_banned && (
                               <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: "rgba(239,68,68,0.2)", color: "#F87171" }}>BANIDO</span>
                             )}
@@ -1745,7 +1745,7 @@ function AdminDashboard({ adminId }: { adminId: string }) {
                       {/* Denunciante */}
                       <div className="flex items-center gap-2 pl-1">
                         <div className="w-6 h-6 rounded-full overflow-hidden flex items-center justify-center text-white text-[11px] font-bold shrink-0"
-                          style={{ background: "#9231EA" }}>
+                          style={{ background: "#2F6FED" }}>
                           {r.reporter?.avatar_url
                             ? <img src={r.reporter.avatar_url} alt="" className="w-full h-full object-cover" />
                             : (r.reporter?.username?.[0] ?? "?").toUpperCase()}
@@ -1808,7 +1808,7 @@ function AdminDashboard({ adminId }: { adminId: string }) {
                   <div key={u.id} className="rounded-2xl p-3 flex items-center gap-3"
                     style={{ background: "#ffffff", border: "1px solid #ececf1" }}>
                     <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center text-white font-bold shrink-0"
-                      style={{ background: "#9231EA" }}>
+                      style={{ background: "#2F6FED" }}>
                       {u.avatar_url ? <img src={u.avatar_url} alt="" className="w-full h-full object-cover" />
                         : (u.full_name?.[0] ?? u.username?.[0] ?? "?").toUpperCase()}
                     </div>
@@ -1890,7 +1890,7 @@ function AdminDashboard({ adminId }: { adminId: string }) {
                     <div key={p.id} className="rounded-2xl p-4 flex items-start gap-3"
                       style={{ background: "#ffffff", border: "1px solid #ececf1" }}>
                       <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold shrink-0"
-                        style={{ background: p.author_color || "#9231EA" }}>
+                        style={{ background: p.author_color || "#2F6FED" }}>
                         {(p.author_name?.[0] ?? p.author_username?.[0] ?? "?").toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -1901,7 +1901,7 @@ function AdminDashboard({ adminId }: { adminId: string }) {
                         {preview && <p className="text-neutral-500 text-sm mt-1 line-clamp-3 whitespace-pre-wrap break-words">{preview}</p>}
                         <AdminPostMedia p={p} />
                         <div className="flex items-center gap-3 mt-2 flex-wrap">
-                          <span className="flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full" style={{ background: "rgba(146,49,234,0.18)", color: "#9231EA" }}>
+                          <span className="flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full" style={{ background: "rgba(47,111,237,0.18)", color: "#2F6FED" }}>
                             <MediaIcon className="h-3 w-3" /> {mediaLabel}
                           </span>
                           <span className="text-[11px] text-neutral-400">👁 {fmtCount(p.views_count)}</span>
@@ -1962,7 +1962,7 @@ function AdminDashboard({ adminId }: { adminId: string }) {
                     style={{ borderTop: i === 0 ? "none" : "1px solid #f0f0f3" }}>
                     <div className="relative shrink-0">
                       <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center text-white font-bold"
-                        style={{ background: "#9231EA" }}>
+                        style={{ background: "#2F6FED" }}>
                         {u.avatar_url
                           ? <img src={u.avatar_url} alt="" className="w-full h-full object-cover" />
                           : (u.full_name?.[0] ?? u.username?.[0] ?? "?").toUpperCase()}
@@ -1997,7 +1997,7 @@ function AdminDashboard({ adminId }: { adminId: string }) {
           </p>
           <div className="max-w-xl rounded-2xl p-5" style={{ background: "#ffffff", border: "1px solid #ececf1" }}>
             <div className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 rounded-xl overflow-hidden flex items-center justify-center shrink-0" style={{ background: "#9231EA" }}>
+              <div className="w-8 h-8 rounded-xl overflow-hidden flex items-center justify-center shrink-0" style={{ background: "#2F6FED" }}>
                 <img src={LOGO} alt="" className="w-full h-full object-contain p-1" />
               </div>
               <p className="flex items-center gap-1.5 font-extrabold text-sm">
@@ -2018,12 +2018,12 @@ function AdminDashboard({ adminId }: { adminId: string }) {
               onClick={() => setBroadcastNoReply(v => !v)}
               disabled={broadcastSending}
               className="w-full flex items-center justify-between gap-3 mt-3 px-4 py-3 rounded-2xl transition disabled:opacity-60"
-              style={{ background: broadcastNoReply ? "#9231EA12" : "#f5f5f7", border: broadcastNoReply ? "1px solid #9231EA40" : "1px solid transparent" }}>
+              style={{ background: broadcastNoReply ? "#2F6FED12" : "#f5f5f7", border: broadcastNoReply ? "1px solid #2F6FED40" : "1px solid transparent" }}>
               <div className="text-left">
                 <p className="text-sm font-bold text-neutral-900">🔒 Ninguém pode responder</p>
                 <p className="text-[11px] text-neutral-400">Bloqueia respostas para todos os utilizadores neste comunicado, mesmo quem já podia responder antes.</p>
               </div>
-              <div className={`w-10 h-5 rounded-full transition-colors relative shrink-0 ${broadcastNoReply ? "bg-[#9231EA]" : "bg-neutral-300"}`}>
+              <div className={`w-10 h-5 rounded-full transition-colors relative shrink-0 ${broadcastNoReply ? "bg-[#2F6FED]" : "bg-neutral-300"}`}>
                 <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${broadcastNoReply ? "translate-x-5" : "translate-x-0.5"}`} />
               </div>
             </button>
@@ -2035,7 +2035,7 @@ function AdminDashboard({ adminId }: { adminId: string }) {
               </p>
               <button onClick={sendBroadcast} disabled={broadcastSending || !broadcastText.trim()}
                 className="flex items-center gap-2 px-5 py-2.5 rounded-2xl font-bold text-sm text-white transition active:scale-95 disabled:opacity-40 shrink-0"
-                style={{ background: "linear-gradient(135deg,#9231EA,#7B5CE8)", boxShadow: "0 4px 14px rgba(146,49,234,0.4)" }}>
+                style={{ background: "#2F6FED", boxShadow: "0 4px 14px rgba(47,111,237,0.4)" }}>
                 {broadcastSending ? <Loader className="h-4 w-4 animate-spin" /> : <Megaphone className="h-4 w-4" />}
                 Enviar a todos
               </button>
@@ -2144,7 +2144,7 @@ function AdminDashboard({ adminId }: { adminId: string }) {
 
             <button onClick={handleSendOfficial} disabled={officialSending || !officialTitle.trim() || !officialDescription.trim()}
               className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl font-bold text-sm text-white transition active:scale-95 disabled:opacity-40"
-              style={{ background: "linear-gradient(135deg,#9231EA,#7B5CE8)", boxShadow: "0 4px 14px rgba(146,49,234,0.4)" }}>
+              style={{ background: "#2F6FED", boxShadow: "0 4px 14px rgba(47,111,237,0.4)" }}>
               {officialSending ? <Loader className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
               Enviar mensagem
             </button>
@@ -2198,14 +2198,14 @@ function AdminDashboard({ adminId }: { adminId: string }) {
                   verify: { label: "Verificou", color: "#3B9EFF" },
                   unverify: { label: "Removeu selo de", color: "#9a9aa5" },
                   delete_account: { label: "Eliminou a conta de", color: "#F87171" },
-                  delete_post: { label: "Eliminou publicação de", color: "#FDA50E" },
-                  delete_channel: { label: "Eliminou canal de", color: "#FDA50E" },
+                  delete_post: { label: "Eliminou publicação de", color: "#2F6FED" },
+                  delete_channel: { label: "Eliminou canal de", color: "#2F6FED" },
                   report_resolved: { label: "Resolveu denúncia sobre", color: "#6BA547" },
                   report_dismissed: { label: "Ignorou denúncia sobre", color: "#9a9aa5" },
-                  broadcast: { label: "Enviou comunicado a", color: "#9231EA" },
-                  send_official_message: { label: "Enviou mensagem oficial", color: "#9231EA" },
+                  broadcast: { label: "Enviou comunicado a", color: "#2F6FED" },
+                  send_official_message: { label: "Enviou mensagem oficial", color: "#2F6FED" },
                 };
-                const info = actionLabels[a.action] ?? { label: a.action, color: "#9231EA" };
+                const info = actionLabels[a.action] ?? { label: a.action, color: "#2F6FED" };
                 return (
                   <div key={a.id} className="flex items-start gap-3 px-4 py-3" style={{ borderTop: i === 0 ? "none" : "1px solid #f0f0f3" }}>
                     <div className="w-2 h-2 rounded-full mt-1.5 shrink-0" style={{ background: info.color }} />
@@ -2232,7 +2232,7 @@ function AdminDashboard({ adminId }: { adminId: string }) {
       <div className={`${selected ? "hidden md:flex" : "flex"} w-full md:w-[340px] flex-col shrink-0 border-r`}
         style={{ borderColor: "#ececf1" }}>
         <div className="px-4 py-4 flex items-center justify-between gap-2 shrink-0"
-          style={{ background: "linear-gradient(135deg,#9231EA 0%,#7B5CE8 100%)" }}>
+          style={{ background: "#2F6FED" }}>
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-xl overflow-hidden flex items-center justify-center shrink-0" style={{ background: "white" }}>
               <img src={LOGO} alt="" className="w-full h-full object-contain p-1" />
@@ -2268,9 +2268,9 @@ function AdminDashboard({ adminId }: { adminId: string }) {
           {filtered.map(u => (
             <button key={u.id} onClick={() => openUser(u)}
               className="w-full flex items-center gap-3 px-4 py-3 text-left transition"
-              style={{ background: selected?.id === u.id ? "rgba(146,49,234,0.25)" : "transparent" }}>
+              style={{ background: selected?.id === u.id ? "rgba(47,111,237,0.25)" : "transparent" }}>
               <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center text-white font-bold shrink-0"
-                style={{ background: "#9231EA" }}>
+                style={{ background: "#2F6FED" }}>
                 {u.avatar_url
                   ? <img src={u.avatar_url} alt="" className="w-full h-full object-cover" />
                   : (u.full_name?.[0] ?? u.username?.[0] ?? "?").toUpperCase()}
@@ -2294,7 +2294,7 @@ function AdminDashboard({ adminId }: { adminId: string }) {
         ) : (
           <>
             <div className="flex items-center gap-3 px-4 py-3 shrink-0"
-              style={{ background: "linear-gradient(135deg,#9231EA 0%,#7B5CE8 100%)" }}>
+              style={{ background: "#2F6FED" }}>
               <button onClick={() => setSelected(null)} className="md:hidden p-1.5 rounded-full" style={{ background: "rgba(255,255,255,0.15)" }}>
                 <ChevronLeft className="h-5 w-5 text-white" />
               </button>
@@ -2356,7 +2356,7 @@ function AdminDashboard({ adminId }: { adminId: string }) {
                     <div className="max-w-[75%]">
                       {isAdmin && (
                         <p className="flex items-center gap-1 text-[11px] font-bold mb-1 justify-end">
-                          <SnapperWordmark size={11} /><span style={{ color: "#9231EA" }}>Oficial</span> <VerifiedBadge size={11} />
+                          <SnapperWordmark size={11} /><span style={{ color: "#2F6FED" }}>Oficial</span> <VerifiedBadge size={11} />
                         </p>
                       )}
                       {isImage ? (
@@ -2378,7 +2378,7 @@ function AdminDashboard({ adminId }: { adminId: string }) {
                       ) : (
                         <div className="rounded-2xl px-3.5 py-2 text-sm leading-relaxed"
                           style={{
-                            background: isAdmin ? "linear-gradient(135deg,#9231EA,#7B5CE8)" : "#eceef2",
+                            background: isAdmin ? "#2F6FED" : "#eceef2",
                             color: isAdmin ? "white" : "#1a1a1f",
                             borderBottomRightRadius: isAdmin ? 4 : undefined,
                             borderBottomLeftRadius: !isAdmin ? 4 : undefined,
@@ -2418,7 +2418,7 @@ function AdminDashboard({ adminId }: { adminId: string }) {
               />
               <button onClick={sendOfficial} disabled={sending || !input.trim()}
                 className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 transition active:scale-90 disabled:opacity-40"
-                style={{ background: "linear-gradient(135deg,#9231EA,#7B5CE8)", boxShadow: "0 4px 14px rgba(146,49,234,0.4)" }}>
+                style={{ background: "#2F6FED", boxShadow: "0 4px 14px rgba(47,111,237,0.4)" }}>
                 {sending ? <Loader className="h-4 w-4 animate-spin text-white" /> : <Send className="h-4 w-4 text-white" style={{ marginLeft: 2 }} />}
               </button>
             </div>

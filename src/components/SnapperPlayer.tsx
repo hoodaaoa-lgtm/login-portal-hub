@@ -40,7 +40,7 @@ import { useDataSaverEnabled } from "@/hooks/useDataSaver";
 import { setDataSaverEnabled } from "@/lib/dataSaver";
 import { Zap } from "lucide-react";
 
-const BRAND = "#9231EA";
+const BRAND = "#2F6FED";
 const CONTROLS_HIDE_DELAY_MS = 2800;
 const CONTROLS_FADE_MS = 200;
 

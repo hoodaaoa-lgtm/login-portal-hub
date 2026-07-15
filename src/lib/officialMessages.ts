@@ -13,7 +13,7 @@ export type OfficialAudience = "all" | "new_users" | "not_installed";
 /** Identidade visual fixa por categoria — o admin escolhe a categoria, o
  * ícone e o nome vêm sempre daqui, nunca são livres. */
 export const OFFICIAL_CATEGORY_META: Record<OfficialCategory, { label: string; Icon: LucideIcon; color: string }> = {
-  INSTALL_APP: { label: "Instalar App", Icon: Smartphone, color: "#9231EA" },
+  INSTALL_APP: { label: "Instalar App", Icon: Smartphone, color: "#2F6FED" },
   UPDATES: { label: "Atualizações", Icon: Rocket, color: "#1FAFA6" },
   TIPS: { label: "Dicas da Snapper", Icon: Lightbulb, color: "#FFC93C" },
 };

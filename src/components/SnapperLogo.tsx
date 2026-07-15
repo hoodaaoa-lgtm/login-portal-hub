@@ -11,11 +11,11 @@ const sizeMap = { sm: "text-3xl", md: "text-5xl", lg: "text-7xl", xl: "text-8xl 
 const suffixSizeMap = { sm: "text-[11px]", md: "text-[14px]", lg: "text-[18px]", xl: "text-[20px]" };
 
 const letters = [
-  { char: "S", color: "#9231EA" },
-  { char: "n", color: "#FDA50E" },
+  { char: "S", color: "#2F6FED" },
+  { char: "n", color: "#F59E0B" },
   { char: "a", color: "#1FAFA6" },
   { char: "p", color: "#6BA547" },
-  { char: "p", color: "#FD0867" },
+  { char: "p", color: "#EC4899" },
   { char: "e", color: "#FFC93C" },
   { char: "r", color: "#7F5AF0" },
 ];
@@ -62,7 +62,7 @@ export function SnapperLogo({ className = "", size = "lg", animate = true }: Pro
           className={`${suffixSizeMap[size]} font-black uppercase tracking-widest mb-[0.15em]`}
           style={{
             color: "#ffffff",
-            background: "linear-gradient(135deg,#FD0867,#7F5AF0)",
+            background: "linear-gradient(135deg,#2F6FED,#7F5AF0)",
             borderRadius: "5px",
             padding: "1px 5px 1px 4px",
             lineHeight: 1,

@@ -11,7 +11,7 @@ import { toast } from "sonner";
  * ou só uma curiosidade simpática — nunca fica um espaço morto.
  */
 
-const ACCENT = "#9231EA";
+const ACCENT = "#2F6FED";
 
 type Tip = {
   icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>;

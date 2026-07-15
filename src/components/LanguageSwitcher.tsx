@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { LANGUAGES, setLanguage, getCurrentLang, type LangCode } from "@/lib/i18n";
 import { Globe, Check } from "lucide-react";
 
-const ACCENT = "#9231EA";
+const ACCENT = "#2F6FED";
 
 export function LanguageSwitcher({ onClose }: { onClose?: () => void }) {
   const { i18n } = useTranslation();

@@ -114,13 +114,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:image", content: "https://hoode.lovable.app/icons/icon-512.png" },
       { name: "robots", content: "index, follow" },
       // PWA
-      { name: "theme-color", content: "#9231EA" },
+      { name: "theme-color", content: "#2F6FED" },
       { name: "mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-status-bar-style", content: "default" },
       { name: "apple-mobile-web-app-title", content: "Snapper" },
       { name: "application-name", content: "Snapper" },
-      { name: "msapplication-TileColor", content: "#9231EA" },
+      { name: "msapplication-TileColor", content: "#2F6FED" },
       { name: "msapplication-TileImage", content: "/icons/icon-144.png" },
     ],
     links: [

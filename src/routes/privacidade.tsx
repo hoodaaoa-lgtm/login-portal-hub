@@ -7,7 +7,7 @@ export const Route = createFileRoute("/privacidade")({
   component: PrivacidadePage,
 });
 
-const P = "#9231EA";
+const P = "#2F6FED";
 
 function Section({ icon: Icon, title, children }: { icon: LucideIcon; title: string; children: React.ReactNode }) {
   return (

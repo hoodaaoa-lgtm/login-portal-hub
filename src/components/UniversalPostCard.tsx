@@ -32,7 +32,7 @@ import { toast } from "sonner";
 import { extractUrl } from "@/lib/linkPreview";
 import { LinkPreview } from "@/components/LinkPreview";
 
-export const ACCENT_COLOR = "#9231EA";
+export const ACCENT_COLOR = "#2F6FED";
 
 
 /* Legenda de publicação estilo Instagram: nome em negrito à frente do
@@ -483,7 +483,7 @@ function RepostModal({ post, me, onClose, onReposted }: {
   }
 
   const avatarColor = (name: string) => {
-    const COLORS = [ACCENT_COLOR, "#FDA50E", "#1FAFA6", "#6BA547", "#FD0867"];
+    const COLORS = [ACCENT_COLOR, "#2F6FED", "#1FAFA6", "#6BA547", "#2F6FED"];
     return COLORS[(name?.charCodeAt(0) ?? 0) % COLORS.length];
   };
 
@@ -558,8 +558,8 @@ function RepostModal({ post, me, onClose, onReposted }: {
                     style={{ background: "var(--s2)", color: "var(--text-primary)" }}
                     onMouseOver={e => (e.currentTarget.style.background = "var(--s3)")}
                     onMouseOut={e => (e.currentTarget.style.background = "var(--s2)")}>
-                    <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: "#FD086715" }}>
-                      <TypeIcon className="w-5 h-5" style={{ color: "#FD0867" }} />
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: "#2F6FED15" }}>
+                      <TypeIcon className="w-5 h-5" style={{ color: "#2F6FED" }} />
                     </div>
                     <div className="text-left">
                       <p className="font-bold" style={{ color: "var(--text-primary)" }}>Citar publicação</p>
@@ -581,7 +581,7 @@ function RepostModal({ post, me, onClose, onReposted }: {
               <h3 className="font-extrabold text-base flex-1" style={{ color: "var(--text-primary)" }}>Citar publicação</h3>
               <button onClick={() => doRepost(quoteText)} disabled={!quoteText.trim() || loading}
                 className="px-4 h-8 rounded-full text-sm font-bold text-white transition active:scale-95 disabled:opacity-40"
-                style={{ background: `linear-gradient(135deg, ${ACCENT_COLOR}, #FD0867)` }}>
+                style={{ background: `#2F6FED` }}>
                 {loading
                   ? <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
                   : "Publicar"}
@@ -746,7 +746,7 @@ function ForwardModal({ post, me, onClose }: { post: any; me: any; onClose: () =
                   setTimeout(() => setLinkCopied(false), 2000);
                 }}
                 className="px-3 py-1.5 rounded-xl text-xs font-bold transition active:scale-95 shrink-0 flex items-center gap-1"
-                style={{ background: linkCopied ? "#6BA547" : "#9231EA", color: "#fff" }}>
+                style={{ background: linkCopied ? "#6BA547" : "#2F6FED", color: "#fff" }}>
                 {linkCopied ? (<><Check className="h-3.5 w-3.5" /> Copiado</>) : "Copiar"}
               </button>
             </div>
@@ -783,7 +783,7 @@ function ForwardModal({ post, me, onClose }: { post: any; me: any; onClose: () =
               <button key={c.id} onClick={() => forward(c.id)} disabled={!!sending || sent.has(c.id)}
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl transition hover:bg-[var(--s2)] active:scale-[0.98]">
                 <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center text-white font-bold text-sm shrink-0"
-                  style={{ background: "#9231EA" }}>
+                  style={{ background: "#2F6FED" }}>
                   {c.avatar ? <img loading="lazy" decoding="async" src={optimizeAvatar(c.avatar, 40)} alt="" className="w-full h-full object-cover" /> : (c.otherName?.[0] ?? "?").toUpperCase()}
                 </div>
                 <div className="flex-1 text-left">
@@ -793,7 +793,7 @@ function ForwardModal({ post, me, onClose }: { post: any; me: any; onClose: () =
                 <div className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition"
                   style={sent.has(c.id) ? { background: "#6BA54720", color: "#6BA547" } : { background: "var(--s3)", color: "var(--text-muted)" }}>
                   {sending === c.id
-                    ? <div className="w-4 h-4 rounded-full border-2 animate-spin" style={{ borderColor: "#9231EA", borderTopColor: "transparent" }} />
+                    ? <div className="w-4 h-4 rounded-full border-2 animate-spin" style={{ borderColor: "#2F6FED", borderTopColor: "transparent" }} />
                     : sent.has(c.id) ? <Check className="w-4 h-4" /> : <Forward className="w-4 h-4" />}
                 </div>
               </button>
@@ -836,10 +836,10 @@ function ClipCard({ p, liked, likeCount, viewCount, onLike, onComment }: {
         className="flex items-center gap-2.5 px-3 py-3 w-full text-left transition active:scale-[0.99]"
         style={{ borderBottom: "1px solid var(--border-subtle)" }}>
         <div className="w-10 h-10 rounded-full overflow-hidden shrink-0 flex items-center justify-center"
-          style={{ background: "#9231EA20" }}>
+          style={{ background: "#2F6FED20" }}>
           {p.avatar_url
             ? <img loading="lazy" decoding="async" src={optimizeAvatar(p.avatar_url, 40)} alt="" className="w-full h-full object-cover" />
-            : <span className="font-bold" style={{ color: "#9231EA" }}>
+            : <span className="font-bold" style={{ color: "#2F6FED" }}>
                 {p.user?.[0]?.toUpperCase() ?? "?"}
               </span>}
         </div>
@@ -853,7 +853,7 @@ function ClipCard({ p, liked, likeCount, viewCount, onLike, onComment }: {
           </p>
         </div>
         <span className="text-[10px] px-2.5 py-0.5 rounded-full font-bold shrink-0"
-          style={{ background: "#9231EA15", color: "#9231EA" }}>
+          style={{ background: "#2F6FED15", color: "#2F6FED" }}>
           ✂ Clipe · {dur}
         </span>
       </button>
@@ -899,7 +899,7 @@ function ClipCard({ p, liked, likeCount, viewCount, onLike, onComment }: {
           onClick={() => p.author_username && navigate({ to: "/u/$username", params: { username: p.author_username } })}
           className="flex items-center gap-1.5 mb-2.5 transition-opacity hover:opacity-70">
           <div className="w-5 h-5 rounded-full overflow-hidden shrink-0"
-            style={{ background: p.author_color || "#9231EA" }}>
+            style={{ background: p.author_color || "#2F6FED" }}>
             {p.avatar_url
               ? <img loading="lazy" decoding="async" src={optimizeAvatar(p.avatar_url, 24)} alt="" className="w-full h-full object-cover" />
               : <span className="text-[8px] font-bold text-white flex items-center justify-center h-full">
@@ -947,7 +947,7 @@ function ClipCard({ p, liked, likeCount, viewCount, onLike, onComment }: {
             <button
               onClick={() => navigate({ to: `/hoodatv/watch/${p.clip_video_id}` })}
               className="text-xs font-bold px-3 py-1.5 rounded-xl transition active:scale-95"
-              style={{ color: "#9231EA", background: "#9231EA10" }}>
+              style={{ color: "#2F6FED", background: "#2F6FED10" }}>
               Ver completo →
             </button>
           )}
@@ -1187,7 +1187,7 @@ export function UniversalPostCard({ post: p, onDeleted, onBookmarkChange }: {
         <div className="flex items-center gap-2.5">
           <ProfileAvatarLink userId={p.author_id ?? ""} username={p.author_username ?? ""}>
             <div className="w-10 h-10 rounded-full overflow-hidden shrink-0 flex items-center justify-center font-bold text-white text-sm"
-              style={{ background: p.color || "#9231EA" }}>
+              style={{ background: p.color || "#2F6FED" }}>
               {p.avatar_url
                 ? <img loading="lazy" decoding="async" src={optimizeAvatar(p.avatar_url, 48)} alt="" className="w-full h-full object-cover" />
                 : (p.user?.[0] ?? "?").toUpperCase()}
@@ -1342,7 +1342,7 @@ export function UniversalPostCard({ post: p, onDeleted, onBookmarkChange }: {
             <p className="text-white text-xs font-bold truncate">{p.music_title}</p>
             <p className="text-white/50 text-[10px] truncate">{p.music_artist ?? "hooda music"}</p>
           </div>
-          <Music className="h-4 w-4 text-[#9231EA] flex-shrink-0" />
+          <Music className="h-4 w-4 text-[#2F6FED] flex-shrink-0" />
         </div>
       )}
       {!isAd && (
@@ -1369,7 +1369,7 @@ export function UniversalPostCard({ post: p, onDeleted, onBookmarkChange }: {
           <div className="flex items-center gap-0.5">
             <button onClick={toggleBookmark} className="p-2 rounded-full hover:bg-[var(--s1)] transition">
               {bookmarked
-                ? <BookmarkCheck className="h-5 w-5" style={{ color: "#9231EA" }} />
+                ? <BookmarkCheck className="h-5 w-5" style={{ color: "#2F6FED" }} />
                 : <Bookmark className="h-5 w-5 text-[var(--text-muted)]" />}
             </button>
             <button onClick={() => setShowForward(true)} className="p-2 rounded-full hover:bg-[var(--s1)] transition">

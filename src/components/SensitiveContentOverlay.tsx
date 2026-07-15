@@ -79,7 +79,7 @@ export function SensitiveContentOverlay({ category, children, minHeight = 220, c
         </span>
         <button
           onClick={() => setRevealed(true)}
-          style={{ fontSize: 12, fontWeight: 700, color: "var(--accent, #9231EA)", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap" }}
+          style={{ fontSize: 12, fontWeight: 700, color: "var(--accent, #2F6FED)", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap" }}
         >
           <Eye className="h-3.5 w-3.5" /> Ver mesmo assim
         </button>

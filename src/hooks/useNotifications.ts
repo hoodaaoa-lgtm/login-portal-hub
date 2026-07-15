@@ -5,7 +5,7 @@ import { playNotificationSound } from "@/lib/notificationSound";
 
 const db = supabase as any;
 
-const AVATAR_COLORS = ["#9231EA", "#FD0867", "#FDA50E", "#1FAFA6", "#3B82F6", "#F59E0B"];
+const AVATAR_COLORS = ["#2F6FED", "#2F6FED", "#2F6FED", "#1FAFA6", "#3B82F6", "#F59E0B"];
 
 function colorFor(seed: string): string {
   let hash = 0;

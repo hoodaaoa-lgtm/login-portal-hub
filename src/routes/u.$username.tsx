@@ -28,10 +28,10 @@ export const Route = createFileRoute("/u/$username")({
 });
 
 /* ─── Constantes ─── */
-const P      = "#9231EA";
-const PINK   = "#FD0867";
+const P      = "#2F6FED";
+const PINK   = "#2F6FED";
 const GRAD   = `linear-gradient(135deg,${P},${PINK})`;
-const COLORS = [P, "#FDA50E", "#1FAFA6", "#6BA547", PINK, "#FFC93C"];
+const COLORS = [P, "#2F6FED", "#1FAFA6", "#6BA547", PINK, "#FFC93C"];
 const colorFor = (s: string) => COLORS[(s?.charCodeAt(0) ?? 0) % COLORS.length];
 
 /* ─── Helpers ─── */
@@ -564,7 +564,7 @@ function UserProfilePage() {
             {coverUrl
               ? <img src={coverUrl} alt="" className="w-full h-full object-cover"/>
               : <div className="w-full h-full"
-                  style={{background:`linear-gradient(135deg,${color} 0%,#8B5CF6 55%,#FD0867 100%)`}}/>}
+                  style={{background:`linear-gradient(135deg,${color} 0%,#8B5CF6 55%,#2F6FED 100%)`}}/>}
             {/* Avatar */}
             <div className="absolute" style={{bottom:-66,left:20}}>
               {avatarUrl

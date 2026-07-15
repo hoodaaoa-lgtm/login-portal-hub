@@ -64,8 +64,8 @@ export function TopProgressBar() {
         style={{
           height: "100%",
           width: `${progress}%`,
-          background: "linear-gradient(90deg,#9231EA,#FD0867,#FDA50E)",
-          boxShadow: "0 0 8px rgba(253,8,103,0.55)",
+          background: "#2F6FED",
+          boxShadow: "0 0 8px rgba(47,111,237,0.55)",
           transition: "width 280ms cubic-bezier(0.22,1,0.36,1)",
         }}
       />

@@ -22,10 +22,10 @@ export const Route = createFileRoute("/explorar")({
 });
 
 /* ── Constantes ── */
-const P    = "#9231EA";
-const PINK = "#FD0867";
+const P    = "#2F6FED";
+const PINK = "#2F6FED";
 const GRAD = `linear-gradient(135deg,${P},${PINK})`;
-const COLORS = [P, "#FDA50E", "#1FAFA6", "#6BA547", PINK, "#FFC93C"];
+const COLORS = [P, "#2F6FED", "#1FAFA6", "#6BA547", PINK, "#FFC93C"];
 const colorFor = (s: string) => COLORS[(s?.charCodeAt(0) ?? 0) % COLORS.length];
 const fmtNum = (n: number) => n >= 1_000_000 ? `${(n/1_000_000).toFixed(1)}M` : n >= 1000 ? `${(n/1000).toFixed(1)}K` : String(n ?? 0);
 
@@ -44,7 +44,7 @@ type Tab = typeof TABS[number]["key"];
  *  uma lista curta e esquisita. */
 const MIN_TRENDING_HASHTAGS = 5;
 
-const BOOK_COLORS = ["#9231EA","#FD0867","#FDA50E","#1FAFA6","#6BA547","#FFC93C"];
+const BOOK_COLORS = ["#2F6FED","#2F6FED","#2F6FED","#1FAFA6","#6BA547","#FFC93C"];
 const bookColor = (s: string) => BOOK_COLORS[(s?.charCodeAt(0) ?? 0) % BOOK_COLORS.length];
 const fmtB = (n: number) => n >= 1000 ? `${(n/1000).toFixed(1)}K` : String(n ?? 0);
 
@@ -69,13 +69,13 @@ function BooksSection({ search, navigate }: { search: string; navigate: any }) {
 
   if (books.length === 0) return (
     <div className="flex flex-col items-center py-20 gap-3">
-      <BookOpen className="w-10 h-10 opacity-20" style={{ color: "#9231EA" }} />
+      <BookOpen className="w-10 h-10 opacity-20" style={{ color: "#2F6FED" }} />
       <p className="font-bold text-sm" style={{ color: "var(--text-muted)" }}>
         {search ? "Nenhum livro encontrado" : "Ainda não há livros"}
       </p>
       <button onClick={() => navigate({ to: "/livros" })}
         className="px-4 h-9 rounded-full text-sm font-bold text-white"
-        style={{ background: "#9231EA" }}>
+        style={{ background: "#2F6FED" }}>
         Adicionar um livro
       </button>
     </div>

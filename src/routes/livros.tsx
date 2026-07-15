@@ -15,7 +15,7 @@ export const Route = createFileRoute("/livros")({
   component: LivrosPage,
 });
 
-const P = "#9231EA";
+const P = "#2F6FED";
 const CATS = ["Romance","Ficção","Negócios","Autoajuda","História","Tecnologia","Religião","Educação","Outro"];
 
 /* ── Formatar números ── */
@@ -32,7 +32,7 @@ function CoverPlaceholder({ title, color }: { title: string; color: string }) {
   );
 }
 
-const COLORS = ["#9231EA","#FD0867","#FDA50E","#1FAFA6","#6BA547","#FFC93C"];
+const COLORS = ["#2F6FED","#2F6FED","#2F6FED","#1FAFA6","#6BA547","#FFC93C"];
 const colorFor = (s: string) => COLORS[(s?.charCodeAt(0) ?? 0) % COLORS.length];
 
 /* ── Book Card ── */
@@ -188,7 +188,7 @@ function CreateBookModal({ onClose, onCreated }: { onClose: () => void; onCreate
             <div className="shrink-0">
               <p className="text-xs font-bold mb-1.5" style={{ color: "var(--text-muted)" }}>CAPA</p>
               <button onClick={() => coverRef.current?.click()}
-                className="w-24 rounded-xl overflow-hidden border-2 border-dashed transition-all hover:border-[#9231EA] flex items-center justify-center"
+                className="w-24 rounded-xl overflow-hidden border-2 border-dashed transition-all hover:border-[#2F6FED] flex items-center justify-center"
                 style={{ aspectRatio: "2/3", borderColor: coverPreview ? P : "var(--border-default)", background: "var(--s2)" }}>
                 {coverPreview
                   ? <img src={coverPreview} className="w-full h-full object-cover" alt="capa" />
@@ -202,13 +202,13 @@ function CreateBookModal({ onClose, onCreated }: { onClose: () => void; onCreate
               <div>
                 <p className="text-xs font-bold mb-1" style={{ color: "var(--text-muted)" }}>TÍTULO *</p>
                 <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Título do livro"
-                  className="w-full px-3 py-2 rounded-xl text-sm border outline-none focus:border-[#9231EA]"
+                  className="w-full px-3 py-2 rounded-xl text-sm border outline-none focus:border-[#2F6FED]"
                   style={{ background: "var(--s2)", borderColor: "var(--border-default)", color: "var(--text-primary)" }} />
               </div>
               <div>
                 <p className="text-xs font-bold mb-1" style={{ color: "var(--text-muted)" }}>AUTOR</p>
                 <input value={author} onChange={e => setAuthor(e.target.value)} placeholder="Nome do autor"
-                  className="w-full px-3 py-2 rounded-xl text-sm border outline-none focus:border-[#9231EA]"
+                  className="w-full px-3 py-2 rounded-xl text-sm border outline-none focus:border-[#2F6FED]"
                   style={{ background: "var(--s2)", borderColor: "var(--border-default)", color: "var(--text-primary)" }} />
               </div>
               <div>
@@ -226,7 +226,7 @@ function CreateBookModal({ onClose, onCreated }: { onClose: () => void; onCreate
           <div>
             <p className="text-xs font-bold mb-1" style={{ color: "var(--text-muted)" }}>DESCRIÇÃO</p>
             <textarea value={desc} onChange={e => setDesc(e.target.value)} placeholder="Sobre o livro..." rows={3}
-              className="w-full px-3 py-2 rounded-xl text-sm border outline-none resize-none focus:border-[#9231EA]"
+              className="w-full px-3 py-2 rounded-xl text-sm border outline-none resize-none focus:border-[#2F6FED]"
               style={{ background: "var(--s2)", borderColor: "var(--border-default)", color: "var(--text-primary)" }} />
           </div>
 
@@ -234,7 +234,7 @@ function CreateBookModal({ onClose, onCreated }: { onClose: () => void; onCreate
           <div>
             <p className="text-xs font-bold mb-1.5" style={{ color: "var(--text-muted)" }}>FICHEIRO DO LIVRO * <span className="font-normal normal-case">(PDF, EPUB, DOCX · máx 100MB)</span></p>
             <button onClick={() => fileRef.current?.click()}
-              className="w-full py-4 rounded-xl border-2 border-dashed flex items-center justify-center gap-2 transition-all hover:border-[#9231EA]"
+              className="w-full py-4 rounded-xl border-2 border-dashed flex items-center justify-center gap-2 transition-all hover:border-[#2F6FED]"
               style={{ borderColor: bookFile ? P : "var(--border-default)", background: "var(--s2)" }}>
               {bookFile
                 ? <><FileText className="w-5 h-5" style={{ color: P }} /><span className="text-sm font-semibold" style={{ color: P }}>{bookFile.name}</span></>
@@ -247,7 +247,7 @@ function CreateBookModal({ onClose, onCreated }: { onClose: () => void; onCreate
           {saving && (
             <div>
               <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "var(--s3)" }}>
-                <div className="h-full rounded-full transition-all duration-500" style={{ width: `${progress}%`, background: `linear-gradient(90deg,${P},#FD0867)` }} />
+                <div className="h-full rounded-full transition-all duration-500" style={{ width: `${progress}%`, background: `#2F6FED` }} />
               </div>
               <p className="text-xs mt-1 text-center" style={{ color: "var(--text-muted)" }}>A publicar... {progress}%</p>
             </div>
@@ -256,7 +256,7 @@ function CreateBookModal({ onClose, onCreated }: { onClose: () => void; onCreate
           {/* Botão publicar */}
           <button onClick={handleSubmit} disabled={saving}
             className="w-full h-12 rounded-xl font-bold text-white flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-60"
-            style={{ background: `linear-gradient(135deg,${P},#FD0867)` }}>
+            style={{ background: `#2F6FED` }}>
             {saving ? <><Loader2 className="w-4 h-4 animate-spin" />A publicar...</> : <><BookOpen className="w-4 h-4" />Publicar livro</>}
           </button>
         </div>
@@ -314,7 +314,7 @@ function BookDetailModal({ book, onClose, onSave, onDownload }: {
               <p className="text-xs" style={{ color: "var(--text-muted)" }}>Downloads</p>
             </div>
             <div className="text-center">
-              <p className="font-extrabold text-lg" style={{ color: "#FD0867" }}>{fmtN(book.saves ?? 0)}</p>
+              <p className="font-extrabold text-lg" style={{ color: "#2F6FED" }}>{fmtN(book.saves ?? 0)}</p>
               <p className="text-xs" style={{ color: "var(--text-muted)" }}>Guardados</p>
             </div>
             {book.file_format && (
@@ -340,7 +340,7 @@ function BookDetailModal({ book, onClose, onSave, onDownload }: {
             </button>
             <button onClick={onDownload}
               className="flex-1 h-11 rounded-xl font-bold text-sm text-white flex items-center justify-center gap-2 transition-all active:scale-95"
-              style={{ background: `linear-gradient(135deg,${P},#FD0867)` }}>
+              style={{ background: `#2F6FED` }}>
               <Download className="w-4 h-4" /> Descarregar
             </button>
           </div>
@@ -481,7 +481,7 @@ function LivrosPage() {
             {uid && (
               <button onClick={() => setShowCreate(true)}
                 className="flex items-center gap-1.5 px-3 h-9 rounded-full text-white text-sm font-bold transition-all active:scale-95"
-                style={{ background: `linear-gradient(135deg,${P},#FD0867)` }}>
+                style={{ background: `#2F6FED` }}>
                 <Plus className="w-4 h-4" /> Adicionar
               </button>
             )}
@@ -536,7 +536,7 @@ function LivrosPage() {
               {tab === "mine" && uid && (
                 <button onClick={() => setShowCreate(true)}
                   className="mt-2 px-5 h-10 rounded-full text-white font-bold text-sm"
-                  style={{ background: `linear-gradient(135deg,${P},#FD0867)` }}>
+                  style={{ background: `#2F6FED` }}>
                   Adicionar o primeiro livro
                 </button>
               )}

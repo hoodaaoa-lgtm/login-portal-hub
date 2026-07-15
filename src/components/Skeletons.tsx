@@ -294,7 +294,7 @@ export function BackgroundRefreshDot({ show }: { show: boolean }) {
   return (
     <span
       className="inline-block h-1.5 w-1.5 rounded-full animate-pulse"
-      style={{ background: "#9231EA" }}
+      style={{ background: "#2F6FED" }}
       aria-label="Atualizando"
       title="Atualizando…"
     />
