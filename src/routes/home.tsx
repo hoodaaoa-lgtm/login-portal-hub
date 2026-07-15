@@ -50,6 +50,11 @@ export const Route = createFileRoute("/home")({
 
 /* ─── Constants ─── */
 const POSTS: any[] = []; // feed carregado do Supabase em HomePage
+// Comunidades — mock visual apenas; sem tabela no Supabase ainda
+const SNAPPER_COMMUNITIES_MOBILE = [
+  { name: "Futebol Angola" },
+  { name: "Gamers 244" },
+] as const;
 
 /* SimpleVideoPlayer local foi substituído por FeedVideoPlayer (moldura + controles tipo YouTube) */
 
@@ -685,6 +690,30 @@ function HomePage() {
       </header>
 
       <main className="w-full max-w-full">
+        {/* Comunidades — faixa horizontal + sala ativa (só mobile; no PC isto vive nas sidebars) */}
+        <div className="lg:hidden pt-2 pb-1">
+          <div className="flex gap-2 px-3 pb-2 overflow-x-auto no-scrollbar">
+            {SNAPPER_COMMUNITIES_MOBILE.map((c, i) => (
+              <button key={c.name}
+                className="flex items-center gap-1.5 pl-1.5 pr-3 py-1.5 rounded-full shrink-0"
+                style={{ background: i === 0 ? "#2F6FED22" : "var(--s2)" }}>
+                <span className="h-[18px] w-[18px] rounded-md shrink-0" style={{ background: "#2F6FED" }} />
+                <span className="text-[11px] font-semibold whitespace-nowrap" style={{ color: i === 0 ? "#2F6FED" : "var(--text-primary)" }}>{c.name}</span>
+              </button>
+            ))}
+            <button className="flex items-center justify-center px-3 py-1.5 rounded-full shrink-0" style={{ background: "var(--s2)" }}>
+              <Plus className="h-3.5 w-3.5" style={{ color: "var(--text-primary)" }} />
+            </button>
+          </div>
+          <div className="px-3">
+            <button className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl" style={{ background: "var(--s2)" }}>
+              <span className="h-1.5 w-1.5 rounded-full shrink-0" style={{ background: "#22C55E" }} />
+              <span className="text-xs font-semibold flex-1 text-left" style={{ color: "var(--text-primary)" }}>Futebol · Geral · 12 online</span>
+              <ChevronRight className="h-3.5 w-3.5" style={{ color: "var(--text-muted)" }} />
+            </button>
+          </div>
+        </div>
+
         {/* Feed */}
         <section className="pt-1 pb-6 space-y-1 w-full px-3">
           {loadingFeed && <UniversalSkeleton variant="feed" count={4} />}
