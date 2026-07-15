@@ -1,7 +1,6 @@
 import React from "react";
 import { Search } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
-import { SnapperTipCard } from "@/components/SnapperTipCard";
 
 // Mock visual apenas — sem tabela "rooms"/"communities" no Supabase ainda
 const ACTIVE_ROOMS = [
@@ -55,16 +54,6 @@ export function RightSidebar() {
         </div>
       </div>
 
-      <SnapperTipCard variant="sidebar" />
-
-      <div className="flex items-center justify-center flex-wrap gap-x-1.5 text-[11px]" style={{ color: "var(--text-muted)" }}>
-        <a href="/uso" target="_blank" rel="noopener noreferrer" className="hover:underline">Termos</a>
-        <span>·</span>
-        <a href="/privacidade" target="_blank" rel="noopener noreferrer" className="hover:underline">Privacidade</a>
-        <span>·</span>
-        <a href="/acessibilidade" target="_blank" rel="noopener noreferrer" className="hover:underline">Acessibilidade</a>
-      </div>
-      <p className="text-[11px] text-center" style={{ color: "var(--text-muted)" }}>© 2026 Snapper</p>
     </div>
   );
 }

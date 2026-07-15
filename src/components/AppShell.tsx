@@ -11,7 +11,7 @@ import { UserDrawer } from "@/components/UserDrawer";
 import { QuickPostModal } from "@/components/QuickComposer";
 import {
   Home, Compass, MessageSquare, User, Tv, Menu,
-  Moon, Sun, Bell, Feather, MoreHorizontal, ArrowLeft, Plus,
+  Moon, Sun, Bell, MoreHorizontal, ArrowLeft, Plus,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { optimizeAvatar } from "@/lib/imageOptimize";
@@ -125,7 +125,7 @@ export function SideNav() {
       </div>
 
       {/* Nav links */}
-      <nav className="flex-1 px-2 py-2 space-y-0.5 overflow-y-auto">
+      <nav className="flex-1 flex flex-col px-2 py-2 space-y-0.5 overflow-y-auto">
         {NAV_ITEMS.map(({ to, label, Icon, search }) => {
           const isNotif = label === "Notificações";
           const active = isNotif
@@ -157,10 +157,11 @@ export function SideNav() {
           }
           return (
             <Link key={label} to={to} search={search}
-              className="flex items-center gap-4 px-3 py-2.5 rounded-full text-[15px] transition-colors group hover:bg-[color-mix(in_oklab,var(--text-primary)_6%,transparent)]"
+              className="flex items-center gap-4 px-3 py-2.5 rounded-full text-[15px] transition-colors group"
               style={{
-                color: active ? "var(--text-primary)" : "var(--text-primary)",
-                fontWeight: active ? 800 : 500,
+                color: active ? "#2F6FED" : "var(--text-primary)",
+                background: active ? "#2F6FED14" : "transparent",
+                fontWeight: active ? 700 : 500,
               }}>
               {isPerfil ? (
                 <div className="shrink-0 h-7 w-7 rounded-full overflow-hidden flex items-center justify-center text-[11px] font-extrabold text-white"
@@ -171,8 +172,8 @@ export function SideNav() {
                 </div>
               ) : (
                 <Icon
-                  className="h-[26px] w-[26px] shrink-0"
-                  strokeWidth={active ? 2.5 : 1.9}
+                  className="h-[22px] w-[22px] shrink-0"
+                  strokeWidth={active ? 2.2 : 1.9}
                 />
               )}
               <span className="truncate">{label}</span>
@@ -195,21 +196,12 @@ export function SideNav() {
             <span className="truncate">{c.name}</span>
           </button>
         ))}
-        <div className="px-3 pt-2 pb-1">
-          <button className="w-full h-8 rounded-full text-white text-[12px] font-bold flex items-center justify-center gap-1.5 transition active:scale-[0.98]"
-            style={{ background: "#2F6FED" }}>
-            <Plus className="h-3.5 w-3.5" /> Criar comunidade
-          </button>
-        </div>
 
-        {/* Botão Publicar — estilo X */}
-        <div className="pt-3 px-1">
-          <button
-            onClick={() => setShowComposer(true)}
-            className="w-full h-[52px] rounded-full text-white font-extrabold text-[16px] flex items-center justify-center gap-2 transition active:scale-[0.98]"
-            style={{ background: "#2F6FED", boxShadow: "0 6px 18px rgba(47,111,237,0.35)" }}>
-            <Feather className="h-5 w-5" />
-            <span>Publicar</span>
+        {/* + Criar — fixo no fundo da nav, como no design */}
+        <div className="mt-auto px-1 pt-3">
+          <button className="w-full h-10 rounded-full text-[13px] font-bold flex items-center justify-center gap-1.5 transition active:scale-[0.98] border"
+            style={{ borderColor: "var(--border-default)", color: "var(--text-primary)" }}>
+            <Plus className="h-3.5 w-3.5" /> Criar
           </button>
         </div>
       </nav>
