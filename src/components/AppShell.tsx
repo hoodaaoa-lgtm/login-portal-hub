@@ -180,7 +180,8 @@ export function SideNav() {
 
         {/* + Criar — fixo no fundo da nav, como no design */}
         <div className="mt-auto px-1 pt-3">
-          <button className="w-full h-10 rounded-full text-[13px] font-bold flex items-center justify-center gap-1.5 transition active:scale-[0.98] border"
+          <button onClick={() => navigate({ to: "/canal/novo" })}
+            className="w-full h-10 rounded-full text-[13px] font-bold flex items-center justify-center gap-1.5 transition active:scale-[0.98] border"
             style={{ borderColor: "var(--border-default)", color: "var(--text-primary)" }}>
             <Plus className="h-3.5 w-3.5" /> Criar
           </button>
