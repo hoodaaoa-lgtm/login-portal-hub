@@ -18,7 +18,7 @@ import {
   Banknote, BarChart3, Star, Heart, Share2,
   MoreHorizontal, Trash2, Send, Copy, Moon, Sun, ExternalLink,
   Twitter, Instagram, Youtube, Facebook, Linkedin, Music2, Loader, Tv, Film,
-  ArrowLeft, Check, AlignLeft, AtSign, Mail, User as UserIcon,
+  ArrowLeft, Check, AlignLeft, AtSign, Mail, User as UserIcon, Archive,
 } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useAvatar } from "@/contexts/AvatarContext";
@@ -1477,7 +1477,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
     if (initialProfile) setProfile(initialProfile);
   }, [initialProfile]);
   const name = profile?.full_name || profile?.username || email?.split("@")[0] || "?";
-  const [tab, setTab] = useState<"info">("info");
+  const [tab, setTab] = useState<"inicio" | "arquivos" | "sobre">("inicio");
   const [showSettings, setShowSettings] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [photoViewing, setPhotoViewing] = useState<string|null>(null);
@@ -1492,9 +1492,6 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
   const [showMsgPrivacy, setShowMsgPrivacy] = useState(false);
   const [posts, setPosts] = useState<Post[]>([]);
   const [postsLoading, setPostsLoading] = useState(true);
-  const [activities, setActivities] = useState<any[]>([]);
-  const [activitiesLoading, setActivitiesLoading] = useState(true);
-  const [activitiesLoaded, setActivitiesLoaded] = useState(false);
   const [website, setWebsite] = useState("");
   const [location, setLocation] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
@@ -1503,8 +1500,6 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
   const { setAvatarUrl: setGlobalAvatarUrl } = useAvatar();
   const [msgPermission, setMsgPermission] = useState("todos");
   const [myUserId, setMyUserId] = useState<string>("");
-  const [savedPosts, setSavedPosts] = useState<SavedPost[]>([]);
-  const [savedLoading, setSavedLoading] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
   const [photoViewerSrc, setPhotoViewerSrc] = useState<string | null>(null);
@@ -1645,7 +1640,6 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
       }
       } finally {
         setPostsLoading(false);
-        setStatsLoading(false);
       }
     })();
   }, []);
@@ -1653,166 +1647,6 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
   function addPost(post: Post) {
     setPosts((prev) => (prev.some((p) => p.id === post.id) ? prev : [post, ...prev]));
   }
-
-  /* Carregar respostas, reposts e quotes (tab "Respostas") sob pedido */
-  useEffect(() => {
-    if (tab !== "replies" || !myUserId || activitiesLoaded) return;
-    (async () => {
-      setActivitiesLoading(true);
-      try {
-        const [repliesRes, repostsRes, quotesRes] = await Promise.all([
-          (supabase as any).from("post_replies")
-            .select("id, post_id, content, media_url, media_type, created_at")
-            .eq("author_id", myUserId)
-            .order("created_at", { ascending: false }),
-          (supabase as any).from("post_reposts")
-            .select("id, post_id, created_at")
-            .eq("user_id", myUserId)
-            .order("created_at", { ascending: false }),
-          (supabase as any).from("post_quotes")
-            .select("id, original_post_id, content, media_url, media_type, created_at")
-            .eq("author_id", myUserId)
-            .order("created_at", { ascending: false }),
-        ]);
-
-        const replies = repliesRes.data ?? [];
-        const reposts = repostsRes.data ?? [];
-        const quotes  = quotesRes.data ?? [];
-
-        // Recolher todos os post_id originais para buscar de uma vez
-        const allOriginalIds = [
-          ...replies.map((r: any) => r.post_id),
-          ...reposts.map((r: any) => r.post_id),
-          ...quotes.map((q: any) => q.original_post_id),
-        ].filter(Boolean);
-
-        const originalsMap: Record<string, any> = {};
-        if (allOriginalIds.length > 0) {
-          const { data: originals } = await (supabase as any)
-            .from("posts")
-            .select("id, content, kind, image_url, video_url, author_username, author_name, author_color, created_at")
-            .in("id", [...new Set(allOriginalIds)]);
-          (originals ?? []).forEach((o: any) => { originalsMap[o.id] = o; });
-        }
-
-        function getOriginalText(o: any) {
-          if (!o) return null;
-          if (o.kind === "bg") { try { return JSON.parse(o.content).text; } catch { return o.content; } }
-          return o.content;
-        }
-
-        const merged = [
-          ...replies.map((r: any) => ({
-            id: `reply-${r.id}`, type: "reply" as const,
-            content: r.content, mediaUrl: r.media_url, createdAt: r.created_at,
-            original: originalsMap[r.post_id] ? {
-              id: r.post_id,
-              text: getOriginalText(originalsMap[r.post_id]),
-              author: originalsMap[r.post_id].author_username,
-              authorName: originalsMap[r.post_id].author_name,
-              authorColor: originalsMap[r.post_id].author_color,
-              image: originalsMap[r.post_id].image_url,
-              videoUrl: originalsMap[r.post_id].video_url || null,
-            } : null,
-          })),
-          ...reposts.map((r: any) => ({
-            id: `repost-${r.id}`, type: "repost" as const,
-            content: null, mediaUrl: null, createdAt: r.created_at,
-            original: originalsMap[r.post_id] ? {
-              id: r.post_id,
-              text: getOriginalText(originalsMap[r.post_id]),
-              author: originalsMap[r.post_id].author_username,
-              authorName: originalsMap[r.post_id].author_name,
-              authorColor: originalsMap[r.post_id].author_color,
-              image: originalsMap[r.post_id].image_url,
-              videoUrl: originalsMap[r.post_id].video_url || null,
-            } : null,
-          })),
-          ...quotes.map((q: any) => ({
-            id: `quote-${q.id}`, type: "quote" as const,
-            content: q.content, mediaUrl: q.media_url, createdAt: q.created_at,
-            original: originalsMap[q.original_post_id] ? {
-              id: q.original_post_id,
-              text: getOriginalText(originalsMap[q.original_post_id]),
-              author: originalsMap[q.original_post_id].author_username,
-              authorName: originalsMap[q.original_post_id].author_name,
-              authorColor: originalsMap[q.original_post_id].author_color,
-              image: originalsMap[q.original_post_id].image_url,
-              videoUrl: originalsMap[q.original_post_id].video_url || null,
-            } : null,
-          })),
-        ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
-        setActivities(merged);
-        setActivitiesLoaded(true);
-      } catch (e) {
-        toast.error("Não foi possível carregar as respostas.");
-      } finally {
-        setActivitiesLoading(false);
-      }
-    })();
-  }, [tab, myUserId, activitiesLoaded]);
-
-  /* Carregar publicações guardadas (tab "Guardado") sob pedido */
-  useEffect(() => {
-    if (tab !== "saved" || !myUserId) return;
-    (async () => {
-      setSavedLoading(true);
-      const { data: saveRows } = await supabase.from("post_saves").select("post_id").eq("user_id", myUserId);
-      const postIds = [...new Set((saveRows ?? []).map((r: any) => r.post_id))];
-      if (postIds.length === 0) { setSavedPosts([]); setSavedLoading(false); return; }
-
-      const { data: postsData } = await supabase
-        .from("posts")
-        .select("id, content, kind, created_at, photo_url, image_url, video_url, photos, author_id, author_username, author_name")
-        .in("id", postIds);
-      const rows = postsData ?? [];
-
-      const [{ data: likesData }, { data: commentsData }] = await Promise.all([
-        supabase.from("post_likes").select("post_id,user_id").in("post_id", postIds),
-        supabase.from("post_comments").select("post_id").in("post_id", postIds),
-      ]);
-      const likesByPost: Record<string, string[]> = {};
-      (likesData ?? []).forEach((l: any) => {
-        if (!likesByPost[l.post_id]) likesByPost[l.post_id] = [];
-        likesByPost[l.post_id].push(l.user_id);
-      });
-      const commentsByPost: Record<string, number> = {};
-      (commentsData ?? []).forEach((c: any) => { commentsByPost[c.post_id] = (commentsByPost[c.post_id] ?? 0) + 1; });
-
-      const authorIds = [...new Set(rows.map((p: any) => p.author_id).filter(Boolean))];
-      const { data: authorProfiles } = authorIds.length > 0
-        ? await supabase.from("profiles").select("id,avatar_url,is_verified").in("id", authorIds)
-        : { data: [] as any[] };
-      const avatarByAuthor: Record<string, string | null> = {};
-      const verifiedByAuthor: Record<string, boolean> = {};
-      (authorProfiles ?? []).forEach((p: any) => { avatarByAuthor[p.id] = p.avatar_url ?? null; verifiedByAuthor[p.id] = !!p.is_verified; });
-
-      const loaded: SavedPost[] = rows.map((p: any) => {
-        let text = p.content;
-        let bgColor: string | null = null;
-        if (p.kind === "bg") {
-          try { const j = JSON.parse(p.content); text = j.text; bgColor = j.bgColor; } catch (_) {}
-        }
-        const photo = (p as any).photo_url || (p as any).image_url || ((p as any).photos && (p as any).photos[0]) || null;
-        const photos = Array.isArray((p as any).photos) && (p as any).photos.length > 0 ? (p as any).photos : null;
-        const videoUrl = (p as any).video_url || undefined;
-        const likeIds = likesByPost[p.id] ?? [];
-        return {
-          id: p.id, text, photo, photos, bgColor, createdAt: new Date(p.created_at ?? Date.now()),
-          likes: likeIds.length, likedByMe: likeIds.includes(myUserId), views_count: (p as any).views_count ?? 0,
-          comments: commentsByPost[p.id] ?? 0, bookmarked: true,
-          videoUrl,
-          authorId: p.author_id, authorName: p.author_name || p.author_username || "hooda",
-          authorUsername: p.author_username || "utilizador",
-          authorAvatar: p.author_id ? avatarByAuthor[p.author_id] ?? null : null,
-          authorIsVerified: p.author_id ? !!verifiedByAuthor[p.author_id] : false,
-        };
-      }).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-      setSavedPosts(loaded);
-      setSavedLoading(false);
-    })();
-  }, [tab, myUserId]);
 
   async function deletePost(id: string) {
     setPosts(prev => prev.filter(p => p.id !== id));
@@ -1847,7 +1681,9 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
   }
 
   const tabs = [
-    { key: "info", label: "Info", icon: Info },
+    { key: "inicio", label: "Início" },
+    { key: "arquivos", label: "Arquivos" },
+    { key: "sobre", label: "Sobre" },
   ] as const;
 
   /* Enquanto o perfil (nome/username) ainda não chegou do Supabase,
@@ -2005,7 +1841,29 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
         </div>
 
         {/* Conteúdo das tabs */}
-        {tab === "info" && (
+        {tab === "inicio" && (
+          <PostsFeed
+            posts={posts}
+            loading={postsLoading}
+            name={name}
+            username={profile?.username || ""}
+            avatarUrl={(profile as any)?.avatar_url}
+            onDelete={(id) => setPosts((prev) => prev.filter((p) => p.id !== id))}
+            myUserId={myUserId}
+            isVerified={(profile as any)?.is_verified}
+          />
+        )}
+
+        {tab === "arquivos" && (
+          <div className="px-5 py-14 flex flex-col items-center gap-3 text-center">
+            <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ background: ACCENT + "14" }}>
+              <Archive className="h-7 w-7" style={{ color: ACCENT }} />
+            </div>
+            <p className="text-sm font-semibold" style={{ color: "var(--text-muted)" }}>Ainda não há nada no arquivo</p>
+          </div>
+        )}
+
+        {tab === "sobre" && (
           <div className="px-5 py-4">
             <div className="flex flex-col gap-2">
               {[
