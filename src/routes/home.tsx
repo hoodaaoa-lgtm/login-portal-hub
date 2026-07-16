@@ -11,6 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { ProfileAvatarLink } from "@/components/ProfileAvatarLink";
 import { PostCommentsModal } from "@/components/PostCommentsModal";
 import { UniversalPostCard } from "@/components/UniversalPostCard";
+import { CreatePostModal, PostComposerBar } from "@/components/CreatePostModal";
 import { SnapperTipCard } from "@/components/SnapperTipCard";
 import { registerVideo, notifyVideoPlaying, pauseAllVideos } from "@/lib/mediaManager";
 import { useNetworkInfo } from "@/hooks/useNetworkInfo";
@@ -100,6 +101,7 @@ function HomePage() {
   const [hasMorePosts, setHasMorePosts] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [extraPosts, setExtraPosts] = useState<any[]>([]); // páginas extra carregadas via scroll infinito
+  const [showCreatePost, setShowCreatePost] = useState(false);
   const [myUserId, setMyUserId] = useState("");
   const [myUsername, setMyUsername] = useState("");
 
@@ -687,6 +689,12 @@ function HomePage() {
       <main className="w-full max-w-full">
         {/* Feed */}
         <section className="pt-1 pb-6 space-y-1 w-full px-3">
+          <PostComposerBar
+            name={myDisplayName || "utilizador"}
+            avatarUrl={userAvatarUrl}
+            onOpen={() => setShowCreatePost(true)}
+          />
+
           {loadingFeed && <UniversalSkeleton variant="feed" count={4} />}
 
           {!loadingFeed && realPosts.length === 0 && (
@@ -739,6 +747,16 @@ function HomePage() {
 
       <WelcomeInstallPrompt userId={session?.user?.id ?? null} />
 
+      {showCreatePost && (
+        <CreatePostModal
+          name={myDisplayName || "utilizador"}
+          username={myUsername}
+          avatarUrl={userAvatarUrl}
+          onClose={() => setShowCreatePost(false)}
+          onPublish={() => { qc.invalidateQueries({ queryKey: QUERY_KEYS.feed(effectiveUserId) }); }}
+        />
+      )}
+
       {/* Notification center */}
       {showNotifCenter && (
         <NotificationCenter
@@ -757,5 +775,3 @@ function HomePage() {
     </div>
   );
 }
-
-
