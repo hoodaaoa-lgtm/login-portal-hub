@@ -25,8 +25,8 @@ import { QUERY_KEYS, REALTIME_QUERY_OPTIONS } from "@/lib/queryClient";
 import {
   Search, Bell, Plus, MessageCircle, Share2, Music, X, Heart,
   ChevronLeft, ChevronRight, ImageIcon, Type as TypeIcon, Check,
-  BarChart3, Trash2, Copy, Bookmark, BookmarkCheck, Forward, Repeat2,
-  MoreHorizontal, RefreshCw,
+  BarChart3, Trash2, Copy, Forward, Repeat2,
+  MoreHorizontal, RefreshCw, ArrowBigUp, Radar,
 } from "lucide-react";
 import { toast } from "sonner";
 import { extractUrl } from "@/lib/linkPreview";
@@ -1346,36 +1346,30 @@ export function UniversalPostCard({ post: p, onDeleted, onBookmarkChange }: {
         </div>
       )}
       {!isAd && (
-        <div className="flex items-center justify-between px-3 py-2 border-t border-neutral-50">
-          <button onClick={() => setShowComments(true)} className="flex items-center gap-1.5 px-2 py-1.5 rounded-full hover:bg-[var(--s1)]">
-            <MessageCircle className="h-5 w-5 text-[var(--text-muted)]" />
-            <span className="text-xs font-semibold text-[var(--text-muted)]">{commentCount}</span>
-          </button>
-          {!isOwnPost && (
-            <button onClick={() => setShowRepost(true)}
-              className="flex items-center gap-1.5 px-2 py-1.5 rounded-full transition-all active:scale-95 hover:bg-[var(--s1)]">
-              <Repeat2 className="h-5 w-5" style={{ color: didRepost ? "#1FAFA6" : "var(--text-muted)" }} />
-              <span className="text-xs font-semibold" style={{ color: didRepost ? "#1FAFA6" : "var(--text-muted)" }}>{repostCount}</span>
-            </button>
-          )}
+        <div className="flex items-center gap-2 px-3 py-2 border-t border-neutral-50">
           <button onClick={toggleLike}
-            className={`flex items-center gap-1.5 px-2 py-1.5 rounded-full transition-all active:scale-95 ${liked ? "text-red-500" : "hover:bg-[var(--s1)]"}`}>
-            <Heart className={`h-5 w-5 ${liked ? "fill-red-500 text-red-500" : "text-[var(--text-muted)]"}`} />
-            <span className="text-xs font-semibold" style={{ color: liked ? "#ef4444" : "var(--text-muted)" }}>{likeCount}</span>
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-full transition-all active:scale-95"
+            style={{ background: liked ? "rgba(47,111,237,0.12)" : "var(--s1)", color: liked ? "#2F6FED" : "var(--text-muted)" }}>
+            <ArrowBigUp className="h-[18px] w-[18px]" style={liked ? { fill: "#2F6FED" } : undefined} />
+            <span className="text-xs font-semibold">{likeCount}</span>
           </button>
-          <span className="flex items-center gap-1.5 px-2 py-1.5 text-xs font-semibold" style={{ color: "var(--text-muted)" }}>
-            <BarChart3 className="h-5 w-5" />{viewCount.toLocaleString("pt-PT")}
+          <button onClick={() => setShowComments(true)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-full border transition-all active:scale-95"
+            style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}>
+            <MessageCircle className="h-[17px] w-[17px]" />
+            <span className="text-xs font-semibold">{commentCount}</span>
+          </button>
+          <span className="flex items-center gap-1.5 px-1.5 py-2 text-xs font-semibold" style={{ color: "var(--text-muted)" }}>
+            <Radar className="h-[17px] w-[17px]" />
+            {viewCount.toLocaleString("pt-PT")}
           </span>
-          <div className="flex items-center gap-0.5">
-            <button onClick={toggleBookmark} className="p-2 rounded-full hover:bg-[var(--s1)] transition">
-              {bookmarked
-                ? <BookmarkCheck className="h-5 w-5" style={{ color: "#2F6FED" }} />
-                : <Bookmark className="h-5 w-5 text-[var(--text-muted)]" />}
-            </button>
-            <button onClick={() => setShowForward(true)} className="p-2 rounded-full hover:bg-[var(--s1)] transition">
-              <Share2 className="h-5 w-5 text-[var(--text-muted)]" />
-            </button>
-          </div>
+          <div className="flex-1" />
+          <button onClick={() => setShowForward(true)}
+            className="p-2 rounded-full border transition-all active:scale-95"
+            style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}
+            aria-label="Partilhar">
+            <Share2 className="h-[17px] w-[17px]" />
+          </button>
         </div>
       )}
       {showRepost && (
