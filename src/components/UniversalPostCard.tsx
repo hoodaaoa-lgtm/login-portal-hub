@@ -1171,6 +1171,34 @@ export function UniversalPostCard({ post: p, onDeleted, onBookmarkChange }: {
   }
 
 
+  const actionButtons = (
+    <div className="flex items-center gap-2 px-3 py-2 border-t border-neutral-50">
+      <button onClick={toggleLike}
+        className="flex items-center gap-1.5 px-3.5 py-2 rounded-full transition-all active:scale-95"
+        style={{ background: liked ? "rgba(47,111,237,0.12)" : "var(--s1)", color: liked ? "#2F6FED" : "var(--text-muted)" }}>
+        <ArrowBigUp className="h-[18px] w-[18px]" style={liked ? { fill: "#2F6FED" } : undefined} />
+        <span className="text-xs font-semibold">{likeCount}</span>
+      </button>
+      <button onClick={() => setShowComments(true)}
+        className="flex items-center gap-1.5 px-3 py-2 rounded-full border transition-all active:scale-95"
+        style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}>
+        <MessageCircle className="h-[17px] w-[17px]" />
+        <span className="text-xs font-semibold">{commentCount}</span>
+      </button>
+      <span className="flex items-center gap-1.5 px-1.5 py-2 text-xs font-semibold" style={{ color: "var(--text-muted)" }}>
+        <Radar className="h-[17px] w-[17px]" />
+        {viewCount.toLocaleString("pt-PT")}
+      </span>
+      <div className="flex-1" />
+      <button onClick={() => setShowForward(true)}
+        className="p-2 rounded-full border transition-all active:scale-95"
+        style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}
+        aria-label="Partilhar">
+        <Share2 className="h-[17px] w-[17px]" />
+      </button>
+    </div>
+  );
+
   return (
     <article ref={cardRef} className="hooda-card overflow-hidden animate-fade-in-up">
 
@@ -1345,33 +1373,7 @@ export function UniversalPostCard({ post: p, onDeleted, onBookmarkChange }: {
           <Music className="h-4 w-4 text-[#2F6FED] flex-shrink-0" />
         </div>
       )}
-      {!isAd && (
-        <div className="flex items-center gap-2 px-3 py-2 border-t border-neutral-50">
-          <button onClick={toggleLike}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-full transition-all active:scale-95"
-            style={{ background: liked ? "rgba(47,111,237,0.12)" : "var(--s1)", color: liked ? "#2F6FED" : "var(--text-muted)" }}>
-            <ArrowBigUp className="h-[18px] w-[18px]" style={liked ? { fill: "#2F6FED" } : undefined} />
-            <span className="text-xs font-semibold">{likeCount}</span>
-          </button>
-          <button onClick={() => setShowComments(true)}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-full border transition-all active:scale-95"
-            style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}>
-            <MessageCircle className="h-[17px] w-[17px]" />
-            <span className="text-xs font-semibold">{commentCount}</span>
-          </button>
-          <span className="flex items-center gap-1.5 px-1.5 py-2 text-xs font-semibold" style={{ color: "var(--text-muted)" }}>
-            <Radar className="h-[17px] w-[17px]" />
-            {viewCount.toLocaleString("pt-PT")}
-          </span>
-          <div className="flex-1" />
-          <button onClick={() => setShowForward(true)}
-            className="p-2 rounded-full border transition-all active:scale-95"
-            style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}
-            aria-label="Partilhar">
-            <Share2 className="h-[17px] w-[17px]" />
-          </button>
-        </div>
-      )}
+      {!isAd && actionButtons}
       {showRepost && (
         <RepostModal
           post={p}
@@ -1438,26 +1440,7 @@ export function UniversalPostCard({ post: p, onDeleted, onBookmarkChange }: {
               </div>
             </>
           }
-          actions={
-            <div className="flex items-center justify-between pt-2 pb-1">
-              {!isOwnPost && (
-                <button onClick={() => setShowRepost(true)}
-                  className="flex items-center gap-1.5 px-2 py-1.5 rounded-full transition-all active:scale-95 hover:bg-[var(--s1)]">
-                  <Repeat2 className="h-5 w-5" style={{ color: didRepost ? "#1FAFA6" : "var(--text-muted)" }} />
-                  <span className="text-xs font-semibold" style={{ color: didRepost ? "#1FAFA6" : "var(--text-muted)" }}>{repostCount}</span>
-                </button>
-              )}
-              <button onClick={toggleLike}
-                className={`flex items-center gap-1.5 px-2 py-1.5 rounded-full transition-all active:scale-95 ${liked ? "text-red-500" : "hover:bg-[var(--s1)]"}`}>
-                <Heart className={`h-5 w-5 ${liked ? "fill-red-500 text-red-500" : "text-[var(--text-muted)]"}`} />
-                <span className="text-xs font-semibold" style={{ color: liked ? "#ef4444" : "var(--text-muted)" }}>{likeCount}</span>
-              </button>
-              <span className="flex items-center gap-1.5 px-2 py-1.5 text-xs font-semibold" style={{ color: "var(--text-muted)" }}>
-                <BarChart3 className="h-5 w-5" />{viewCount.toLocaleString("pt-PT")}
-              </span>
-              <Share2 className="h-5 w-5 text-[var(--text-muted)]" />
-            </div>
-          }
+          actions={actionButtons}
           comments={comments}
           loading={commentsLoading}
           sending={sendingComment}
