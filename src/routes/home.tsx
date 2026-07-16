@@ -2,7 +2,8 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { HoodaLogo } from "@/components/HoodaLogo";
+import snapperIcon from "@/assets/site/snapper-icon-only.png";
+import snapperWordmark from "@/assets/site/snapper-wordmark-v2.png";
 import { BottomNav, SideNav, PageWrapper, FeedLayout } from "@/components/AppShell";
 import { RightSidebar } from "@/components/RightSidebar";
 import { useAvatar } from "@/contexts/AvatarContext";
@@ -10,27 +11,26 @@ import { useAuth } from "@/contexts/AuthContext";
 import { ProfileAvatarLink } from "@/components/ProfileAvatarLink";
 import { PostCommentsModal } from "@/components/PostCommentsModal";
 import { UniversalPostCard } from "@/components/UniversalPostCard";
+import { CreatePostModal, PostComposerBar } from "@/components/CreatePostModal";
 import { UserDrawer } from "@/components/UserDrawer";
-import { useBadges } from "@/contexts/BadgeContext";
-import { HoodaTipCard } from "@/components/HoodaTipCard";
+import { SnapperTipCard } from "@/components/SnapperTipCard";
 import { registerVideo, notifyVideoPlaying, pauseAllVideos } from "@/lib/mediaManager";
 import { useNetworkInfo } from "@/hooks/useNetworkInfo";
 import { fetchPostComments, sendPostComment, replyToPostComment, toggleCommentLike, notifyMentions } from "@/lib/comments";
 import { useNotifications } from "@/hooks/useNotifications";
 import { WelcomeInstallPrompt } from "@/components/WelcomeInstallPrompt";
-import { useFollowState } from "@/hooks/useSocialSystem";
 import {
   NotificationToast,
   NotificationCenter,
   type Notif,
 } from "@/components/Notifications";
 import {
-  Bell, Plus, MessageCircle, Share2, Music, X, Heart,
-  Volume2, VolumeX, ChevronLeft, ChevronRight, Play, Pause,
+  Bell, MessageCircle, Share2, Music, X, Heart,
+  Volume2, VolumeX, ChevronLeft, Play, Pause,
   ImageIcon, Type as TypeIcon, Check, ArrowLeft, Menu,
   AlignLeft, AlignCenter, AlignRight, Bold, Italic, Send, BarChart3,
   Trash2, Layers, Smile, Sliders, SlidersHorizontal,
-  Bookmark, BookmarkCheck, Forward, Repeat2,
+  Bookmark, BookmarkCheck, Forward, Repeat2, RefreshCw,
 } from "lucide-react";
 import { MusicLibrary, type Song } from "@/components/MusicLibrary";
 import { useTimeAgo } from "@/hooks/useTimeAgo";
@@ -42,186 +42,16 @@ import { PollCard } from "@/components/PollCard";
 import { useTranslation } from "react-i18next";
 import i18n from "@/lib/i18n";
 import { useScrollLock } from "@/hooks/useScrollLock";
-import { ComposeBox } from "@/components/QuickComposer";
 import { getSeenPostIds, addSeenPostIds, getSeenVideoIds, addSeenVideoIds, diversifyByAuthor, diversifyByAuthorAndTopic } from "@/lib/feedSeen";
 function t(key: string, opts?: Record<string, unknown>) { return i18n.t(key, opts) as string; }
 
 export const Route = createFileRoute("/home")({
-  head: () => ({ meta: [{ title: "Hooda" }] }),
+  head: () => ({ meta: [{ title: "Snapper" }] }),
   component: HomePage,
 });
 
 /* ─── Constants ─── */
 const POSTS: any[] = []; // feed carregado do Supabase em HomePage
-
-/* ══════════════════════════════════════════════
-   QUEM SEGUIR — card no feed
-══════════════════════════════════════════════ */
-function WhoToFollowCard({ myUserId, onDismiss, offset = 0 }: { myUserId: string; onDismiss: () => void; offset?: number }) {
-  const navigate = useNavigate();
-  const [suggestions, setSuggestions] = React.useState<any[]>([]);
-  const [loading, setLoading] = React.useState(true);
-  const scrollRef = React.useRef<HTMLDivElement>(null);
-
-  React.useEffect(() => {
-    async function load() {
-      try {
-        // 1 — quem eu sigo
-        const { data: myFollows } = await (supabase as any)
-          .from("follows").select("following_id").eq("follower_id", myUserId);
-        const myFollowIds = (myFollows ?? []).map((f: any) => f.following_id).filter(Boolean);
-        const excludeIds = new Set([myUserId, ...myFollowIds]);
-
-        // 2 — amigos de amigos
-        let candidates: any[] = [];
-        if (myFollowIds.length > 0) {
-          const { data: fof } = await (supabase as any)
-            .from("follows").select("following_id").in("follower_id", myFollowIds.slice(0, 20));
-          const fofIds = [...new Set((fof ?? []).map((f: any) => f.following_id))]
-            .filter(id => !excludeIds.has(id));
-          if (fofIds.length > 0) {
-            const { data: profiles } = await (supabase as any)
-              .from("profiles")
-              .select("id,username,full_name,avatar_url,bio,followers_count")
-              .in("id", fofIds.slice(0, 20))
-              .order("followers_count", { ascending: false });
-            candidates = profiles ?? [];
-          }
-        }
-
-        // 3 — se poucos, completa com populares ordenados por seguidores
-        if (candidates.length < 5) {
-          const excludeList = [...excludeIds].slice(0, 50);
-          const { data: popular } = await (supabase as any)
-            .from("profiles")
-            .select("id,username,full_name,avatar_url,bio,followers_count")
-            .not("id", "in", `(${excludeList.join(",")})`)
-            .order("followers_count", { ascending: false })
-            .limit(10);
-          const existIds = new Set(candidates.map((c: any) => c.id));
-          (popular ?? []).forEach((p: any) => { if (!existIds.has(p.id)) candidates.push(p); });
-        }
-
-        candidates.sort((a, b) => (b.followers_count ?? 0) - (a.followers_count ?? 0));
-        setSuggestions(candidates.slice(offset, offset + 4 > candidates.length ? candidates.length : offset + 4));
-      } catch {}
-      setLoading(false);
-    }
-    load();
-  }, [myUserId, offset]);
-
-  if (loading) return null;
-  if (!suggestions.length) return null;
-
-  const ACCENT = "#5B3FCF";
-  const AVATAR_COLORS = [ACCENT, "#F26B3A", "#1FAFA6", "#6BA547", "#E94B8A"];
-  const avatarColor = (name: string) => AVATAR_COLORS[(name?.charCodeAt(0) ?? 0) % AVATAR_COLORS.length];
-
-  return (
-    <div className="mx-0 my-1 border-b" style={{ borderColor: "var(--border-subtle, #f0f0f0)", background: "var(--s1, #fff)" }}>
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 pt-4 pb-3">
-        <div>
-          <p className="font-extrabold text-[15px]" style={{ color: "var(--text-primary)" }}>Quem acompanhar</p>
-          <p className="text-[12px] mt-0.5" style={{ color: "var(--text-muted)" }}>Pessoas que talvez conheças</p>
-        </div>
-        <button onClick={onDismiss}
-          className="w-7 h-7 rounded-full flex items-center justify-center transition hover:bg-[var(--s3)]"
-          style={{ color: "var(--text-muted)" }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-            <path d="M18 6L6 18M6 6l12 12"/>
-          </svg>
-        </button>
-      </div>
-
-      {/* Scroll horizontal */}
-      <div ref={scrollRef} className="flex gap-3 px-4 pb-4 overflow-x-auto"
-        style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
-        {suggestions.map((user) => (
-          <WhoToFollowSuggestionCard key={user.id} user={user} myUserId={myUserId} navigate={navigate} />
-        ))}
-
-        {/* Ver mais */}
-        <div className="shrink-0 flex flex-col items-center justify-center rounded-2xl p-3 border cursor-pointer transition hover:bg-[var(--s3)]"
-          style={{ width: 100, borderColor: "var(--border-default, #e8e8e8)", background: "var(--s2)" }}
-          onClick={() => navigate({ to: "/explorar" })}>
-          <div className="w-10 h-10 rounded-full flex items-center justify-center mb-2"
-            style={{ background: "#5B3FCF18" }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5B3FCF" strokeWidth="2.5" strokeLinecap="round">
-              <path d="M5 12h14M12 5l7 7-7 7"/>
-            </svg>
-          </div>
-          <p className="text-[11px] font-bold text-center" style={{ color: "#5B3FCF" }}>Ver mais</p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ══════════════════════════════════════════════
-   Cartão individual de sugestão — usa useFollowState,
-   a mesma fonte de verdade partilhada com o resto da
-   app (post cards, perfil, u/$username...). Sem isto,
-   clicar aqui não sincronizava com os outros sítios.
-══════════════════════════════════════════════ */
-function WhoToFollowSuggestionCard({ user, myUserId, navigate }: { user: any; myUserId: string; navigate: any }) {
-  const ACCENT = "#5B3FCF";
-  const AVATAR_COLORS = [ACCENT, "#F26B3A", "#1FAFA6", "#6BA547", "#E94B8A"];
-  const name = user.full_name || user.username || "Utilizador";
-  const bg = AVATAR_COLORS[(name?.charCodeAt(0) ?? 0) % AVATAR_COLORS.length];
-  const { isFollowing, isPending, isLoading: followLoading, toggle } = useFollowState(myUserId, user.username, user.id);
-
-  return (
-    <div className="shrink-0 flex flex-col items-center rounded-2xl p-3 border transition"
-      style={{
-        width: 148,
-        background: "var(--s2, #f9f9f9)",
-        borderColor: "var(--border-default, #e8e8e8)",
-      }}>
-      {/* Avatar */}
-      <div
-        className="w-14 h-14 rounded-full overflow-hidden flex items-center justify-center text-white font-bold text-xl cursor-pointer mb-2"
-        style={{ background: bg }}
-        onClick={() => navigate({ to: "/u/$username", params: { username: user.username } })}>
-        {user.avatar_url
-          ? <img src={user.avatar_url} alt={name} className="w-full h-full object-cover" />
-          : name[0]?.toUpperCase()}
-      </div>
-
-      {/* Nome */}
-      <p className="font-bold text-[13px] text-center leading-tight truncate w-full"
-        style={{ color: "var(--text-primary)" }}>
-        {name.length > 14 ? name.slice(0, 13) + "…" : name}
-      </p>
-      <p className="text-[11px] text-center truncate w-full mb-1"
-        style={{ color: "var(--text-muted)" }}>
-        @{(user.username || "").slice(0, 14)}
-      </p>
-      {user.bio && (
-        <p className="text-[11px] text-center leading-snug mb-2 line-clamp-2 w-full"
-          style={{ color: "var(--text-secondary)" }}>
-          {user.bio.slice(0, 40)}
-        </p>
-      )}
-
-      {/* Botão seguir — skeleton enquanto o estado real ainda não chegou,
-          para não piscar "Acompanhar" e depois saltar para "A acompanhar" */}
-      {followLoading ? (
-        <div className="relative overflow-hidden w-full h-8 rounded-full mt-auto" style={{ background: "var(--s2)" }}>
-          <div className="skeleton-shimmer absolute inset-0" />
-        </div>
-      ) : (
-        <button onClick={toggle} disabled={isPending}
-          className="w-full h-8 rounded-full text-[12px] font-bold transition active:scale-95 mt-auto disabled:opacity-60"
-          style={isFollowing
-            ? { background: "var(--s3)", color: "var(--text-secondary)", border: "1.5px solid var(--border-default)" }
-            : { background: ACCENT, color: "#fff", border: "none" }}>
-          {isFollowing ? "A acompanhar" : "Acompanhar"}
-        </button>
-      )}
-    </div>
-  );
-}
 
 /* SimpleVideoPlayer local foi substituído por FeedVideoPlayer (moldura + controles tipo YouTube) */
 
@@ -237,8 +67,6 @@ function HomePage() {
 
   /* ── Notifications (dados reais do Supabase + realtime + som + push) ── */
   const [showNotifCenter, setShowNotifCenter] = useState(false);
-  const [showDrawer, setShowDrawer] = useState(false);
-  const { unreadNotifications } = useBadges();
   const {
     notifications, unreadCount, loading: notifLoading,
     toast, dismissToast, markAllRead, markOneRead,
@@ -269,13 +97,13 @@ function HomePage() {
   }
 
   const feedSentinelRef = useRef<HTMLDivElement>(null);
-  const [showWhoToFollow, setShowWhoToFollow] = React.useState(true);
-  const [showWhoToFollow2, setShowWhoToFollow2] = React.useState(true);
   const [feedVisible, setFeedVisible] = useState(15);
   const [feedCursor, setFeedCursor] = useState<string | null>(null);
   const [hasMorePosts, setHasMorePosts] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [extraPosts, setExtraPosts] = useState<any[]>([]); // páginas extra carregadas via scroll infinito
+  const [showCreatePost, setShowCreatePost] = useState(false);
+  const [showDrawer, setShowDrawer] = useState(false);
   const [myUserId, setMyUserId] = useState("");
   const [myUsername, setMyUsername] = useState("");
 
@@ -310,7 +138,7 @@ function HomePage() {
           author_username: p.author_username || null,
           user: p.author_name || p.author_username || "hooda",
           name: `@${p.author_username || "?"}`,
-          color: p.author_color || "#5B3FCF",
+          color: p.author_color || "#2F6FED",
           avatar_url: null,
           text, photo: p.photo_url ?? null,
           photos: Array.isArray(p.photos) && p.photos.length > 0 ? p.photos : (p.photo_url ? [p.photo_url] : null),
@@ -328,7 +156,7 @@ function HomePage() {
   }
 
   const FEED_CHUNK_SIZE = 30;
-  const ACCENT_LOCAL = ["#5B3FCF","#F26B3A","#1FAFA6","#6BA547","#E94B8A","#FFC93C"];
+  const ACCENT_LOCAL = ["#2F6FED","#2F6FED","#1FAFA6","#6BA547","#2F6FED","#FFC93C"];
   const POST_SELECT_FIELDS = "id,author_id,author_username,author_name,author_color,content,kind,is_ad,created_at,photo_url,photos,video_url,thumbnail_url,clip_video_id,clip_start,clip_end,clip_title,clip_thumb_url,views_count,reposts_count,poll,poll_ends_at,moderation_status,is_sensitive";
   const VIDEO_SELECT_FIELDS = "id,title,thumbnail_url,duration_seconds,views_count,likes_count,comments_count,created_at,owner_id";
 
@@ -348,7 +176,7 @@ function HomePage() {
     const rpcCursor = cursor ?? new Date().toISOString();
 
     const [{ data: rankedRows, error: rankErr }, { data: rankedVideoRows, error: videoRankErr }] = await Promise.all([
-      (supabase as any).rpc("get_personalized_feed_v2", {
+      (supabase as any).rpc("get_personalized_feed_v3", {
         p_user_id: uid, p_cursor: rpcCursor, p_limit: FEED_CHUNK_SIZE,
         // Publicações já mostradas neste dispositivo (mesmo sem terem sido
         // "vistas" a sério) — para nunca repetir a mesma ao atualizar a
@@ -396,10 +224,10 @@ function HomePage() {
     // Se a RPC de ranking falhar por qualquer razão, cai de volta à busca
     // cronológica simples de posts — nunca deixa o feed vazio por causa disto.
     let rawPosts: any[] = [];
-    let rankByPostId: Record<string, number> = {};
-    let topicByPostId: Record<string, string | null> = {};
+    const rankByPostId: Record<string, number> = {};
+    const topicByPostId: Record<string, string | null> = {};
     if (rankErr || !rankedRows) {
-      console.error("get_personalized_feed_v2 falhou, a usar ordem cronológica:", rankErr);
+      console.error("get_personalized_feed_v3 falhou, a usar ordem cronológica:", rankErr);
       let fallbackQuery = supabase.from("posts").select(POST_SELECT_FIELDS)
         .eq("is_draft", false)
         .or(`scheduled_at.is.null,scheduled_at.lte.${new Date().toISOString()}`)
@@ -466,7 +294,7 @@ function HomePage() {
         ? supabase.from("post_comments").select("post_id").in("post_id", postIds)
         : Promise.resolve({ data: [] as any[] }),
       authorIds.size > 0
-        ? supabase.from("profiles").select("id,avatar_url,username,full_name").in("id", [...authorIds])
+        ? supabase.from("profiles").select("id,avatar_url,username,full_name,is_verified").in("id", [...authorIds])
         : Promise.resolve({ data: [] as any[] }),
       videoIds.length > 0 && uid
         ? (supabase as any).from("video_likes").select("video_id").eq("user_id", uid).in("video_id", videoIds)
@@ -486,10 +314,12 @@ function HomePage() {
     const avatarMap: Record<string, string | null> = {};
     const nameMap: Record<string, string> = {};
     const usernameMap: Record<string, string> = {};
+    const verifiedMap: Record<string, boolean> = {};
     (authorProfiles || []).forEach((p: any) => {
       avatarMap[p.id] = p.avatar_url || null;
       nameMap[p.id]   = p.full_name || p.username || "";
       usernameMap[p.id] = p.username || "";
+      verifiedMap[p.id] = !!p.is_verified;
     });
 
     // ── Mapear posts ──
@@ -510,6 +340,7 @@ function HomePage() {
         user: name, name: `@${username || "?"}`,
         color: p.author_color || ACCENT_LOCAL[(name.charCodeAt(0) || 0) % ACCENT_LOCAL.length],
         avatar_url: authorKey ? (avatarMap[authorKey] ?? null) : null,
+        is_verified: authorKey ? !!verifiedMap[authorKey] : false,
         text, photo: p.photo_url ?? null,
         photos: Array.isArray(p.photos) && p.photos.length > 0 ? p.photos : (p.photo_url ? [p.photo_url] : null),
         video: p.video_url ?? null,
@@ -538,6 +369,7 @@ function HomePage() {
         user: name, name: `@${username || "?"}`,
         color: ACCENT_LOCAL[(name.charCodeAt(0) || 0) % ACCENT_LOCAL.length],
         avatar_url: authorKey ? (avatarMap[authorKey] ?? null) : null,
+        is_verified: authorKey ? !!verifiedMap[authorKey] : false,
         text: null, photo: null, photos: null, video: null,
         bg_color: null, created_at: v.created_at, kind: "clip", is_ad: false,
         likes: v.likes_count ?? 0, liked_by_me: likedVideoSet.has(v.id), comments: v.comments_count ?? 0,
@@ -600,9 +432,16 @@ function HomePage() {
     return items;
   }
 
-  // persistência em localStorage configurada no root, restaura este
-  // resultado instantaneamente na próxima visita — sem ecrã vazio nem
-  // spinner — enquanto busca dados novos em segundo plano.
+  // IMPORTANTE — meta: { persist: false }: o feed NÃO fica persistido em
+  // IndexedDB (ver root.tsx / idbPersister). Sem isto, sair do site (fechar
+  // app/tab) ou só sair do Home e voltar restaurava a ÚLTIMA página gravada
+  // — precisamente os posts já marcados como "vistos" (addSeenPostIds) — e
+  // mostrava-a instantaneamente no topo antes do refetch em segundo plano os
+  // substituir. Sem persistência entre sessões, cada montagem do Home busca
+  // sempre a rede (respeitando getSeenPostIds/getSeenVideoIds, à parte em
+  // localStorage) — nunca reexibe o topo antigo. Dentro da MESMA sessão
+  // (sem recarregar), a cache em memória do React Query continua válida por
+  // staleTime (60s), o que é o comportamento correto e esperado.
   const effectiveUserId = myUserId || session?.user?.id || "";
   const feedQuery = useQuery({
     queryKey: QUERY_KEYS.feed(effectiveUserId),
@@ -610,6 +449,7 @@ function HomePage() {
     enabled: !!effectiveUserId,
     ...FEED_QUERY_OPTIONS,
     placeholderData: (prev: any) => prev,
+    meta: { persist: false },
   });
 
   const firstPagePosts = feedQuery.data ?? [];
@@ -753,22 +593,6 @@ function HomePage() {
 
     const channel = supabase
       .channel(`notifs-videos-${myUserId}`)
-      // ── Vídeos novos de canais seguidos ──
-      .on(
-        "postgres_changes" as any,
-        { event: "INSERT", schema: "public", table: "videos", filter: `status=eq.published` },
-        async (payload: any) => {
-          const video = payload.new;
-          if (video.owner_id === myUserId) return;
-          const { data: profileData } = await supabase
-            .from("profiles").select("id, full_name, username").eq("id", video.owner_id).maybeSingle();
-          if (!profileData) return;
-          const { data: followRow } = await (supabase as any)
-            .from("follows").select("id").eq("follower_id", myUserId).eq("following_id", video.owner_id).maybeSingle();
-          if (!followRow) return;
-          insertNotif("video_new", video.owner_id, (profileData as any).full_name);
-        }
-      )
       // ── Likes nos meus vídeos ──
       .on(
         "postgres_changes" as any,
@@ -834,23 +658,30 @@ function HomePage() {
       <header className="sticky top-0 z-30 border-b hooda-sticky-header"
         style={{ background: "var(--s0)", borderColor: "var(--border-subtle)", backdropFilter: "blur(20px)" }}>
         <div className="mx-auto px-4 h-14 flex items-center justify-between max-w-full">
-          <HoodaLogo size="sm" className="lg:hidden" />
+          <span className="lg:hidden inline-flex items-center gap-1.5">
+            <img src={snapperIcon} alt="" style={{ height: 26, width: "auto", display: "block" }} />
+            <img src={snapperWordmark} alt="Snapper" style={{ height: 21, width: "auto", display: "block", marginTop: 5 }} />
+          </span>
           <span className="hidden lg:block" />
           <div className="lg:hidden flex items-center gap-1">
-            <button
-              onClick={() => setShowNotifCenter(true)}
-              className="relative p-2 hover:bg-[var(--s2)] rounded-full text-[var(--text-secondary)]">
+            <button className="relative p-2 hover:bg-[var(--s2)] rounded-full text-[var(--text-secondary)]"
+              onClick={() => setShowNotifCenter(true)}>
               <Bell className="h-5 w-5" />
-              {unreadNotifications > 0 && (
-                <span className="absolute top-1 right-1 flex items-center justify-center rounded-full font-bold text-white"
-                  style={{ minWidth: 15, height: 15, padding: "0 3px", fontSize: 8.5, lineHeight: 1, background: "#E94B8A" }}>
-                  {unreadNotifications > 99 ? "99+" : unreadNotifications}
+              {unreadCount > 0 && (
+                <span className="absolute flex items-center justify-center rounded-full font-bold text-white"
+                  style={{
+                    top: 4, right: 4,
+                    minWidth: 15, height: 15, padding: "0 3px",
+                    fontSize: 8.5, lineHeight: 1,
+                    background: "#2F6FED",
+                    boxShadow: "0 0 0 2px var(--s0)",
+                  }}>
+                  {unreadCount > 99 ? "99+" : unreadCount}
                 </span>
               )}
             </button>
-            <button
-              onClick={() => setShowDrawer(true)}
-              className="p-2 hover:bg-[var(--s2)] rounded-full text-[var(--text-secondary)]">
+            <button className="p-2 hover:bg-[var(--s2)] rounded-full text-[var(--text-secondary)]"
+              onClick={() => setShowDrawer(true)}>
               <Menu className="h-5 w-5" />
             </button>
           </div>
@@ -858,22 +689,20 @@ function HomePage() {
       </header>
 
       <main className="w-full max-w-full">
-        <div className="px-3 pt-3">
-          <ComposeBox
-            name={myDisplayName || "Utilizador"}
-            username={myUsername || "utilizador"}
-            avatarUrl={userAvatarUrl}
-            onPublished={() => qc.invalidateQueries({ queryKey: QUERY_KEYS.feed(effectiveUserId) })}
-          />
-        </div>
         {/* Feed */}
         <section className="pt-1 pb-6 space-y-1 w-full px-3">
+          <PostComposerBar
+            name={myDisplayName || "utilizador"}
+            avatarUrl={userAvatarUrl}
+            onOpen={() => setShowCreatePost(true)}
+          />
+
           {loadingFeed && <UniversalSkeleton variant="feed" count={4} />}
 
           {!loadingFeed && realPosts.length === 0 && (
             refreshingFeedInBackground ? (
               <div className="flex flex-col items-center gap-3 py-16 text-center">
-                <div className="h-6 w-6 rounded-full border-2 animate-spin" style={{ borderColor: "var(--s3)", borderTopColor: "#5B3FCF" }} />
+                <div className="h-6 w-6 rounded-full border-2 animate-spin" style={{ borderColor: "var(--s3)", borderTopColor: "#2F6FED" }} />
                 <p className="text-sm" style={{ color: "var(--text-muted)" }}>A carregar publicações…</p>
               </div>
             ) : (
@@ -892,27 +721,19 @@ function HomePage() {
           {visibleFeedPosts.map((p, idx) => (
             <React.Fragment key={p.id}>
               <UniversalPostCard post={p} />
-              {/* Após o 5º post */}
-              {showWhoToFollow && myUserId && idx === 4 && (
-                <WhoToFollowCard myUserId={myUserId} onDismiss={() => setShowWhoToFollow(false)} offset={0} />
-              )}
               {/* Após o 8º post — dica/sugestão rotativa. Só no telemóvel/tablet
                   (abaixo de xl), porque no computador largo a mesma dica já
                   aparece fixa na sidebar direita (RightSidebar). */}
               {idx === 7 && (
                 <div className="xl:hidden">
-                  <HoodaTipCard variant="feed" />
+                  <SnapperTipCard variant="feed" />
                 </div>
-              )}
-              {/* Após o 12º post */}
-              {showWhoToFollow2 && myUserId && idx === 11 && (
-                <WhoToFollowCard myUserId={myUserId} onDismiss={() => setShowWhoToFollow2(false)} offset={4} />
               )}
             </React.Fragment>
           ))}
           <div ref={feedSentinelRef} className="py-4 flex justify-center">
             {(loadingMore || (hasMorePosts && feedVisible >= realPosts.length)) && (
-              <div className="h-5 w-5 rounded-full border-2 animate-spin" style={{ borderColor: "#5B3FCF44", borderTopColor: "#5B3FCF" }} />
+              <div className="h-5 w-5 rounded-full border-2 animate-spin" style={{ borderColor: "#2F6FED44", borderTopColor: "#2F6FED" }} />
             )}
             {!hasMorePosts && realPosts.length > 5 && (
               <p className="text-xs" style={{ color: "var(--text-muted,#888)" }}>Chegaste ao fim 🎉</p>
@@ -927,6 +748,16 @@ function HomePage() {
       )}
 
       <WelcomeInstallPrompt userId={session?.user?.id ?? null} />
+
+      {showCreatePost && (
+        <CreatePostModal
+          name={myDisplayName || "utilizador"}
+          username={myUsername}
+          avatarUrl={userAvatarUrl}
+          onClose={() => setShowCreatePost(false)}
+          onPublish={() => { qc.invalidateQueries({ queryKey: QUERY_KEYS.feed(effectiveUserId) }); }}
+        />
+      )}
 
       {/* Notification center */}
       {showNotifCenter && (
