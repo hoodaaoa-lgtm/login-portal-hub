@@ -1617,7 +1617,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
             <div className="px-3 pt-2">
               <PostComposerBar
                 name={name}
-                avatarUrl={(profile as any)?.avatar_url}
+                avatarUrl={avatarUrl || (profile as any)?.avatar_url}
                 onOpen={() => setShowCreatePost(true)}
               />
             </div>
@@ -1626,7 +1626,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
               loading={postsLoading}
               name={name}
               username={profile?.username || ""}
-              avatarUrl={(profile as any)?.avatar_url}
+              avatarUrl={avatarUrl || (profile as any)?.avatar_url}
               onDelete={(id) => setPosts((prev) => prev.filter((p) => p.id !== id))}
               myUserId={myUserId}
               isVerified={(profile as any)?.is_verified}
@@ -1715,7 +1715,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
         <CreatePostModal
           name={name}
           username={profile?.username || ""}
-          avatarUrl={(profile as any)?.avatar_url}
+          avatarUrl={avatarUrl || (profile as any)?.avatar_url}
           onClose={() => setShowCreatePost(false)}
           onPublish={(post) => addPost(post as Post)}
         />
