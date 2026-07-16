@@ -28,7 +28,6 @@ const MOBILE_ITEMS = [
   { to: "/home",       label: t("nav.home"),      Icon: Home,          search: undefined as Record<string, string> | undefined },
   { to: "/explorar",   label: t("nav.explore"),  Icon: Compass,        search: undefined as Record<string, string> | undefined },
   { to: "/mensagens",  label: t("nav.messages"), Icon: MessageCircle,   search: undefined as Record<string, string> | undefined },
-  { to: null,          label: "Menu",      Icon: Menu,                  search: undefined as Record<string, string> | undefined }, // Menu Hamburger
 ] as const;
 
 /** Resolve o valor do badge para uma rota de navegação a partir dos contadores já carregados */
@@ -226,19 +225,9 @@ export function BottomNav() {
   const { avatarUrl, name } = useAvatar();
   const { unreadMessages, unreadNotifications } = useBadges();
   const initial = (name?.[0] ?? "?").toUpperCase();
-  const [showDrawer, setShowDrawer] = useState(false);
-  const [currentUserId, setCurrentUserId] = React.useState("");
-
-  React.useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) setCurrentUserId(session.user.id);
-    });
-  }, []);
 
   return (
     <>
-      {showDrawer && <UserDrawer userId={currentUserId} onClose={() => setShowDrawer(false)} />}
-
       <nav className="hooda-bottom-nav lg:hidden fixed bottom-0 inset-x-0 z-40"
         style={{
           background: "var(--surface-0)",
@@ -249,32 +238,13 @@ export function BottomNav() {
         }}>
         <ul className="grid h-[58px]" style={{ gridTemplateColumns: `repeat(${MOBILE_ITEMS.length}, minmax(0, 1fr))` }}>
           {MOBILE_ITEMS.map(({ to, label, Icon, search }) => {
-            const isMenu = to === null;
             const isNotif = label === "Notificações";
-            const active = !isMenu && !isNotif && (
-              (to as string) === "/hoodatv"
-                ? pathname.startsWith(to as string)
-                : pathname === to
-            );
-            const badgeCount = !isMenu ? badgeCountFor(to as string, unreadMessages, label, unreadNotifications) : 0;
+            const active = !isNotif && pathname === to;
+            const badgeCount = badgeCountFor(to as string, unreadMessages, label, unreadNotifications);
 
             return (
               <li key={label}>
-                {isMenu ? (
-                  <button onClick={() => setShowDrawer(true)}
-                    className="flex flex-col items-center justify-center gap-1 h-full w-full min-w-0 px-0.5 transition-all duration-150 active:scale-90"
-                    style={{ color: "var(--text-muted)" }}>
-                    <div className="relative flex items-center justify-center"
-                      style={{
-                        width: 38, height: 28, borderRadius: 12,
-                        background: "transparent",
-                        transition: "background 0.2s",
-                      }}>
-                      <Icon className="h-[20px] w-[20px]" strokeWidth={1.8} />
-                    </div>
-                    <span className="text-[9.5px] tracking-tight font-400 truncate max-w-full">{label}</span>
-                  </button>
-                ) : isNotif ? (
+                {isNotif ? (
                   <button
                     onClick={() => {
                       if (pathname === "/home") {
