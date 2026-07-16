@@ -5,42 +5,42 @@ import { useScrollLock } from "@/hooks/useScrollLock";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
-import { signOutSnapper } from "@/contexts/AuthContext";
+import { signOutHooda } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { STATIC_QUERY_OPTIONS } from "@/lib/queryClient";
 import { BottomNav, SideNav, PageWrapper, FeedLayout } from "@/components/AppShell";
 import { RightSidebar } from "@/components/RightSidebar";
-import { SnapperLogo } from "@/components/SnapperLogo";
+import { HoodaLogo } from "@/components/HoodaLogo";
 import {
   Settings, LogOut, MessageCircle, Flag, X, Image, Type, Plus, Repeat2, Quote,
   BookOpen, ChevronRight, Lock, Shield, TrendingUp, Bookmark,
   Info, Camera, Link, MapPin, Calendar, Bell, HelpCircle, Globe,
-  Banknote, BarChart3, Star, Heart, Share2,
+  Banknote, BarChart3, Users, Star, Heart, Share2,
   MoreHorizontal, Trash2, Send, Copy, Moon, Sun, ExternalLink,
   Twitter, Instagram, Youtube, Facebook, Linkedin, Music2, Loader, Tv, Film,
-  ArrowLeft, Check, AlignLeft, AtSign, Mail, User as UserIcon, Archive,
+  ArrowLeft, Check,
 } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useAvatar } from "@/contexts/AvatarContext";
 import { ProfileAvatarLink } from "@/components/ProfileAvatarLink";
 import { PostCommentsModal } from "@/components/PostCommentsModal";
+import { useFollowState } from "@/hooks/useSocialSystem";
 import { LanguagePanel } from "@/components/LanguageSwitcher";
 import { LANGUAGES, getCurrentLang } from "@/lib/i18n";
 import { uploadImageToCloudinary } from "@/lib/cloudinary";
-import { optimizeAvatar, optimizePostPhoto } from "@/lib/imageOptimize";
 import { uploadFeedVideo } from "@/lib/cloudinaryFeedVideo";
 import { fetchPostComments, sendPostComment, replyToPostComment, toggleCommentLike } from "@/lib/comments";
 import { deletePostForEveryone } from "@/lib/posts";
 import { UniversalPostCard, normalizePost } from "@/components/UniversalPostCard";
-import { CreatePostModal, PostComposerBar } from "@/components/CreatePostModal";
-import { VerifiedBadge } from "@/components/VerifiedBadge";
+import { ComposeBox } from "@/components/QuickComposer";
+import { FollowListModal } from "@/components/FollowList";
 import { PhotoViewer } from "@/components/PhotoViewer";
 import { FeedVideoPlayer } from "@/components/FeedVideoPlayer";
 import { PollCard } from "@/components/PollCard";
 import { UniversalSkeleton } from "@/components/Skeletons";
 
 export const Route = createFileRoute("/perfil")({
-  head: () => ({ meta: [{ title: "Snapper" }] }),
+  head: () => ({ meta: [{ title: "Hooda" }] }),
   component: ProfilePage,
 });
 
@@ -53,17 +53,17 @@ type Post = {
   poll?: { question?: string; options?: (string | { text: string })[] } | null;
   pollEndsAt?: string | null;
 };
-type SavedPost = Post & { authorId: string; authorName: string; authorUsername: string; authorAvatar: string | null; authorIsVerified?: boolean };
+type SavedPost = Post & { authorId: string; authorName: string; authorUsername: string; authorAvatar: string | null };
 
-const ACCENT = "#2F6FED";
-const ACCENT_COLORS = ["#2F6FED", "#2F6FED", "#1FAFA6", "#6BA547", "#2F6FED"];
+const ACCENT = "#5B3FCF";
+const ACCENT_COLORS = ["#5B3FCF", "#F26B3A", "#1FAFA6", "#6BA547", "#E94B8A"];
 const BG_COLORS: { label: string; value: string | null; preview: string }[] = [
   { label: "Sem cor",  value: null,      preview: "#f0f0f0" },
-  { label: "Roxo",    value: "#2F6FED", preview: "#2F6FED" },
-  { label: "Laranja", value: "#2F6FED", preview: "#2F6FED" },
+  { label: "Roxo",    value: "#5B3FCF", preview: "#5B3FCF" },
+  { label: "Laranja", value: "#F26B3A", preview: "#F26B3A" },
   { label: "Teal",    value: "#1FAFA6", preview: "#1FAFA6" },
   { label: "Verde",   value: "#6BA547", preview: "#6BA547" },
-  { label: "Rosa",    value: "#2F6FED", preview: "#2F6FED" },
+  { label: "Rosa",    value: "#E94B8A", preview: "#E94B8A" },
 ];
 
 function textColorForBg(bg: string | null): string { if (!bg) return "#0f0f14"; return "#ffffff"; }
@@ -91,20 +91,49 @@ function Avatar({ name, size = 72, src }: { name: string; size?: number; src?: s
       color: "white", flexShrink: 0, overflow: "hidden",
     }}>
       {src
-        ? <img loading="lazy" decoding="async" src={optimizeAvatar(src, size)} alt={name} style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={(e) => { e.currentTarget.style.display = "none"; }} />
+        ? <img src={src} alt={name} style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={(e) => { e.currentTarget.style.display = "none"; }} />
         : (name?.[0] ?? "?").toUpperCase()
       }
     </div>
   );
 }
 
+/* ─── Stats ─── */
+function StatsGrid({ publications, followers, following, loading, onFollowersClick, onFollowingClick }: {
+  publications: number; followers: number; following: number; loading?: boolean;
+  onFollowersClick?: () => void; onFollowingClick?: () => void;
+}) {
+  const items = [
+    { n: following, l: t("profile.following"), onClick: onFollowingClick },
+    { n: followers, l: t("profile.followers"), onClick: onFollowersClick },
+  ];
+  return (
+    <div className="flex items-center gap-5 px-5 pb-4">
+      {items.map((s) => (
+        <button key={s.l} onClick={s.onClick} disabled={!s.onClick || loading}
+          className="flex items-center gap-1.5 text-sm transition active:opacity-70 disabled:active:opacity-100"
+          style={{ cursor: s.onClick && !loading ? "pointer" : "default" }}>
+          {loading ? (
+            <span className="relative overflow-hidden inline-block h-4 w-6 rounded" style={{ background: "var(--surface-2,#e9e9e4)" }}>
+              <span className="skeleton-shimmer absolute inset-0" />
+            </span>
+          ) : (
+            <span className="font-extrabold text-[var(--text-primary)]">{fmtNum(s.n)}</span>
+          )}
+          <span className="text-[var(--text-muted)]">{s.l}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/* ─── Lista de Seguidores / Seguindo — ver src/components/FollowList.tsx ─── */
 
 
-function PostsFeed({ posts, loading, name, username, avatarUrl, onDelete, myUserId, isVerified }: {
+function PostsFeed({ posts, loading, name, username, avatarUrl, onDelete, myUserId }: {
   posts: Post[]; loading?: boolean; name: string; username: string; avatarUrl?: string | null;
   onDelete: (id: string) => void;
   myUserId?: string;
-  isVerified?: boolean;
 }) {
   if (loading) return (
     <div className="px-4 py-3 space-y-3">
@@ -117,8 +146,8 @@ function PostsFeed({ posts, loading, name, username, avatarUrl, onDelete, myUser
   );
   if (posts.length === 0) return (
     <div className="px-5 py-14 flex flex-col items-center gap-3 text-center">
-      <div className="w-16 h-16 rounded-full bg-[#2F6FED]/10 flex items-center justify-center">
-        <BookOpen className="h-7 w-7 text-[#2F6FED]" />
+      <div className="w-16 h-16 rounded-full bg-[#5B3FCF]/10 flex items-center justify-center">
+        <BookOpen className="h-7 w-7 text-[#5B3FCF]" />
       </div>
       <p className="text-sm font-semibold text-[var(--text-muted)]">Ainda não tens publicações</p>
       <p className="text-xs text-[var(--text-muted)]">Cria a tua primeira publicação acima!</p>
@@ -128,7 +157,7 @@ function PostsFeed({ posts, loading, name, username, avatarUrl, onDelete, myUser
     <div className="pb-6 space-y-2 w-full px-3 pt-2">
       {posts.map((post) => (
         <UniversalPostCard key={post.id}
-          post={normalizePost(post, "profile", { name, username, avatarUrl, authorId: myUserId, isVerified })}
+          post={normalizePost(post, "profile", { name, username, avatarUrl, authorId: myUserId })}
           onDeleted={onDelete} />
       ))}
     </div>
@@ -138,6 +167,237 @@ function PostsFeed({ posts, loading, name, username, avatarUrl, onDelete, myUser
 /* ─── Modal Criar Publicação ─── */
 /* SimpleVideoPlayer local foi substituído por FeedVideoPlayer (moldura + controles tipo YouTube) */
 
+function CreatePostModal({
+  profile, email, onClose, onPublish,
+}: {
+  profile: Profile | null; email: string;
+  onClose: () => void;
+  onPublish: (post: Post) => void;
+}) {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const name = profile?.full_name || profile?.username || email?.split("@")[0] || "?";
+  const [text, setText] = useState("");
+  const [bgColor, setBgColor] = useState<string | null>(null);
+  const [photo, setPhoto] = useState<string | null>(null);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [publishing, setPublishing] = useState(false);
+  const [done, setDone] = useState(false);
+  const [publishErr, setPublishErr] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadStage, setUploadStage] = useState<"idle"|"upload"|"saving"|"done">("idle");
+  const fileRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLInputElement>(null);
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [videoPreview, setVideoPreview] = useState<string | null>(null);
+
+  function pickPhoto(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPhotoFile(file);
+    setVideoFile(null); setVideoPreview(null);
+    const reader = new FileReader();
+    reader.onload = (ev) => { setPhoto(ev.target?.result as string); setBgColor(null); };
+    reader.readAsDataURL(file);
+  }
+
+  function pickVideo(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setVideoFile(file);
+    setPhoto(null); setPhotoFile(null); setBgColor(null);
+    setVideoPreview(URL.createObjectURL(file));
+  }
+
+  async function publish() {
+    if (!text.trim() && !photoFile && !photo && !videoFile) return;
+    if (publishing || done) return;
+    setPublishing(true);
+    setPublishErr(null);
+    setUploadProgress(0);
+    setUploadStage("idle");
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { setPublishErr("É preciso iniciar sessão para publicar."); return; }
+
+      let imageUrl: string | null = photo;
+      let videoUrl: string | null = null;
+
+      if (photoFile) {
+        setUploadStage("upload");
+        const { url } = await uploadImageToCloudinary(
+          photoFile,
+          `hooda/posts/${session.user.id}`,
+          (pct) => setUploadProgress(pct),
+        );
+        imageUrl = url;
+        setUploadProgress(100);
+      }
+
+      if (videoFile) {
+        setUploadStage("upload");
+        const result = await uploadFeedVideo(
+          videoFile,
+          { title: text.trim().slice(0, 60) || "post-video", creatorId: "feed-post", userId: session.user.id },
+          (pct) => setUploadProgress(pct),
+        );
+        videoUrl = result.playbackUrl;
+        setUploadProgress(100);
+      }
+
+      setUploadStage("saving");
+      const { data: prof } = await supabase.from("profiles").select("username, full_name").eq("id", session.user.id).maybeSingle();
+      const contentJson = bgColor ? JSON.stringify({ text, bgColor }) : text;
+
+      const { data: inserted, error } = await (supabase as any)
+        .from("posts")
+        .insert({
+          author_id: session.user.id,
+          author_username: prof?.username ?? session.user.email?.split("@")[0] ?? "",
+          author_name: prof?.full_name ?? session.user.email ?? "",
+          author_color: "#5B3FCF",
+          content: contentJson,
+          kind: videoUrl ? "video" : bgColor ? "bg" : imageUrl ? "photo" : "post",
+          photo_url: imageUrl,
+          image_url: imageUrl,
+          video_url: videoUrl,
+        })
+        .select("id, created_at")
+        .single();
+
+      if (error || !inserted?.id) {
+        setPublishErr(error?.message ?? "Não foi possível publicar. Tenta novamente.");
+        console.error("Erro ao publicar post:", error);
+        return;
+      }
+
+      setUploadStage("done");
+      onPublish({
+        id: inserted.id, text, photo: imageUrl, bgColor,
+        videoUrl: videoUrl ?? undefined,
+        createdAt: new Date(inserted.created_at ?? Date.now()),
+        likes: 0, likedByMe: false, comments: 0, bookmarked: false,
+      });
+      setDone(true);
+      setTimeout(onClose, 900);
+    } catch (err: any) {
+      setPublishErr(err.message ?? "Erro ao publicar.");
+      setUploadStage("idle");
+    } finally {
+      setPublishing(false);
+    }
+  }
+
+  const canPublish = (text.trim().length > 0 || photo !== null || videoFile !== null) && !publishing && !done;
+
+  useScrollLock();
+
+  return createPortal(
+    <div className="fixed inset-0 z-[200] flex items-center justify-center"
+      style={{ background: "rgba(0,0,0,0.55)" }}
+      onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="w-full max-w-lg mx-4 rounded-3xl hooda-modal-sheet flex flex-col" style={{ maxHeight: "85vh", overflow: "hidden" }}>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border-subtle)]">
+          <span className="text-base font-bold" style={{ color: "var(--text-primary)" }}>Criar publicação</span>
+          <button onClick={onClose} className="p-1.5 rounded-full hover:bg-[var(--s2)] transition">
+            <X className="h-5 w-5 text-[var(--text-muted)]" />
+          </button>
+        </div>
+        <div className="flex items-center gap-3 px-4 py-3">
+          <Avatar name={name} size={42} />
+          <div>
+            <p className="text-sm font-bold text-black">{name}</p>
+            <span className="text-[11px] bg-[var(--s2)] text-[var(--text-secondary)] px-2 py-0.5 rounded-full font-medium">
+              @{profile?.username || "utilizador"}
+            </span>
+          </div>
+        </div>
+        <div className="flex-1 overflow-y-auto px-4 pb-2">
+          {photo && (
+            <div className="relative mb-3 rounded-xl overflow-hidden">
+              <img src={photo} alt="foto" className="w-full rounded-xl" style={{ display: "block" }} onError={(e) => { e.currentTarget.style.display = "none"; }} />
+              <button onClick={() => { setPhoto(null); setPhotoFile(null); }}
+                className="absolute top-2 right-2 bg-black/60 text-white rounded-full p-1">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          )}
+          {videoPreview && (
+            <div className="relative mb-3">
+              <FeedVideoPlayer src={videoPreview} rounded="rounded-xl" isShortHint={false} />
+              <button onClick={() => { setVideoFile(null); setVideoPreview(null); }}
+                className="absolute top-2 right-2 bg-black/60 text-white rounded-full p-1 z-20">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          )}
+          <div className="rounded-2xl transition-all">
+            <textarea autoFocus value={text} onChange={(e) => setText(e.target.value)}
+              placeholder={t("post.placeholder")}
+              rows={4}
+              className="w-full outline-none resize-none bg-transparent leading-relaxed"
+              style={{ color: "var(--text-primary,#111)", fontSize: 15, fontWeight: 400, textAlign: "left" }} />
+          </div>
+        </div>
+        <div className="px-4 py-3 border-t border-[var(--border-subtle)]">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-sm text-[var(--text-muted)] font-medium">Adicionar à publicação</span>
+            <div className="flex items-center gap-2">
+              <button onClick={() => fileRef.current?.click()}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[var(--s2)] hover:bg-[var(--s3)] transition text-sm font-semibold text-[var(--text-secondary)] active:scale-95">
+                <Image className="h-4 w-4 text-[#6BA547]" /> {t("post.photo")}
+              </button>
+              <button onClick={() => videoRef.current?.click()}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[var(--s2)] hover:bg-[var(--s3)] transition text-sm font-semibold text-[var(--text-secondary)] active:scale-95">
+                <Film className="h-4 w-4 text-[#E94B8A]" /> {"Vídeo"}
+              </button>
+            </div>
+          </div>
+          <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={pickPhoto} />
+          <input ref={videoRef} type="file" accept="video/*" className="hidden" onChange={pickVideo} />
+          {publishErr && <p className="mb-2 text-sm text-red-600">{publishErr}</p>}
+
+          {/* Barra de progresso real durante upload */}
+          {publishing && (
+            <div className="mb-3">
+              <div className="flex justify-between text-xs font-semibold mb-1.5"
+                style={{ color: "var(--text-muted)" }}>
+                <span>
+                  {uploadStage === "upload" && (photoFile ? "A enviar foto…" : "A enviar vídeo…")}
+                  {uploadStage === "saving" && "A guardar publicação…"}
+                  {uploadStage === "done"   && t("post.published")}
+                </span>
+                {uploadStage === "upload" && (
+                  <span style={{ color: ACCENT }}>{uploadProgress}%</span>
+                )}
+              </div>
+              <div className="h-2 rounded-full overflow-hidden" style={{ background: "var(--s3)" }}>
+                <div
+                  className="h-full rounded-full transition-all duration-300"
+                  style={{
+                    width: uploadStage === "saving" ? "95%" : uploadStage === "done" ? "100%" : `${uploadProgress}%`,
+                    background: `linear-gradient(90deg, ${ACCENT}, #E94B8A)`,
+                    boxShadow: `0 0 8px ${ACCENT}80`,
+                  }}
+                />
+              </div>
+            </div>
+          )}
+
+          <button onClick={publish} disabled={!canPublish}
+            className="w-full h-12 rounded-xl font-bold text-base transition-all active:scale-[0.99] disabled:opacity-40 flex items-center justify-center gap-2"
+            style={{ background: canPublish ? ACCENT : "var(--s3)", color: canPublish ? "#fff" : "var(--text-muted)" }}>
+            {done
+              ? t("post.published")
+              : publishing
+                ? <><div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />{t("post.publishing", "A publicar…")}</>
+                : t("post.publish")}
+          </button>
+        </div>
+      </div>
+    </div>
+  , document.body);
+}
 
 /* ─── Modal Editar Perfil ─── */
 function EditProfileModal({
@@ -145,7 +405,7 @@ function EditProfileModal({
 }: {
   profile: Profile | null; email: string;
   onClose: () => void;
-  onSave: (data: Partial<Profile> & { website?: string; location?: string; whatsapp?: string }) => void;
+  onSave: (data: Partial<Profile> & { website?: string; location?: string }) => void;
 }) {
   const { t } = useTranslation();
   const [name, setName] = useState(profile?.full_name || profile?.username || email?.split("@")[0] || "");
@@ -153,7 +413,6 @@ function EditProfileModal({
   const [bio, setBio] = useState(profile?.bio || "");
   const [website, setWebsite] = useState((profile as any)?.website || "");
   const [location, setLocation] = useState((profile as any)?.location || "");
-  const [whatsapp, setWhatsapp] = useState((profile as any)?.whatsapp || "");
   const [saving, setSaving] = useState(false);
   const [done, setDone] = useState(false);
   const [editingUsername, setEditingUsername] = useState(false); // lápis clicado?
@@ -230,7 +489,6 @@ function EditProfileModal({
           bio,
           website,
           location,
-          whatsapp,
           updated_at: new Date().toISOString(),
         };
         // Gravar data de troca de username para cooldown de 30 dias
@@ -255,9 +513,9 @@ function EditProfileModal({
           }
           // Tenta sem username_changed_at apenas se o erro for especificamente sobre essa coluna
           if (usernameChanged && (error.message?.includes("username_changed_at") || error.code === "42703" || error.code === "42501")) {
-            const { full_name, username: u, bio: b, website: w, location: l, whatsapp: wa, updated_at } = updateData;
+            const { full_name, username: u, bio: b, website: w, location: l, updated_at } = updateData;
             const { error: error2 } = await (supabase as any)
-              .from("profiles").update({ full_name, username: u, bio: b, website: w, location: l, whatsapp: wa, updated_at }).eq("id", session.user.id);
+              .from("profiles").update({ full_name, username: u, bio: b, website: w, location: l, updated_at }).eq("id", session.user.id);
             if (error2) console.error("[hooda] ERRO mesmo sem username_changed_at:", error2);
           } else if (usernameChanged) {
             toast.error("Não foi possível gravar as alterações. Tenta novamente.");
@@ -275,7 +533,7 @@ function EditProfileModal({
     } catch (err) {
       console.error("[hooda] EXCEÇÃO ao gravar perfil:", err);
     }
-    onSave({ full_name: name, username, bio, website, location, whatsapp,
+    onSave({ full_name: name, username, bio, website, location,
       ...(username !== (profile?.username || "") ? { username_changed_at: new Date().toISOString() } : {}) });
     setDone(true);
     setSaving(false);
@@ -316,7 +574,7 @@ function EditProfileModal({
 
           {/* Avatar + capa */}
           <div className="relative mb-12">
-            <div className="h-28 w-full" style={{ background: "linear-gradient(135deg,#2F6FED,#1FAFA6,#FFC93C)" }} />
+            <div className="h-28 w-full" style={{ background: "linear-gradient(135deg,#5B3FCF,#1FAFA6,#FFC93C)" }} />
             <button className="absolute top-3 right-3 bg-black/50 rounded-full p-2">
               <Camera className="h-4 w-4 text-white" />
             </button>
@@ -337,7 +595,7 @@ function EditProfileModal({
               <label className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Nome</label>
               <input value={name} onChange={(e) => setName(e.target.value)}
                 placeholder="O teu nome completo"
-                className="mt-1 w-full border border-[var(--border-default)] rounded-xl px-4 py-2.5 text-sm font-medium outline-none focus:border-[#2F6FED] focus:ring-2 focus:ring-[#2F6FED]/20 transition"
+                className="mt-1 w-full border border-[var(--border-default)] rounded-xl px-4 py-2.5 text-sm font-medium outline-none focus:border-[#5B3FCF] focus:ring-2 focus:ring-[#5B3FCF]/20 transition"
                 style={{ background: "var(--s2)", color: "var(--text-primary)" }}
               />
             </div>
@@ -347,7 +605,7 @@ function EditProfileModal({
               <div className="flex items-center justify-between mb-1">
                 <label className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Nome de utilizador</label>
                 {usernameCooldownDays > 0 ? (
-                  <span className="text-[11px] flex items-center gap-1 font-semibold" style={{ color: "#2F6FED" }}>
+                  <span className="text-[11px] flex items-center gap-1 font-semibold" style={{ color: "#F26B3A" }}>
                     🔒 Bloqueado {usernameCooldownDays} dia{usernameCooldownDays !== 1 ? "s" : ""}
                   </span>
                 ) : !editingUsername ? (
@@ -399,9 +657,9 @@ function EditProfileModal({
               </div>
               {/* Mensagem de cooldown */}
               {usernameCooldownDays > 0 && (
-                <div className="flex items-center gap-1.5 mt-1.5 px-3 py-2 rounded-xl" style={{ background: "#2F6FED12" }}>
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#2F6FED" strokeWidth="2.5" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
-                  <p className="text-[11px] font-semibold" style={{ color: "#2F6FED" }}>
+                <div className="flex items-center gap-1.5 mt-1.5 px-3 py-2 rounded-xl" style={{ background: "#F26B3A12" }}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#F26B3A" strokeWidth="2.5" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+                  <p className="text-[11px] font-semibold" style={{ color: "#F26B3A" }}>
                     Podes trocar o username daqui a <strong>{usernameCooldownDays} dia{usernameCooldownDays !== 1 ? "s" : ""}</strong>
                   </p>
                 </div>
@@ -444,7 +702,7 @@ function EditProfileModal({
               <textarea value={bio} onChange={(e) => setBio(e.target.value)}
                 placeholder="Fala um pouco sobre ti..."
                 rows={3}
-                className="mt-1 w-full border border-[var(--border-default)] rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#2F6FED] focus:ring-2 focus:ring-[#2F6FED]/20 transition resize-none leading-relaxed" style={{ background: "var(--s2)", color: "var(--text-primary)" }}
+                className="mt-1 w-full border border-[var(--border-default)] rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#5B3FCF] focus:ring-2 focus:ring-[#5B3FCF]/20 transition resize-none leading-relaxed" style={{ background: "var(--s2)", color: "var(--text-primary)" }}
               />
               <p className="text-[11px] text-[var(--text-muted)] text-right mt-1">{bio.length}/160</p>
             </div>
@@ -456,25 +714,10 @@ function EditProfileModal({
                 <Link className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-muted)]" />
                 <input value={website} onChange={(e) => setWebsite(e.target.value)}
                   placeholder="https://..."
-                  className="w-full border border-[var(--border-default)] rounded-xl pl-10 pr-4 py-2.5 text-sm outline-none focus:border-[#2F6FED] focus:ring-2 focus:ring-[#2F6FED]/20 transition"
+                  className="w-full border border-[var(--border-default)] rounded-xl pl-10 pr-4 py-2.5 text-sm outline-none focus:border-[#5B3FCF] focus:ring-2 focus:ring-[#5B3FCF]/20 transition"
                   style={{ background: "var(--s2)", color: "var(--text-primary)" }}
                 />
               </div>
-            </div>
-
-            {/* WhatsApp */}
-            <div>
-              <label className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">WhatsApp</label>
-              <div className="relative mt-1">
-                <MessageCircle className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-muted)]" />
-                <input value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)}
-                  placeholder="+244 900 000 000"
-                  inputMode="tel"
-                  className="w-full border border-[var(--border-default)] rounded-xl pl-10 pr-4 py-2.5 text-sm outline-none focus:border-[#2F6FED] focus:ring-2 focus:ring-[#2F6FED]/20 transition"
-                  style={{ background: "var(--s2)", color: "var(--text-primary)" }}
-                />
-              </div>
-              <p className="text-[11px] text-[var(--text-muted)] mt-1">Com código do país, ex: +244. Aparece como link clicável no teu perfil.</p>
             </div>
 
             {/* Localização */}
@@ -484,7 +727,7 @@ function EditProfileModal({
                 <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-muted)]" />
                 <input value={location} onChange={(e) => setLocation(e.target.value)}
                   placeholder="Lisboa, Portugal"
-                  className="w-full border border-[var(--border-default)] rounded-xl pl-10 pr-4 py-2.5 text-sm outline-none focus:border-[#2F6FED] focus:ring-2 focus:ring-[#2F6FED]/20 transition"
+                  className="w-full border border-[var(--border-default)] rounded-xl pl-10 pr-4 py-2.5 text-sm outline-none focus:border-[#5B3FCF] focus:ring-2 focus:ring-[#5B3FCF]/20 transition"
                   style={{ background: "var(--s2)", color: "var(--text-primary)" }}
                 />
               </div>
@@ -506,17 +749,16 @@ function EditProfileModal({
 }
 
 /* ─── Painel ClickAds ─── */
-
 function MonetizationPanel() {
   return (
     <div className="px-5 py-16 flex flex-col items-center justify-center gap-4 text-center">
       <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
-        style={{ background: "#2F6FED" }}>
+        style={{ background: "linear-gradient(135deg,#5B3FCF,#E94B8A)" }}>
         <TrendingUp className="h-8 w-8 text-white" />
       </div>
       <p className="text-xl font-extrabold text-black">ClickAds</p>
       <div className="flex items-center gap-2 bg-[var(--s2)] rounded-full px-5 py-2.5">
-        <div className="w-2 h-2 rounded-full bg-[#2F6FED] animate-pulse" />
+        <div className="w-2 h-2 rounded-full bg-[#E94B8A] animate-pulse" />
         <p className="text-sm font-bold text-[var(--text-secondary)]">Em breve</p>
       </div>
     </div>
@@ -567,7 +809,7 @@ export function SettingsDrawer({
       title: t("settings.account", "Conta"),
       items: [
         { icon: Settings, label: t("settings.edit_profile"), desc: t("settings.edit_profile_desc", "Nome, foto, bio e mais"), action: () => { handleClose(); setTimeout(onEditProfile, 300); }, color: ACCENT },
-        { icon: Bell, label: t("settings.notifications"), desc: t("settings.notifications_desc", "Gere os teus alertas"), action: onOpenNotifications, color: "#2F6FED" },
+        { icon: Bell, label: t("settings.notifications"), desc: t("settings.notifications_desc", "Gere os teus alertas"), action: onOpenNotifications, color: "#F26B3A" },
         { icon: Calendar, label: t("settings.activity"), desc: t("settings.activity_desc", "Histórico de ações"), action: onOpenActivity, color: "#1FAFA6" },
       ],
     },
@@ -575,7 +817,7 @@ export function SettingsDrawer({
       title: t("settings.privacy_security", "Privacidade & Segurança"),
       items: [
         { icon: Lock, label: t("settings.privacy"), desc: t("settings.privacy_desc", "Quem pode ver o teu perfil"), action: onOpenPrivacy, color: "#6BA547" },
-        { icon: Shield, label: t("settings.security"), desc: t("settings.security_desc", "Palavra-passe e autenticação"), action: onOpenSecurity, color: "#2F6FED" },
+        { icon: Shield, label: t("settings.security"), desc: t("settings.security_desc", "Palavra-passe e autenticação"), action: onOpenSecurity, color: "#5B3FCF" },
         { icon: MessageCircle, label: t("settings.msg_privacy"), desc: t("settings.msg_privacy_desc", "Quem pode enviar-te mensagens"), action: onOpenMsgPrivacy, color: "#1FAFA6" },
       ],
     },
@@ -583,13 +825,13 @@ export function SettingsDrawer({
       title: t("settings.support", "Suporte"),
       items: [
         { icon: HelpCircle, label: t("settings.help"), desc: t("settings.help_desc", "Perguntas frequentes"), action: onOpenHelp, color: "#1FAFA6" },
-        { icon: Info, label: t("settings.about"), desc: t("settings.about_desc", "Versão e informações legais"), action: onOpenAbout, color: "#2F6FED" },
+        { icon: Info, label: t("settings.about"), desc: t("settings.about_desc", "Versão e informações legais"), action: onOpenAbout, color: "#E94B8A" },
       ],
     },
     {
       title: t("settings.language"),
       items: [
-        { icon: Globe, label: t("settings.language"), desc: (() => { const l = LANGUAGES.find(l => l.code === getCurrentLang()); return `${l?.flag ?? "🇵🇹"} ${l?.label ?? "Português"}`; })(), action: onOpenLanguage, color: "#2F6FED" },
+        { icon: Globe, label: t("settings.language"), desc: (() => { const l = LANGUAGES.find(l => l.code === getCurrentLang()); return `${l?.flag ?? "🇵🇹"} ${l?.label ?? "Português"}`; })(), action: onOpenLanguage, color: "#F26B3A" },
       ],
     },
   ];
@@ -621,7 +863,7 @@ export function SettingsDrawer({
       >
         {/* Header gradiente com avatar */}
         <div className="shrink-0 px-5 pt-6 pb-5"
-          style={{ background: `#2F6FED` }}>
+          style={{ background: `linear-gradient(135deg, ${ACCENT}, #E94B8A)` }}>
           <div className="flex items-center justify-between mb-5">
             <span className="text-white font-extrabold text-lg tracking-tight">{t("settings.title")}</span>
             <button onClick={handleClose}
@@ -634,7 +876,7 @@ export function SettingsDrawer({
             <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-white/50 shrink-0 flex items-center justify-center"
               style={{ background: "rgba(255,255,255,0.2)" }}>
               {avatar
-                ? <img loading="lazy" decoding="async" src={optimizeAvatar(avatar, 56)} alt={displayName} className="w-full h-full object-cover" />
+                ? <img src={avatar} alt={displayName} className="w-full h-full object-cover" />
                 : <span className="text-white font-bold text-xl">{displayName[0]?.toUpperCase()}</span>
               }
             </div>
@@ -789,7 +1031,7 @@ function ToggleRow({ icon: Icon, color, label, desc, checked, onChange }: {
 
 /* ─── Notificações ─── */
 export function NotificationsPanel({ onBack }: { onBack: () => void }) {
-  const [prefs, setPrefs] = useState({ likes: true, comments: true, messages: true, mentions: true });
+  const [prefs, setPrefs] = useState({ likes: true, comments: true, follows: true, messages: true, mentions: true });
   const [loading, setLoading] = useState(true);
   const [savingErr, setSavingErr] = useState("");
   const [savedOk, setSavedOk] = useState(false);
@@ -821,9 +1063,10 @@ export function NotificationsPanel({ onBack }: { onBack: () => void }) {
   }
 
   const ITEMS: { key: keyof typeof prefs; icon: React.ElementType; color: string; label: string; desc: string }[] = [
-    { key: "likes",    icon: Heart,         color: "#2F6FED", label: "Gostos",           desc: "Quando alguém gosta das tuas publicações" },
+    { key: "likes",    icon: Heart,         color: "#E94B8A", label: "Gostos",           desc: "Quando alguém gosta das tuas publicações" },
     { key: "comments", icon: MessageCircle, color: "#1FAFA6", label: t("post.comments"),      desc: "Quando alguém comenta as tuas publicações" },
-    { key: "messages", icon: Bell,          color: "#2F6FED", label: t("nav.messages"),        desc: "Quando recebes uma nova mensagem" },
+    { key: "follows",  icon: Users,         color: "#6BA547", label: "Novos acompanhantes", desc: "Quando alguém começa a acompanhar-te" },
+    { key: "messages", icon: Bell,          color: "#F26B3A", label: t("nav.messages"),        desc: "Quando recebes uma nova mensagem" },
     { key: "mentions", icon: Type,          color: ACCENT,    label: "Menções",          desc: "Quando alguém te menciona numa publicação" },
   ];
 
@@ -867,12 +1110,21 @@ export function ActivityPanel({ onBack }: { onBack: () => void }) {
       if (!session) { setLoading(false); return; }
       const uid = session.user.id;
 
-      const postsRes = await supabase.from("posts").select("id,created_at").eq("author_id", uid).order("created_at", { ascending: false }).limit(10);
+      const [postsRes, followsRes] = await Promise.all([
+        supabase.from("posts").select("id,created_at").eq("author_id", uid).order("created_at", { ascending: false }).limit(10),
+        supabase.from("follows").select("target_username,follower_id").eq("follower_id", uid).limit(10),
+      ]);
 
       const list: { id: string; type: string; text: string; time: string }[] = [];
 
       (postsRes.data ?? []).forEach((p: any) => list.push({
         id: `p-${p.id}`, type: "post", text: "Criaste uma publicação", time: p.created_at,
+      }));
+
+      (followsRes.data ?? []).forEach((f: any, i: number) => list.push({
+        id: `f-${i}`, type: "follow",
+        text: `Estás a acompanhar @${f.target_username || "utilizador"}`,
+        time: new Date(Date.now() - i * 60000).toISOString(),
       }));
 
       list.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
@@ -884,7 +1136,8 @@ export function ActivityPanel({ onBack }: { onBack: () => void }) {
 
   const ICONS: Record<string, { icon: React.ElementType; color: string }> = {
     post:   { icon: Type,     color: ACCENT },
-    like:   { icon: Heart,    color: "#2F6FED" },
+    like:   { icon: Heart,    color: "#E94B8A" },
+    follow: { icon: Users,    color: "#6BA547" },
   };
 
   return (
@@ -1040,10 +1293,11 @@ export function MsgPrivacyPanel({ onBack, msgPermission, onMsgPermissionChange }
   const [err, setErr] = useState("");
   const [savedOk, setSavedOk] = useState(false);
 
-  // Valores que a constraint da DB aceita: todos, aprovados
-  // ("seguidores" e "mutuos" foram removidos junto com o sistema de seguir)
+  // Valores que a constraint da DB aceita: todos, seguidores, mutuos, aprovados
   const OPTIONS = [
     { value: "todos",      label: "Toda a gente",     desc: "Qualquer utilizador pode escrever-te" },
+    { value: "seguidores", label: t("profile.followers"),        desc: "Apenas quem te acompanha" },
+    { value: "mutuos",     label: "Acompanhamento mútuo", desc: "Quem acompanhas e te acompanha" },
     { value: "aprovados",  label: "Apenas aprovados", desc: "Tens de aceitar cada pedido" },
   ];
 
@@ -1107,8 +1361,8 @@ export function AboutPanel({ onBack }: { onBack: () => void }) {
     <SettingsSubPanel title={t("settings.about")} onBack={onBack}>
       <div className="px-5 py-4 space-y-4">
         <div className="rounded-2xl border p-4 space-y-2" style={{ background: "var(--s2)", borderColor: "var(--border-subtle)" }}>
-          <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>Snapper</p>
-          <p className="text-xs leading-relaxed" style={{ color: "var(--text-muted)" }}>A tua rede social angolana. Conecta, partilha e cresce com a comunidade Snapper.</p>
+          <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>Hooda</p>
+          <p className="text-xs leading-relaxed" style={{ color: "var(--text-muted)" }}>A tua rede social angolana. Conecta, partilha e cresce com a comunidade Hooda.</p>
         </div>
         <div className="rounded-2xl border divide-y" style={{ background: "var(--s2)", borderColor: "var(--border-subtle)" }}>
           {[
@@ -1131,8 +1385,8 @@ export function AboutPanel({ onBack }: { onBack: () => void }) {
 export function HelpPanel({ onBack }: { onBack: () => void }) {
   const faqs = [
     { q: "Como altero a minha foto de perfil?", a: "Vai ao teu perfil e clica na foto de perfil para fazer upload de uma nova imagem." },
-    { q: "Como publico um vídeo?", a: "Vai ao SnapperStudio e clica em 'Novo vídeo'. Podes fazer upload e definir título, descrição e visibilidade." },
-    { q: "Como acompanho um canal?", a: "Na SnapperTV, clica no canal que queres acompanhar e depois no botão 'Acompanhar'." },
+    { q: "Como publico um vídeo?", a: "Vai ao HoodaStudio e clica em 'Novo vídeo'. Podes fazer upload e definir título, descrição e visibilidade." },
+    { q: "Como acompanho um canal?", a: "Na HoodaTV, clica no canal que queres acompanhar e depois no botão 'Acompanhar'." },
     { q: "Como altero a minha palavra-passe?", a: "Vai a Configurações → Segurança → Alterar palavra-passe." },
     { q: "Como torno o meu perfil privado?", a: "Vai a Configurações → Privacidade e ativa 'Conta privada'." },
     { q: "Como envio mensagens?", a: "Usa o separador Mensagens na barra de navegação. Podes enviar mensagens a outros utilizadores." },
@@ -1217,7 +1471,7 @@ function ShareProfileModal({ username, name, onClose }: { username: string; name
             <span className="flex-1 text-xs truncate" style={{ color: "var(--text-muted)" }}>{url}</span>
             <button onClick={copy}
               className="px-3 py-1.5 rounded-xl text-xs font-bold transition active:scale-95 shrink-0 flex items-center gap-1"
-              style={{ background: copied ? "#6BA547" : "#2F6FED", color: "#fff" }}>
+              style={{ background: copied ? "#6BA547" : "#5B3FCF", color: "#fff" }}>
               {copied ? (<><Check className="h-3.5 w-3.5" /> Copiado</>) : "Copiar"}
             </button>
           </div>
@@ -1247,10 +1501,10 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
     if (initialProfile) setProfile(initialProfile);
   }, [initialProfile]);
   const name = profile?.full_name || profile?.username || email?.split("@")[0] || "?";
-  const [tab, setTab] = useState<"inicio" | "arquivos" | "sobre">("inicio");
+  const [tab, setTab] = useState<"posts" | "replies" | "saved" | "info" | "monetization">("posts");
+  const [showCreate, setShowCreate] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
-  const [showCreatePost, setShowCreatePost] = useState(false);
   const [photoViewing, setPhotoViewing] = useState<string|null>(null);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showActivity, setShowActivity] = useState(false);
@@ -1263,14 +1517,22 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
   const [showMsgPrivacy, setShowMsgPrivacy] = useState(false);
   const [posts, setPosts] = useState<Post[]>([]);
   const [postsLoading, setPostsLoading] = useState(true);
+  const [activities, setActivities] = useState<any[]>([]);
+  const [activitiesLoading, setActivitiesLoading] = useState(true);
+  const [activitiesLoaded, setActivitiesLoaded] = useState(false);
   const [website, setWebsite] = useState("");
   const [location, setLocation] = useState("");
-  const [whatsapp, setWhatsapp] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
   const { setAvatarUrl: setGlobalAvatarUrl } = useAvatar();
+  const [followerCount, setFollowerCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
+  const [statsLoading, setStatsLoading] = useState(true);
   const [msgPermission, setMsgPermission] = useState("todos");
+  const [followListMode, setFollowListMode] = useState<"followers" | "following" | null>(null);
   const [myUserId, setMyUserId] = useState<string>("");
+  const [savedPosts, setSavedPosts] = useState<SavedPost[]>([]);
+  const [savedLoading, setSavedLoading] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
   const [photoViewerSrc, setPhotoViewerSrc] = useState<string | null>(null);
@@ -1319,15 +1581,24 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
       // Carregar avatar_url e username do perfil
       const { data: profData } = await supabase
         .from("profiles")
-        .select("avatar_url, username, msg_permission, website, location, cover_url, whatsapp")
+        .select("avatar_url, username, msg_permission, website, location, cover_url")
         .eq("id", session.user.id)
         .maybeSingle();
       if ((profData as any)?.avatar_url) setAvatarUrl((profData as any).avatar_url);
       if ((profData as any)?.msg_permission) setMsgPermission((profData as any).msg_permission);
       if ((profData as any)?.website) setWebsite((profData as any).website);
       if ((profData as any)?.location) setLocation((profData as any).location);
-      if ((profData as any)?.whatsapp) setWhatsapp((profData as any).whatsapp);
       if ((profData as any)?.cover_url) setCoverUrl((profData as any).cover_url);
+
+      // follows: target_username é texto (username), não UUID
+      const myUsername = (profData as any)?.username ?? "";
+      const [{ count: fc }, { count: foc }] = await Promise.all([
+        supabase.from("follows").select("*", { count: "exact", head: true }).eq("target_username", myUsername),
+        supabase.from("follows").select("*", { count: "exact", head: true }).eq("follower_id", session.user.id),
+      ]);
+      setFollowerCount(fc ?? 0);
+      setFollowingCount(foc ?? 0);
+      setStatsLoading(false);
 
       const { data } = await (supabase as any)
         .from("posts")
@@ -1411,6 +1682,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
       }
       } finally {
         setPostsLoading(false);
+        setStatsLoading(false);
       }
     })();
   }, []);
@@ -1419,15 +1691,200 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
     setPosts((prev) => (prev.some((p) => p.id === post.id) ? prev : [post, ...prev]));
   }
 
+  /* ComposeBox só avisa "publiquei", sem devolver os dados — vamos
+     buscar a publicação mais recente do próprio utilizador e adicioná-la. */
+  async function refreshLatestPost() {
+    if (!myUserId) return;
+    const { data } = await (supabase as any)
+      .from("posts")
+      .select("id, content, kind, created_at, photo_url, image_url, video_url, photos, poll, poll_ends_at")
+      .eq("author_id", myUserId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (!data) return;
+    let text = data.content;
+    let bgColor: string | null = null;
+    if (data.kind === "bg") {
+      try { const j = JSON.parse(data.content); text = j.text; bgColor = j.bgColor; } catch (_) {}
+    }
+    const photo = data.photo_url || data.image_url || (Array.isArray(data.photos) && data.photos[0]) || null;
+    addPost({
+      id: data.id, text, photo,
+      photos: Array.isArray(data.photos) && data.photos.length > 0 ? data.photos : null,
+      bgColor, createdAt: new Date(data.created_at ?? Date.now()),
+      likes: 0, likedByMe: false, comments: 0, bookmarked: false,
+      videoUrl: data.video_url || undefined,
+      poll: data.poll ?? null, pollEndsAt: data.poll_ends_at ?? null,
+    });
+  }
+
+  /* Carregar respostas, reposts e quotes (tab "Respostas") sob pedido */
+  useEffect(() => {
+    if (tab !== "replies" || !myUserId || activitiesLoaded) return;
+    (async () => {
+      setActivitiesLoading(true);
+      try {
+        const [repliesRes, repostsRes, quotesRes] = await Promise.all([
+          (supabase as any).from("post_replies")
+            .select("id, post_id, content, media_url, media_type, created_at")
+            .eq("author_id", myUserId)
+            .order("created_at", { ascending: false }),
+          (supabase as any).from("post_reposts")
+            .select("id, post_id, created_at")
+            .eq("user_id", myUserId)
+            .order("created_at", { ascending: false }),
+          (supabase as any).from("post_quotes")
+            .select("id, original_post_id, content, media_url, media_type, created_at")
+            .eq("author_id", myUserId)
+            .order("created_at", { ascending: false }),
+        ]);
+
+        const replies = repliesRes.data ?? [];
+        const reposts = repostsRes.data ?? [];
+        const quotes  = quotesRes.data ?? [];
+
+        // Recolher todos os post_id originais para buscar de uma vez
+        const allOriginalIds = [
+          ...replies.map((r: any) => r.post_id),
+          ...reposts.map((r: any) => r.post_id),
+          ...quotes.map((q: any) => q.original_post_id),
+        ].filter(Boolean);
+
+        let originalsMap: Record<string, any> = {};
+        if (allOriginalIds.length > 0) {
+          const { data: originals } = await (supabase as any)
+            .from("posts")
+            .select("id, content, kind, image_url, video_url, author_username, author_name, author_color, created_at")
+            .in("id", [...new Set(allOriginalIds)]);
+          (originals ?? []).forEach((o: any) => { originalsMap[o.id] = o; });
+        }
+
+        function getOriginalText(o: any) {
+          if (!o) return null;
+          if (o.kind === "bg") { try { return JSON.parse(o.content).text; } catch { return o.content; } }
+          return o.content;
+        }
+
+        const merged = [
+          ...replies.map((r: any) => ({
+            id: `reply-${r.id}`, type: "reply" as const,
+            content: r.content, mediaUrl: r.media_url, createdAt: r.created_at,
+            original: originalsMap[r.post_id] ? {
+              id: r.post_id,
+              text: getOriginalText(originalsMap[r.post_id]),
+              author: originalsMap[r.post_id].author_username,
+              authorName: originalsMap[r.post_id].author_name,
+              authorColor: originalsMap[r.post_id].author_color,
+              image: originalsMap[r.post_id].image_url,
+              videoUrl: originalsMap[r.post_id].video_url || null,
+            } : null,
+          })),
+          ...reposts.map((r: any) => ({
+            id: `repost-${r.id}`, type: "repost" as const,
+            content: null, mediaUrl: null, createdAt: r.created_at,
+            original: originalsMap[r.post_id] ? {
+              id: r.post_id,
+              text: getOriginalText(originalsMap[r.post_id]),
+              author: originalsMap[r.post_id].author_username,
+              authorName: originalsMap[r.post_id].author_name,
+              authorColor: originalsMap[r.post_id].author_color,
+              image: originalsMap[r.post_id].image_url,
+              videoUrl: originalsMap[r.post_id].video_url || null,
+            } : null,
+          })),
+          ...quotes.map((q: any) => ({
+            id: `quote-${q.id}`, type: "quote" as const,
+            content: q.content, mediaUrl: q.media_url, createdAt: q.created_at,
+            original: originalsMap[q.original_post_id] ? {
+              id: q.original_post_id,
+              text: getOriginalText(originalsMap[q.original_post_id]),
+              author: originalsMap[q.original_post_id].author_username,
+              authorName: originalsMap[q.original_post_id].author_name,
+              authorColor: originalsMap[q.original_post_id].author_color,
+              image: originalsMap[q.original_post_id].image_url,
+              videoUrl: originalsMap[q.original_post_id].video_url || null,
+            } : null,
+          })),
+        ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+        setActivities(merged);
+        setActivitiesLoaded(true);
+      } catch (e) {
+        toast.error("Não foi possível carregar as respostas.");
+      } finally {
+        setActivitiesLoading(false);
+      }
+    })();
+  }, [tab, myUserId, activitiesLoaded]);
+
+  /* Carregar publicações guardadas (tab "Guardado") sob pedido */
+  useEffect(() => {
+    if (tab !== "saved" || !myUserId) return;
+    (async () => {
+      setSavedLoading(true);
+      const { data: saveRows } = await supabase.from("post_saves").select("post_id").eq("user_id", myUserId);
+      const postIds = [...new Set((saveRows ?? []).map((r: any) => r.post_id))];
+      if (postIds.length === 0) { setSavedPosts([]); setSavedLoading(false); return; }
+
+      const { data: postsData } = await supabase
+        .from("posts")
+        .select("id, content, kind, created_at, photo_url, image_url, video_url, photos, author_id, author_username, author_name")
+        .in("id", postIds);
+      const rows = postsData ?? [];
+
+      const [{ data: likesData }, { data: commentsData }] = await Promise.all([
+        supabase.from("post_likes").select("post_id,user_id").in("post_id", postIds),
+        supabase.from("post_comments").select("post_id").in("post_id", postIds),
+      ]);
+      const likesByPost: Record<string, string[]> = {};
+      (likesData ?? []).forEach((l: any) => {
+        if (!likesByPost[l.post_id]) likesByPost[l.post_id] = [];
+        likesByPost[l.post_id].push(l.user_id);
+      });
+      const commentsByPost: Record<string, number> = {};
+      (commentsData ?? []).forEach((c: any) => { commentsByPost[c.post_id] = (commentsByPost[c.post_id] ?? 0) + 1; });
+
+      const authorIds = [...new Set(rows.map((p: any) => p.author_id).filter(Boolean))];
+      const { data: authorProfiles } = authorIds.length > 0
+        ? await supabase.from("profiles").select("id,avatar_url").in("id", authorIds)
+        : { data: [] as any[] };
+      const avatarByAuthor: Record<string, string | null> = {};
+      (authorProfiles ?? []).forEach((p: any) => { avatarByAuthor[p.id] = p.avatar_url ?? null; });
+
+      const loaded: SavedPost[] = rows.map((p: any) => {
+        let text = p.content;
+        let bgColor: string | null = null;
+        if (p.kind === "bg") {
+          try { const j = JSON.parse(p.content); text = j.text; bgColor = j.bgColor; } catch (_) {}
+        }
+        const photo = (p as any).photo_url || (p as any).image_url || ((p as any).photos && (p as any).photos[0]) || null;
+        const photos = Array.isArray((p as any).photos) && (p as any).photos.length > 0 ? (p as any).photos : null;
+        const videoUrl = (p as any).video_url || undefined;
+        const likeIds = likesByPost[p.id] ?? [];
+        return {
+          id: p.id, text, photo, photos, bgColor, createdAt: new Date(p.created_at ?? Date.now()),
+          likes: likeIds.length, likedByMe: likeIds.includes(myUserId), views_count: (p as any).views_count ?? 0,
+          comments: commentsByPost[p.id] ?? 0, bookmarked: true,
+          videoUrl,
+          authorId: p.author_id, authorName: p.author_name || p.author_username || "hooda",
+          authorUsername: p.author_username || "utilizador",
+          authorAvatar: p.author_id ? avatarByAuthor[p.author_id] ?? null : null,
+        };
+      }).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      setSavedPosts(loaded);
+      setSavedLoading(false);
+    })();
+  }, [tab, myUserId]);
+
   async function deletePost(id: string) {
     setPosts(prev => prev.filter(p => p.id !== id));
   }
 
-  async function saveProfile(data: Partial<Profile> & { website?: string; location?: string; whatsapp?: string }) {
+  async function saveProfile(data: Partial<Profile> & { website?: string; location?: string }) {
     setProfile((p) => p ? { ...p, ...data } : p);
     if (data.website) setWebsite(data.website);
     if (data.location) setLocation(data.location);
-    if (data.whatsapp !== undefined) setWhatsapp(data.whatsapp);
 
     // Atualizar nome e username em todos os posts do utilizador
     try {
@@ -1452,9 +1909,11 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
   }
 
   const tabs = [
-    { key: "inicio", label: "Início" },
-    { key: "arquivos", label: "Arquivos" },
-    { key: "sobre", label: "Sobre" },
+    { key: "posts", label: t("profile.publications"), icon: Type },
+    { key: "replies", label: "Respostas", icon: Repeat2 },
+    { key: "saved", label: t("post.save"), icon: Bookmark },
+    { key: "info", label: "Info", icon: Info },
+    { key: "monetization", label: "Studio", icon: Tv },
   ] as const;
 
   /* Enquanto o perfil (nome/username) ainda não chegou do Supabase,
@@ -1479,7 +1938,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
       {/* Header */}
       <header className="sticky top-0 z-30 border-b" style={{ background: "var(--surface-0)", borderColor: "var(--border-subtle)" }}>
         <div className="px-4 h-14 flex items-center gap-4">
-          <SnapperLogo size="sm" className="lg:hidden" />
+          <HoodaLogo size="sm" className="lg:hidden" />
           <div className="hidden lg:block leading-tight">
             <p className="text-[15px] font-extrabold" style={{ color: "var(--text-primary)" }}>{name}</p>
             <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>
@@ -1502,8 +1961,8 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
         {/* Capa */}
         <div className="relative">
           <div className="h-52 relative overflow-hidden"
-            style={coverUrl ? undefined : { background: "linear-gradient(135deg,#2F6FED 0%,#8B5CF6 55%,#2F6FED 100%)" }}>
-            {coverUrl && <img src={optimizePostPhoto(coverUrl, 1200)} alt="capa" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = "none"; }} />}
+            style={coverUrl ? undefined : { background: "linear-gradient(135deg,#5B3FCF 0%,#8B5CF6 55%,#E94B8A 100%)" }}>
+            {coverUrl && <img src={coverUrl} alt="capa" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = "none"; }} />}
             {/* Botão câmera da capa */}
             <button onClick={() => pickFile(coverInputRef, setCoverUrl, "cover")}
               className="absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center border-2 border-white shadow"
@@ -1524,7 +1983,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
                   cursor: avatarUrl ? "pointer" : "default",
                 }}>
                 {avatarUrl
-                  ? <img src={optimizeAvatar(avatarUrl, 264)} alt={name} style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={(e) => { e.currentTarget.style.display = "none"; }} />
+                  ? <img src={avatarUrl} alt={name} style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={(e) => { e.currentTarget.style.display = "none"; }} />
                   : (name?.[0] ?? "?").toUpperCase()}
               </div>
               <button onClick={() => pickFile(avatarInputRef, setAvatarUrl, "avatar")}
@@ -1553,23 +2012,12 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
         {/* Info pessoal */}
         <div className="px-5 pt-9 pb-3">
           <div className="flex items-center gap-1">
-            <p className="text-xl font-extrabold leading-tight inline-flex items-center gap-1.5" style={{ color: "var(--text-primary)" }}>
-              {name}{(profile as any)?.is_verified && <VerifiedBadge size={17} />}
-            </p>
+            <p className="text-xl font-extrabold leading-tight" style={{ color: "var(--text-primary)" }}>{name}</p>
           </div>
-          <span className="inline-flex items-center gap-1 mt-1.5 px-2.5 py-1 rounded-full text-xs font-semibold" style={{ background: ACCENT + "14", color: ACCENT }}>
-            @{profile?.username || "utilizador"}
-          </span>
-
+          <p className="text-sm text-[var(--text-muted)] font-medium mt-0.5">@{profile?.username || "utilizador"}</p>
           {profile?.bio && (
-            <div className="mt-3 rounded-xl px-3.5 py-3" style={{ background: "var(--s2)" }}>
-              <p className="text-[11px] font-semibold flex items-center gap-1.5 mb-1.5" style={{ color: "var(--text-muted)" }}>
-                <AlignLeft className="h-3.5 w-3.5" /> Descrição
-              </p>
-              <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>{profile.bio}</p>
-            </div>
+            <p className="text-sm text-[var(--text-secondary)] mt-3 leading-relaxed">{profile.bio}</p>
           )}
-
           <div className="flex flex-wrap gap-3 mt-3">
             {location && (
               <span className="flex items-center gap-1 text-xs text-[var(--text-muted)]">
@@ -1583,24 +2031,36 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
                 <Link className="h-3.5 w-3.5" /> {website.replace(/^https?:\/\//, "")}
               </a>
             )}
-            {whatsapp && (
-              <a href={`https://wa.me/${whatsapp.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer"
-                className="flex items-center gap-1 text-xs font-semibold"
-                style={{ color: "#25D366" }}>
-                <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
-              </a>
-            )}
             <span className="flex items-center gap-1 text-xs text-[var(--text-muted)]">
               <Calendar className="h-3.5 w-3.5" /> {"Membro desde"} {new Date((profile as any)?.created_at ?? Date.now()).getFullYear()}
             </span>
           </div>
         </div>
 
+        <StatsGrid publications={posts.length} followers={followerCount} following={followingCount} loading={statsLoading} onFollowersClick={() => setFollowListMode("followers")} onFollowingClick={() => setFollowListMode("following")} />
+
+        {/* Botão flutuante de criar publicação — só ícone, sem caixa duplicada */}
+        {tab === "posts" && (
+          <div className="px-5 mb-2 flex justify-end">
+            <button onClick={() => setShowCreate(true)}
+              className="flex items-center gap-1.5 text-xs font-bold rounded-full px-3.5 py-1.5 text-white transition active:scale-95"
+              style={{ background: ACCENT }}>
+              <Plus className="h-3.5 w-3.5" /> {t("post.placeholder")}
+            </button>
+          </div>
+        )}
+
         {/* Tabs estilo X — texto, sublinhado fino */}
         <div className="px-1 flex border-b" style={{ borderColor: "var(--border-subtle)" }}>
           {tabs.map((tItem) => (
             <button key={tItem.key}
-              onClick={() => setTab(tItem.key)}
+              onClick={async () => {
+                if (tItem.key === "monetization") {
+                  navigate({ to: "/studio" });
+                  return;
+                }
+                setTab(tItem.key);
+              }}
               className="flex-1 min-w-0 relative py-4 px-1 text-[13px] sm:text-[14px] font-bold transition-colors hover:bg-[var(--s2)] truncate"
               style={{ color: tab === tItem.key ? "var(--text-primary)" : "var(--text-muted)" }}>
               <span className="truncate">{tItem.label}</span>
@@ -1612,56 +2072,133 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
         </div>
 
         {/* Conteúdo das tabs */}
-        {tab === "inicio" && (
+        {tab === "posts" && (
           <>
-            <div className="px-3 pt-2">
-              <PostComposerBar
+            <div className="px-3 pt-3">
+              <ComposeBox
                 name={name}
-                avatarUrl={(profile as any)?.avatar_url}
-                onOpen={() => setShowCreatePost(true)}
+                username={profile?.username || "utilizador"}
+                avatarUrl={avatarUrl}
+                onPublished={refreshLatestPost}
               />
             </div>
-            <PostsFeed
-              posts={posts}
-              loading={postsLoading}
-              name={name}
-              username={profile?.username || ""}
-              avatarUrl={(profile as any)?.avatar_url}
-              onDelete={(id) => setPosts((prev) => prev.filter((p) => p.id !== id))}
-              myUserId={myUserId}
-              isVerified={(profile as any)?.is_verified}
-            />
+            <PostsFeed posts={posts} loading={postsLoading} name={name} username={profile?.username || "utilizador"}
+              avatarUrl={avatarUrl} onDelete={deletePost}
+              myUserId={myUserId} />
           </>
         )}
 
-        {tab === "arquivos" && (
-          <div className="px-5 py-14 flex flex-col items-center gap-3 text-center">
-            <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ background: ACCENT + "14" }}>
-              <Archive className="h-7 w-7" style={{ color: ACCENT }} />
+        {tab === "replies" && (
+          activitiesLoading ? (
+            <div className="flex justify-center py-14">
+              <div className="h-6 w-6 rounded-full border-2 animate-spin" style={{ borderColor: ACCENT, borderTopColor: "transparent" }} />
             </div>
-            <p className="text-sm font-semibold" style={{ color: "var(--text-muted)" }}>Ainda não há nada no arquivo</p>
-          </div>
+          ) : activities.length === 0 ? (
+            <div className="px-5 py-12 flex flex-col items-center gap-3 text-center">
+              <div className="w-16 h-16 rounded-full bg-[#1FAFA6]/10 flex items-center justify-center">
+                <Repeat2 className="h-7 w-7 text-[#1FAFA6]" />
+              </div>
+              <p className="text-sm font-semibold text-[var(--text-muted)]">Sem respostas ainda</p>
+              <p className="text-xs text-[var(--text-muted)]">As tuas respostas, reposts e citações aparecem aqui.</p>
+            </div>
+          ) : (
+            <div className="pb-6 space-y-3 w-full px-3 pt-2">
+              {activities.map((a) => (
+                <div key={a.id} className="px-4 py-4">
+                  {/* Tipo de actividade */}
+                  <div className="flex items-center gap-1.5 mb-2 text-xs font-bold"
+                    style={{ color: a.type === "repost" ? "#1FAFA6" : a.type === "quote" ? "#5B3FCF" : "var(--text-muted)" }}>
+                    {a.type === "repost" && <Repeat2 className="h-3.5 w-3.5" />}
+                    {a.type === "quote"  && <Quote className="h-3.5 w-3.5" />}
+                    {a.type === "reply"  && <MessageCircle className="h-3.5 w-3.5" />}
+                    <span>
+                      {a.type === "repost" ? "Repostaste" : a.type === "quote" ? "Citaste" : "Respondeste a um post"}
+                    </span>
+                    <span className="text-[11px] font-normal text-[var(--text-muted)]">· {timeAgo(new Date(a.createdAt))}</span>
+                  </div>
+
+                  {/* Conteúdo próprio (reply ou quote) */}
+                  {(a.type === "reply" || a.type === "quote") && a.content && (
+                    <p className="text-sm leading-snug mb-3" style={{ color: "var(--text-primary)" }}>{a.content}</p>
+                  )}
+                  {a.mediaUrl && (
+                    <img src={a.mediaUrl} alt="" className="w-full rounded-xl mb-3 max-h-72 object-cover" />
+                  )}
+
+                  {/* Post original referenciado */}
+                  {a.original ? (
+                    <div className="rounded-2xl border p-3" style={{ borderColor: "var(--border-subtle)", background: "var(--s2)" }}>
+                      <p className="text-xs font-bold mb-1" style={{ color: a.original.authorColor || ACCENT }}>
+                        @{a.original.author || "utilizador"}
+                      </p>
+                      {a.original.text && (
+                        <p className="text-sm leading-snug line-clamp-3" style={{ color: "var(--text-secondary)" }}>{a.original.text}</p>
+                      )}
+                      {a.original.videoUrl ? (
+                        <div className="mt-2">
+                          <FeedVideoPlayer src={a.original.videoUrl} postId={a.original.id} kind="video" rounded="rounded-xl" autoPlay={false} />
+                        </div>
+                      ) : a.original.image && (
+                        <img src={a.original.image} alt="" className="w-full rounded-xl mt-2 max-h-56 object-cover" />
+                      )}
+                    </div>
+                  ) : (
+                    <div className="rounded-2xl border p-3 text-xs" style={{ borderColor: "var(--border-subtle)", background: "var(--s2)", color: "var(--text-muted)" }}>
+                      Esta publicação original já não está disponível.
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )
         )}
 
-        {tab === "sobre" && (
-          <div className="px-5 py-4">
-            <div className="flex flex-col gap-2">
+        {tab === "saved" && (
+          savedLoading ? (
+            <div className="flex justify-center py-14">
+              <div className="h-6 w-6 rounded-full border-2 animate-spin" style={{ borderColor: ACCENT, borderTopColor: "transparent" }} />
+            </div>
+          ) : savedPosts.length === 0 ? (
+            <div className="px-5 py-12 flex flex-col items-center gap-3 text-center">
+              <div className="w-16 h-16 rounded-full bg-[#F26B3A]/10 flex items-center justify-center">
+                <Bookmark className="h-7 w-7 text-[#F26B3A]" />
+              </div>
+              <p className="text-sm font-semibold text-[var(--text-muted)]">Nada guardado ainda</p>
+              <p className="text-xs text-[var(--text-muted)]">As publicações que guardares aparecem aqui.</p>
+            </div>
+          ) : (
+            <div className="pb-6 space-y-3 w-full px-3 pt-2">
+              {savedPosts.map((sp) => (
+                <UniversalPostCard key={sp.id}
+                  post={normalizePost(sp, "profile", { name: sp.authorName, username: sp.authorUsername, avatarUrl: sp.authorAvatar, authorId: sp.authorId })}
+                  onDeleted={(id) => setSavedPosts(prev => prev.filter(p => p.id !== id))}
+                  onBookmarkChange={(id, bookmarked) => { if (!bookmarked) setSavedPosts(prev => prev.filter(p => p.id !== id)); }} />
+              ))}
+            </div>
+          )
+        )}
+
+        {tab === "info" && (
+          <div className="px-5 py-4 space-y-3">
+            <div className="bg-[var(--s2)] rounded-2xl border border-[var(--border-subtle)] shadow-sm overflow-hidden">
+              <p className="px-5 py-3 text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider border-b border-[var(--border-subtle)]">Sobre</p>
               {[
-                { icon: UserIcon, label: t("profile.full_name"), value: name, accent: false },
-                { icon: AtSign, label: "Username", value: `@${profile?.username || "—"}`, accent: true },
-                { icon: Mail, label: t("auth.email"), value: email, accent: false },
-                { icon: MapPin, label: t("profile.location"), value: location || "—", accent: false },
-                { icon: Link, label: t("profile.website"), value: website || "—", accent: false },
-              ].map((row) => (
-                <div key={row.label} className="flex items-center gap-2.5 px-3.5 py-3 rounded-xl" style={{ background: "var(--s2)" }}>
-                  <row.icon className="h-4 w-4 shrink-0" style={{ color: "var(--text-muted)" }} />
-                  <span className="text-xs flex-1 text-[var(--text-muted)] font-medium">{row.label}</span>
-                  <span className="text-sm font-semibold text-right max-w-[55%] truncate" style={{ color: row.accent ? ACCENT : "var(--text-primary)" }}>{row.value}</span>
+                { label: t("profile.full_name"), value: name },
+                { label: "Username", value: `@${profile?.username || "—"}` },
+                { label: t("auth.email"), value: email },
+                { label: t("profile.location"), value: location || "—" },
+                { label: t("profile.website"), value: website || "—" },
+              ].map((row, i) => (
+                <div key={row.label} className={`flex items-center justify-between px-5 py-3.5 ${i > 0 ? "border-t border-[var(--border-subtle)]" : ""}`}>
+                  <span className="text-xs text-[var(--text-muted)] font-medium">{row.label}</span>
+                  <span className="text-sm font-semibold text-black text-right max-w-[60%] truncate">{row.value}</span>
                 </div>
               ))}
             </div>
           </div>
         )}
+
+        {tab === "monetization" && <MonetizationPanel />}
       </main>
       </>
       }
@@ -1704,34 +2241,40 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
             style={{background:"rgba(255,255,255,0.15)"}}>
             <X className="h-5 w-5 text-white"/>
           </button>
-          <img src={optimizePostPhoto(photoViewing, 1200)} alt="" className="object-contain"
+          <img src={photoViewing} alt="" className="object-contain"
             style={{maxWidth:"95vw",maxHeight:"92vh",borderRadius:8}}
             onClick={e=>e.stopPropagation()}
             onContextMenu={e=>e.preventDefault()}/>
         </div>
       )}
       {showAbout && <AboutPanel onBack={() => setShowAbout(false)} />}
-      {showCreatePost && (
-        <CreatePostModal
-          name={name}
-          username={profile?.username || ""}
-          avatarUrl={(profile as any)?.avatar_url}
-          onClose={() => setShowCreatePost(false)}
-          onPublish={(post) => addPost(post as Post)}
-        />
-      )}
       {showLanguage && <LanguagePanel onBack={() => setShowLanguage(false)} />}
       {showMsgPrivacy && <MsgPrivacyPanel onBack={() => setShowMsgPrivacy(false)} msgPermission={msgPermission} onMsgPermissionChange={async (v) => {
         setMsgPermission(v);
         const { data: { session } } = await supabase.auth.getSession();
         if (session) await supabase.from("profiles").update({ msg_permission: v } as any).eq("id", session.user.id);
       }} />}
+      {followListMode && profile && (
+        <FollowListModal
+          mode={followListMode}
+          targetUsername={profile.username || ""}
+          targetUserId={profile.id || ""}
+          onClose={() => setFollowListMode(null)}
+        />
+      )}
       {showEditProfile && (
         <EditProfileModal
-          profile={profile ? { ...profile, website, location, whatsapp } as any : profile}
+          profile={profile}
           email={email}
           onClose={() => setShowEditProfile(false)}
           onSave={(data) => { saveProfile(data); setShowEditProfile(false); }}
+        />
+      )}
+      {showCreate && (
+        <CreatePostModal
+          profile={profile} email={email}
+          onClose={() => setShowCreate(false)}
+          onPublish={(data) => { addPost(data); setShowCreate(false); }}
         />
       )}
       {showShareModal && (
@@ -1749,6 +2292,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
 function PublicProfile({ profile, email }: { profile: Profile | null; email: string }) {
   const [myUserId, setMyUserId] = useState("");
   const [sessionChecked, setSessionChecked] = useState(false);
+  const [followListMode, setFollowListMode] = useState<"followers" | "following" | null>(null);
   const navigate = useNavigate();
   const name = profile?.full_name || profile?.username || email?.split("@")[0] || "?";
 
@@ -1760,17 +2304,31 @@ function PublicProfile({ profile, email }: { profile: Profile | null; email: str
     })();
   }, []);
 
+  // Fonte única de verdade: mesmo hook/cache/RPC usado em todo o resto da
+  // app (feed, canal, u.$username...). O estado real vem sempre da BD
+  // logo ao montar — nunca assume "Seguir" por defeito enquanto carrega.
+  const {
+    isFollowing: following,
+    isLoading: followLoading,
+    followersCount: followerCount,
+    followingCount,
+    countsLoading,
+    isPending: followTogglePending,
+    toggle: toggleFollow,
+  } = useFollowState(myUserId || null, profile?.username || null, (profile as any)?.id || null);
+  const statsLoading = countsLoading;
+
   return (
     <>
     <SideNav />
     <PageWrapper className="pb-20 lg:pb-0">
       <header className="sticky top-0 z-30 border-b" style={{ background: "var(--surface-0)", borderColor: "var(--border-subtle)" }}>
         <div className="px-4 lg:pl-10 h-14 flex items-center">
-          <SnapperLogo size="sm" />
+          <HoodaLogo size="sm" />
         </div>
       </header>
       <main className="w-full">
-        <div className="h-52 relative" style={{ background: "linear-gradient(135deg,#2F6FED 0%,#8B5CF6 55%,#2F6FED 100%)" }}>
+        <div className="h-52 relative" style={{ background: "linear-gradient(135deg,#5B3FCF 0%,#8B5CF6 55%,#E94B8A 100%)" }}>
           <div className="absolute left-5" style={{ bottom: -60 }}>
             <div style={{ border: "4px solid var(--surface-0)", borderRadius: "50%" }}>
               <Avatar name={name} size={124} />
@@ -1782,28 +2340,29 @@ function PublicProfile({ profile, email }: { profile: Profile | null; email: str
             onClick={() => navigate({ to: "/mensagens" })}
             className="text-sm font-semibold border border-neutral-300 rounded-full px-4 py-1.5 bg-[var(--s2)] hover:bg-[var(--s1)] flex items-center gap-1.5 shadow-sm active:scale-95 transition-transform"
           >
-            <MessageCircle className="h-4 w-4" style={{ color: "#2F6FED" }} /> Mensagem
+            <MessageCircle className="h-4 w-4" style={{ color: "#5B3FCF" }} /> Mensagem
           </button>
-        </div>
-        <div className="px-5 pt-9 pb-3">
-          <p className="text-xl font-extrabold leading-tight inline-flex items-center gap-1.5" style={{ color: "var(--text-primary)" }}>
-            {name}{(profile as any)?.is_verified && <VerifiedBadge size={17} />}
-          </p>
-          <span className="inline-flex items-center gap-1 mt-1.5 px-2.5 py-1 rounded-full text-xs font-semibold" style={{ background: ACCENT + "14", color: ACCENT }}>
-            @{profile?.username || "utilizador"}
-          </span>
-          {profile?.bio && (
-            <div className="mt-3 rounded-xl px-3.5 py-3" style={{ background: "var(--s2)" }}>
-              <p className="text-[11px] font-semibold flex items-center gap-1.5 mb-1.5" style={{ color: "var(--text-muted)" }}>
-                <AlignLeft className="h-3.5 w-3.5" /> Descrição
-              </p>
-              <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>{profile.bio}</p>
+          {(!sessionChecked || (!!myUserId && followLoading)) ? (
+            <div className="relative overflow-hidden h-[30px] w-[92px] rounded-full" style={{ background: "var(--s2)" }}>
+              <div className="skeleton-shimmer absolute inset-0" />
             </div>
+          ) : (
+            <button onClick={toggleFollow} disabled={followTogglePending}
+              className={`text-sm font-bold rounded-full px-5 py-1.5 transition shadow-sm disabled:opacity-60 ${following ? "border border-neutral-300 bg-[var(--s2)] text-black" : "text-white"}`}
+              style={{ background: following ? undefined : ACCENT }}>
+              {following ? t("profile.following") : t("profile.follow")}
+            </button>
           )}
         </div>
+        <div className="px-5 pt-9 pb-3">
+          <p className="text-xl font-extrabold text-black">{name}</p>
+          <p className="text-sm text-[var(--text-muted)] mt-0.5">@{profile?.username || "..."}</p>
+          {profile?.bio && <p className="text-sm text-[var(--text-secondary)] mt-2 leading-relaxed">{profile.bio}</p>}
+        </div>
+        <StatsGrid publications={0} followers={followerCount} following={followingCount} loading={statsLoading} onFollowersClick={() => setFollowListMode("followers")} onFollowingClick={() => setFollowListMode("following")} />
         <div className="px-5 py-12 flex flex-col items-center gap-3 text-center">
-          <div className="w-16 h-16 rounded-full bg-[#2F6FED]/10 flex items-center justify-center">
-            <BookOpen className="h-7 w-7 text-[#2F6FED]" />
+          <div className="w-16 h-16 rounded-full bg-[#5B3FCF]/10 flex items-center justify-center">
+            <BookOpen className="h-7 w-7 text-[#5B3FCF]" />
           </div>
           <p className="text-sm font-semibold text-[var(--text-muted)]">Ainda não há publicações.</p>
         </div>
@@ -1813,6 +2372,14 @@ function PublicProfile({ profile, email }: { profile: Profile | null; email: str
           </button>
         </div>
       </main>
+      {followListMode && profile && (
+        <FollowListModal
+          mode={followListMode}
+          targetUsername={profile.username || ""}
+          targetUserId={(profile as any).id || ""}
+          onClose={() => setFollowListMode(null)}
+        />
+      )}
     </PageWrapper>
     </>
   );
@@ -1836,7 +2403,7 @@ function ProfilePage() {
       let data: any = null;
       const { data: d1, error: e1 } = await supabase
         .from("profiles")
-        .select("id, username, full_name, age, bio, username_changed_at, is_verified")
+        .select("id, username, full_name, age, bio, username_changed_at")
         .eq("id", session.session.user.id)
         .maybeSingle();
       if (e1) {
@@ -1933,7 +2500,7 @@ function ProfilePage() {
   }, [navigate]);
 
   async function signOut() {
-    await signOutSnapper();
+    await signOutHooda();
     navigate({ to: "/", replace: true });
   }
 
