@@ -140,12 +140,12 @@ function ShareProfileModal({ username, name, onClose }: { username: string; name
       <div className="w-full max-w-sm rounded-3xl shadow-2xl p-5"
         style={{ background: "var(--s0)" }} onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-extrabold text-base" style={{ color: "var(--text-primary)" }}>Partilhar perfil</h3>
+          <h3 className="font-extrabold text-base" style={{ color: "var(--text-primary)" }}>Partilhar canal</h3>
           <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "var(--s2)" }}>
             <X className="h-4 w-4" style={{ color: "var(--text-muted)" }} />
           </button>
         </div>
-        <p className="text-sm mb-3" style={{ color: "var(--text-muted)" }}>Link do perfil de <span className="font-semibold" style={{ color: "var(--text-primary)" }}>{name}</span></p>
+        <p className="text-sm mb-3" style={{ color: "var(--text-muted)" }}>Link do canal de <span className="font-semibold" style={{ color: "var(--text-primary)" }}>{name}</span></p>
         <div className="flex items-center gap-2 p-3 rounded-2xl border mb-1"
           style={{ background: "var(--s2)", borderColor: "var(--border-default)" }}>
           <p className="flex-1 text-sm truncate" style={{ color: "var(--text-secondary)" }}>{url}</p>
@@ -209,7 +209,7 @@ function ReportModal({ username, userId, onClose }:{ username:string; userId:str
             </div>
           ) : (
             <>
-              <p className="text-sm mb-3" style={{color:"var(--text-muted)"}}>Porque queres denunciar este perfil?</p>
+              <p className="text-sm mb-3" style={{color:"var(--text-muted)"}}>Porque queres denunciar este canal?</p>
               {reasons.map(r=>(
                 <button key={r} onClick={()=>setReason(r)}
                   className="w-full text-left px-4 py-2.5 rounded-2xl text-sm border transition"
@@ -423,7 +423,7 @@ function UserProfilePage() {
                 <div ref={menuRef} className="fixed w-48 rounded-2xl shadow-2xl py-1 z-[999]"
                   style={{background:"var(--s0)",border:"1px solid var(--border-subtle)",top:menuPos.top,right:menuPos.right}}>
                   {[
-                    {icon:<Share2 className="h-4 w-4"/>, label:"Partilhar perfil", action:shareProfile, danger:false},
+                    {icon:<Share2 className="h-4 w-4"/>, label:"Partilhar canal", action:shareProfile, danger:false},
                     ...(myId ? [{
                       icon:<Ban className="h-4 w-4"/>,
                       label: isBlocked ? "Desbloquear" : "Bloquear",
@@ -584,7 +584,7 @@ function UserProfilePage() {
             <button onClick={()=>setShowReport(true)}
               className="w-full h-11 rounded-xl border text-sm flex items-center justify-center gap-2 transition hover:bg-red-50 hover:border-red-200 hover:text-red-500"
               style={{borderColor:"var(--border-default)",color:"var(--text-muted)"}}>
-              <Flag className="h-4 w-4"/> Denunciar perfil
+              <Flag className="h-4 w-4"/> Denunciar canal
             </button>
           </div>
         </main>
@@ -607,7 +607,7 @@ function UserProfilePage() {
             onClick={e=>e.stopPropagation()}>
             <p className="font-extrabold text-base mb-1" style={{color:"var(--text-primary)"}}>Bloquear @{profile.username}?</p>
             <p className="text-sm mb-4" style={{color:"var(--text-muted)"}}>
-              @{profile.username} deixa de poder enviar-te mensagens ou ver o teu perfil.
+              @{profile.username} deixa de poder enviar-te mensagens ou ver o teu canal.
             </p>
             <div className="flex gap-2">
               <button onClick={()=>setShowBlockConfirm(false)}

@@ -96,7 +96,7 @@ function DefinicoesPage() {
     {
       title: "Privacidade & Segurança",
       items: [
-        { icon: <Lock className="w-5 h-5"/>, color: "#6BA547", label: "Privacidade", desc: "Quem pode ver o teu perfil", action: () => setPanel("privacy") },
+        { icon: <Lock className="w-5 h-5"/>, color: "#6BA547", label: "Privacidade", desc: "Quem pode ver o teu canal", action: () => setPanel("privacy") },
         { icon: <Shield className="w-5 h-5"/>, color: ACCENT, label: "Segurança", desc: "Palavra-passe e autenticação", action: () => setPanel("security") },
         { icon: <MessageSquare className="w-5 h-5"/>, color: "#1FAFA6", label: "Privacidade de Mensagens", desc: "Quem pode enviar-te mensagens?", action: () => setPanel("msgprivacy") },
         { icon: <ShieldAlert className="w-5 h-5"/>, color: "#2F6FED", label: "Conteúdo Sensível", desc: "Como mostrar conteúdo sensível no feed", action: () => setPanel("sensitive-content") },

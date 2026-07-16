@@ -171,7 +171,7 @@ export function UserDrawer({ userId: _userId, onClose }: UserDrawerProps) {
     {
       title: "O teu espaço",
       items: [
-        { icon: User, label: "O meu perfil", color: "#2F6FED", action: () => { onClose(); navigate({ to: "/perfil" }); } },
+        { icon: User, label: "O meu canal", color: "#2F6FED", action: () => { onClose(); navigate({ to: "/perfil" }); } },
         { icon: Bell, label: "Notificações", color: "#2F6FED", action: () => {
             onClose();
             navigate({ to: "/home" });

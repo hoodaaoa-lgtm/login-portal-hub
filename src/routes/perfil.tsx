@@ -302,7 +302,7 @@ function EditProfileModal({
             style={{ background: "var(--s2)" }}>
             <X className="h-5 w-5" style={{ color: "var(--text-primary)" }} />
           </button>
-          <span className="text-base font-extrabold" style={{ color: "var(--text-primary)" }}>Editar perfil</span>
+          <span className="text-base font-extrabold" style={{ color: "var(--text-primary)" }}>Editar canal</span>
           <button onClick={save}
             disabled={saving || done || usernameStatus === "taken" || usernameStatus === "invalid" || usernameStatus === "checking"}
             className="text-sm font-bold px-5 py-2 rounded-full text-white transition active:scale-95 disabled:opacity-50"
@@ -474,7 +474,7 @@ function EditProfileModal({
                   style={{ background: "var(--s2)", color: "var(--text-primary)" }}
                 />
               </div>
-              <p className="text-[11px] text-[var(--text-muted)] mt-1">Com código do país, ex: +244. Aparece como link clicável no teu perfil.</p>
+              <p className="text-[11px] text-[var(--text-muted)] mt-1">Com código do país, ex: +244. Aparece como link clicável no teu canal.</p>
             </div>
 
             {/* Localização */}
@@ -574,7 +574,7 @@ export function SettingsDrawer({
     {
       title: t("settings.privacy_security", "Privacidade & Segurança"),
       items: [
-        { icon: Lock, label: t("settings.privacy"), desc: t("settings.privacy_desc", "Quem pode ver o teu perfil"), action: onOpenPrivacy, color: "#6BA547" },
+        { icon: Lock, label: t("settings.privacy"), desc: t("settings.privacy_desc", "Quem pode ver o teu canal"), action: onOpenPrivacy, color: "#6BA547" },
         { icon: Shield, label: t("settings.security"), desc: t("settings.security_desc", "Palavra-passe e autenticação"), action: onOpenSecurity, color: "#2F6FED" },
         { icon: MessageCircle, label: t("settings.msg_privacy"), desc: t("settings.msg_privacy_desc", "Quem pode enviar-te mensagens"), action: onOpenMsgPrivacy, color: "#1FAFA6" },
       ],
@@ -965,7 +965,7 @@ export function PrivacyPanel({ onBack }: { onBack: () => void }) {
               <Check className="h-3.5 w-3.5" /> Guardado
             </p>
           )}
-          <p className="px-5 pb-1.5 text-[11px] font-bold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Visibilidade do perfil</p>
+          <p className="px-5 pb-1.5 text-[11px] font-bold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Visibilidade do canal</p>
           <div className="mx-3 rounded-2xl overflow-hidden border shadow-sm" style={{ background: "var(--s2)", borderColor: "var(--border-default)" }}>
             <ToggleRow icon={Lock} color="#6BA547" label={t("settings.private_account", { defaultValue: "Conta privada" })}
               desc={t("settings.private_account_desc", { defaultValue: "Apenas acompanhantes aprovados veem as tuas publicações" })}
@@ -1130,11 +1130,11 @@ export function AboutPanel({ onBack }: { onBack: () => void }) {
 /* ─── Ajuda ─── */
 export function HelpPanel({ onBack }: { onBack: () => void }) {
   const faqs = [
-    { q: "Como altero a minha foto de perfil?", a: "Vai ao teu perfil e clica na foto de perfil para fazer upload de uma nova imagem." },
+    { q: "Como altero a minha foto de perfil?", a: "Vai ao teu canal e clica na foto de perfil para fazer upload de uma nova imagem." },
     { q: "Como publico um vídeo?", a: "Vai ao SnapperStudio e clica em 'Novo vídeo'. Podes fazer upload e definir título, descrição e visibilidade." },
     { q: "Como acompanho um canal?", a: "Na SnapperTV, clica no canal que queres acompanhar e depois no botão 'Acompanhar'." },
     { q: "Como altero a minha palavra-passe?", a: "Vai a Configurações → Segurança → Alterar palavra-passe." },
-    { q: "Como torno o meu perfil privado?", a: "Vai a Configurações → Privacidade e ativa 'Conta privada'." },
+    { q: "Como torno o meu canal privado?", a: "Vai a Configurações → Privacidade e ativa 'Conta privada'." },
     { q: "Como envio mensagens?", a: "Usa o separador Mensagens na barra de navegação. Podes enviar mensagens a outros utilizadores." },
     { q: "Como apago uma publicação?", a: "Vai à publicação, clica no menu (⋯) e seleciona 'Eliminar'." },
     { q: "Como contacto o suporte?", a: "Envia um email para suporte@hooda.app e responderemos em até 48 horas." },
@@ -1198,7 +1198,7 @@ function ShareProfileModal({ username, name, onClose }: { username: string; name
 
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b shrink-0" style={{ borderColor: "var(--border-subtle)" }}>
-          <span className="text-sm font-extrabold" style={{ color: "var(--text-primary)" }}>Partilhar perfil</span>
+          <span className="text-sm font-extrabold" style={{ color: "var(--text-primary)" }}>Partilhar canal</span>
           <button onClick={onClose} className="p-1.5 rounded-full transition" style={{ background: "var(--s2)" }}>
             <X className="h-5 w-5" style={{ color: "var(--text-muted)" }} />
           </button>
@@ -1206,13 +1206,13 @@ function ShareProfileModal({ username, name, onClose }: { username: string; name
 
         {/* Conteúdo scrollável */}
         <div className="overflow-y-auto flex-1 px-4 py-4">
-          <p className="text-sm mb-3" style={{ color: "var(--text-muted)" }}>Link do perfil de <span className="font-semibold" style={{ color: "var(--text-primary)" }}>{name}</span></p>
+          <p className="text-sm mb-3" style={{ color: "var(--text-muted)" }}>Link do canal de <span className="font-semibold" style={{ color: "var(--text-primary)" }}>{name}</span></p>
           {username === "utilizador" && (
             <div className="rounded-2xl px-3 py-2.5 mb-3 text-xs font-medium" style={{ background: "#fef3c7", color: "#92400e" }}>
-              ⚠️ Ainda não definiste um nome de utilizador. Define um em "Editar perfil" para teres um link permanente.
+              ⚠️ Ainda não definiste um nome de utilizador. Define um em "Editar canal" para teres um link permanente.
             </div>
           )}
-          <p className="text-xs font-bold uppercase tracking-wide mb-2" style={{ color: "var(--text-muted)" }}>Link do perfil</p>
+          <p className="text-xs font-bold uppercase tracking-wide mb-2" style={{ color: "var(--text-muted)" }}>Link do canal</p>
           <div className="flex items-center gap-2 rounded-2xl px-3 py-2.5 mb-3" style={{ background: "var(--s2)" }}>
             <span className="flex-1 text-xs truncate" style={{ color: "var(--text-muted)" }}>{url}</span>
             <button onClick={copy}
@@ -1536,10 +1536,10 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
           </div>
         </div>
 
-        {/* Editar perfil + Partilhar */}
+        {/* Editar canal + Partilhar */}
         <div className="flex justify-end gap-2 px-4 pt-3 pb-0">
           <button onClick={() => setShowShareModal(true)}
-            title="Partilhar perfil"
+            title="Partilhar canal"
             className="w-9 h-9 rounded-full flex items-center justify-center border transition hover:bg-[var(--s2)] active:scale-95"
             style={{borderColor:"var(--border-default)",color:"var(--text-muted)"}}>
             <Share2 className="h-4 w-4"/>
@@ -1809,7 +1809,7 @@ function PublicProfile({ profile, email }: { profile: Profile | null; email: str
         </div>
         <div className="px-4 pb-6">
           <button className="w-full h-11 rounded-xl border border-[var(--border-default)] text-[var(--text-muted)] text-sm flex items-center justify-center gap-2 hover:bg-[var(--s2)] shadow-sm">
-            <Flag className="h-4 w-4" /> Denunciar perfil
+            <Flag className="h-4 w-4" /> Denunciar canal
           </button>
         </div>
       </main>
