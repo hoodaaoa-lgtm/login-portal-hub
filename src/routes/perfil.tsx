@@ -32,6 +32,7 @@ import { uploadFeedVideo } from "@/lib/cloudinaryFeedVideo";
 import { fetchPostComments, sendPostComment, replyToPostComment, toggleCommentLike } from "@/lib/comments";
 import { deletePostForEveryone } from "@/lib/posts";
 import { UniversalPostCard, normalizePost } from "@/components/UniversalPostCard";
+import { CreatePostModal, PostComposerBar } from "@/components/CreatePostModal";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { PhotoViewer } from "@/components/PhotoViewer";
 import { FeedVideoPlayer } from "@/components/FeedVideoPlayer";
@@ -137,237 +138,6 @@ function PostsFeed({ posts, loading, name, username, avatarUrl, onDelete, myUser
 /* ─── Modal Criar Publicação ─── */
 /* SimpleVideoPlayer local foi substituído por FeedVideoPlayer (moldura + controles tipo YouTube) */
 
-function CreatePostModal({
-  profile, email, onClose, onPublish,
-}: {
-  profile: Profile | null; email: string;
-  onClose: () => void;
-  onPublish: (post: Post) => void;
-}) {
-  const { t } = useTranslation();
-  const navigate = useNavigate();
-  const name = profile?.full_name || profile?.username || email?.split("@")[0] || "?";
-  const [text, setText] = useState("");
-  const [bgColor, setBgColor] = useState<string | null>(null);
-  const [photo, setPhoto] = useState<string | null>(null);
-  const [photoFile, setPhotoFile] = useState<File | null>(null);
-  const [publishing, setPublishing] = useState(false);
-  const [done, setDone] = useState(false);
-  const [publishErr, setPublishErr] = useState<string | null>(null);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [uploadStage, setUploadStage] = useState<"idle"|"upload"|"saving"|"done">("idle");
-  const fileRef = useRef<HTMLInputElement>(null);
-  const videoRef = useRef<HTMLInputElement>(null);
-  const [videoFile, setVideoFile] = useState<File | null>(null);
-  const [videoPreview, setVideoPreview] = useState<string | null>(null);
-
-  function pickPhoto(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setPhotoFile(file);
-    setVideoFile(null); setVideoPreview(null);
-    const reader = new FileReader();
-    reader.onload = (ev) => { setPhoto(ev.target?.result as string); setBgColor(null); };
-    reader.readAsDataURL(file);
-  }
-
-  function pickVideo(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setVideoFile(file);
-    setPhoto(null); setPhotoFile(null); setBgColor(null);
-    setVideoPreview(URL.createObjectURL(file));
-  }
-
-  async function publish() {
-    if (!text.trim() && !photoFile && !photo && !videoFile) return;
-    if (publishing || done) return;
-    setPublishing(true);
-    setPublishErr(null);
-    setUploadProgress(0);
-    setUploadStage("idle");
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { setPublishErr("É preciso iniciar sessão para publicar."); return; }
-
-      let imageUrl: string | null = photo;
-      let videoUrl: string | null = null;
-
-      if (photoFile) {
-        setUploadStage("upload");
-        const { url } = await uploadImageToCloudinary(
-          photoFile,
-          `hooda/posts/${session.user.id}`,
-          (pct) => setUploadProgress(pct),
-        );
-        imageUrl = url;
-        setUploadProgress(100);
-      }
-
-      if (videoFile) {
-        setUploadStage("upload");
-        const result = await uploadFeedVideo(
-          videoFile,
-          { title: text.trim().slice(0, 60) || "post-video", creatorId: "feed-post", userId: session.user.id },
-          (pct) => setUploadProgress(pct),
-        );
-        videoUrl = result.playbackUrl;
-        setUploadProgress(100);
-      }
-
-      setUploadStage("saving");
-      const { data: prof } = await supabase.from("profiles").select("username, full_name").eq("id", session.user.id).maybeSingle();
-      const contentJson = bgColor ? JSON.stringify({ text, bgColor }) : text;
-
-      const { data: inserted, error } = await (supabase as any)
-        .from("posts")
-        .insert({
-          author_id: session.user.id,
-          author_username: prof?.username ?? session.user.email?.split("@")[0] ?? "",
-          author_name: prof?.full_name ?? session.user.email ?? "",
-          author_color: "#2F6FED",
-          content: contentJson,
-          kind: videoUrl ? "video" : bgColor ? "bg" : imageUrl ? "photo" : "post",
-          photo_url: imageUrl,
-          image_url: imageUrl,
-          video_url: videoUrl,
-        })
-        .select("id, created_at")
-        .single();
-
-      if (error || !inserted?.id) {
-        setPublishErr(error?.message ?? "Não foi possível publicar. Tenta novamente.");
-        console.error("Erro ao publicar post:", error);
-        return;
-      }
-
-      setUploadStage("done");
-      onPublish({
-        id: inserted.id, text, photo: imageUrl, bgColor,
-        videoUrl: videoUrl ?? undefined,
-        createdAt: new Date(inserted.created_at ?? Date.now()),
-        likes: 0, likedByMe: false, comments: 0, bookmarked: false,
-      });
-      setDone(true);
-      setTimeout(onClose, 900);
-    } catch (err: any) {
-      setPublishErr(err.message ?? "Erro ao publicar.");
-      setUploadStage("idle");
-    } finally {
-      setPublishing(false);
-    }
-  }
-
-  const canPublish = (text.trim().length > 0 || photo !== null || videoFile !== null) && !publishing && !done;
-
-  useScrollLock();
-
-  return createPortal(
-    <div className="fixed inset-0 z-[200] flex items-center justify-center"
-      style={{ background: "rgba(0,0,0,0.55)" }}
-      onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="w-full max-w-lg mx-4 rounded-3xl hooda-modal-sheet flex flex-col" style={{ maxHeight: "85vh", overflow: "hidden" }}>
-        <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border-subtle)]">
-          <span className="text-base font-bold" style={{ color: "var(--text-primary)" }}>Criar publicação</span>
-          <button onClick={onClose} className="p-1.5 rounded-full hover:bg-[var(--s2)] transition">
-            <X className="h-5 w-5 text-[var(--text-muted)]" />
-          </button>
-        </div>
-        <div className="flex items-center gap-3 px-4 py-3">
-          <Avatar name={name} size={42} />
-          <div>
-            <p className="text-sm font-bold text-black">{name}</p>
-            <span className="text-[11px] bg-[var(--s2)] text-[var(--text-secondary)] px-2 py-0.5 rounded-full font-medium">
-              @{profile?.username || "utilizador"}
-            </span>
-          </div>
-        </div>
-        <div className="flex-1 overflow-y-auto px-4 pb-2">
-          {photo && (
-            <div className="relative mb-3 rounded-xl overflow-hidden">
-              <img src={optimizePostPhoto(photo, 700)} alt="foto" className="w-full rounded-xl" style={{ display: "block" }} onError={(e) => { e.currentTarget.style.display = "none"; }} />
-              <button onClick={() => { setPhoto(null); setPhotoFile(null); }}
-                className="absolute top-2 right-2 bg-black/60 text-white rounded-full p-1">
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-          )}
-          {videoPreview && (
-            <div className="relative mb-3">
-              <FeedVideoPlayer src={videoPreview} rounded="rounded-xl" isShortHint={false} />
-              <button onClick={() => { setVideoFile(null); setVideoPreview(null); }}
-                className="absolute top-2 right-2 bg-black/60 text-white rounded-full p-1 z-20">
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-          )}
-          <div className="rounded-2xl transition-all">
-            <textarea autoFocus value={text} onChange={(e) => setText(e.target.value)}
-              placeholder={t("post.placeholder")}
-              rows={4}
-              className="w-full outline-none resize-none bg-transparent leading-relaxed"
-              style={{ color: "var(--text-primary,#111)", fontSize: 15, fontWeight: 400, textAlign: "left" }} />
-          </div>
-        </div>
-        <div className="px-4 py-3 border-t border-[var(--border-subtle)]">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-sm text-[var(--text-muted)] font-medium">Adicionar à publicação</span>
-            <div className="flex items-center gap-2">
-              <button onClick={() => fileRef.current?.click()}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[var(--s2)] hover:bg-[var(--s3)] transition text-sm font-semibold text-[var(--text-secondary)] active:scale-95">
-                <Image className="h-4 w-4 text-[#6BA547]" /> {t("post.photo")}
-              </button>
-              <button onClick={() => videoRef.current?.click()}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[var(--s2)] hover:bg-[var(--s3)] transition text-sm font-semibold text-[var(--text-secondary)] active:scale-95">
-                <Film className="h-4 w-4 text-[#2F6FED]" /> {"Vídeo"}
-              </button>
-            </div>
-          </div>
-          <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={pickPhoto} />
-          <input ref={videoRef} type="file" accept="video/*" className="hidden" onChange={pickVideo} />
-          {publishErr && <p className="mb-2 text-sm text-red-600">{publishErr}</p>}
-
-          {/* Barra de progresso real durante upload */}
-          {publishing && (
-            <div className="mb-3">
-              <div className="flex justify-between text-xs font-semibold mb-1.5"
-                style={{ color: "var(--text-muted)" }}>
-                <span>
-                  {uploadStage === "upload" && (photoFile ? "A enviar foto…" : "A enviar vídeo…")}
-                  {uploadStage === "saving" && "A guardar publicação…"}
-                  {uploadStage === "done"   && t("post.published")}
-                </span>
-                {uploadStage === "upload" && (
-                  <span style={{ color: ACCENT }}>{uploadProgress}%</span>
-                )}
-              </div>
-              <div className="h-2 rounded-full overflow-hidden" style={{ background: "var(--s3)" }}>
-                <div
-                  className="h-full rounded-full transition-all duration-300"
-                  style={{
-                    width: uploadStage === "saving" ? "95%" : uploadStage === "done" ? "100%" : `${uploadProgress}%`,
-                    background: `#2F6FED`,
-                    boxShadow: `0 0 8px ${ACCENT}80`,
-                  }}
-                />
-              </div>
-            </div>
-          )}
-
-          <button onClick={publish} disabled={!canPublish}
-            className="w-full h-12 rounded-xl font-bold text-base transition-all active:scale-[0.99] disabled:opacity-40 flex items-center justify-center gap-2"
-            style={{ background: canPublish ? ACCENT : "var(--s3)", color: canPublish ? "#fff" : "var(--text-muted)" }}>
-            {done
-              ? t("post.published")
-              : publishing
-                ? <><div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />{t("post.publishing", "A publicar…")}</>
-                : t("post.publish")}
-          </button>
-        </div>
-      </div>
-    </div>
-  , document.body);
-}
 
 /* ─── Modal Editar Perfil ─── */
 function EditProfileModal({
@@ -1480,6 +1250,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
   const [tab, setTab] = useState<"inicio" | "arquivos" | "sobre">("inicio");
   const [showSettings, setShowSettings] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
+  const [showCreatePost, setShowCreatePost] = useState(false);
   const [photoViewing, setPhotoViewing] = useState<string|null>(null);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showActivity, setShowActivity] = useState(false);
@@ -1842,16 +1613,25 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
 
         {/* Conteúdo das tabs */}
         {tab === "inicio" && (
-          <PostsFeed
-            posts={posts}
-            loading={postsLoading}
-            name={name}
-            username={profile?.username || ""}
-            avatarUrl={(profile as any)?.avatar_url}
-            onDelete={(id) => setPosts((prev) => prev.filter((p) => p.id !== id))}
-            myUserId={myUserId}
-            isVerified={(profile as any)?.is_verified}
-          />
+          <>
+            <div className="px-3 pt-2">
+              <PostComposerBar
+                name={name}
+                avatarUrl={(profile as any)?.avatar_url}
+                onOpen={() => setShowCreatePost(true)}
+              />
+            </div>
+            <PostsFeed
+              posts={posts}
+              loading={postsLoading}
+              name={name}
+              username={profile?.username || ""}
+              avatarUrl={(profile as any)?.avatar_url}
+              onDelete={(id) => setPosts((prev) => prev.filter((p) => p.id !== id))}
+              myUserId={myUserId}
+              isVerified={(profile as any)?.is_verified}
+            />
+          </>
         )}
 
         {tab === "arquivos" && (
@@ -1931,6 +1711,15 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
         </div>
       )}
       {showAbout && <AboutPanel onBack={() => setShowAbout(false)} />}
+      {showCreatePost && (
+        <CreatePostModal
+          name={name}
+          username={profile?.username || ""}
+          avatarUrl={(profile as any)?.avatar_url}
+          onClose={() => setShowCreatePost(false)}
+          onPublish={(post) => addPost(post as Post)}
+        />
+      )}
       {showLanguage && <LanguagePanel onBack={() => setShowLanguage(false)} />}
       {showMsgPrivacy && <MsgPrivacyPanel onBack={() => setShowMsgPrivacy(false)} msgPermission={msgPermission} onMsgPermissionChange={async (v) => {
         setMsgPermission(v);
