@@ -27,6 +27,11 @@ export const VIDEO_STICKERS: VideoSticker[] = [
   { id: "trophy",           kind: "lottie", url: "/stickers/lottie/trophy.json",            label: "Troféu" },
   { id: "successfully-done",kind: "lottie", url: "/stickers/lottie/successfully-done.json", label: "Concluído" },
   { id: "fire",             kind: "lottie", url: "/stickers/lottie/fire.json",              label: "Fogo" },
+  { id: "flushed",          kind: "lottie", url: "/stickers/lottie/flushed.json",           label: "Envergonhado" },
+  { id: "fire-heart",       kind: "lottie", url: "/stickers/lottie/fire-heart.json",        label: "Coração em fogo" },
+  { id: "graduation-cap",   kind: "lottie", url: "/stickers/lottie/graduation-cap.json",    label: "Formatura" },
+  { id: "broken-heart",     kind: "lottie", url: "/stickers/lottie/broken-heart.json",      label: "Coração partido" },
+  { id: "down-arrow",       kind: "lottie", url: "/stickers/lottie/down-arrow.json",        label: "Seta para baixo" },
 ];
 
 /** Um sticker antigo era guardado como texto de emoji; um novo é sempre um
