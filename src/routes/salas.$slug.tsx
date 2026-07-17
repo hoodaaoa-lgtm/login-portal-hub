@@ -298,7 +298,7 @@ function SalaPage() {
         <PageWrapper className="pb-20 lg:pb-0">
           <div className="flex flex-col items-center justify-center h-[60vh] gap-3">
             <p className="font-bold" style={{ color: "var(--text-primary)" }}>Sala não encontrada.</p>
-            <button onClick={() => navigate({ to: "/salas" })} className="px-4 h-9 rounded-full text-white text-sm font-bold" style={{ background: P }}>Voltar a Salas</button>
+            <button onClick={() => navigate({ to: "/mensagens" })} className="px-4 h-9 rounded-full text-white text-sm font-bold" style={{ background: P }}>Voltar a Mensagens</button>
           </div>
         </PageWrapper>
       </>
@@ -314,7 +314,7 @@ function SalaPage() {
         {/* Header */}
         <div className="sticky top-0 z-30 px-4 pt-4 pb-3" style={{ background: "var(--s1)", borderBottom: "1px solid var(--border-subtle)" }}>
           <div className="flex items-center gap-2 mb-3">
-            <button onClick={() => navigate({ to: "/salas" })} className="p-1.5 rounded-full" style={{ background: "var(--s2)" }}>
+            <button onClick={() => navigate({ to: "/mensagens" })} className="p-1.5 rounded-full" style={{ background: "var(--s2)" }}>
               <ArrowLeft className="w-4 h-4" style={{ color: "var(--text-muted)" }} />
             </button>
             <div className="rounded-xl overflow-hidden flex items-center justify-center shrink-0 font-extrabold text-white"

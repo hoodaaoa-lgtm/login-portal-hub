@@ -4963,9 +4963,7 @@ function SalasTabPanel() {
   const { user } = useAuth();
   const uid = user?.id ?? "";
   const [salas, setSalas] = useState<any[]>([]);
-  const [myMembership, setMyMembership] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
-  const [joiningId, setJoiningId] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
 
   const TIPO_INFO: Record<string, { label: string; color: string }> = {
@@ -4974,40 +4972,19 @@ function SalasTabPanel() {
     anuncios: { label: "Anúncios", color: "#FFC93C" },
   };
   const fmtN = (n: number) => n >= 1000 ? `${(n / 1000).toFixed(1)}K` : String(n ?? 0);
-  const slugify = (nome: string) => {
-    const base = nome.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40) || "sala";
-    return `${base}-${Math.random().toString(36).slice(2, 7)}`;
-  };
 
   const load = async () => {
     setLoading(true);
-    const { data: salasData } = await supabase.from("salas" as any).select("*").order("created_at", { ascending: false });
+    if (!uid) { setSalas([]); setLoading(false); return; }
+    const { data: memb } = await supabase.from("sala_membros" as any).select("sala_id").eq("user_id", uid);
+    const salaIds = ((memb as any[]) ?? []).map((m) => m.sala_id);
+    if (salaIds.length === 0) { setSalas([]); setLoading(false); return; }
+    const { data: salasData } = await supabase.from("salas" as any).select("*").in("id", salaIds).order("created_at", { ascending: false });
     setSalas((salasData as any[]) ?? []);
-    if (uid) {
-      const { data: memb } = await supabase.from("sala_membros" as any).select("sala_id").eq("user_id", uid);
-      const map: Record<string, boolean> = {};
-      (memb as any[] ?? []).forEach((m) => { map[m.sala_id] = true; });
-      setMyMembership(map);
-    }
     setLoading(false);
   };
 
   useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [uid]);
-
-  const handleJoin = async (sala: any) => {
-    if (!uid) { toast.error("Inicia sessão para entrar numa sala."); return; }
-    setJoiningId(sala.id);
-    try {
-      const { error } = await (supabase.rpc as any)("sala_entrar", { p_sala_id: sala.id });
-      if (error) throw error;
-      navigate({ to: "/salas/$slug", params: { slug: sala.slug } });
-    } catch (e: any) {
-      toast.error(e?.message ?? "Não foi possível entrar na sala.");
-    } finally {
-      setJoiningId(null);
-    }
-  };
 
   return (
     <div className="flex flex-col h-full">
@@ -5036,10 +5013,9 @@ function SalasTabPanel() {
         )}
         {salas.map((s) => {
           const info = TIPO_INFO[s.tipo] ?? TIPO_INFO.publica;
-          const isMember = !!myMembership[s.id];
           return (
             <button key={s.id}
-              onClick={() => isMember ? navigate({ to: "/salas/$slug", params: { slug: s.slug } }) : handleJoin(s)}
+              onClick={() => navigate({ to: "/salas/$slug", params: { slug: s.slug } })}
               className="w-full flex items-center gap-3 px-4 py-3.5 text-left transition-colors"
               style={{ borderBottom: "1px solid var(--border-subtle,#f0f0f0)" }}
               onMouseOver={e => e.currentTarget.style.background = "var(--s1)"}
@@ -5057,11 +5033,6 @@ function SalasTabPanel() {
                   {fmtN(s.membros_count)} membro{s.membros_count === 1 ? "" : "s"}
                 </p>
               </div>
-              {!isMember && (
-                joiningId === s.id
-                  ? <Loader2 className="h-4 w-4 animate-spin shrink-0" style={{ color: "#2F6FED" }} />
-                  : <span className="text-xs font-bold shrink-0" style={{ color: "#2F6FED" }}>Entrar</span>
-              )}
             </button>
           );
         })}
@@ -5223,6 +5194,12 @@ function ContactList({ contacts, loading, refreshing, search, setSearch, active,
     );
   }, [visible, search]);
 
+  const frequentContacts = useMemo(() => {
+    return [...visible]
+      .sort((a: any, b: any) => (b.lastTimestamp ?? 0) - (a.lastTimestamp ?? 0))
+      .slice(0, 8);
+  }, [visible]);
+
   // Long-press (mobile) para abrir o menu de ações do item da conversa —
   // mesmo padrão usado nas bolhas de mensagem.
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -5310,6 +5287,28 @@ function ContactList({ contacts, loading, refreshing, search, setSearch, active,
       ) : (
       <div className="flex-1 overflow-y-auto">
         {loading && <UniversalSkeleton variant="messages" count={8} />}
+
+        {/* Contactos frequentes — atalho horizontal para os contactos mais recentes/ativos */}
+        {!loading && !search && frequentContacts.length > 0 && (
+          <div className="pt-3 pb-1" style={{ borderBottom: "1px solid var(--border-subtle,#f0f0f0)" }}>
+            <p className="px-4 pb-2 text-xs font-bold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Contactos frequentes</p>
+            <div className="flex gap-3 overflow-x-auto px-4 pb-3" style={{ scrollbarWidth: "none" }}>
+              {frequentContacts.map((c: any) => (
+                <button key={c.conversationId} onClick={() => setActive(c)}
+                  className="flex flex-col items-center gap-1 shrink-0" style={{ width: 58 }}>
+                  <Av name={c.username} color={c.color} size={52} src={c.avatar_url} />
+                  <span className="text-[11px] font-medium truncate w-full text-center" style={{ color: "var(--text-secondary)" }}>
+                    {(c.full_name || c.username || "").split(" ")[0]}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {!loading && filtered.length > 0 && (
+          <p className="px-4 pt-3 pb-1 text-xs font-bold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Recentes</p>
+        )}
 
         {!!officialMessages && officialMessages.length > 0 && (
           <div style={{ borderBottom: "1px solid var(--border-subtle,#f0f0f0)" }}>
