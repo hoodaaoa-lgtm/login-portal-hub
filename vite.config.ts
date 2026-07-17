@@ -42,12 +42,30 @@
         ),
       },
       resolve: {
-        alias: {
+        alias: [
           // workerd's `fs` polyfill is frozen, so graceful-fs's gracefulify()
           // throws at module init and crashes every SSR request. Replace it
           // with a thin stub for both client and SSR bundles.
-          "graceful-fs": new URL("./src/shims/graceful-fs.js", import.meta.url).pathname,
-        },
+          {
+            find: "graceful-fs",
+            replacement: new URL("./src/shims/graceful-fs.js", import.meta.url).pathname,
+          },
+          // lottie-react's package.json "browser" field points at a UMD build
+          // that self-detects its environment (CommonJS vs AMD vs global) at
+          // runtime. Vite's default client resolution prefers "browser" over
+          // "module", so it picks that UMD build — and under Rolldown's CJS
+          // interop shim the self-detection misfires and falls through to the
+          // "attach to globalThis" branch, which needs a global `React`/`Lottie`
+          // that doesn't exist here. The result: the default export resolves to
+          // an invalid/undefined component, and React throws error #130
+          // ("Element type is invalid") the moment a Lottie sticker renders —
+          // which crashes the whole page via the root error boundary.
+          // Force resolution to the clean ESM build instead, which has a real
+          // `export { Lottie as default }` and no environment sniffing.
+          // `find` is an exact-match regex so it doesn't also match (and
+          // recurse into) the replacement path itself.
+          { find: /^lottie-react$/, replacement: "lottie-react/build/index.es.js" },
+        ],
       },
       build: {
         // Remove console.log/debugger do bundle final de produção — o dev
