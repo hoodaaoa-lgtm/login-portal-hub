@@ -7,8 +7,8 @@
 -- envio de texto, fotos e vídeos, sem duplicar lógica.
 --
 -- Etapa atual: apenas criação e visualização básica.
--- Preparado para receber no futuro: cargos avançados, permissões
--- detalhadas, monetização, SnapperCoin e lives.
+-- Preparado para receber no futuro: cargos avançados e permissões
+-- detalhadas.
 -- ───────────────────────────────────────────────────────────────────────
 
 CREATE TABLE IF NOT EXISTS public.salas (
