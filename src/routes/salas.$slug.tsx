@@ -7,6 +7,8 @@ import { uploadFeedVideo } from "@/lib/cloudinaryFeedVideo";
 import { optimizeAvatar, optimizePostPhoto } from "@/lib/imageOptimize";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { extractUrl } from "@/lib/linkPreview";
+import { LinkPreview } from "@/components/LinkPreview";
 import {
   ArrowLeft, Users, Send, Image as ImageIcon, Video, X, Loader2,
   Lock, Globe, Megaphone, Heart, Shield, DoorOpen, MoreVertical,
@@ -298,7 +300,12 @@ function MsgBubble({ m, isMe, isAnuncio, onLike }: { m: Msg; isMe: boolean; isAn
             <video src={m.media_url} controls className="max-w-full max-h-80" />
           )}
           {m.content && (
-            <p className="text-sm px-3 py-2" style={{ color: isMe ? "#fff" : "var(--text-primary)" }}>{m.content}</p>
+            <p className="text-sm px-3 py-2 whitespace-pre-wrap break-words" style={{ color: isMe ? "#fff" : "var(--text-primary)" }}>{m.content}</p>
+          )}
+          {m.content && extractUrl(m.content) && (
+            <div className="px-2 pb-2">
+              <LinkPreview url={extractUrl(m.content)!} isMe={isMe} variant="message" />
+            </div>
           )}
         </div>
         {isAnuncio && (
