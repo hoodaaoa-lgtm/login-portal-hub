@@ -9,10 +9,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { extractUrl } from "@/lib/linkPreview";
 import { LinkPreview } from "@/components/LinkPreview";
+import { VIDEO_STICKERS } from "@/lib/stickers";
 import {
   ArrowLeft, Users, Send, Image as ImageIcon, Video, X, Loader2,
   Lock, Globe, Megaphone, Heart, Shield, DoorOpen, MoreVertical,
-  Crown, MessageSquareOff, MessageSquare, UserCog, UserMinus, Ban, Ghost,
+  Crown, MessageSquareOff, MessageSquare, UserCog, UserMinus, Ban, Ghost, Smile,
 } from "lucide-react";
 
 export const Route = createFileRoute("/salas/$slug")({
@@ -292,12 +293,15 @@ function MsgBubble({ m, isMe, isAnuncio, onLike }: { m: Msg; isMe: boolean; isAn
             {m.sender?.full_name || m.sender?.username || "Utilizador"}
           </span>
         )}
-        <div className="rounded-2xl overflow-hidden" style={{ background: isMe ? P : "var(--s2)" }}>
+        <div className="rounded-2xl overflow-hidden" style={{ background: m.message_type === "sticker" ? "transparent" : (isMe ? P : "var(--s2)") }}>
           {m.message_type === "image" && m.media_url && (
             <img src={optimizePostPhoto(m.media_url, 500)} alt="" className="max-w-full max-h-80 object-cover" />
           )}
           {m.message_type === "video" && m.media_url && (
             <video src={m.media_url} controls className="max-w-full max-h-80" />
+          )}
+          {m.message_type === "sticker" && m.media_url && (
+            <video src={m.media_url} autoPlay loop muted playsInline className="rounded-xl" style={{ width: 120, height: 120, objectFit: "cover" }} />
           )}
           {m.content && (
             <p className="text-sm px-3 py-2 whitespace-pre-wrap break-words" style={{ color: isMe ? "#fff" : "var(--text-primary)" }}>{m.content}</p>
@@ -346,6 +350,7 @@ function SalaPage() {
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const [pendingMedia, setPendingMedia] = useState<{ file: File; type: "image" | "video"; preview: string } | null>(null);
+  const [showStickers, setShowStickers] = useState(false);
   const imgInputRef = useRef<HTMLInputElement>(null);
   const vidInputRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -572,6 +577,27 @@ function SalaPage() {
     }
   };
 
+  const handleSendSticker = async (url: string) => {
+    if (!sala || !uid || sending) return;
+    setShowStickers(false);
+    setSending(true);
+    try {
+      const { error } = await supabase.from("messages").insert({
+        conversation_id: sala.conversation_id,
+        sender_id: uid,
+        content: null,
+        message_type: "sticker",
+        media_url: url,
+        status: "sent",
+      } as any);
+      if (error) throw error;
+    } catch (e: any) {
+      toast.error(e?.message ?? "Não foi possível enviar.");
+    } finally {
+      setSending(false);
+    }
+  };
+
   const handleLike = async (m: Msg) => {
     if (!uid) return;
     try {
@@ -677,12 +703,25 @@ function SalaPage() {
                 </button>
               </div>
             )}
+            {showStickers && (
+              <div className="flex gap-2 mb-2 p-2 rounded-2xl" style={{ background: "var(--s2)" }}>
+                {VIDEO_STICKERS.map((s) => (
+                  <button key={s.id} onClick={() => handleSendSticker(s.url)}
+                    className="rounded-xl overflow-hidden active:scale-90 transition-all shrink-0" style={{ width: 68, height: 68 }}>
+                    <video src={s.url} autoPlay loop muted playsInline className="w-full h-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            )}
             <div className="flex items-center gap-2">
               <button onClick={() => imgInputRef.current?.click()} className="p-2 rounded-full shrink-0" style={{ background: "var(--s2)" }}>
                 <ImageIcon className="w-4 h-4" style={{ color: "var(--text-muted)" }} />
               </button>
               <button onClick={() => vidInputRef.current?.click()} className="p-2 rounded-full shrink-0" style={{ background: "var(--s2)" }}>
                 <Video className="w-4 h-4" style={{ color: "var(--text-muted)" }} />
+              </button>
+              <button onClick={() => setShowStickers((v) => !v)} className="p-2 rounded-full shrink-0" style={{ background: showStickers ? "var(--s3)" : "var(--s2)" }}>
+                <Smile className="w-4 h-4" style={{ color: "var(--text-muted)" }} />
               </button>
               <input ref={imgInputRef} type="file" accept="image/*" className="hidden"
                 onChange={(e) => { const f = e.target.files?.[0]; if (f) setPendingMedia({ file: f, type: "image", preview: URL.createObjectURL(f) }); }} />

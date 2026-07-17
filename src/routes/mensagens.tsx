@@ -38,6 +38,7 @@ import MediaEditor, { MediaEditState, DEFAULT_EDIT, EditedMediaDisplay, EDITOR_F
 import { SnapperPlayer } from "@/components/SnapperPlayer";
 import { FeedVideoPlayer } from "@/components/FeedVideoPlayer";
 import { extractUrl } from "@/lib/linkPreview";
+import { VIDEO_STICKERS, isVideoSticker } from "@/lib/stickers";
 import { uploadImageToCloudinary } from "@/lib/cloudinary";
 import { LinkPreview as SharedLinkPreview } from "@/components/LinkPreview";
 import { getCloudinaryPosterFromUrl } from "@/lib/cloudinary";
@@ -976,12 +977,6 @@ const CHAT_EMOJI_CATS: { key: string; icon: string; emojis: string[] }[] = [
   { key: "more",  icon: "🚀", emojis: ["🚀","🌈","⭐","🌟","💫","✨","💥","🔥","💯","🎉","🎊","🎁","🏆","🥇","💎","🔮","🌙","☀️","⚡","❄️","🌊","🎸","🎺","🎵","🎶","📱","💻","📷","💡","🔑","❤️‍🔥","💔","❤️","🧡","💛","💚","💙","💜","🤍","🖤"] },
 ];
 
-const CHAT_STICKERS = [
-  "🥳","🤯","🥺","😤","🤬","🤩","🤑","🫠","🥹","🫡","🤭","🤫","🫢","🥴",
-  "💀","👻","👾","🤖","👽","🎃","🤡","🎭","🃏","🎉","🎊","🚀","🌈","⭐",
-  "🌟","💫","✨","💥","🔥","💯","❤️‍🔥","💔","🐸","🐶","🐱","🐼","🦊","🦁",
-  "🌺","🌸","🍀","🎸","🎵","🏆","🥇","💎","🔮","🌊","⚡","❄️","☀️","🌙",
-];
 
 const CHAT_GIFS = [
   { id: "g1",  url: "https://media.giphy.com/media/ZqlvCTNHpqrio/giphy.gif",     label: "LOL" },
@@ -1092,12 +1087,12 @@ function ChatPicker({ tab, setTab, emojiSearch, setEmojiSearch, gifSearch, setGi
 
       {/* Sticker tab */}
       {tab === "sticker" && (
-        <div className="grid grid-cols-6 gap-1.5 p-2 pb-3 overflow-y-auto" style={{ maxHeight: 200 }}>
-          {CHAT_STICKERS.map((s, i) => (
-            <button key={i} onClick={() => onSticker(s)}
-              className="flex items-center justify-center rounded-2xl active:scale-90 transition-all"
-              style={{ fontSize: 30, height: 52, background: CHAT_INPUT_BG }}>
-              {s}
+        <div className="grid grid-cols-3 gap-2 p-2 pb-3 overflow-y-auto" style={{ maxHeight: 200 }}>
+          {VIDEO_STICKERS.map((s) => (
+            <button key={s.id} onClick={() => onSticker(s.url)}
+              className="flex items-center justify-center rounded-2xl overflow-hidden active:scale-90 transition-all"
+              style={{ height: 84, background: CHAT_INPUT_BG }}>
+              <video src={s.url} autoPlay loop muted playsInline className="w-full h-full object-cover" />
             </button>
           ))}
         </div>
@@ -2172,11 +2167,12 @@ function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit
     return () => document.removeEventListener("click", fn);
   }, [showMenu]);
 
+  const isStickerBubble = m.type === "sticker" && isVideoSticker(m.text);
   const studioCard = m.style?.card ? (STUDIO_CARDS.find(c => c.id === m.style!.card) ?? null) : null;
-  const bubbleBg   = studioCard ? studioCard.bg : (isMe ? "#2F6FED" : "var(--s1)");
+  const bubbleBg   = isStickerBubble ? "transparent" : studioCard ? studioCard.bg : (isMe ? "#2F6FED" : "var(--s1)");
   const bubbleText = studioCard ? studioCard.defaultTextColor : (isMe ? "white" : "var(--text-primary)");
   const br         = isMe ? "18px 18px 4px 18px" : "18px 18px 18px 4px";
-  const bubbleShadow = studioCard ? undefined : (isMe ? "0 1px 3px rgba(0,0,0,0.08)" : "0 1px 3px rgba(0,0,0,0.05)");
+  const bubbleShadow = isStickerBubble ? undefined : studioCard ? undefined : (isMe ? "0 1px 3px rgba(0,0,0,0.08)" : "0 1px 3px rgba(0,0,0,0.05)");
 
   // ✨ Message Studio: animação de entrada suave, uma única vez, na primeira
   // vez que esta bolha com estilo aparece no ecrã.
@@ -2472,7 +2468,7 @@ function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit
             </div>
           )}
 
-          <div className="px-3 py-2">
+          <div className={isStickerBubble ? "" : "px-3 py-2"}>
             {/* 🎁 Caixa Surpresa — fechada: mostra a caixa, toca para abrir com animação.
                 Aberta: mostra uma etiqueta pequena e depois o conteúdo normal. */}
             {m.isSurprise && !m.surpriseOpened && (
@@ -2526,7 +2522,11 @@ function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit
               </div>
             )}
             {/* Sticker */}
-            {m.type === "sticker" && <p style={{ fontSize: 48, lineHeight: 1 }}>{m.text}</p>}
+            {m.type === "sticker" && (
+              isVideoSticker(m.text)
+                ? <video src={m.text!} autoPlay loop muted playsInline className="rounded-xl" style={{ width: 120, height: 120, objectFit: "cover" }} />
+                : <p style={{ fontSize: 48, lineHeight: 1 }}>{m.text}</p>
+            )}
 
             {/* View-once button */}
             {m.viewOnce && !m.viewOnceOpened && (m.type === "image" || m.type === "video") && (
