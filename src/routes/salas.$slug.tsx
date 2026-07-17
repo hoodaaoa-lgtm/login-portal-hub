@@ -11,6 +11,7 @@ import { extractUrl } from "@/lib/linkPreview";
 import { LinkPreview } from "@/components/LinkPreview";
 import { VIDEO_STICKERS } from "@/lib/stickers";
 import { StickerView } from "@/components/StickerView";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   ArrowLeft, Users, Send, Image as ImageIcon, Video, X, Loader2,
   Lock, Globe, Megaphone, Heart, Shield, DoorOpen, MoreVertical,
@@ -332,6 +333,7 @@ function MsgBubble({ m, isMe, isAnuncio, onLike }: { m: Msg; isMe: boolean; isAn
 
 function SalaPage() {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const { slug } = useParams({ from: "/salas/$slug" });
   const { user } = useAuth();
   const uid = user?.id ?? "";
@@ -616,8 +618,8 @@ function SalaPage() {
     return (
       <>
         <SideNav />
-        <PageWrapper className="pb-20 lg:pb-0">
-          <div className="flex items-center justify-center h-[60vh]"><Loader2 className="w-6 h-6 animate-spin" style={{ color: P }} /></div>
+        <PageWrapper noPageScroll>
+          <div className="flex items-center justify-center h-full"><Loader2 className="w-6 h-6 animate-spin" style={{ color: P }} /></div>
         </PageWrapper>
       </>
     );
@@ -627,8 +629,8 @@ function SalaPage() {
     return (
       <>
         <SideNav />
-        <PageWrapper className="pb-20 lg:pb-0">
-          <div className="flex flex-col items-center justify-center h-[60vh] gap-3">
+        <PageWrapper noPageScroll>
+          <div className="flex flex-col items-center justify-center h-full gap-3">
             <p className="font-bold" style={{ color: "var(--text-primary)" }}>Sala não encontrada.</p>
             <button onClick={() => navigate({ to: "/mensagens" })} className="px-4 h-9 rounded-full text-white text-sm font-bold" style={{ background: P }}>Voltar a Mensagens</button>
           </div>
@@ -642,9 +644,10 @@ function SalaPage() {
   return (
     <>
       <SideNav />
-      <PageWrapper className="pb-20 lg:pb-0">
+      <PageWrapper noPageScroll>
+        <div className="flex flex-col" style={{ height: isMobile ? "calc(100dvh - 62px)" : "100%", background: "var(--s1)" }}>
         {/* Header */}
-        <div className="sticky top-0 z-30 px-4 pt-4 pb-3" style={{ background: "var(--s1)", borderBottom: "1px solid var(--border-subtle)" }}>
+        <div className="shrink-0 z-10 px-4 pt-4 pb-3" style={{ background: "var(--s1)", borderBottom: "1px solid var(--border-subtle)" }}>
           <div className="flex items-center gap-2 mb-3">
             <button onClick={() => navigate({ to: "/mensagens" })} className="p-1.5 rounded-full" style={{ background: "var(--s2)" }}>
               <ArrowLeft className="w-4 h-4" style={{ color: "var(--text-muted)" }} />
@@ -678,7 +681,7 @@ function SalaPage() {
         </div>
 
         {/* Mensagens */}
-        <div className="px-4 py-4 min-h-[50vh]">
+        <div className="flex-1 overflow-y-auto px-4 py-4">
           {msgs.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 gap-2">
               <p className="text-sm font-bold" style={{ color: "var(--text-muted)" }}>Ainda não há publicações nesta sala.</p>
@@ -693,7 +696,7 @@ function SalaPage() {
 
         {/* Composer */}
         {isMember && canPost && (
-          <div className="sticky bottom-[58px] lg:bottom-0 px-3 py-2.5 border-t" style={{ background: "var(--s0)", borderColor: "var(--border-subtle)" }}>
+          <div className="shrink-0 px-3 py-2.5 border-t" style={{ background: "var(--s0)", borderColor: "var(--border-subtle)" }}>
             {pendingMedia && (
               <div className="relative inline-block mb-2 ml-1">
                 {pendingMedia.type === "image"
@@ -742,14 +745,14 @@ function SalaPage() {
           </div>
         )}
         {isMember && !canPost && (
-          <div className="px-4 py-3 text-center text-xs font-bold" style={{ color: "var(--text-muted)" }}>
+          <div className="shrink-0 px-4 py-3 text-center text-xs font-bold" style={{ color: "var(--text-muted)" }}>
             {sala.tipo === "anuncios"
               ? "Só administradores podem publicar nesta sala de anúncios. Podes reagir com ❤️."
               : "O administrador restringiu o envio de mensagens para este membro."}
           </div>
         )}
         {!isMember && (
-          <div className="sticky bottom-[58px] lg:bottom-0 px-4 py-3 border-t" style={{ background: "var(--s0)", borderColor: "var(--border-subtle)" }}>
+          <div className="shrink-0 px-4 py-3 border-t" style={{ background: "var(--s0)", borderColor: "var(--border-subtle)" }}>
             <button onClick={handleJoin} disabled={joining}
               className="w-full h-11 rounded-full text-sm font-extrabold flex items-center justify-center gap-2 disabled:opacity-60"
               style={{ color: P }}>
@@ -758,6 +761,7 @@ function SalaPage() {
             </button>
           </div>
         )}
+        </div>
 
         <BottomNav />
       </PageWrapper>
