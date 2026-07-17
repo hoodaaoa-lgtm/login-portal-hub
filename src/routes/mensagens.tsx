@@ -15,6 +15,7 @@ import {
 } from "@/lib/e2ee";
 import { supabase } from "@/integrations/supabase/client";
 import { BottomNav, SideNav, PageWrapper } from "@/components/AppShell";
+import { SalaPanel } from "@/components/SalaPanel";
 import { useBadges } from "@/contexts/BadgeContext";
 import { ProfileAvatarLink } from "@/components/ProfileAvatarLink";
 import { UniversalSkeleton, BackgroundRefreshDot } from "@/components/Skeletons";
@@ -4959,7 +4960,7 @@ function saveHiddenConversations(map: Record<string, number>) {
    incorporada aqui em vez de um ícone próprio no menu lateral. Ao clicar
    numa sala vai para /salas/$slug, que reutiliza o mesmo sistema de
    mensagens (texto, fotos, vídeos). ── */
-function SalasTabPanel() {
+function SalasTabPanel({ activeSalaSlug, onSelectSala }: { activeSalaSlug?: string | null; onSelectSala?: (slug: string) => void }) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const uid = user?.id ?? "";
@@ -5014,13 +5015,14 @@ function SalasTabPanel() {
         )}
         {salas.map((s) => {
           const info = TIPO_INFO[s.tipo] ?? TIPO_INFO.publica;
+          const isActive = activeSalaSlug === s.slug;
           return (
             <button key={s.id}
-              onClick={() => navigate({ to: "/salas/$slug", params: { slug: s.slug } })}
+              onClick={() => onSelectSala ? onSelectSala(s.slug) : navigate({ to: "/salas/$slug", params: { slug: s.slug } })}
               className="w-full flex items-center gap-3 px-4 py-3.5 text-left transition-colors"
-              style={{ borderBottom: "1px solid var(--border-subtle,#f0f0f0)" }}
+              style={{ borderBottom: "1px solid var(--border-subtle,#f0f0f0)", background: isActive ? "var(--s1)" : "transparent" }}
               onMouseOver={e => e.currentTarget.style.background = "var(--s1)"}
-              onMouseOut={e => e.currentTarget.style.background = "transparent"}>
+              onMouseOut={e => e.currentTarget.style.background = isActive ? "var(--s1)" : "transparent"}>
               <div className="rounded-2xl overflow-hidden flex items-center justify-center shrink-0 font-extrabold text-white"
                 style={{ width: 44, height: 44, background: s.foto_url ? "transparent" : "#2F6FED" }}>
                 {s.foto_url ? <img src={optimizeAvatar(s.foto_url, 88)} alt="" className="w-full h-full object-cover" /> : (s.nome?.[0] ?? "S").toUpperCase()}
@@ -5042,7 +5044,7 @@ function SalasTabPanel() {
       {showCreate && (
         <CreateSalaInlineModal
           onClose={() => setShowCreate(false)}
-          onCreated={(s) => { setShowCreate(false); navigate({ to: "/salas/$slug", params: { slug: s.slug } }); }}
+          onCreated={(s) => { setShowCreate(false); onSelectSala ? onSelectSala(s.slug) : navigate({ to: "/salas/$slug", params: { slug: s.slug } }); }}
         />
       )}
     </div>
@@ -5138,7 +5140,7 @@ function CreateSalaInlineModal({ onClose, onCreated }: { onClose: () => void; on
   );
 }
 
-function ContactList({ contacts, loading, refreshing, search, setSearch, active, setActive, setShowAddContact, setShowRequests, pendingRequestCount, officialMessages, activeOfficialId, onSelectOfficial }: {
+function ContactList({ contacts, loading, refreshing, search, setSearch, active, setActive, setShowAddContact, setShowRequests, pendingRequestCount, officialMessages, activeOfficialId, onSelectOfficial, activeSalaSlug, onSelectSala }: {
   contacts: Contact[];
   loading: boolean;
   refreshing?: boolean;
@@ -5152,6 +5154,8 @@ function ContactList({ contacts, loading, refreshing, search, setSearch, active,
   officialMessages?: UserOfficialMessage[];
   activeOfficialId?: string | null;
   onSelectOfficial?: (item: UserOfficialMessage) => void;
+  activeSalaSlug?: string | null;
+  onSelectSala?: (slug: string) => void;
 }) {
   const isMobile = useIsMobile();
   const [hiddenMap, setHiddenMap] = useState<Record<string, number>>(() => loadHiddenConversations());
@@ -5284,7 +5288,7 @@ function ContactList({ contacts, loading, refreshing, search, setSearch, active,
       </div>
 
       {listTab === "salas" ? (
-        <SalasTabPanel />
+        <SalasTabPanel activeSalaSlug={activeSalaSlug} onSelectSala={onSelectSala} />
       ) : (
       <div className="flex-1 overflow-y-auto">
         {loading && <UniversalSkeleton variant="messages" count={8} />}
@@ -5487,6 +5491,7 @@ function MensagensPage() {
   const [active, setActive] = useState<Contact | null>(null);
   const [officialMessages, setOfficialMessages] = useState<UserOfficialMessage[]>([]);
   const [activeOfficial, setActiveOfficial] = useState<UserOfficialMessage | null>(null);
+  const [activeSalaSlug, setActiveSalaSlug] = useState<string | null>(null);
   const [showAddContact, setShowAddContact] = useState(false);
   const [showRequests, setShowRequests] = useState(false);
   const [pendingRequestCount, setPendingRequestCount] = useState(0);
@@ -5696,11 +5701,18 @@ function MensagensPage() {
 
   const handleSelectOfficial = useCallback((item: UserOfficialMessage) => {
     setActive(null);
+    setActiveSalaSlug(null);
     setActiveOfficial(item);
     if (!item.is_read) {
       markOfficialMessageRead(item.id);
       setOfficialMessages(prev => prev.map(m => m.id === item.id ? { ...m, is_read: true } : m));
     }
+  }, []);
+
+  const handleSelectSala = useCallback((slug: string) => {
+    setActive(null);
+    setActiveOfficial(null);
+    setActiveSalaSlug(slug);
   }, []);
 
   const handleOfficialArchived = useCallback(() => {
@@ -5907,14 +5919,17 @@ function MensagensPage() {
           <div className="w-80 shrink-0 border-r overflow-hidden" style={{ borderColor: "var(--border-subtle,#e5e5e5)" }}>
             <ContactList
               contacts={contacts} loading={loading} refreshing={refreshingInBackground} search={search} setSearch={setSearch}
-              active={active} setActive={(c) => { setActive(c); setActiveOfficial(null); }} setShowAddContact={setShowAddContact}
+              active={active} setActive={(c) => { setActive(c); setActiveOfficial(null); setActiveSalaSlug(null); }} setShowAddContact={setShowAddContact}
               setShowRequests={setShowRequests} pendingRequestCount={pendingRequestCount}
               officialMessages={officialMessages} activeOfficialId={activeOfficial?.id ?? null} onSelectOfficial={handleSelectOfficial}
+              activeSalaSlug={activeSalaSlug} onSelectSala={handleSelectSala}
             />
           </div>
           <div className="flex-1 flex flex-col">
             {activeOfficial
               ? <OfficialMessageDetail key={activeOfficial.id} item={activeOfficial} onBack={() => setActiveOfficial(null)} onArchived={handleOfficialArchived} />
+              : activeSalaSlug
+              ? <SalaPanel key={activeSalaSlug} slug={activeSalaSlug} onBack={() => setActiveSalaSlug(null)} />
               : active
               ? <ChatPanel key={active.conversationId} myId={myId} contact={active} onBack={() => setActive(null)} contacts={contacts} />
               : <div className="flex items-center justify-center h-full flex-col gap-3" style={{ color: "var(--text-muted,#888)" }}>
@@ -5927,17 +5942,20 @@ function MensagensPage() {
 
         {/* Mobile */}
         <div className="lg:hidden relative" style={{ height: "calc(100dvh - 62px)" }}>
-          <div className="absolute inset-0 transition-transform duration-300" style={{ transform: (active || activeOfficial) ? "translateX(-100%)" : "translateX(0)", overflow: "hidden" }}>
+          <div className="absolute inset-0 transition-transform duration-300" style={{ transform: (active || activeOfficial || activeSalaSlug) ? "translateX(-100%)" : "translateX(0)", overflow: "hidden" }}>
             <ContactList
               contacts={contacts} loading={loading} refreshing={refreshingInBackground} search={search} setSearch={setSearch}
-              active={active} setActive={(c) => { setActive(c); setActiveOfficial(null); }} setShowAddContact={setShowAddContact}
+              active={active} setActive={(c) => { setActive(c); setActiveOfficial(null); setActiveSalaSlug(null); }} setShowAddContact={setShowAddContact}
               setShowRequests={setShowRequests} pendingRequestCount={pendingRequestCount}
               officialMessages={officialMessages} activeOfficialId={activeOfficial?.id ?? null} onSelectOfficial={handleSelectOfficial}
+              activeSalaSlug={activeSalaSlug} onSelectSala={handleSelectSala}
             />
           </div>
-          <div className="absolute inset-0 transition-transform duration-300" style={{ transform: (active || activeOfficial) ? "translateX(0)" : "translateX(100%)", overflow: "hidden", pointerEvents: (active || activeOfficial) ? "auto" : "none" }}>
+          <div className="absolute inset-0 transition-transform duration-300" style={{ transform: (active || activeOfficial || activeSalaSlug) ? "translateX(0)" : "translateX(100%)", overflow: "hidden", pointerEvents: (active || activeOfficial || activeSalaSlug) ? "auto" : "none" }}>
             {activeOfficial
               ? <OfficialMessageDetail key={activeOfficial.id} item={activeOfficial} onBack={() => setActiveOfficial(null)} onArchived={handleOfficialArchived} />
+              : activeSalaSlug
+              ? <SalaPanel key={activeSalaSlug} slug={activeSalaSlug} onBack={() => setActiveSalaSlug(null)} />
               : active && <ChatPanel key={active.conversationId} myId={myId} contact={active} onBack={() => setActive(null)} contacts={contacts} />}
           </div>
         </div>
