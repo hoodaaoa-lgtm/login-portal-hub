@@ -790,6 +790,7 @@ export function SalaPanel({ slug, onBack }: { slug: string; onBack: () => void }
               ? {
                   user_id: p.id,
                   papel: "membro" as const,
+                  pode_enviar: true,
                   username: p.username ?? undefined,
                   full_name: p.full_name ?? undefined,
                   avatar_url: p.avatar_url ?? undefined,
