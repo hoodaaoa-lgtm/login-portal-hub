@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as UsoRouteImport } from './routes/uso'
 import { Route as SignupRouteImport } from './routes/signup'
+import { Route as SalasRouteImport } from './routes/salas'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as PrivacidadeRouteImport } from './routes/privacidade'
 import { Route as PerfilRouteImport } from './routes/perfil'
@@ -23,6 +24,7 @@ import { Route as DefinicoesRouteImport } from './routes/definicoes'
 import { Route as AcessibilidadeRouteImport } from './routes/acessibilidade'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
+import { Route as SalasSlugRouteImport } from './routes/salas.$slug'
 import { Route as PostIdRouteImport } from './routes/post.$id'
 import { Route as AuthBridgeRouteImport } from './routes/auth.bridge'
 
@@ -34,6 +36,11 @@ const UsoRoute = UsoRouteImport.update({
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SalasRoute = SalasRouteImport.update({
+  id: '/salas',
+  path: '/salas',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -96,6 +103,11 @@ const UUsernameRoute = UUsernameRouteImport.update({
   path: '/u/$username',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SalasSlugRoute = SalasSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => SalasRoute,
+} as any)
 const PostIdRoute = PostIdRouteImport.update({
   id: '/post/$id',
   path: '/post/$id',
@@ -119,10 +131,12 @@ export interface FileRoutesByFullPath {
   '/perfil': typeof PerfilRoute
   '/privacidade': typeof PrivacidadeRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/salas': typeof SalasRouteWithChildren
   '/signup': typeof SignupRoute
   '/uso': typeof UsoRoute
   '/auth/bridge': typeof AuthBridgeRoute
   '/post/$id': typeof PostIdRoute
+  '/salas/$slug': typeof SalasSlugRoute
   '/u/$username': typeof UUsernameRoute
 }
 export interface FileRoutesByTo {
@@ -137,10 +151,12 @@ export interface FileRoutesByTo {
   '/perfil': typeof PerfilRoute
   '/privacidade': typeof PrivacidadeRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/salas': typeof SalasRouteWithChildren
   '/signup': typeof SignupRoute
   '/uso': typeof UsoRoute
   '/auth/bridge': typeof AuthBridgeRoute
   '/post/$id': typeof PostIdRoute
+  '/salas/$slug': typeof SalasSlugRoute
   '/u/$username': typeof UUsernameRoute
 }
 export interface FileRoutesById {
@@ -156,10 +172,12 @@ export interface FileRoutesById {
   '/perfil': typeof PerfilRoute
   '/privacidade': typeof PrivacidadeRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/salas': typeof SalasRouteWithChildren
   '/signup': typeof SignupRoute
   '/uso': typeof UsoRoute
   '/auth/bridge': typeof AuthBridgeRoute
   '/post/$id': typeof PostIdRoute
+  '/salas/$slug': typeof SalasSlugRoute
   '/u/$username': typeof UUsernameRoute
 }
 export interface FileRouteTypes {
@@ -176,10 +194,12 @@ export interface FileRouteTypes {
     | '/perfil'
     | '/privacidade'
     | '/reset-password'
+    | '/salas'
     | '/signup'
     | '/uso'
     | '/auth/bridge'
     | '/post/$id'
+    | '/salas/$slug'
     | '/u/$username'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -194,10 +214,12 @@ export interface FileRouteTypes {
     | '/perfil'
     | '/privacidade'
     | '/reset-password'
+    | '/salas'
     | '/signup'
     | '/uso'
     | '/auth/bridge'
     | '/post/$id'
+    | '/salas/$slug'
     | '/u/$username'
   id:
     | '__root__'
@@ -212,10 +234,12 @@ export interface FileRouteTypes {
     | '/perfil'
     | '/privacidade'
     | '/reset-password'
+    | '/salas'
     | '/signup'
     | '/uso'
     | '/auth/bridge'
     | '/post/$id'
+    | '/salas/$slug'
     | '/u/$username'
   fileRoutesById: FileRoutesById
 }
@@ -231,6 +255,7 @@ export interface RootRouteChildren {
   PerfilRoute: typeof PerfilRoute
   PrivacidadeRoute: typeof PrivacidadeRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  SalasRoute: typeof SalasRouteWithChildren
   SignupRoute: typeof SignupRoute
   UsoRoute: typeof UsoRoute
   AuthBridgeRoute: typeof AuthBridgeRoute
@@ -252,6 +277,13 @@ declare module '@tanstack/react-router' {
       path: '/signup'
       fullPath: '/signup'
       preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/salas': {
+      id: '/salas'
+      path: '/salas'
+      fullPath: '/salas'
+      preLoaderRoute: typeof SalasRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reset-password': {
@@ -338,6 +370,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UUsernameRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/salas/$slug': {
+      id: '/salas/$slug'
+      path: '/$slug'
+      fullPath: '/salas/$slug'
+      preLoaderRoute: typeof SalasSlugRouteImport
+      parentRoute: typeof SalasRoute
+    }
     '/post/$id': {
       id: '/post/$id'
       path: '/post/$id'
@@ -355,6 +394,16 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface SalasRouteChildren {
+  SalasSlugRoute: typeof SalasSlugRoute
+}
+
+const SalasRouteChildren: SalasRouteChildren = {
+  SalasSlugRoute: SalasSlugRoute,
+}
+
+const SalasRouteWithChildren = SalasRoute._addFileChildren(SalasRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AcessibilidadeRoute: AcessibilidadeRoute,
@@ -367,6 +416,7 @@ const rootRouteChildren: RootRouteChildren = {
   PerfilRoute: PerfilRoute,
   PrivacidadeRoute: PrivacidadeRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  SalasRoute: SalasRouteWithChildren,
   SignupRoute: SignupRoute,
   UsoRoute: UsoRoute,
   AuthBridgeRoute: AuthBridgeRoute,
