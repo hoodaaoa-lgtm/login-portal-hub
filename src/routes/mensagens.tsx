@@ -39,6 +39,7 @@ import { SnapperPlayer } from "@/components/SnapperPlayer";
 import { FeedVideoPlayer } from "@/components/FeedVideoPlayer";
 import { extractUrl } from "@/lib/linkPreview";
 import { VIDEO_STICKERS, isVideoSticker } from "@/lib/stickers";
+import { StickerView } from "@/components/StickerView";
 import { uploadImageToCloudinary } from "@/lib/cloudinary";
 import { LinkPreview as SharedLinkPreview } from "@/components/LinkPreview";
 import { getCloudinaryPosterFromUrl } from "@/lib/cloudinary";
@@ -1087,12 +1088,12 @@ function ChatPicker({ tab, setTab, emojiSearch, setEmojiSearch, gifSearch, setGi
 
       {/* Sticker tab */}
       {tab === "sticker" && (
-        <div className="grid grid-cols-3 gap-2 p-2 pb-3 overflow-y-auto" style={{ maxHeight: 200 }}>
+        <div className="grid grid-cols-4 gap-2 p-2 pb-3 overflow-y-auto" style={{ maxHeight: 220 }}>
           {VIDEO_STICKERS.map((s) => (
             <button key={s.id} onClick={() => onSticker(s.url)}
               className="flex items-center justify-center rounded-2xl overflow-hidden active:scale-90 transition-all"
-              style={{ height: 84, background: CHAT_INPUT_BG }}>
-              <video src={s.url} autoPlay loop muted playsInline className="w-full h-full object-cover" />
+              style={{ height: 64, background: CHAT_INPUT_BG }}>
+              <StickerView url={s.url} size={64} />
             </button>
           ))}
         </div>
@@ -2524,7 +2525,7 @@ function MsgBubble({ m, isMe, replied, contact, myId, mediaMsgs, onReply, onEdit
             {/* Sticker */}
             {m.type === "sticker" && (
               isVideoSticker(m.text)
-                ? <video src={m.text!} autoPlay loop muted playsInline className="rounded-xl" style={{ width: 120, height: 120, objectFit: "cover" }} />
+                ? <StickerView url={m.text!} size={120} className="rounded-xl" />
                 : <p style={{ fontSize: 48, lineHeight: 1 }}>{m.text}</p>
             )}
 

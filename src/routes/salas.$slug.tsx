@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { extractUrl } from "@/lib/linkPreview";
 import { LinkPreview } from "@/components/LinkPreview";
 import { VIDEO_STICKERS } from "@/lib/stickers";
+import { StickerView } from "@/components/StickerView";
 import {
   ArrowLeft, Users, Send, Image as ImageIcon, Video, X, Loader2,
   Lock, Globe, Megaphone, Heart, Shield, DoorOpen, MoreVertical,
@@ -301,7 +302,7 @@ function MsgBubble({ m, isMe, isAnuncio, onLike }: { m: Msg; isMe: boolean; isAn
             <video src={m.media_url} controls className="max-w-full max-h-80" />
           )}
           {m.message_type === "sticker" && m.media_url && (
-            <video src={m.media_url} autoPlay loop muted playsInline className="rounded-xl" style={{ width: 120, height: 120, objectFit: "cover" }} />
+            <StickerView url={m.media_url} size={120} className="rounded-xl" />
           )}
           {m.content && (
             <p className="text-sm px-3 py-2 whitespace-pre-wrap break-words" style={{ color: isMe ? "#fff" : "var(--text-primary)" }}>{m.content}</p>
@@ -704,11 +705,11 @@ function SalaPage() {
               </div>
             )}
             {showStickers && (
-              <div className="flex gap-2 mb-2 p-2 rounded-2xl" style={{ background: "var(--s2)" }}>
+              <div className="flex gap-2 mb-2 p-2 rounded-2xl overflow-x-auto" style={{ background: "var(--s2)" }}>
                 {VIDEO_STICKERS.map((s) => (
                   <button key={s.id} onClick={() => handleSendSticker(s.url)}
-                    className="rounded-xl overflow-hidden active:scale-90 transition-all shrink-0" style={{ width: 68, height: 68 }}>
-                    <video src={s.url} autoPlay loop muted playsInline className="w-full h-full object-cover" />
+                    className="rounded-xl overflow-hidden active:scale-90 transition-all shrink-0" style={{ width: 60, height: 60 }}>
+                    <StickerView url={s.url} size={60} />
                   </button>
                 ))}
               </div>
