@@ -11,7 +11,7 @@ import {
  * `variant="message"` respeita a bolha (isMe muda as cores);
  * `variant="post"` usa o estilo neutro do cartão de publicação.
  */
-export function LinkPreview({ url, isMe = false, variant = "post" }: { url: string; isMe?: boolean; variant?: "message" | "post" }) {
+export function LinkPreview({ url, isMe = false, variant = "post", compact = false }: { url: string; isMe?: boolean; variant?: "message" | "post"; compact?: boolean }) {
   const navigate = useNavigate();
   const ytId = getYouTubeId(url);
   const isDirect = isDirectVideo(url);
@@ -20,9 +20,9 @@ export function LinkPreview({ url, isMe = false, variant = "post" }: { url: stri
   const [snapperPost, setSnapperPost] = useState<SnapperPostPreview | null | "loading">("loading");
 
   useEffect(() => {
-    if (ytId || isDirect || snapperPostId) { setOg(null); return; }
+    if (compact || ytId || isDirect || snapperPostId) { setOg(null); return; }
     fetchOgData(url).then(setOg);
-  }, [url, ytId, isDirect, snapperPostId]);
+  }, [url, ytId, isDirect, snapperPostId, compact]);
 
   useEffect(() => {
     if (!snapperPostId) { setSnapperPost(null); return; }
@@ -34,6 +34,30 @@ export function LinkPreview({ url, isMe = false, variant = "post" }: { url: stri
   const textColor = variant === "message" && isMe ? "white" : "var(--text-primary)";
   const mutedColor = variant === "message" && isMe ? "rgba(255,255,255,0.6)" : "var(--text-muted)";
   const marginTop = variant === "message" ? "mt-2" : "mt-3";
+
+  // Modo compacto: usado nas Salas quando a mensagem já tem foto/vídeo próprios —
+  // em vez de duplicar uma imagem grande do link, mostra só o logotipo do site
+  // e um botão para abrir, tipo "atalho", sem ocupar espaço.
+  if (compact) {
+    let domain = url;
+    try { domain = new URL(url).hostname.replace(/^www\./, ""); } catch {}
+    const favicon = ytId
+      ? "https://www.youtube.com/s/desktop/media/favicon.ico"
+      : `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64`;
+    const label = ytId ? "Ver vídeo" : snapperPostId ? "Ver publicação" : "Abrir";
+    return (
+      <a href={url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
+        className={`${marginTop} rounded-full flex items-center gap-2 pl-1.5 pr-1 py-1 transition hover:opacity-90`}
+        style={{ background: bg, border: `1px solid ${border}`, textDecoration: "none", maxWidth: "100%" }}>
+        <img src={favicon} alt="" className="w-5 h-5 rounded-full shrink-0 object-cover"
+          onError={(e) => { (e.currentTarget as HTMLImageElement).style.visibility = "hidden"; }} />
+        <span className="text-xs font-semibold truncate" style={{ color: textColor, maxWidth: 140 }}>{domain}</span>
+        <span className="text-[11px] font-bold px-2.5 py-1 rounded-full shrink-0 ml-auto text-white" style={{ background: "#2F6FED" }}>
+          {label} ↗
+        </span>
+      </a>
+    );
+  }
 
   if (snapperPostId) {
     if (snapperPost === "loading") {

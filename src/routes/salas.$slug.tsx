@@ -304,7 +304,12 @@ function MsgBubble({ m, isMe, isAnuncio, onLike }: { m: Msg; isMe: boolean; isAn
           )}
           {m.content && extractUrl(m.content) && (
             <div className="px-2 pb-2">
-              <LinkPreview url={extractUrl(m.content)!} isMe={isMe} variant="message" />
+              <LinkPreview
+                url={extractUrl(m.content)!}
+                isMe={isMe}
+                variant="message"
+                compact={m.message_type === "image" || m.message_type === "video"}
+              />
             </div>
           )}
         </div>
