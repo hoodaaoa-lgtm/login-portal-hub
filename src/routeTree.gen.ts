@@ -11,7 +11,6 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as UsoRouteImport } from './routes/uso'
 import { Route as SignupRouteImport } from './routes/signup'
-import { Route as SalasRouteImport } from './routes/salas'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as PrivacidadeRouteImport } from './routes/privacidade'
 import { Route as PerfilRouteImport } from './routes/perfil'
@@ -36,11 +35,6 @@ const UsoRoute = UsoRouteImport.update({
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SalasRoute = SalasRouteImport.update({
-  id: '/salas',
-  path: '/salas',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -104,9 +98,9 @@ const UUsernameRoute = UUsernameRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const SalasSlugRoute = SalasSlugRouteImport.update({
-  id: '/$slug',
-  path: '/$slug',
-  getParentRoute: () => SalasRoute,
+  id: '/salas/$slug',
+  path: '/salas/$slug',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const PostIdRoute = PostIdRouteImport.update({
   id: '/post/$id',
@@ -131,7 +125,6 @@ export interface FileRoutesByFullPath {
   '/perfil': typeof PerfilRoute
   '/privacidade': typeof PrivacidadeRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/salas': typeof SalasRouteWithChildren
   '/signup': typeof SignupRoute
   '/uso': typeof UsoRoute
   '/auth/bridge': typeof AuthBridgeRoute
@@ -151,7 +144,6 @@ export interface FileRoutesByTo {
   '/perfil': typeof PerfilRoute
   '/privacidade': typeof PrivacidadeRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/salas': typeof SalasRouteWithChildren
   '/signup': typeof SignupRoute
   '/uso': typeof UsoRoute
   '/auth/bridge': typeof AuthBridgeRoute
@@ -172,7 +164,6 @@ export interface FileRoutesById {
   '/perfil': typeof PerfilRoute
   '/privacidade': typeof PrivacidadeRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/salas': typeof SalasRouteWithChildren
   '/signup': typeof SignupRoute
   '/uso': typeof UsoRoute
   '/auth/bridge': typeof AuthBridgeRoute
@@ -194,7 +185,6 @@ export interface FileRouteTypes {
     | '/perfil'
     | '/privacidade'
     | '/reset-password'
-    | '/salas'
     | '/signup'
     | '/uso'
     | '/auth/bridge'
@@ -214,7 +204,6 @@ export interface FileRouteTypes {
     | '/perfil'
     | '/privacidade'
     | '/reset-password'
-    | '/salas'
     | '/signup'
     | '/uso'
     | '/auth/bridge'
@@ -234,7 +223,6 @@ export interface FileRouteTypes {
     | '/perfil'
     | '/privacidade'
     | '/reset-password'
-    | '/salas'
     | '/signup'
     | '/uso'
     | '/auth/bridge'
@@ -255,11 +243,11 @@ export interface RootRouteChildren {
   PerfilRoute: typeof PerfilRoute
   PrivacidadeRoute: typeof PrivacidadeRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
-  SalasRoute: typeof SalasRouteWithChildren
   SignupRoute: typeof SignupRoute
   UsoRoute: typeof UsoRoute
   AuthBridgeRoute: typeof AuthBridgeRoute
   PostIdRoute: typeof PostIdRoute
+  SalasSlugRoute: typeof SalasSlugRoute
   UUsernameRoute: typeof UUsernameRoute
 }
 
@@ -277,13 +265,6 @@ declare module '@tanstack/react-router' {
       path: '/signup'
       fullPath: '/signup'
       preLoaderRoute: typeof SignupRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/salas': {
-      id: '/salas'
-      path: '/salas'
-      fullPath: '/salas'
-      preLoaderRoute: typeof SalasRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reset-password': {
@@ -372,10 +353,10 @@ declare module '@tanstack/react-router' {
     }
     '/salas/$slug': {
       id: '/salas/$slug'
-      path: '/$slug'
+      path: '/salas/$slug'
       fullPath: '/salas/$slug'
       preLoaderRoute: typeof SalasSlugRouteImport
-      parentRoute: typeof SalasRoute
+      parentRoute: typeof rootRouteImport
     }
     '/post/$id': {
       id: '/post/$id'
@@ -394,16 +375,6 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface SalasRouteChildren {
-  SalasSlugRoute: typeof SalasSlugRoute
-}
-
-const SalasRouteChildren: SalasRouteChildren = {
-  SalasSlugRoute: SalasSlugRoute,
-}
-
-const SalasRouteWithChildren = SalasRoute._addFileChildren(SalasRouteChildren)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AcessibilidadeRoute: AcessibilidadeRoute,
@@ -416,11 +387,11 @@ const rootRouteChildren: RootRouteChildren = {
   PerfilRoute: PerfilRoute,
   PrivacidadeRoute: PrivacidadeRoute,
   ResetPasswordRoute: ResetPasswordRoute,
-  SalasRoute: SalasRouteWithChildren,
   SignupRoute: SignupRoute,
   UsoRoute: UsoRoute,
   AuthBridgeRoute: AuthBridgeRoute,
   PostIdRoute: PostIdRoute,
+  SalasSlugRoute: SalasSlugRoute,
   UUsernameRoute: UUsernameRoute,
 }
 export const routeTree = rootRouteImport

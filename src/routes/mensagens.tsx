@@ -32,12 +32,13 @@ import {
   Crop, Grid3x3, Download, ZoomIn, Forward, Star,
   Eye, EyeOff, Trash2, Reply, Copy,
   AlertCircle, RefreshCw, ArrowDown,
-  Lock, Unlock, Maximize2,
+  Lock, Unlock, Maximize2, Loader2, Users,
 } from "lucide-react";
 import MediaEditor, { MediaEditState, DEFAULT_EDIT, EditedMediaDisplay, EDITOR_FILTERS } from "@/components/MediaEditor";
 import { SnapperPlayer } from "@/components/SnapperPlayer";
 import { FeedVideoPlayer } from "@/components/FeedVideoPlayer";
 import { extractUrl } from "@/lib/linkPreview";
+import { uploadImageToCloudinary } from "@/lib/cloudinary";
 import { LinkPreview as SharedLinkPreview } from "@/components/LinkPreview";
 import { getCloudinaryPosterFromUrl } from "@/lib/cloudinary";
 import { uploadMessageImage, uploadMessageMedia } from "@/lib/cloudinaryMessages";
@@ -4953,6 +4954,218 @@ function saveHiddenConversations(map: Record<string, number>) {
   try { localStorage.setItem(HIDDEN_CONV_KEY, JSON.stringify(map)); } catch {}
 }
 
+/* ── Abas "Salas" dentro de /mensagens — mesma listagem/criação de sala,
+   incorporada aqui em vez de um ícone próprio no menu lateral. Ao clicar
+   numa sala vai para /salas/$slug, que reutiliza o mesmo sistema de
+   mensagens (texto, fotos, vídeos). ── */
+function SalasTabPanel() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const uid = user?.id ?? "";
+  const [salas, setSalas] = useState<any[]>([]);
+  const [myMembership, setMyMembership] = useState<Record<string, boolean>>({});
+  const [loading, setLoading] = useState(true);
+  const [joiningId, setJoiningId] = useState<string | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
+
+  const TIPO_INFO: Record<string, { label: string; color: string }> = {
+    publica:  { label: "Pública",  color: "#2F6FED" },
+    privada:  { label: "Privada",  color: "#6BA547" },
+    anuncios: { label: "Anúncios", color: "#FFC93C" },
+  };
+  const fmtN = (n: number) => n >= 1000 ? `${(n / 1000).toFixed(1)}K` : String(n ?? 0);
+  const slugify = (nome: string) => {
+    const base = nome.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40) || "sala";
+    return `${base}-${Math.random().toString(36).slice(2, 7)}`;
+  };
+
+  const load = async () => {
+    setLoading(true);
+    const { data: salasData } = await supabase.from("salas" as any).select("*").order("created_at", { ascending: false });
+    setSalas((salasData as any[]) ?? []);
+    if (uid) {
+      const { data: memb } = await supabase.from("sala_membros" as any).select("sala_id").eq("user_id", uid);
+      const map: Record<string, boolean> = {};
+      (memb as any[] ?? []).forEach((m) => { map[m.sala_id] = true; });
+      setMyMembership(map);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [uid]);
+
+  const handleJoin = async (sala: any) => {
+    if (!uid) { toast.error("Inicia sessão para entrar numa sala."); return; }
+    setJoiningId(sala.id);
+    try {
+      const { error } = await (supabase.rpc as any)("sala_entrar", { p_sala_id: sala.id });
+      if (error) throw error;
+      navigate({ to: "/salas/$slug", params: { slug: sala.slug } });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Não foi possível entrar na sala.");
+    } finally {
+      setJoiningId(null);
+    }
+  };
+
+  return (
+    <div className="flex flex-col h-full">
+      <div className="px-4 py-3 flex items-center justify-between shrink-0" style={{ borderBottom: "1px solid var(--border-subtle,#f0f0f0)" }}>
+        <p className="text-xs font-bold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Salas — grupos de conversa</p>
+        {uid && (
+          <button onClick={() => setShowCreate(true)}
+            className="flex items-center gap-1 px-2.5 h-7 rounded-full text-white text-xs font-bold active:scale-95"
+            style={{ background: "#2F6FED" }}>
+            <Plus className="h-3.5 w-3.5" /> Criar
+          </button>
+        )}
+      </div>
+      <div className="flex-1 overflow-y-auto">
+        {loading && <UniversalSkeleton variant="messages" count={6} />}
+        {!loading && salas.length === 0 && (
+          <div className="text-center py-12" style={{ color: "var(--text-muted,#888)" }}>
+            <Users className="h-12 w-12 mx-auto mb-3" style={{ color: "#d1d1d1" }} />
+            <p className="text-sm font-semibold">Ainda não há salas</p>
+            {uid && (
+              <button onClick={() => setShowCreate(true)} className="mt-4 px-5 py-2.5 rounded-full text-sm font-bold text-white" style={{ background: "#2F6FED" }}>
+                Criar a primeira Sala
+              </button>
+            )}
+          </div>
+        )}
+        {salas.map((s) => {
+          const info = TIPO_INFO[s.tipo] ?? TIPO_INFO.publica;
+          const isMember = !!myMembership[s.id];
+          return (
+            <button key={s.id}
+              onClick={() => isMember ? navigate({ to: "/salas/$slug", params: { slug: s.slug } }) : handleJoin(s)}
+              className="w-full flex items-center gap-3 px-4 py-3.5 text-left transition-colors"
+              style={{ borderBottom: "1px solid var(--border-subtle,#f0f0f0)" }}
+              onMouseOver={e => e.currentTarget.style.background = "var(--s1)"}
+              onMouseOut={e => e.currentTarget.style.background = "transparent"}>
+              <div className="rounded-2xl overflow-hidden flex items-center justify-center shrink-0 font-extrabold text-white"
+                style={{ width: 44, height: 44, background: s.foto_url ? "transparent" : "#2F6FED" }}>
+                {s.foto_url ? <img src={optimizeAvatar(s.foto_url, 88)} alt="" className="w-full h-full object-cover" /> : (s.nome?.[0] ?? "S").toUpperCase()}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <p className="font-bold text-sm truncate" style={{ color: "var(--text-primary)" }}>{s.nome}</p>
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0" style={{ color: info.color, background: `${info.color}18` }}>{info.label}</span>
+                </div>
+                <p className="text-xs truncate" style={{ color: "var(--text-muted)" }}>
+                  {fmtN(s.membros_count)} membro{s.membros_count === 1 ? "" : "s"}
+                </p>
+              </div>
+              {!isMember && (
+                joiningId === s.id
+                  ? <Loader2 className="h-4 w-4 animate-spin shrink-0" style={{ color: "#2F6FED" }} />
+                  : <span className="text-xs font-bold shrink-0" style={{ color: "#2F6FED" }}>Entrar</span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {showCreate && (
+        <CreateSalaInlineModal
+          onClose={() => setShowCreate(false)}
+          onCreated={(s) => { setShowCreate(false); navigate({ to: "/salas/$slug", params: { slug: s.slug } }); }}
+        />
+      )}
+    </div>
+  );
+}
+
+function CreateSalaInlineModal({ onClose, onCreated }: { onClose: () => void; onCreated: (s: any) => void }) {
+  const [nome, setNome] = useState("");
+  const [descricao, setDescricao] = useState("");
+  const [tipo, setTipo] = useState<"publica" | "privada" | "anuncios">("publica");
+  const [fotoFile, setFotoFile] = useState<File | null>(null);
+  const [fotoPreview, setFotoPreview] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const slugify = (n: string) => {
+    const base = n.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40) || "sala";
+    return `${base}-${Math.random().toString(36).slice(2, 7)}`;
+  };
+
+  const handleCreate = async () => {
+    if (!nome.trim()) { toast.error("Dá um nome à sala."); return; }
+    setSaving(true);
+    try {
+      let foto_url: string | null = null;
+      if (fotoFile) {
+        const up = await uploadImageToCloudinary(fotoFile, "hooda/salas");
+        foto_url = up.url;
+      }
+      const { data, error } = await (supabase.rpc as any)("sala_criar", {
+        p_nome: nome.trim(), p_descricao: descricao.trim() || null,
+        p_foto_url: foto_url, p_tipo: tipo, p_slug: slugify(nome),
+      });
+      if (error) throw error;
+      toast.success("Sala criada!");
+      onCreated(data);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Não foi possível criar a sala.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center" style={{ background: "rgba(0,0,0,0.55)" }} onClick={onClose}>
+      <div className="w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl p-5 max-h-[90vh] overflow-y-auto" style={{ background: "var(--s0)" }} onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-extrabold" style={{ color: "var(--text-primary)" }}>Criar Sala</h2>
+          <button onClick={onClose} className="p-1.5 rounded-full" style={{ background: "var(--s2)" }}>
+            <X className="w-4 h-4" style={{ color: "var(--text-muted)" }} />
+          </button>
+        </div>
+        <div className="flex justify-center mb-4">
+          <button onClick={() => fileRef.current?.click()}
+            className="relative rounded-2xl overflow-hidden flex items-center justify-center"
+            style={{ width: 84, height: 84, background: "var(--s2)", border: "1px dashed var(--border-default)" }}>
+            {fotoPreview ? <img src={fotoPreview} alt="" className="w-full h-full object-cover" /> : <ImageIcon className="w-6 h-6" style={{ color: "var(--text-muted)" }} />}
+            <div className="absolute bottom-0 inset-x-0 py-1 text-center text-[10px] font-bold text-white" style={{ background: "rgba(0,0,0,0.5)" }}>
+              {fotoPreview ? "Trocar" : "Adicionar"}
+            </div>
+          </button>
+          <input ref={fileRef} type="file" accept="image/*" className="hidden"
+            onChange={(e) => { const f = e.target.files?.[0] ?? null; setFotoFile(f); if (f) setFotoPreview(URL.createObjectURL(f)); }} />
+        </div>
+        <label className="block text-xs font-bold uppercase tracking-wide mb-1.5" style={{ color: "var(--text-muted)" }}>Nome da sala</label>
+        <input value={nome} onChange={(e) => setNome(e.target.value)} maxLength={60} placeholder="Ex: Amantes de Futebol"
+          className="w-full px-3.5 h-11 rounded-xl text-sm border outline-none mb-3"
+          style={{ background: "var(--s2)", borderColor: "var(--border-default)", color: "var(--text-primary)" }} />
+        <label className="block text-xs font-bold uppercase tracking-wide mb-1.5" style={{ color: "var(--text-muted)" }}>Descrição</label>
+        <textarea value={descricao} onChange={(e) => setDescricao(e.target.value)} maxLength={200} rows={3} placeholder="Sobre o que é esta sala?"
+          className="w-full px-3.5 py-2.5 rounded-xl text-sm border outline-none mb-3 resize-none"
+          style={{ background: "var(--s2)", borderColor: "var(--border-default)", color: "var(--text-primary)" }} />
+        <label className="block text-xs font-bold uppercase tracking-wide mb-1.5" style={{ color: "var(--text-muted)" }}>Tipo de sala</label>
+        <div className="grid grid-cols-3 gap-2 mb-5">
+          {([["publica", "Pública", "#2F6FED"], ["privada", "Privada", "#6BA547"], ["anuncios", "Anúncios", "#FFC93C"]] as const).map(([k, label, color]) => {
+            const active = tipo === k;
+            return (
+              <button key={k} onClick={() => setTipo(k)}
+                className="flex flex-col items-center gap-1 py-2.5 rounded-xl text-xs font-bold transition-all"
+                style={{ background: active ? `${color}18` : "var(--s2)", color: active ? color : "var(--text-muted)", border: active ? `1.5px solid ${color}` : "1.5px solid transparent" }}>
+                {label}
+              </button>
+            );
+          })}
+        </div>
+        <button onClick={handleCreate} disabled={saving}
+          className="w-full h-11 rounded-full font-bold text-white flex items-center justify-center gap-2 disabled:opacity-60" style={{ background: "#2F6FED" }}>
+          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+          {saving ? "A criar..." : "Criar Sala"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function ContactList({ contacts, loading, refreshing, search, setSearch, active, setActive, setShowAddContact, setShowRequests, pendingRequestCount, officialMessages, activeOfficialId, onSelectOfficial }: {
   contacts: Contact[];
   loading: boolean;
@@ -4973,6 +5186,7 @@ function ContactList({ contacts, loading, refreshing, search, setSearch, active,
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; contact: Contact } | null>(null);
   const [sheetContact, setSheetContact] = useState<Contact | null>(null);
   const [confirmHide, setConfirmHide] = useState<Contact | null>(null);
+  const [listTab, setListTab] = useState<"chats" | "salas">("chats");
   const ctxMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -5078,8 +5292,22 @@ function ContactList({ contacts, loading, refreshing, search, setSearch, active,
             </button>
           )}
         </div>
+
+        {/* Separador Chats / Salas */}
+        <div className="flex gap-2 mt-3">
+          {([["chats", "Chats"], ["salas", "Salas"]] as const).map(([key, label]) => (
+            <button key={key} onClick={() => setListTab(key)}
+              className="flex-1 h-8 rounded-full text-sm font-bold transition-all"
+              style={listTab === key ? { background: "#2F6FED", color: "#fff" } : { background: "var(--s2)", color: "var(--text-muted)" }}>
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
 
+      {listTab === "salas" ? (
+        <SalasTabPanel />
+      ) : (
       <div className="flex-1 overflow-y-auto">
         {loading && <UniversalSkeleton variant="messages" count={8} />}
 
@@ -5164,6 +5392,7 @@ function ContactList({ contacts, loading, refreshing, search, setSearch, active,
           </button>
         ))}
       </div>
+      )}
 
       {/* ── Menu contextual (DESKTOP) — clique direito na conversa ── */}
       {ctxMenu && createPortal(
