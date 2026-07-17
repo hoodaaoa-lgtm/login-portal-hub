@@ -28,6 +28,7 @@ const MOBILE_ITEMS = [
   { to: "/home",       label: t("nav.home"),      Icon: Home,          search: undefined as Record<string, string> | undefined },
   { to: "/explorar",   label: t("nav.explore"),  Icon: Compass,        search: undefined as Record<string, string> | undefined },
   { to: "/mensagens",  label: t("nav.messages"), Icon: MessageCircle,   search: undefined as Record<string, string> | undefined },
+  { to: "/perfil",     label: t("nav.profile"),  Icon: User,           search: undefined as Record<string, string> | undefined },
 ] as const;
 
 /** Resolve o valor do badge para uma rota de navegação a partir dos contadores já carregados */
@@ -288,7 +289,16 @@ export function BottomNav() {
                         background: active ? "rgba(47,111,237,0.12)" : "transparent",
                         transition: "background 0.2s",
                       }}>
-                      <Icon className="h-[20px] w-[20px]" strokeWidth={active ? 2.5 : 1.8} />
+                      {to === "/perfil" ? (
+                        <div className="h-[20px] w-[20px] rounded-full overflow-hidden flex items-center justify-center text-[8px] font-extrabold text-white shrink-0"
+                          style={{ background: avatarUrl ? "transparent" : "#2F6FED", border: active ? "1.5px solid #2F6FED" : "none" }}>
+                          {avatarUrl
+                            ? <img loading="lazy" decoding="async" src={optimizeAvatar(avatarUrl, 40)} alt={name} className="w-full h-full object-cover" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+                            : initial}
+                        </div>
+                      ) : (
+                        <Icon className="h-[20px] w-[20px]" strokeWidth={active ? 2.5 : 1.8} />
+                      )}
                       {badgeCount > 0 && (
                         <span className="absolute flex items-center justify-center rounded-full font-bold text-white"
                           style={{
