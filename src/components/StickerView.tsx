@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Component, useEffect, useState, type ReactNode } from "react";
 import { isLottieSticker } from "@/lib/stickers";
 
 const lottieCache = new Map<string, any>();
@@ -19,6 +19,28 @@ function loadLottieComponent() {
     });
   }
   return lottieLoadPromise;
+}
+
+// A própria biblioteca "lottie-react" tem um bug interno: quando várias
+// animações montam ao mesmo tempo (ex.: a grelha inteira de stickers no
+// picker), ocasionalmente tenta ler `.style` dum elemento do contentor
+// que ainda não ficou pronto e rebenta com "Cannot read properties of
+// null (reading 'style')". Isto acontece dentro do código deles, não dá
+// para evitar só com boas práticas no nosso lado — por isso isolamos cada
+// sticker lottie no seu próprio error boundary: se um crashar, esse
+// sticker fica em branco, mas o resto da página (e os outros stickers)
+// continuam normais.
+class StickerErrorBoundary extends Component<{ children: ReactNode; fallback: ReactNode }, { hasError: boolean }> {
+  state = { hasError: false };
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  componentDidCatch(error: unknown) {
+    console.error("[StickerView] animação lottie falhou, a isolar:", error);
+  }
+  render() {
+    return this.state.hasError ? this.props.fallback : this.props.children;
+  }
 }
 
 /** Renderiza um sticker — vídeo (.mp4/.webm) ou animação vetorial (.json) —
@@ -46,11 +68,14 @@ export function StickerView({ url, size = 120, className = "" }: { url: string; 
   }, [url, isLottie]);
 
   if (isLottie) {
-    if (!data || !Lottie) return <div className={className} style={{ width: size, height: size }} />;
+    const placeholder = <div className={className} style={{ width: size, height: size }} />;
+    if (!data || !Lottie) return placeholder;
     return (
-      <div className={className} style={{ width: size, height: size }}>
-        <Lottie animationData={data} loop autoplay style={{ width: size, height: size }} />
-      </div>
+      <StickerErrorBoundary key={url} fallback={placeholder}>
+        <div className={className} style={{ width: size, height: size }}>
+          <Lottie animationData={data} loop autoplay style={{ width: size, height: size }} />
+        </div>
+      </StickerErrorBoundary>
     );
   }
 
