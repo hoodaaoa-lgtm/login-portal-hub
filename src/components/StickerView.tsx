@@ -33,29 +33,74 @@ function loadLottieApi() {
 
 function LottieAnimation({ data, size }: { data: any; size: number }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const animRef = useRef<any>(null);
+  const stopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    let anim: any = null;
     loadLottieApi()
       .then((lottie) => {
         if (cancelled || !containerRef.current) return;
-        anim = lottie.loadAnimation({
+        const anim = lottie.loadAnimation({
           container: containerRef.current,
           renderer: "svg",
           loop: true,
           autoplay: true,
           animationData: data,
         });
+        animRef.current = anim;
+        // Não precisa de estar sempre em movimento — para sozinho depois de
+        // 3s; um clique volta a dar-lhe corda por mais 3s.
+        stopTimerRef.current = setTimeout(() => { try { anim.pause(); } catch { /* já destruído */ } }, 3000);
       })
       .catch(() => {});
     return () => {
       cancelled = true;
-      try { anim?.destroy(); } catch { /* já desmontado, ignora */ }
+      if (stopTimerRef.current) clearTimeout(stopTimerRef.current);
+      try { animRef.current?.destroy(); } catch { /* já desmontado, ignora */ }
     };
   }, [data]);
 
-  return <div ref={containerRef} style={{ width: size, height: size }} />;
+  const handleClick = () => {
+    const anim = animRef.current;
+    if (!anim) return;
+    if (stopTimerRef.current) clearTimeout(stopTimerRef.current);
+    anim.goToAndPlay(0, true);
+    stopTimerRef.current = setTimeout(() => { try { anim.pause(); } catch { /* já destruído */ } }, 3000);
+  };
+
+  return <div ref={containerRef} onClick={handleClick} style={{ width: size, height: size }} />;
+}
+
+/** Sticker em vídeo — mesmo comportamento: 3s de movimento e depois para,
+ * um clique reinicia por mais 3s. */
+function VideoSticker({ url, size, className }: { url: string; size: number; className: string }) {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const stopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const scheduleStop = () => {
+    if (stopTimerRef.current) clearTimeout(stopTimerRef.current);
+    stopTimerRef.current = setTimeout(() => { videoRef.current?.pause(); }, 3000);
+  };
+
+  useEffect(() => {
+    scheduleStop();
+    return () => { if (stopTimerRef.current) clearTimeout(stopTimerRef.current); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [url]);
+
+  const handleClick = () => {
+    const v = videoRef.current;
+    if (!v) return;
+    v.currentTime = 0;
+    v.play().catch(() => {});
+    scheduleStop();
+  };
+
+  return (
+    <video ref={videoRef} src={url} autoPlay loop muted playsInline onClick={handleClick} className={className}
+      style={{ width: size, height: size, objectFit: "cover" }} />
+  );
 }
 
 /** Renderiza um sticker — vídeo (.mp4/.webm) ou animação vetorial (.json) —
@@ -86,7 +131,6 @@ export function StickerView({ url, size = 120, className = "" }: { url: string; 
   }
 
   return (
-    <video src={url} autoPlay loop muted playsInline className={className}
-      style={{ width: size, height: size, objectFit: "cover" }} />
+    <VideoSticker url={url} size={size} className={className} />
   );
 }
