@@ -99,6 +99,7 @@ type Msg = {
   myReaction?: string;
   deletedForMe?: boolean;
   deletedForAll?: boolean;
+  deliveryStatus?: "sending" | "sent" | "failed";
 };
 
 const TIPO_INFO = {
@@ -1573,10 +1574,29 @@ export function SalaPanel({ slug, onBack }: { slug: string; onBack: () => void }
                 }
               : undefined;
           }
-          setMsgs((prev) => [
-            ...prev,
-            { ...row, sender, likeCount: 0, likedByMe: false, reactions: {}, deletedForMe: false },
-          ]);
+          setMsgs((prev) => {
+            // já existe com o id real → nada a fazer
+            if (prev.some((x) => x.id === row.id)) return prev;
+            // tentar fazer match com um optimistic temp do mesmo sender, próximo no tempo
+            const tempMatch = prev.find(
+              (x) =>
+                x.id.startsWith("temp-") &&
+                x.sender_id === row.sender_id &&
+                x.message_type === row.message_type &&
+                Math.abs(new Date(row.created_at).getTime() - new Date(x.created_at).getTime()) < 10000,
+            );
+            if (tempMatch) {
+              return prev.map((x) =>
+                x.id === tempMatch.id
+                  ? { ...x, id: row.id, created_at: row.created_at, deliveryStatus: "sent" }
+                  : x,
+              );
+            }
+            return [
+              ...prev,
+              { ...row, sender, likeCount: 0, likedByMe: false, reactions: {}, deletedForMe: false },
+            ];
+          });
         },
       )
       .on(
@@ -1890,6 +1910,36 @@ export function SalaPanel({ slug, onBack }: { slug: string; onBack: () => void }
     if (!sala || !uid || sending) return;
     if (!text.trim() && !pendingMedia) return;
     setSending(true);
+
+    // Optimistic local — mesma lógica do ChatPanel: a bolha aparece já,
+    // localmente, em vez de só surgir quando o evento realtime voltar do
+    // servidor (o que dava a sensação de a mensagem "desaparecer" por um
+    // instante — o campo limpava mas a bolha só chegava depois — e só
+    // "aparecer" a seguir).
+    const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const t = text.trim();
+    const localPreviewUrl = pendingMedia ? URL.createObjectURL(pendingMedia.file) : undefined;
+    const localType = pendingMedia ? pendingMedia.type : "text";
+    const myMembro = membros.find((m) => m.user_id === uid);
+    const localMsg: Msg = {
+      id: tempId,
+      conversation_id: sala.conversation_id,
+      sender_id: uid,
+      content: t || null,
+      message_type: localType,
+      media_url: localPreviewUrl ?? null,
+      created_at: new Date().toISOString(),
+      reply_to: replyTo?.id ?? null,
+      sender: myMembro
+        ? { username: myMembro.username, full_name: myMembro.full_name, avatar_url: myMembro.avatar_url }
+        : undefined,
+      deliveryStatus: "sending",
+    };
+    setMsgs((prev) => [...prev, localMsg]);
+    setText("");
+    setPendingMedia(null);
+    setReplyTo(null);
+
     try {
       let message_type = "text";
       let media_url: string | null = null;
@@ -1908,20 +1958,31 @@ export function SalaPanel({ slug, onBack }: { slug: string; onBack: () => void }
           message_type = "video";
         }
       }
-      const { error } = await supabase.from("messages").insert({
-        conversation_id: sala.conversation_id,
-        sender_id: uid,
-        content: text.trim() || null,
-        message_type,
-        media_url,
-        status: "sent",
-        reply_to: replyTo?.id ?? null,
-      } as any);
+      const { data, error } = await supabase
+        .from("messages")
+        .insert({
+          conversation_id: sala.conversation_id,
+          sender_id: uid,
+          content: t || null,
+          message_type,
+          media_url,
+          status: "sent",
+          reply_to: replyTo?.id ?? null,
+        } as any)
+        .select("id,created_at")
+        .single();
       if (error) throw error;
-      setText("");
-      setPendingMedia(null);
-      setReplyTo(null);
+      // troca o temp pelo id real (e pelo url final do upload) — em vez de
+      // remover e voltar a inserir, o que causava o "piscar".
+      setMsgs((prev) =>
+        prev.map((x) =>
+          x.id === tempId
+            ? { ...x, id: data.id, created_at: data.created_at ?? x.created_at, media_url: media_url ?? x.media_url, deliveryStatus: "sent" }
+            : x,
+        ),
+      );
     } catch (e: any) {
+      setMsgs((prev) => prev.map((x) => (x.id === tempId ? { ...x, deliveryStatus: "failed" } : x)));
       toast.error(e?.message ?? "Não foi possível enviar.");
     } finally {
       setSending(false);
@@ -1932,17 +1993,45 @@ export function SalaPanel({ slug, onBack }: { slug: string; onBack: () => void }
     if (!sala || !uid || sending) return;
     setShowEmoji(false);
     setSending(true);
-    try {
-      const { error } = await supabase.from("messages").insert({
+    const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const myMembro = membros.find((m) => m.user_id === uid);
+    setMsgs((prev) => [
+      ...prev,
+      {
+        id: tempId,
         conversation_id: sala.conversation_id,
         sender_id: uid,
         content: null,
         message_type: "sticker",
         media_url: url,
-        status: "sent",
-      } as any);
+        created_at: new Date().toISOString(),
+        sender: myMembro
+          ? { username: myMembro.username, full_name: myMembro.full_name, avatar_url: myMembro.avatar_url }
+          : undefined,
+        deliveryStatus: "sending",
+      },
+    ]);
+    try {
+      const { data, error } = await supabase
+        .from("messages")
+        .insert({
+          conversation_id: sala.conversation_id,
+          sender_id: uid,
+          content: null,
+          message_type: "sticker",
+          media_url: url,
+          status: "sent",
+        } as any)
+        .select("id,created_at")
+        .single();
       if (error) throw error;
+      setMsgs((prev) =>
+        prev.map((x) =>
+          x.id === tempId ? { ...x, id: data.id, created_at: data.created_at ?? x.created_at, deliveryStatus: "sent" } : x,
+        ),
+      );
     } catch (e: any) {
+      setMsgs((prev) => prev.map((x) => (x.id === tempId ? { ...x, deliveryStatus: "failed" } : x)));
       toast.error(e?.message ?? "Não foi possível enviar.");
     } finally {
       setSending(false);
@@ -1953,17 +2042,45 @@ export function SalaPanel({ slug, onBack }: { slug: string; onBack: () => void }
     if (!sala || !uid || sending) return;
     setShowEmoji(false);
     setSending(true);
-    try {
-      const { error } = await supabase.from("messages").insert({
+    const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const myMembro = membros.find((m) => m.user_id === uid);
+    setMsgs((prev) => [
+      ...prev,
+      {
+        id: tempId,
         conversation_id: sala.conversation_id,
         sender_id: uid,
         content: null,
         message_type: "image",
         media_url: url,
-        status: "sent",
-      } as any);
+        created_at: new Date().toISOString(),
+        sender: myMembro
+          ? { username: myMembro.username, full_name: myMembro.full_name, avatar_url: myMembro.avatar_url }
+          : undefined,
+        deliveryStatus: "sending",
+      },
+    ]);
+    try {
+      const { data, error } = await supabase
+        .from("messages")
+        .insert({
+          conversation_id: sala.conversation_id,
+          sender_id: uid,
+          content: null,
+          message_type: "image",
+          media_url: url,
+          status: "sent",
+        } as any)
+        .select("id,created_at")
+        .single();
       if (error) throw error;
+      setMsgs((prev) =>
+        prev.map((x) =>
+          x.id === tempId ? { ...x, id: data.id, created_at: data.created_at ?? x.created_at, deliveryStatus: "sent" } : x,
+        ),
+      );
     } catch (e: any) {
+      setMsgs((prev) => prev.map((x) => (x.id === tempId ? { ...x, deliveryStatus: "failed" } : x)));
       toast.error(e?.message ?? "Não foi possível enviar.");
     } finally {
       setSending(false);
