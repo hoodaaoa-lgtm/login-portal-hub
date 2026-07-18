@@ -32,6 +32,7 @@ import {
   Ban,
   Ghost,
   Smile,
+  ChevronDown,
 } from "lucide-react";
 
 const P = "#2F6FED";
@@ -663,6 +664,8 @@ export function SalaPanel({ slug, onBack }: { slug: string; onBack: () => void }
     preview: string;
   } | null>(null);
   const [showStickers, setShowStickers] = useState(false);
+  const [showScrollBtn, setShowScrollBtn] = useState(false);
+  const atBottom = useRef(true);
   const imgInputRef = useRef<HTMLInputElement>(null);
   const vidInputRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -811,9 +814,19 @@ export function SalaPanel({ slug, onBack }: { slug: string; onBack: () => void }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sala?.id]);
 
+  // Scroll auto ao fundo — mesma lógica do ChatPanel: só desce sozinho se a
+  // pessoa já estava perto do fundo, e faz isso "instant" (não "smooth")
+  // para não dar a sensação de as mensagens aparecerem lá em cima primeiro.
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (atBottom.current) bottomRef.current?.scrollIntoView({ behavior: "instant" });
   }, [msgs.length]);
+
+  function handleMsgsScroll(e: React.UIEvent<HTMLDivElement>) {
+    const el = e.currentTarget;
+    const isAtBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 60;
+    atBottom.current = isAtBottom;
+    setShowScrollBtn(!isAtBottom);
+  }
 
   // Realtime: reflete ao vivo mudanças de permissões, cargos e definições da sala
   useEffect(() => {
@@ -1131,7 +1144,7 @@ export function SalaPanel({ slug, onBack }: { slug: string; onBack: () => void }
 
   return (
     <>
-      <div className="flex flex-col h-full" style={{ background: "#f0ece8" }}>
+      <div className="flex flex-col h-full relative" style={{ background: "#f0ece8" }}>
         {/* Header — mesmo estilo do cabeçalho do Chat (ChatPanel) */}
         <div
           className="shrink-0 z-10 px-3 py-2.5"
@@ -1213,7 +1226,7 @@ export function SalaPanel({ slug, onBack }: { slug: string; onBack: () => void }
         </div>
 
         {/* Mensagens */}
-        <div className="flex-1 overflow-y-auto px-4 py-4">
+        <div className="flex-1 overflow-y-auto px-4 py-4 relative" onScroll={handleMsgsScroll}>
           {msgs.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 gap-2">
               <p className="text-sm font-bold" style={{ color: "var(--text-muted)" }}>
@@ -1233,6 +1246,26 @@ export function SalaPanel({ slug, onBack }: { slug: string; onBack: () => void }
           )}
           <div ref={bottomRef} />
         </div>
+        {showScrollBtn && (
+          <button
+            onClick={() => {
+              atBottom.current = true;
+              setShowScrollBtn(false);
+              bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+            }}
+            className="absolute right-4 rounded-full flex items-center justify-center shadow-lg transition active:scale-90"
+            style={{
+              bottom: 88,
+              width: 36,
+              height: 36,
+              background: "var(--s0,#fff)",
+              border: "1px solid var(--border-subtle,#e5e5e5)",
+              color: "#2F6FED",
+            }}
+          >
+            <ChevronDown className="h-4 w-4" />
+          </button>
+        )}
 
         {/* Composer — mesmo estilo (pílula arredondada) da barra de input do Chat */}
         {isMember && canPost && (
@@ -1266,17 +1299,17 @@ export function SalaPanel({ slug, onBack }: { slug: string; onBack: () => void }
               )}
               {showStickers && (
                 <div
-                  className="flex gap-2 mb-2 p-2 rounded-2xl overflow-x-auto"
-                  style={{ background: "var(--s2)" }}
+                  className="grid grid-cols-4 gap-2 mb-2 p-2 rounded-2xl overflow-y-auto"
+                  style={{ background: "var(--s2)", maxHeight: 220 }}
                 >
                   {VIDEO_STICKERS.map((s) => (
                     <button
                       key={s.id}
                       onClick={() => handleSendSticker(s.url)}
-                      className="rounded-xl overflow-hidden active:scale-90 transition-all shrink-0"
-                      style={{ width: 60, height: 60 }}
+                      className="flex items-center justify-center rounded-2xl overflow-hidden active:scale-90 transition-all"
+                      style={{ height: 64, background: "var(--s1)" }}
                     >
-                      <StickerView url={s.url} size={60} />
+                      <StickerView url={s.url} size={64} />
                     </button>
                   ))}
                 </div>
