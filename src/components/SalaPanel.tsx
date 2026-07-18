@@ -1568,9 +1568,17 @@ export function SalaPanel({ slug, onBack }: { slug: string; onBack: () => void }
   // ── Cache local permanente (por sala) — mostra a sala e as mensagens
   // instantaneamente ao reabrir, em vez do spinner cheio de ecrã a cada
   // vez; o load() por trás continua a refrescar na mesma. Mesma ideia
-  // do cache de conversas 1-para-1 no ChatPanel. ──
+  // do cache de conversas 1-para-1 no ChatPanel.
+  //
+  // isMember/isAdmin e o próprio histórico de mensagens (que traz
+  // likedByMe/myReaction, específicos de quem está a ver) têm de estar
+  // na cache TAMBÉM por utilizador — senão, ao entrar, a sala aparecia
+  // sempre com o estado "não sou membro" (valor inicial) durante a
+  // fração de segundo antes do load() confirmar o contrário, fazendo
+  // o composer/botão "Entrar" piscarem errado antes de assentar. ──
   const SALA_META_CACHE_KEY = `hooda_sala_meta_${slug}`;
-  const SALA_MSGS_CACHE_KEY = `hooda_sala_msgs_${slug}`;
+  const SALA_MSGS_CACHE_KEY = `hooda_sala_msgs_${slug}_${uid}`;
+  const SALA_MEMBERSHIP_CACHE_KEY = `hooda_sala_membership_${slug}_${uid}`;
 
   const [sala, setSala] = useState<Sala | null>(() => {
     try {
@@ -1585,8 +1593,20 @@ export function SalaPanel({ slug, onBack }: { slug: string; onBack: () => void }
       return !localStorage.getItem(SALA_META_CACHE_KEY);
     } catch { return true; }
   });
-  const [isMember, setIsMember] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [isMember, setIsMember] = useState(() => {
+    try {
+      if (typeof window === "undefined" || !uid) return false;
+      const raw = localStorage.getItem(SALA_MEMBERSHIP_CACHE_KEY);
+      return raw ? (JSON.parse(raw).isMember ?? false) : false;
+    } catch { return false; }
+  });
+  const [isAdmin, setIsAdmin] = useState(() => {
+    try {
+      if (typeof window === "undefined" || !uid) return false;
+      const raw = localStorage.getItem(SALA_MEMBERSHIP_CACHE_KEY);
+      return raw ? (JSON.parse(raw).isAdmin ?? false) : false;
+    } catch { return false; }
+  });
   const [joining, setJoining] = useState(false);
   const [membros, setMembros] = useState<Membro[]>([]);
   // Presença agregada da sala: true se QUALQUER membro (além de mim) estiver
@@ -1616,6 +1636,12 @@ export function SalaPanel({ slug, onBack }: { slug: string; onBack: () => void }
     try {
       if (typeof window === "undefined" || !s) return;
       localStorage.setItem(SALA_META_CACHE_KEY, JSON.stringify(s));
+    } catch {}
+  }
+  function saveSalaMembershipCache(member: boolean, admin: boolean) {
+    try {
+      if (typeof window === "undefined" || !uid) return;
+      localStorage.setItem(SALA_MEMBERSHIP_CACHE_KEY, JSON.stringify({ isMember: member, isAdmin: admin }));
     } catch {}
   }
   function saveSalaMsgsCache(messages: Msg[]) {
@@ -1694,8 +1720,11 @@ export function SalaPanel({ slug, onBack }: { slug: string; onBack: () => void }
         .eq("sala_id", s.id)
         .eq("user_id", uid)
         .maybeSingle();
-      setIsMember(!!memb);
-      setIsAdmin((memb as any)?.papel === "admin" || s.criador_id === uid);
+      const member = !!memb;
+      const admin = (memb as any)?.papel === "admin" || s.criador_id === uid;
+      setIsMember(member);
+      setIsAdmin(admin);
+      saveSalaMembershipCache(member, admin);
     }
 
     const { data: membrosRows } = await supabase
@@ -1799,6 +1828,14 @@ export function SalaPanel({ slug, onBack }: { slug: string; onBack: () => void }
     saveSalaMsgsCache(msgs);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [msgs]);
+
+  // Idem para isMember/isAdmin — cobre entrar, sair, ser removido ou
+  // promovido/despromovido em tempo real, sem repetir a gravação em cada
+  // ponto que muda estes dois estados.
+  useEffect(() => {
+    saveSalaMembershipCache(isMember, isAdmin);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isMember, isAdmin]);
 
   useEffect(() => {
     if (!sala) return;
