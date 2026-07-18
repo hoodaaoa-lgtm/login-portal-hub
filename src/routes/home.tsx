@@ -94,6 +94,8 @@ function HomePage() {
     setShowNotifCenter(false);
     if (notif.type === "message") navigate({ to: "/mensagens" });
     else if (notif.type === "follow") navigate({ to: `/u/${notif.user}` } as any);
+    else if (notif.type === "sala_add" && notif.salaSlug)
+      navigate({ to: "/mensagens", search: { sala: notif.salaSlug } } as any);
   }
 
   const feedSentinelRef = useRef<HTMLDivElement>(null);
