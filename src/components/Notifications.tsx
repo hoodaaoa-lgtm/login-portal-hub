@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import {
   X, Bell, Heart, MessageCircle, UserPlus,
-  Share2, AtSign, Megaphone, CheckCheck,
+  Share2, AtSign, Megaphone, CheckCheck, Users,
 } from "lucide-react";
 import { useScrollLock } from "@/hooks/useScrollLock";
 
@@ -11,7 +11,7 @@ export type NotifType =
   | "follow" | "like" | "comment" | "mention"
   | "message"
   | "share" | "system" | "video_new" | "video_like"
-  | "video_comment";
+  | "video_comment" | "sala_add";
 
 export interface Notif {
   id: number | string;
@@ -23,6 +23,8 @@ export interface Notif {
   detail?: string;
   time: string;
   read: boolean;
+  /** Slug da sala — só para type === "sala_add", usado para navegar ao clicar. */
+  salaSlug?: string;
 }
 
 export const SAMPLE_NOTIFICATIONS: Notif[] = [];
@@ -40,6 +42,7 @@ function notifIcon(type: NotifType) {
     case "video_new":    return <span className={cls} style={{fontSize:10}}>▶</span>;
     case "video_like":   return <Heart className={cls} />;
     case "video_comment": return <MessageCircle className={cls} />;
+    case "sala_add":     return <Users className={cls} />;
   }
 }
 
@@ -55,6 +58,7 @@ function notifBg(type: NotifType) {
     case "video_new":    return "#1FAFA6";
     case "video_like":   return "#2F6FED";
     case "video_comment": return "#2F6FED";
+    case "sala_add":     return "#6BA547";
     default:             return "#2F6FED";
   }
 }
