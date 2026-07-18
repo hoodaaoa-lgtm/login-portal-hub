@@ -43,6 +43,8 @@ import {
   Check,
   AlignLeft,
   LogOut,
+  UserPlus,
+  Search,
 } from "lucide-react";
 
 const P = "#2F6FED";
@@ -227,6 +229,186 @@ function PapelBadge({ isOwner, papel }: { isOwner: boolean; papel: "admin" | "me
   return null;
 }
 
+/* ── Modal: adicionar um contacto diretamente à sala (admin) ── */
+function AddSalaMemberModal({
+  myId,
+  excludeIds,
+  onClose,
+  onAdd,
+}: {
+  myId: string;
+  excludeIds: string[];
+  onClose: () => void;
+  onAdd: (userId: string) => Promise<void>;
+}) {
+  const [loading, setLoading] = useState(true);
+  const [contacts, setContacts] = useState<
+    { id: string; username?: string; full_name?: string; avatar_url?: string }[]
+  >([]);
+  const [search, setSearch] = useState("");
+  const [addingId, setAddingId] = useState<string | null>(null);
+  const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      try {
+        const { data: parts } = await supabase
+          .from("conversation_participants")
+          .select("conversation_id")
+          .eq("user_id", myId);
+        const convIds = ((parts as any[]) ?? []).map((p) => p.conversation_id);
+        if (convIds.length === 0) {
+          if (!cancelled) setContacts([]);
+          return;
+        }
+        // Excluir conversas de Salas — só interessam as conversas 1-para-1
+        // (os "meus contactos" de facto).
+        const { data: salasConvs } = await supabase
+          .from("salas" as any)
+          .select("conversation_id");
+        const salaConvIdSet = new Set(((salasConvs as any[]) ?? []).map((s) => s.conversation_id));
+        const dmConvIds = convIds.filter((id) => !salaConvIdSet.has(id));
+        if (dmConvIds.length === 0) {
+          if (!cancelled) setContacts([]);
+          return;
+        }
+        const { data: otherParts } = await supabase
+          .from("conversation_participants")
+          .select("user_id,conversation_id")
+          .in("conversation_id", dmConvIds)
+          .neq("user_id", myId);
+        const otherIds = Array.from(new Set(((otherParts as any[]) ?? []).map((p) => p.user_id)));
+        if (otherIds.length === 0) {
+          if (!cancelled) setContacts([]);
+          return;
+        }
+        const { data: profs } = await supabase
+          .from("profiles")
+          .select("id,username,full_name,avatar_url")
+          .in("id", otherIds);
+        if (!cancelled) setContacts((profs as any[]) ?? []);
+      } catch (e) {
+        console.error("[AddSalaMemberModal] erro ao carregar contactos:", e);
+        if (!cancelled) setContacts([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [myId]);
+
+  const excludeSet = new Set(excludeIds);
+  const filtered = contacts
+    .filter((c) => !excludeSet.has(c.id))
+    .filter((c) => {
+      if (!search.trim()) return true;
+      const q = search.trim().toLowerCase();
+      return (c.username ?? "").toLowerCase().includes(q) || (c.full_name ?? "").toLowerCase().includes(q);
+    });
+
+  const handleAdd = async (userId: string) => {
+    setAddingId(userId);
+    try {
+      await onAdd(userId);
+      setAddedIds((prev) => new Set(prev).add(userId));
+    } catch {
+      // erro já é mostrado via toast pelo handler do pai
+    } finally {
+      setAddingId(null);
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center"
+      style={{ background: "rgba(0,0,0,0.55)" }}
+      onClick={onClose}
+    >
+      <div
+        className="w-full sm:max-w-sm rounded-t-3xl sm:rounded-3xl p-4 max-h-[80vh] flex flex-col"
+        style={{ background: "var(--s0)" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-3 shrink-0">
+          <h2 className="text-lg font-extrabold" style={{ color: "var(--text-primary)" }}>
+            Adicionar à sala
+          </h2>
+          <button onClick={onClose} className="p-1.5 rounded-full" style={{ background: "var(--s2)" }}>
+            <X className="w-4 h-4" style={{ color: "var(--text-muted)" }} />
+          </button>
+        </div>
+        <div
+          className="flex items-center gap-2 pl-3.5 pr-3 h-10 rounded-xl mb-3 shrink-0"
+          style={{ background: "var(--s2)", border: "1px solid var(--border-subtle)" }}
+        >
+          <Search className="h-4 w-4 shrink-0" style={{ color: "var(--text-muted)" }} />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Pesquisar nos teus contactos..."
+            className="flex-1 bg-transparent text-sm outline-none"
+            style={{ color: "var(--text-primary)" }}
+          />
+        </div>
+        <div className="flex-1 overflow-y-auto -mx-1 px-1">
+          {loading ? (
+            <div className="flex items-center justify-center py-10">
+              <Loader2 className="w-5 h-5 animate-spin" style={{ color: "var(--text-muted)" }} />
+            </div>
+          ) : filtered.length === 0 ? (
+            <p className="text-sm text-center py-10" style={{ color: "var(--text-muted)" }}>
+              {contacts.length === 0
+                ? "Ainda não tens contactos para adicionar."
+                : "Ninguém encontrado."}
+            </p>
+          ) : (
+            filtered.map((c) => {
+              const already = addedIds.has(c.id);
+              return (
+                <div key={c.id} className="flex items-center gap-3 p-2">
+                  <Av src={c.avatar_url} name={c.full_name || c.username} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold truncate" style={{ color: "var(--text-primary)" }}>
+                      {c.full_name || c.username || "Utilizador"}
+                    </p>
+                    {c.username && (
+                      <p className="text-xs truncate" style={{ color: "var(--text-muted)" }}>
+                        @{c.username}
+                      </p>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => handleAdd(c.id)}
+                    disabled={already || addingId === c.id}
+                    className="px-3 h-8 rounded-full text-xs font-bold shrink-0 disabled:opacity-60"
+                    style={
+                      already
+                        ? { background: "var(--s2)", color: "var(--text-muted)" }
+                        : { background: "#2F6FED", color: "#fff" }
+                    }
+                  >
+                    {addingId === c.id ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : already ? (
+                      "Adicionado"
+                    ) : (
+                      "Adicionar"
+                    )}
+                  </button>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ── Membros drawer (com ações de administração) ── */
 function MembrosPanel({
   membros,
@@ -238,6 +420,7 @@ function MembrosPanel({
   onDespromover,
   onTogglePodeEnviar,
   onBanir,
+  onAbrirAdicionar,
 }: {
   membros: Membro[];
   criadorId: string;
@@ -248,6 +431,7 @@ function MembrosPanel({
   onDespromover: (userId: string) => void;
   onTogglePodeEnviar: (userId: string, atual: boolean) => void;
   onBanir: (userId: string, nome: string) => void;
+  onAbrirAdicionar?: () => void;
 }) {
   const [openFor, setOpenFor] = useState<string | null>(null);
 
@@ -266,13 +450,24 @@ function MembrosPanel({
           <h2 className="text-lg font-extrabold" style={{ color: "var(--text-primary)" }}>
             Membros · {membros.length}
           </h2>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-full"
-            style={{ background: "var(--s2)" }}
-          >
-            <X className="w-4 h-4" style={{ color: "var(--text-muted)" }} />
-          </button>
+          <div className="flex items-center gap-2">
+            {souAdmin && onAbrirAdicionar && (
+              <button
+                onClick={onAbrirAdicionar}
+                className="flex items-center gap-1 px-2.5 h-7 rounded-full text-white text-xs font-bold active:scale-95"
+                style={{ background: "#2F6FED" }}
+              >
+                <UserPlus className="w-3.5 h-3.5" /> Adicionar
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-full"
+              style={{ background: "var(--s2)" }}
+            >
+              <X className="w-4 h-4" style={{ color: "var(--text-muted)" }} />
+            </button>
+          </div>
         </div>
         <div className="space-y-1">
           {membros.map((m) => {
@@ -390,11 +585,13 @@ function DefinicoesPanel({
   quemPodeEscrever,
   onDefinirModo,
   onVerMembros,
+  onAbrirAdicionar,
   onClose,
 }: {
   quemPodeEscrever: "todos" | "selecionados";
   onDefinirModo: (modo: "todos" | "selecionados") => void;
   onVerMembros: () => void;
+  onAbrirAdicionar?: () => void;
   onClose: () => void;
 }) {
   return (
@@ -480,6 +677,15 @@ function DefinicoesPanel({
           </p>
         )}
 
+        {onAbrirAdicionar && (
+          <button
+            onClick={onAbrirAdicionar}
+            className="w-full flex items-center gap-2 px-4 py-3.5 rounded-xl text-sm font-bold text-left mt-2"
+            style={{ background: "var(--s1)", color: "var(--text-primary)" }}
+          >
+            <UserPlus className="w-4 h-4" /> Adicionar amigo
+          </button>
+        )}
         <button
           onClick={onVerMembros}
           className="w-full flex items-center gap-2 px-4 py-3.5 rounded-xl text-sm font-bold text-left mt-2"
@@ -1370,6 +1576,7 @@ export function SalaPanel({ slug, onBack }: { slug: string; onBack: () => void }
   // ChatPanel, aplicada a todo o grupo em vez de um único contacto).
   const [salaOnline, setSalaOnline] = useState(false);
   const [showMembros, setShowMembros] = useState(false);
+  const [showAddMembro, setShowAddMembro] = useState(false);
   const [showBanidos, setShowBanidos] = useState(false);
   const [showDefinicoes, setShowDefinicoes] = useState(false);
   const [showSalaInfo, setShowSalaInfo] = useState(false);
@@ -1886,6 +2093,21 @@ export function SalaPanel({ slug, onBack }: { slug: string; onBack: () => void }
     }
     setBanidos((prev) => prev.filter((b) => b.user_id !== userId));
     toast.success("Membro desbanido.");
+  };
+
+  const handleAdicionarMembro = async (userId: string) => {
+    if (!sala) return;
+    const { error } = await supabase.rpc("sala_adicionar_membro" as any, {
+      p_sala_id: sala.id,
+      p_user_id: userId,
+    });
+    if (error) {
+      toast.error(error.message);
+      throw error;
+    }
+    // Recarrega membros + contagem para refletir a adição imediatamente.
+    await load();
+    toast.success("Pessoa adicionada à sala.");
   };
 
   const handleDefinirModo = async (modo: "todos" | "selecionados") => {
@@ -2586,6 +2808,15 @@ export function SalaPanel({ slug, onBack }: { slug: string; onBack: () => void }
           onDespromover={handleDespromover}
           onTogglePodeEnviar={handleTogglePodeEnviar}
           onBanir={handleBanir}
+          onAbrirAdicionar={() => setShowAddMembro(true)}
+        />
+      )}
+      {showAddMembro && (
+        <AddSalaMemberModal
+          myId={uid}
+          excludeIds={membros.map((m) => m.user_id)}
+          onClose={() => setShowAddMembro(false)}
+          onAdd={handleAdicionarMembro}
         />
       )}
       {showSalaInfo && (
@@ -2640,6 +2871,14 @@ export function SalaPanel({ slug, onBack }: { slug: string; onBack: () => void }
             setShowDefinicoes(false);
             setShowMembros(true);
           }}
+          onAbrirAdicionar={
+            isAdmin
+              ? () => {
+                  setShowDefinicoes(false);
+                  setShowAddMembro(true);
+                }
+              : undefined
+          }
           onClose={() => setShowDefinicoes(false)}
         />
       )}
