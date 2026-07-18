@@ -58,7 +58,19 @@ type Membro = {
   username?: string;
   full_name?: string;
   avatar_url?: string;
+  is_online?: boolean;
+  last_seen?: string | null;
 };
+
+/** Limiar para considerar um utilizador "online agora" — mesma regra do
+ * ChatPanel (mensagens.tsx): heartbeat a cada 30s, tolerância de 90s. Não
+ * confiamos só na flag is_online porque não há forma fiável de a apagar
+ * quando a pessoa fecha a aba/app. */
+const ONLINE_THRESHOLD_MS = 90_000;
+function isOnlineNow(isOnline: boolean | null | undefined, lastSeen: string | null | undefined) {
+  if (!isOnline || !lastSeen) return false;
+  return Date.now() - new Date(lastSeen).getTime() < ONLINE_THRESHOLD_MS;
+}
 
 type Msg = {
   id: string;
@@ -648,6 +660,11 @@ export function SalaPanel({ slug, onBack }: { slug: string; onBack: () => void }
   const [isAdmin, setIsAdmin] = useState(false);
   const [joining, setJoining] = useState(false);
   const [membros, setMembros] = useState<Membro[]>([]);
+  // Presença agregada da sala: true se QUALQUER membro (além de mim) estiver
+  // online no site agora — não precisa de ter a sala aberta, só estar
+  // online em qualquer parte do Baya (mesma lógica do "online agora" do
+  // ChatPanel, aplicada a todo o grupo em vez de um único contacto).
+  const [salaOnline, setSalaOnline] = useState(false);
   const [showMembros, setShowMembros] = useState(false);
   const [showOpcoes, setShowOpcoes] = useState(false);
   const [showBanidos, setShowBanidos] = useState(false);
@@ -713,7 +730,7 @@ export function SalaPanel({ slug, onBack }: { slug: string; onBack: () => void }
     if (userIds.length) {
       const { data: profs } = await supabase
         .from("profiles")
-        .select("id,username,full_name,avatar_url")
+        .select("id,username,full_name,avatar_url,is_online,last_seen")
         .in("id", userIds);
       ((profs as any[]) ?? []).forEach((p) => {
         profileMap[p.id] = p;
@@ -727,6 +744,8 @@ export function SalaPanel({ slug, onBack }: { slug: string; onBack: () => void }
         username: profileMap[r.user_id]?.username,
         full_name: profileMap[r.user_id]?.full_name,
         avatar_url: profileMap[r.user_id]?.avatar_url,
+        is_online: profileMap[r.user_id]?.is_online,
+        last_seen: profileMap[r.user_id]?.last_seen,
       })),
     );
 
@@ -837,6 +856,36 @@ export function SalaPanel({ slug, onBack }: { slug: string; onBack: () => void }
     atBottom.current = isAtBottom;
     setShowScrollBtn(!isAtBottom);
   }
+
+  // ── Presença agregada da sala ──
+  // A sala fica "online" se QUALQUER membro (que não eu) estiver online no
+  // site agora, em qualquer parte do Baya — não é preciso ter esta sala
+  // aberta. Consulta ao entrar e depois a cada 20s, igual ao polling do
+  // contacto no ChatPanel (get_contact_presence).
+  const otherMemberIds = membros.map((m) => m.user_id).filter((id) => id !== uid);
+  const otherMemberIdsKey = otherMemberIds.join(",");
+  useEffect(() => {
+    if (!otherMemberIdsKey) {
+      setSalaOnline(false);
+      return;
+    }
+    let mounted = true;
+    async function loadSalaPresence() {
+      const { data } = await supabase
+        .from("profiles")
+        .select("id,is_online,last_seen")
+        .in("id", otherMemberIdsKey.split(","));
+      if (!mounted) return;
+      const anyOnline = ((data as any[]) ?? []).some((p) => isOnlineNow(p.is_online, p.last_seen));
+      setSalaOnline(anyOnline);
+    }
+    loadSalaPresence();
+    const id = setInterval(loadSalaPresence, 20000);
+    return () => {
+      mounted = false;
+      clearInterval(id);
+    };
+  }, [otherMemberIdsKey]);
 
   // Pesquisa de GIFs (Tenor) — mesmo comportamento do ChatPanel.
   useEffect(() => {
@@ -1214,18 +1263,26 @@ export function SalaPanel({ slug, onBack }: { slug: string; onBack: () => void }
             >
               <ArrowLeft className="h-5 w-5" style={{ color: "var(--text-primary)" }} />
             </button>
-            <div
-              className="h-10 w-10 rounded-full overflow-hidden flex items-center justify-center shrink-0 font-bold text-white"
-              style={{ background: sala.foto_url ? "transparent" : P }}
-            >
-              {sala.foto_url ? (
-                <img
-                  src={optimizeAvatar(sala.foto_url, 80)}
-                  alt=""
-                  className="w-full h-full object-cover"
+            <div className="relative h-10 w-10 shrink-0">
+              <div
+                className="h-10 w-10 rounded-full overflow-hidden flex items-center justify-center font-bold text-white"
+                style={{ background: sala.foto_url ? "transparent" : P }}
+              >
+                {sala.foto_url ? (
+                  <img
+                    src={optimizeAvatar(sala.foto_url, 80)}
+                    alt=""
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  sala.nome[0]?.toUpperCase()
+                )}
+              </div>
+              {salaOnline && (
+                <span
+                  className="absolute bottom-0 right-0 w-3 h-3 rounded-full"
+                  style={{ background: "#31D158", border: "2px solid var(--s0,#fff)" }}
                 />
-              ) : (
-                sala.nome[0]?.toUpperCase()
               )}
             </div>
             <div className="flex-1 min-w-0 cursor-pointer" onClick={() => setShowMembros(true)}>
@@ -1238,10 +1295,19 @@ export function SalaPanel({ slug, onBack }: { slug: string; onBack: () => void }
               </p>
               <p
                 className="text-[11px] flex items-center gap-1"
-                style={{ color: "var(--text-muted)" }}
+                style={{ color: salaOnline ? "#31D158" : "var(--text-muted)" }}
               >
-                <Users className="w-3 h-3" /> {fmtN(sala.membros_count)} membro
-                {sala.membros_count === 1 ? "" : "s"}
+                {salaOnline ? (
+                  <>
+                    <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: "#31D158" }} />
+                    online agora
+                  </>
+                ) : (
+                  <>
+                    <Users className="w-3 h-3" /> {fmtN(sala.membros_count)} membro
+                    {sala.membros_count === 1 ? "" : "s"}
+                  </>
+                )}
               </p>
             </div>
             {!isMember && (
