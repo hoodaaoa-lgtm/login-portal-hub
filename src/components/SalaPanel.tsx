@@ -37,6 +37,12 @@ import {
   ChevronDown,
   Reply,
   Trash2,
+  Settings,
+  Flag,
+  Copy,
+  Check,
+  AlignLeft,
+  LogOut,
 } from "lucide-react";
 
 const P = "#2F6FED";
@@ -485,61 +491,373 @@ function DefinicoesPanel({
   );
 }
 
-/* ── Menu de opções (três pontinhos) ── */
-function OpcoesMenu({
+/* ── Info da sala (aberto pela engrenagem no cabeçalho) ──
+   Estilo "info de canal" — avatar grande, tipo, ações rápidas,
+   link/subdomínio da sala e a descrição. */
+function SalaInfoModal({
+  sala,
+  isMember,
   isAdmin,
+  joining,
+  onJoin,
+  onSair,
+  saindo,
   onVerMembros,
   onVerBanidos,
   onDefinicoes,
+  onDenunciar,
   onClose,
 }: {
+  sala: Sala;
+  isMember: boolean;
   isAdmin: boolean;
+  joining: boolean;
+  onJoin: () => void;
+  onSair: () => void;
+  saindo: boolean;
   onVerMembros: () => void;
   onVerBanidos: () => void;
   onDefinicoes: () => void;
+  onDenunciar: () => void;
   onClose: () => void;
 }) {
+  const [showMais, setShowMais] = useState(false);
+  const [copiado, setCopiado] = useState(false);
+  const info = TIPO_INFO[sala.tipo];
+  const link =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/salas/${sala.slug}`
+      : `/salas/${sala.slug}`;
+
+  const copiarLink = async () => {
+    try {
+      await navigator.clipboard.writeText(link);
+      setCopiado(true);
+      toast.success("Link copiado.");
+      setTimeout(() => setCopiado(false), 1800);
+    } catch {
+      toast.error("Não foi possível copiar o link.");
+    }
+  };
+
   return (
-    <div className="fixed inset-0 z-[100]" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-[100] flex justify-end"
+      style={{ background: "rgba(0,0,0,0.5)" }}
+      onClick={onClose}
+    >
       <div
-        className="absolute right-4 top-14 w-56 rounded-xl overflow-hidden shadow-lg"
-        style={{ background: "var(--s1)", border: "1px solid var(--border-subtle)" }}
+        className="w-full sm:max-w-sm h-full overflow-y-auto"
+        style={{ background: "var(--s0)" }}
         onClick={(e) => e.stopPropagation()}
       >
-        <button
-          onClick={() => {
-            onVerMembros();
-            onClose();
-          }}
-          className="w-full flex items-center gap-2 px-4 py-3 text-sm font-bold text-left"
-          style={{ color: "var(--text-primary)" }}
-        >
-          <Users className="w-4 h-4" /> Ver membros
-        </button>
-        {isAdmin && (
-          <>
+        {/* Topo */}
+        <div className="flex items-center px-3 py-3">
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-full"
+            style={{ background: "var(--s2)" }}
+          >
+            <ArrowLeft className="w-4 h-4" style={{ color: "var(--text-primary)" }} />
+          </button>
+        </div>
+
+        {/* Avatar + nome + tipo */}
+        <div className="flex flex-col items-center px-4 pb-5">
+          <div
+            className="h-24 w-24 rounded-full overflow-hidden flex items-center justify-center font-bold text-white text-3xl shrink-0"
+            style={{ background: sala.foto_url ? "transparent" : P }}
+          >
+            {sala.foto_url ? (
+              <img
+                src={optimizeAvatar(sala.foto_url, 200)}
+                alt=""
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              sala.nome[0]?.toUpperCase()
+            )}
+          </div>
+          <p
+            className="text-lg font-extrabold mt-3 text-center"
+            style={{ color: "var(--text-primary)" }}
+          >
+            {sala.nome}
+          </p>
+          <p
+            className="text-sm mt-0.5 flex items-center gap-1"
+            style={{ color: "var(--text-muted)" }}
+          >
+            <info.Icon className="w-3.5 h-3.5" style={{ color: info.color }} />
+            {sala.tipo === "anuncios" ? "canal de anúncios" : `sala ${info.label.toLowerCase()}`}
+          </p>
+        </div>
+
+        {/* Ações rápidas */}
+        <div className="grid grid-cols-3 gap-2 px-4 pb-5">
+          {isMember ? (
+            <button
+              onClick={onSair}
+              disabled={saindo}
+              className="flex flex-col items-center justify-center gap-1.5 py-3 rounded-2xl disabled:opacity-60"
+              style={{ background: "var(--s2)" }}
+            >
+              {saindo ? (
+                <Loader2 className="w-4 h-4 animate-spin" style={{ color: "#e0245e" }} />
+              ) : (
+                <LogOut className="w-4 h-4" style={{ color: "#e0245e" }} />
+              )}
+              <span className="text-[11px] font-bold" style={{ color: "#e0245e" }}>
+                Sair
+              </span>
+            </button>
+          ) : (
+            <button
+              onClick={onJoin}
+              disabled={joining}
+              className="flex flex-col items-center justify-center gap-1.5 py-3 rounded-2xl disabled:opacity-60"
+              style={{ background: "var(--s2)" }}
+            >
+              {joining ? (
+                <Loader2 className="w-4 h-4 animate-spin" style={{ color: P }} />
+              ) : (
+                <DoorOpen className="w-4 h-4" style={{ color: P }} />
+              )}
+              <span className="text-[11px] font-bold" style={{ color: P }}>
+                Entrar
+              </span>
+            </button>
+          )}
+          <button
+            onClick={onDenunciar}
+            className="flex flex-col items-center justify-center gap-1.5 py-3 rounded-2xl"
+            style={{ background: "var(--s2)" }}
+          >
+            <Flag className="w-4 h-4" style={{ color: "var(--text-secondary)" }} />
+            <span className="text-[11px] font-bold" style={{ color: "var(--text-secondary)" }}>
+              Denunciar
+            </span>
+          </button>
+          <button
+            onClick={() => setShowMais((v) => !v)}
+            className="flex flex-col items-center justify-center gap-1.5 py-3 rounded-2xl"
+            style={{ background: "var(--s2)" }}
+          >
+            <MoreVertical className="w-4 h-4" style={{ color: "var(--text-secondary)" }} />
+            <span className="text-[11px] font-bold" style={{ color: "var(--text-secondary)" }}>
+              Mais
+            </span>
+          </button>
+        </div>
+
+        {showMais && (
+          <div
+            className="mx-4 mb-5 rounded-2xl overflow-hidden"
+            style={{ background: "var(--s1)" }}
+          >
             <button
               onClick={() => {
-                onDefinicoes();
-                onClose();
+                setShowMais(false);
+                onVerMembros();
               }}
-              className="w-full flex items-center gap-2 px-4 py-3 text-sm font-bold text-left border-t"
-              style={{ color: "var(--text-primary)", borderColor: "var(--border-subtle)" }}
+              className="w-full flex items-center gap-2 px-4 py-3 text-sm font-bold text-left"
+              style={{ color: "var(--text-primary)" }}
             >
-              <UserCog className="w-4 h-4" /> Definições da sala
+              <Users className="w-4 h-4" /> Ver membros
             </button>
-            <button
-              onClick={() => {
-                onVerBanidos();
-                onClose();
-              }}
-              className="w-full flex items-center gap-2 px-4 py-3 text-sm font-bold text-left border-t"
-              style={{ color: "var(--text-primary)", borderColor: "var(--border-subtle)" }}
-            >
-              <Ghost className="w-4 h-4" /> Membros banidos
-            </button>
-          </>
+            {isAdmin && (
+              <>
+                <button
+                  onClick={() => {
+                    setShowMais(false);
+                    onDefinicoes();
+                  }}
+                  className="w-full flex items-center gap-2 px-4 py-3 text-sm font-bold text-left border-t"
+                  style={{ color: "var(--text-primary)", borderColor: "var(--border-subtle)" }}
+                >
+                  <UserCog className="w-4 h-4" /> Definições da sala
+                </button>
+                <button
+                  onClick={() => {
+                    setShowMais(false);
+                    onVerBanidos();
+                  }}
+                  className="w-full flex items-center gap-2 px-4 py-3 text-sm font-bold text-left border-t"
+                  style={{ color: "var(--text-primary)", borderColor: "var(--border-subtle)" }}
+                >
+                  <Ghost className="w-4 h-4" /> Membros banidos
+                </button>
+              </>
+            )}
+          </div>
         )}
+
+        {/* Link / subdomínio da sala */}
+        <div className="px-4 pb-2">
+          <p
+            className="text-[11px] font-bold uppercase mb-1.5 px-1"
+            style={{ color: "var(--text-muted)" }}
+          >
+            Link da sala
+          </p>
+          <button
+            onClick={copiarLink}
+            className="w-full flex items-center justify-between gap-2 px-4 py-3 rounded-2xl text-left"
+            style={{ background: "var(--s1)" }}
+          >
+            <span className="text-sm truncate" style={{ color: P }}>
+              {link.replace(/^https?:\/\//, "")}
+            </span>
+            {copiado ? (
+              <Check className="w-4 h-4 shrink-0" style={{ color: "#31D158" }} />
+            ) : (
+              <Copy className="w-4 h-4 shrink-0" style={{ color: "var(--text-muted)" }} />
+            )}
+          </button>
+        </div>
+
+        {/* Descrição */}
+        <div className="px-4 py-4">
+          <p
+            className="text-[11px] font-bold uppercase mb-1.5 px-1"
+            style={{ color: "var(--text-muted)" }}
+          >
+            Descrição
+          </p>
+          <div
+            className="px-4 py-3 rounded-2xl flex items-start gap-2"
+            style={{ background: "var(--s1)" }}
+          >
+            <AlignLeft className="w-4 h-4 mt-0.5 shrink-0" style={{ color: "var(--text-muted)" }} />
+            <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+              {sala.descricao || "Esta sala ainda não tem descrição."}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Denunciar sala — mesma estrutura/UX do modal de denunciar perfil ── */
+function DenunciarSalaModal({
+  salaId,
+  salaNome,
+  reporterId,
+  onClose,
+}: {
+  salaId: string;
+  salaNome: string;
+  reporterId: string;
+  onClose: () => void;
+}) {
+  const [reason, setReason] = useState("");
+  const [sending, setSending] = useState(false);
+  const [done, setDone] = useState(false);
+
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, []);
+
+  const reasons = [
+    "Spam ou conteúdo enganoso",
+    "Assédio ou bullying",
+    "Conteúdo inapropriado",
+    "Sala falsa ou impostura",
+    "Venda de produtos ilegais",
+    "Outro motivo",
+  ];
+
+  async function send() {
+    if (!reason || sending) return;
+    setSending(true);
+    try {
+      await (supabase as any).from("reports").insert({
+        reporter_id: reporterId,
+        reported_sala_id: salaId,
+        reason,
+        kind: "sala",
+      });
+    } catch (_) {
+      // silencioso — a denúncia é best-effort, não bloqueia o utilizador
+    }
+    setDone(true);
+    setTimeout(() => onClose(), 1600);
+    setSending(false);
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-[110] flex items-center justify-center p-0 sm:p-4"
+      style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div
+        className="w-full sm:max-w-sm rounded-3xl overflow-hidden shadow-2xl"
+        style={{ background: "var(--s0)" }}
+      >
+        <div
+          className="flex items-center justify-between px-5 py-4 border-b"
+          style={{ borderColor: "var(--border-subtle)" }}
+        >
+          <div className="flex items-center gap-2">
+            <Flag className="w-4 h-4" style={{ color: "#e0245e" }} />
+            <span className="font-bold text-sm" style={{ color: "var(--text-primary)" }}>
+              Denunciar {salaNome}
+            </span>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-[var(--s2)]"
+          >
+            <X className="w-4 h-4" style={{ color: "var(--text-muted)" }} />
+          </button>
+        </div>
+        <div className="p-5 space-y-2.5">
+          {done ? (
+            <div className="py-8 text-center">
+              <p className="text-3xl mb-2">✅</p>
+              <p className="font-bold" style={{ color: "var(--text-primary)" }}>
+                Denúncia enviada
+              </p>
+              <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>
+                Obrigado pelo teu feedback.
+              </p>
+            </div>
+          ) : (
+            <>
+              <p className="text-sm mb-3" style={{ color: "var(--text-muted)" }}>
+                Porque queres denunciar esta sala?
+              </p>
+              {reasons.map((r) => (
+                <button
+                  key={r}
+                  onClick={() => setReason(r)}
+                  className="w-full text-left px-4 py-2.5 rounded-2xl text-sm border transition"
+                  style={{
+                    borderColor: reason === r ? "#e0245e" : "var(--border-subtle)",
+                    background: reason === r ? "#e0245e10" : "var(--s1)",
+                    color: "var(--text-primary)",
+                    fontWeight: reason === r ? 600 : 400,
+                  }}
+                >
+                  {r}
+                </button>
+              ))}
+              <button
+                onClick={send}
+                disabled={!reason || sending}
+                className="w-full h-11 rounded-2xl font-bold text-sm text-white mt-2 transition disabled:opacity-40"
+                style={{ background: "#e0245e" }}
+              >
+                {sending ? "A enviar..." : "Enviar denúncia"}
+              </button>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -1041,9 +1359,11 @@ export function SalaPanel({ slug, onBack }: { slug: string; onBack: () => void }
   // ChatPanel, aplicada a todo o grupo em vez de um único contacto).
   const [salaOnline, setSalaOnline] = useState(false);
   const [showMembros, setShowMembros] = useState(false);
-  const [showOpcoes, setShowOpcoes] = useState(false);
   const [showBanidos, setShowBanidos] = useState(false);
   const [showDefinicoes, setShowDefinicoes] = useState(false);
+  const [showSalaInfo, setShowSalaInfo] = useState(false);
+  const [showDenunciarSala, setShowDenunciarSala] = useState(false);
+  const [saindo, setSaindo] = useState(false);
   const [banidos, setBanidos] = useState<
     { user_id: string; username?: string; full_name?: string; avatar_url?: string }[]
   >([]);
@@ -1407,6 +1727,24 @@ export function SalaPanel({ slug, onBack }: { slug: string; onBack: () => void }
       toast.error(e?.message ?? "Não foi possível entrar na sala.");
     } finally {
       setJoining(false);
+    }
+  };
+
+  const handleSair = async () => {
+    if (!uid || !sala) return;
+    setSaindo(true);
+    try {
+      const { error } = await supabase.rpc("sala_sair" as any, { p_sala_id: sala.id });
+      if (error) throw error;
+      setIsMember(false);
+      setIsAdmin(false);
+      setShowSalaInfo(false);
+      setSala((s) => (s ? { ...s, membros_count: Math.max(0, s.membros_count - 1) } : s));
+      toast.success("Saíste da sala.");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Não foi possível sair da sala.");
+    } finally {
+      setSaindo(false);
     }
   };
 
@@ -1856,13 +2194,13 @@ export function SalaPanel({ slug, onBack }: { slug: string; onBack: () => void }
               </button>
             )}
             <button
-              onClick={() => setShowOpcoes(true)}
+              onClick={() => setShowSalaInfo(true)}
               className="p-2 rounded-full transition active:scale-90"
               style={{ background: "transparent", color: "var(--text-secondary)" }}
               onMouseOver={(e) => (e.currentTarget.style.background = "var(--s2)")}
               onMouseOut={(e) => (e.currentTarget.style.background = "transparent")}
             >
-              <MoreVertical className="h-4 w-4" />
+              <Settings className="h-4 w-4" />
             </button>
           </div>
           {sala.descricao && (
@@ -2123,16 +2461,41 @@ export function SalaPanel({ slug, onBack }: { slug: string; onBack: () => void }
           onBanir={handleBanir}
         />
       )}
-      {showOpcoes && (
-        <OpcoesMenu
+      {showSalaInfo && (
+        <SalaInfoModal
+          sala={sala}
+          isMember={isMember}
           isAdmin={isAdmin}
-          onVerMembros={() => setShowMembros(true)}
+          joining={joining}
+          onJoin={handleJoin}
+          onSair={handleSair}
+          saindo={saindo}
+          onVerMembros={() => {
+            setShowSalaInfo(false);
+            setShowMembros(true);
+          }}
           onVerBanidos={() => {
+            setShowSalaInfo(false);
             carregarBanidos();
             setShowBanidos(true);
           }}
-          onDefinicoes={() => setShowDefinicoes(true)}
-          onClose={() => setShowOpcoes(false)}
+          onDefinicoes={() => {
+            setShowSalaInfo(false);
+            setShowDefinicoes(true);
+          }}
+          onDenunciar={() => {
+            setShowSalaInfo(false);
+            setShowDenunciarSala(true);
+          }}
+          onClose={() => setShowSalaInfo(false)}
+        />
+      )}
+      {showDenunciarSala && (
+        <DenunciarSalaModal
+          salaId={sala.id}
+          salaNome={sala.nome}
+          reporterId={uid}
+          onClose={() => setShowDenunciarSala(false)}
         />
       )}
       {showBanidos && (
