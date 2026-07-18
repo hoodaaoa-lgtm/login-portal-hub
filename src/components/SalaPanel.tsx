@@ -7,8 +7,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { extractUrl } from "@/lib/linkPreview";
 import { LinkPreview } from "@/components/LinkPreview";
-import { VIDEO_STICKERS } from "@/lib/stickers";
 import { StickerView } from "@/components/StickerView";
+import { ChatPicker } from "@/components/ChatPicker";
 import {
   ArrowLeft,
   Users,
@@ -663,7 +663,12 @@ export function SalaPanel({ slug, onBack }: { slug: string; onBack: () => void }
     type: "image" | "video";
     preview: string;
   } | null>(null);
-  const [showStickers, setShowStickers] = useState(false);
+  const [showEmoji, setShowEmoji] = useState(false);
+  const [pickerTab, setPickerTab] = useState<"emoji" | "gif" | "sticker">("emoji");
+  const [emojiSearch, setEmojiSearch] = useState("");
+  const [gifSearch, setGifSearch] = useState("");
+  const [gifs, setGifs] = useState<{ id: string; url: string }[]>([]);
+  const [gifLoading, setGifLoading] = useState(false);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const atBottom = useRef(true);
   const imgInputRef = useRef<HTMLInputElement>(null);
@@ -827,6 +832,26 @@ export function SalaPanel({ slug, onBack }: { slug: string; onBack: () => void }
     atBottom.current = isAtBottom;
     setShowScrollBtn(!isAtBottom);
   }
+
+  // Pesquisa de GIFs (Tenor) — mesmo comportamento do ChatPanel.
+  useEffect(() => {
+    if (!gifSearch || pickerTab !== "gif") return;
+    const tenorKey = import.meta.env.VITE_TENOR_API_KEY as string | undefined;
+    if (!tenorKey) {
+      setGifs([]);
+      return;
+    }
+    const t = setTimeout(async () => {
+      setGifLoading(true);
+      try {
+        const r = await fetch(`https://tenor.googleapis.com/v2/search?q=${encodeURIComponent(gifSearch)}&key=${tenorKey}&limit=20&media_filter=gif`);
+        const j = await r.json();
+        setGifs((j.results ?? []).map((x: any) => ({ id: x.id, url: x.media_formats?.gif?.url ?? "" })));
+      } catch { setGifs([]); }
+      setGifLoading(false);
+    }, 400);
+    return () => clearTimeout(t);
+  }, [gifSearch, pickerTab]);
 
   // Realtime: reflete ao vivo mudanças de permissões, cargos e definições da sala
   useEffect(() => {
@@ -1065,7 +1090,7 @@ export function SalaPanel({ slug, onBack }: { slug: string; onBack: () => void }
 
   const handleSendSticker = async (url: string) => {
     if (!sala || !uid || sending) return;
-    setShowStickers(false);
+    setShowEmoji(false);
     setSending(true);
     try {
       const { error } = await supabase.from("messages").insert({
@@ -1073,6 +1098,27 @@ export function SalaPanel({ slug, onBack }: { slug: string; onBack: () => void }
         sender_id: uid,
         content: null,
         message_type: "sticker",
+        media_url: url,
+        status: "sent",
+      } as any);
+      if (error) throw error;
+    } catch (e: any) {
+      toast.error(e?.message ?? "Não foi possível enviar.");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleSendGif = async (url: string) => {
+    if (!sala || !uid || sending) return;
+    setShowEmoji(false);
+    setSending(true);
+    try {
+      const { error } = await supabase.from("messages").insert({
+        conversation_id: sala.conversation_id,
+        sender_id: uid,
+        content: null,
+        message_type: "image",
         media_url: url,
         status: "sent",
       } as any);
@@ -1297,22 +1343,16 @@ export function SalaPanel({ slug, onBack }: { slug: string; onBack: () => void }
                   </button>
                 </div>
               )}
-              {showStickers && (
-                <div
-                  className="grid grid-cols-4 gap-2 mb-2 p-2 rounded-2xl overflow-y-auto"
-                  style={{ background: "var(--s2)", maxHeight: 220 }}
-                >
-                  {VIDEO_STICKERS.map((s) => (
-                    <button
-                      key={s.id}
-                      onClick={() => handleSendSticker(s.url)}
-                      className="flex items-center justify-center rounded-2xl overflow-hidden active:scale-90 transition-all"
-                      style={{ height: 64, background: "var(--s1)" }}
-                    >
-                      <StickerView url={s.url} size={64} />
-                    </button>
-                  ))}
-                </div>
+              {showEmoji && (
+                <ChatPicker
+                  tab={pickerTab} setTab={setPickerTab}
+                  emojiSearch={emojiSearch} setEmojiSearch={setEmojiSearch}
+                  gifSearch={gifSearch} setGifSearch={setGifSearch}
+                  gifs={gifs} gifLoading={gifLoading}
+                  onEmoji={(e) => setText((p) => p + e)}
+                  onSticker={handleSendSticker}
+                  onGif={handleSendGif}
+                />
               )}
               <div className="flex items-center gap-2">
                 <button
@@ -1376,9 +1416,9 @@ export function SalaPanel({ slug, onBack }: { slug: string; onBack: () => void }
                     style={{ color: "var(--text-primary,#111)" }}
                   />
                   <button
-                    onClick={() => setShowStickers((v) => !v)}
+                    onClick={() => setShowEmoji((v) => !v)}
                     className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center transition active:scale-90"
-                    style={{ color: showStickers ? "#2F6FED" : "#aaa" }}
+                    style={{ color: showEmoji ? "#2F6FED" : "#aaa" }}
                   >
                     <Smile className="h-5 w-5" />
                   </button>
