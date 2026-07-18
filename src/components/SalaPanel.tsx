@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { uploadImageToCloudinary } from "@/lib/cloudinary";
 import { uploadFeedVideo } from "@/lib/cloudinaryFeedVideo";
 import { optimizeAvatar, optimizePostPhoto } from "@/lib/imageOptimize";
 import { useAuth } from "@/contexts/AuthContext";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "sonner";
 import { extractUrl } from "@/lib/linkPreview";
 import { LinkPreview } from "@/components/LinkPreview";
@@ -33,9 +35,12 @@ import {
   Ghost,
   Smile,
   ChevronDown,
+  Reply,
+  Trash2,
 } from "lucide-react";
 
 const P = "#2F6FED";
+const REACTION_EMOJIS = ["❤️", "🔥", "😂", "👍", "😮", "😢"];
 
 type Sala = {
   id: string;
@@ -80,9 +85,14 @@ type Msg = {
   message_type: string;
   media_url: string | null;
   created_at: string;
+  reply_to?: string | null;
   sender?: { username?: string; full_name?: string; avatar_url?: string };
   likeCount?: number;
   likedByMe?: boolean;
+  reactions?: Record<string, number>;
+  myReaction?: string;
+  deletedForMe?: boolean;
+  deletedForAll?: boolean;
 };
 
 const TIPO_INFO = {
@@ -90,6 +100,76 @@ const TIPO_INFO = {
   privada: { label: "Privada", Icon: Lock, color: "#6BA547" },
   anuncios: { label: "Anúncios", Icon: Megaphone, color: "#FFC93C" },
 } as const;
+
+/* ── Barra de reações — mesma lógica/visual do ChatPanel ── */
+function ReactionBar({
+  reactions,
+  myReaction,
+  onReact,
+}: {
+  reactions?: Record<string, number>;
+  myReaction?: string | null;
+  onReact: (emoji: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const total = Object.values(reactions ?? {}).reduce((s, v) => s + v, 0);
+  if (total === 0 && !open)
+    return (
+      <button
+        onClick={() => setOpen(true)}
+        className="opacity-0 group-hover:opacity-100 transition-opacity text-[13px] px-1.5 py-0.5 rounded-full"
+        style={{ background: "var(--s3)", color: "var(--text-muted)" }}
+      >
+        +
+      </button>
+    );
+  return (
+    <div className="relative flex items-center gap-1 flex-wrap mt-0.5">
+      {Object.entries(reactions ?? {})
+        .filter(([, v]) => v > 0)
+        .map(([emoji, count]) => (
+          <button
+            key={emoji}
+            onClick={() => onReact(emoji)}
+            className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[12px] transition active:scale-90"
+            style={{
+              background: myReaction === emoji ? `${P}20` : "var(--s3)",
+              border: myReaction === emoji ? `1px solid ${P}50` : "1px solid var(--border-subtle)",
+            }}
+          >
+            {emoji} <span style={{ fontSize: 10, color: "var(--text-secondary)" }}>{count}</span>
+          </button>
+        ))}
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[12px] opacity-0 group-hover:opacity-100 transition"
+        style={{ background: "var(--s3)", color: "var(--text-muted)" }}
+      >
+        +
+      </button>
+      {open && (
+        <div
+          className="absolute bottom-7 left-0 flex items-center gap-1 px-2 py-1.5 rounded-2xl shadow-xl z-30"
+          style={{ background: "var(--s0)", border: "1px solid var(--border-default)" }}
+          onMouseLeave={() => setOpen(false)}
+        >
+          {REACTION_EMOJIS.map((e) => (
+            <button
+              key={e}
+              onClick={() => {
+                onReact(e);
+                setOpen(false);
+              }}
+              className="text-xl hover:scale-125 active:scale-90 transition-transform w-8 h-8 flex items-center justify-center rounded-full hover:bg-[var(--s2)]"
+            >
+              {e}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function fmtN(n: number) {
   return n >= 1000 ? `${(n / 1000).toFixed(1)}K` : String(n ?? 0);
@@ -552,13 +632,159 @@ function MsgBubble({
   m,
   isMe,
   isAnuncio,
+  replied,
   onLike,
+  onReply,
+  onReact,
+  onDeleteForMe,
+  onDeleteForEveryone,
 }: {
   m: Msg;
   isMe: boolean;
   isAnuncio: boolean;
+  replied: Msg | null;
   onLike: () => void;
+  onReply: () => void;
+  onReact: (emoji: string) => void;
+  onDeleteForMe: () => void;
+  onDeleteForEveryone: () => void;
 }) {
+  const isMobile = useIsMobile();
+  const [showMenu, setShowMenu] = useState(false);
+  const [confirmDel, setConfirmDel] = useState<"me" | "all" | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const actionFired = useRef(false);
+  const [isPressing, setIsPressing] = useState(false);
+
+  useEffect(() => {
+    if (!showMenu) return;
+    const fn = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setShowMenu(false);
+    };
+    document.addEventListener("click", fn);
+    return () => document.removeEventListener("click", fn);
+  }, [showMenu]);
+  useEffect(
+    () => () => {
+      if (longPressTimer.current) clearTimeout(longPressTimer.current);
+    },
+    [],
+  );
+
+  const LONG_PRESS_MS = 420;
+  function handleTouchStart() {
+    if (!isMobile) return;
+    actionFired.current = false;
+    setIsPressing(true);
+    longPressTimer.current = setTimeout(() => {
+      actionFired.current = true;
+      setShowMenu(true);
+      setIsPressing(false);
+      if (navigator.vibrate) navigator.vibrate(15);
+    }, LONG_PRESS_MS);
+  }
+  function handleTouchMove() {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+    setIsPressing(false);
+  }
+  function handleTouchEnd(e: React.TouchEvent) {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+    setIsPressing(false);
+    if (actionFired.current) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  }
+  function closeMenu() {
+    setShowMenu(false);
+  }
+
+  // Ações partilhadas entre o dropdown do desktop (hover) e o bottom sheet
+  // do mobile (long-press) — mesmo padrão do ChatPanel.
+  const menuActions = (
+    <>
+      <div
+        className="flex items-center justify-center gap-2.5 px-3 py-3 border-b"
+        style={{ borderColor: "var(--border-subtle)" }}
+      >
+        {REACTION_EMOJIS.map((emoji) => (
+          <button
+            key={emoji}
+            onClick={() => {
+              onReact(emoji);
+              closeMenu();
+            }}
+            className="text-2xl transition active:scale-90 hover:scale-125 px-0.5"
+          >
+            {emoji}
+          </button>
+        ))}
+      </div>
+      <button
+        onClick={() => {
+          onReply();
+          closeMenu();
+        }}
+        className="w-full flex items-center gap-2.5 px-4 py-3.5 text-sm transition active:opacity-70"
+        onMouseOver={(e) => (e.currentTarget.style.background = "var(--s2)")}
+        onMouseOut={(e) => (e.currentTarget.style.background = "transparent")}
+      >
+        <Reply className="h-4 w-4" style={{ color: P }} />
+        <span style={{ color: "var(--text-primary)" }}>Responder</span>
+      </button>
+      <button
+        onClick={() => {
+          setConfirmDel("me");
+          closeMenu();
+        }}
+        className="w-full flex items-center gap-2.5 px-4 py-3.5 text-sm transition border-t active:opacity-70"
+        style={{ borderColor: "var(--border-subtle)" }}
+        onMouseOver={(e) => (e.currentTarget.style.background = "var(--s2)")}
+        onMouseOut={(e) => (e.currentTarget.style.background = "transparent")}
+      >
+        <Trash2 className="h-4 w-4" style={{ color: "#F97316" }} />
+        <span style={{ color: "var(--text-primary)" }}>Eliminar para mim</span>
+      </button>
+      {isMe && (
+        <button
+          onClick={() => {
+            setConfirmDel("all");
+            closeMenu();
+          }}
+          className="w-full flex items-center gap-2.5 px-4 py-3.5 text-sm transition border-t active:opacity-70"
+          style={{ borderColor: "var(--border-subtle)" }}
+          onMouseOver={(e) => (e.currentTarget.style.background = "#fee2e2")}
+          onMouseOut={(e) => (e.currentTarget.style.background = "transparent")}
+        >
+          <Trash2 className="h-4 w-4" style={{ color: "#EF4444" }} />
+          <span style={{ color: "#EF4444" }}>Eliminar para todos</span>
+        </button>
+      )}
+    </>
+  );
+
+  // Placeholder: mensagem eliminada para todos.
+  if (m.deletedForAll) {
+    return (
+      <div className={`flex ${isMe ? "justify-end" : "justify-start"} px-1 mb-3`}>
+        <div
+          className="flex items-center gap-1.5 px-3 py-2 rounded-2xl text-xs italic"
+          style={{ background: isMe ? `${P}22` : "var(--s2)", color: "var(--text-muted)" }}
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+          <span>Esta mensagem foi eliminada</span>
+        </div>
+      </div>
+    );
+  }
+
   const isSticker = m.message_type === "sticker";
   const bubbleBg = isSticker ? "transparent" : isMe ? P : "var(--s1)";
   const bubbleText = isMe ? "white" : "var(--text-primary)";
@@ -570,12 +796,17 @@ function MsgBubble({
       : "0 1px 3px rgba(0,0,0,0.05)";
 
   return (
-    <div className={`flex ${isMe ? "justify-end" : "justify-start"} items-end gap-1.5 px-1 mb-3`}>
+    <div
+      className={`flex ${isMe ? "justify-end" : "justify-start"} group items-end gap-1.5 px-1 mb-3`}
+    >
       {!isMe && (
         <Av src={m.sender?.avatar_url} name={m.sender?.full_name || m.sender?.username} size={26} />
       )}
       <div
-        className={`max-w-[82%] sm:max-w-[75%] min-w-0 flex flex-col ${isMe ? "items-end" : "items-start"}`}
+        className={`max-w-[82%] sm:max-w-[75%] min-w-0 relative flex flex-col ${isMe ? "items-end" : "items-start"}`}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
       >
         {!isMe && (
           <span
@@ -585,6 +816,66 @@ function MsgBubble({
             {m.sender?.full_name || m.sender?.username || "Utilizador"}
           </span>
         )}
+
+        {/* Ações — desktop: flutuam ao passar o rato. Mobile: pressionar e segurar. */}
+        {!isMobile && (
+          <div
+            className={`absolute ${isMe ? "right-full mr-1" : "left-full ml-1"} top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition flex items-center gap-0.5 z-10`}
+          >
+            <button
+              onClick={onReply}
+              className="shrink-0 rounded-full flex items-center justify-center shadow-sm w-7 h-7"
+              style={{ background: "rgba(0,0,0,0.12)", color: "var(--text-secondary)" }}
+            >
+              <Reply className="h-3.5 w-3.5" />
+            </button>
+            <div className="relative" ref={menuRef}>
+              <button
+                onClick={() => setShowMenu((v) => !v)}
+                className="shrink-0 rounded-full flex items-center justify-center shadow-sm w-7 h-7"
+                style={{ background: "rgba(0,0,0,0.12)", color: "var(--text-secondary)" }}
+              >
+                <MoreVertical className="h-3.5 w-3.5" />
+              </button>
+              {showMenu && (
+                <div
+                  className={`absolute ${isMe ? "right-0" : "left-0"} bottom-full mb-1 rounded-2xl shadow-2xl z-30 overflow-hidden min-w-[190px] max-w-[85vw] border`}
+                  style={{ background: "var(--s0)", borderColor: "var(--border-default)" }}
+                >
+                  {menuActions}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Mobile: bottom sheet fixo, aberto por long-press na bolha. */}
+        {showMenu &&
+          isMobile &&
+          createPortal(
+            <div
+              className="fixed inset-0 z-[9999] flex items-end"
+              style={{ background: "rgba(0,0,0,0.5)" }}
+              onClick={closeMenu}
+            >
+              <div
+                className="w-full rounded-t-3xl overflow-hidden shadow-2xl animate-in slide-in-from-bottom duration-200"
+                style={{ background: "var(--s0)", maxHeight: "80vh", overflowY: "auto" }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex justify-center pt-2.5 pb-1">
+                  <div
+                    className="w-10 h-1 rounded-full"
+                    style={{ background: "var(--border-default)" }}
+                  />
+                </div>
+                {menuActions}
+                <div style={{ height: "env(safe-area-inset-bottom, 12px)" }} />
+              </div>
+            </div>,
+            document.body,
+          )}
+
         <div
           className="rounded-2xl overflow-hidden shadow-sm"
           style={{
@@ -592,8 +883,41 @@ function MsgBubble({
             color: bubbleText,
             borderRadius: br,
             boxShadow: bubbleShadow,
+            transform: isPressing ? "scale(0.97)" : undefined,
+            transition: "transform 0.15s",
           }}
         >
+          {/* Faixa de resposta */}
+          {replied && (
+            <div className="px-3 pt-2 pb-0">
+              <div
+                className="px-2 py-1 rounded-lg text-xs"
+                style={{
+                  background: isMe ? "rgba(255,255,255,0.2)" : "var(--s3)",
+                  borderLeft: `3px solid ${isMe ? "white" : P}`,
+                }}
+              >
+                <p
+                  className="font-bold mb-0.5"
+                  style={{ color: isMe ? "rgba(255,255,255,0.9)" : P }}
+                >
+                  {replied.sender?.full_name || replied.sender?.username || "Utilizador"}
+                </p>
+                <p
+                  className="truncate"
+                  style={{ color: isMe ? "rgba(255,255,255,0.75)" : "var(--text-secondary)" }}
+                >
+                  {replied.message_type === "image"
+                    ? "📷 Imagem"
+                    : replied.message_type === "video"
+                      ? "🎥 Vídeo"
+                      : replied.message_type === "sticker"
+                        ? "Sticker"
+                        : replied.content}
+                </p>
+              </div>
+            </div>
+          )}
           {m.message_type === "image" && m.media_url && (
             <img
               src={optimizePostPhoto(m.media_url, 500)}
@@ -630,7 +954,8 @@ function MsgBubble({
             </div>
           )}
         </div>
-        {isAnuncio && (
+
+        {isAnuncio ? (
           <button
             onClick={onLike}
             className="flex items-center gap-1 mt-1 px-1 text-xs font-bold"
@@ -639,8 +964,58 @@ function MsgBubble({
             <Heart className="w-3.5 h-3.5" fill={m.likedByMe ? "#e0245e" : "none"} />
             {fmtN(m.likeCount ?? 0)}
           </button>
+        ) : (
+          <div className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
+            <ReactionBar reactions={m.reactions} myReaction={m.myReaction} onReact={onReact} />
+          </div>
         )}
       </div>
+
+      {/* Confirmar eliminação */}
+      {confirmDel &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[9999] flex items-center justify-center"
+            style={{ background: "rgba(0,0,0,0.5)" }}
+            onClick={() => setConfirmDel(null)}
+          >
+            <div
+              className="rounded-2xl p-5 mx-6 max-w-xs w-full shadow-2xl"
+              style={{ background: "var(--s0)" }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <p className="font-bold text-sm mb-1" style={{ color: "var(--text-primary)" }}>
+                {confirmDel === "all" ? "Eliminar para todos?" : "Eliminar para mim?"}
+              </p>
+              <p className="text-xs mb-4" style={{ color: "var(--text-muted)" }}>
+                {confirmDel === "all"
+                  ? "A mensagem será removida para todos os membros da sala."
+                  : "A mensagem desaparece só para ti."}
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setConfirmDel(null)}
+                  className="flex-1 py-2 rounded-xl text-sm font-semibold"
+                  style={{ background: "var(--s2)", color: "var(--text-secondary)" }}
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={() => {
+                    if (confirmDel === "all") onDeleteForEveryone();
+                    else onDeleteForMe();
+                    setConfirmDel(null);
+                  }}
+                  className="flex-1 py-2 rounded-xl text-sm font-bold text-white"
+                  style={{ background: confirmDel === "all" ? "#EF4444" : "#F97316" }}
+                >
+                  Eliminar
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }
@@ -673,6 +1048,27 @@ export function SalaPanel({ slug, onBack }: { slug: string; onBack: () => void }
     { user_id: string; username?: string; full_name?: string; avatar_url?: string }[]
   >([]);
   const [msgs, setMsgs] = useState<Msg[]>([]);
+  const [replyTo, setReplyTo] = useState<Msg | null>(null);
+  // "Eliminar para mim" — guardado por sala neste dispositivo, para a
+  // mensagem não voltar a aparecer depois de sair e voltar (mesma lógica
+  // do ChatPanel).
+  const [localOverrides, setLocalOverrides] = useState<Record<string, { deletedForMe?: boolean }>>(
+    () => {
+      try {
+        if (typeof window === "undefined") return {};
+        const raw = localStorage.getItem(`baya_sala_hidden_${slug}`);
+        if (!raw) return {};
+        const ids: string[] = JSON.parse(raw);
+        const initial: Record<string, { deletedForMe?: boolean }> = {};
+        ids.forEach((id) => {
+          initial[id] = { deletedForMe: true };
+        });
+        return initial;
+      } catch {
+        return {};
+      }
+    },
+  );
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const [pendingMedia, setPendingMedia] = useState<{
@@ -751,7 +1147,7 @@ export function SalaPanel({ slug, onBack }: { slug: string; onBack: () => void }
 
     const { data: msgRowsDesc } = await supabase
       .from("messages")
-      .select("id,conversation_id,sender_id,content,message_type,media_url,created_at")
+      .select("id,conversation_id,sender_id,content,message_type,media_url,created_at,reply_to")
       .eq("conversation_id", s.conversation_id)
       .eq("deleted_for_all", false)
       .order("created_at", { ascending: false })
@@ -775,15 +1171,26 @@ export function SalaPanel({ slug, onBack }: { slug: string; onBack: () => void }
     }
     const msgIds = ((msgRows as any[]) ?? []).map((m) => m.id);
     const likeMap: Record<string, { count: number; me: boolean }> = {};
-    if (s.tipo === "anuncios" && msgIds.length) {
+    // Reações — para todas as mensagens (não só anúncios), igual ao
+    // ChatPanel. Nas salas de anúncios continuamos a tratar qualquer
+    // reação como "❤️ curtir" (comportamento já existente); nas outras
+    // salas mostramos a barra completa de reações por emoji.
+    const reactionsMap: Record<string, Record<string, number>> = {};
+    const myReactionMap: Record<string, string> = {};
+    if (msgIds.length) {
       const { data: rx } = await supabase
         .from("message_reactions" as any)
-        .select("message_id,user_id")
+        .select("message_id,user_id,emoji")
         .in("message_id", msgIds);
       ((rx as any[]) ?? []).forEach((r) => {
-        if (!likeMap[r.message_id]) likeMap[r.message_id] = { count: 0, me: false };
-        likeMap[r.message_id].count += 1;
-        if (r.user_id === uid) likeMap[r.message_id].me = true;
+        if (!reactionsMap[r.message_id]) reactionsMap[r.message_id] = {};
+        reactionsMap[r.message_id][r.emoji] = (reactionsMap[r.message_id][r.emoji] ?? 0) + 1;
+        if (r.user_id === uid) myReactionMap[r.message_id] = r.emoji;
+        if (s.tipo === "anuncios") {
+          if (!likeMap[r.message_id]) likeMap[r.message_id] = { count: 0, me: false };
+          likeMap[r.message_id].count += 1;
+          if (r.user_id === uid) likeMap[r.message_id].me = true;
+        }
       });
     }
     setMsgs(
@@ -792,6 +1199,9 @@ export function SalaPanel({ slug, onBack }: { slug: string; onBack: () => void }
         sender: senderMap[m.sender_id],
         likeCount: likeMap[m.id]?.count ?? 0,
         likedByMe: likeMap[m.id]?.me ?? false,
+        reactions: reactionsMap[m.id] ?? {},
+        myReaction: myReactionMap[m.id],
+        deletedForMe: localOverrides[m.id]?.deletedForMe ?? false,
       })),
     );
     setLoading(false);
@@ -833,7 +1243,27 @@ export function SalaPanel({ slug, onBack }: { slug: string; onBack: () => void }
                 }
               : undefined;
           }
-          setMsgs((prev) => [...prev, { ...row, sender, likeCount: 0, likedByMe: false }]);
+          setMsgs((prev) => [
+            ...prev,
+            { ...row, sender, likeCount: 0, likedByMe: false, reactions: {}, deletedForMe: false },
+          ]);
+        },
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "messages",
+          filter: `conversation_id=eq.${sala.conversation_id}`,
+        },
+        (payload) => {
+          const row: any = payload.new;
+          if (row.deleted_for_all) {
+            setMsgs((prev) =>
+              prev.map((x) => (x.id === row.id ? { ...x, deletedForAll: true } : x)),
+            );
+          }
         },
       )
       .subscribe();
@@ -898,10 +1328,16 @@ export function SalaPanel({ slug, onBack }: { slug: string; onBack: () => void }
     const t = setTimeout(async () => {
       setGifLoading(true);
       try {
-        const r = await fetch(`https://tenor.googleapis.com/v2/search?q=${encodeURIComponent(gifSearch)}&key=${tenorKey}&limit=20&media_filter=gif`);
+        const r = await fetch(
+          `https://tenor.googleapis.com/v2/search?q=${encodeURIComponent(gifSearch)}&key=${tenorKey}&limit=20&media_filter=gif`,
+        );
         const j = await r.json();
-        setGifs((j.results ?? []).map((x: any) => ({ id: x.id, url: x.media_formats?.gif?.url ?? "" })));
-      } catch { setGifs([]); }
+        setGifs(
+          (j.results ?? []).map((x: any) => ({ id: x.id, url: x.media_formats?.gif?.url ?? "" })),
+        );
+      } catch {
+        setGifs([]);
+      }
       setGifLoading(false);
     }, 400);
     return () => clearTimeout(t);
@@ -1131,10 +1567,12 @@ export function SalaPanel({ slug, onBack }: { slug: string; onBack: () => void }
         message_type,
         media_url,
         status: "sent",
+        reply_to: replyTo?.id ?? null,
       } as any);
       if (error) throw error;
       setText("");
       setPendingMedia(null);
+      setReplyTo(null);
     } catch (e: any) {
       toast.error(e?.message ?? "Não foi possível enviar.");
     } finally {
@@ -1214,6 +1652,95 @@ export function SalaPanel({ slug, onBack }: { slug: string; onBack: () => void }
       /* best-effort */
     }
   };
+
+  // ── Reagir (emoji livre, uma reação por pessoa por mensagem) — mesma
+  // lógica do ChatPanel: clicar no mesmo emoji remove, clicar noutro troca. ──
+  const handleReact = async (msgId: string, emoji: string) => {
+    if (!uid) return;
+    const current = msgs.find((x) => x.id === msgId);
+    try {
+      if (current?.myReaction === emoji) {
+        await supabase
+          .from("message_reactions" as any)
+          .delete()
+          .eq("message_id", msgId)
+          .eq("user_id", uid);
+        setMsgs((prev) =>
+          prev.map((m) => {
+            if (m.id !== msgId) return m;
+            const r = { ...(m.reactions ?? {}) };
+            if (r[emoji]) r[emoji] = Math.max(0, r[emoji] - 1);
+            return { ...m, reactions: r, myReaction: undefined };
+          }),
+        );
+      } else if (current?.myReaction) {
+        await supabase
+          .from("message_reactions" as any)
+          .update({ emoji })
+          .eq("message_id", msgId)
+          .eq("user_id", uid);
+        setMsgs((prev) =>
+          prev.map((m) => {
+            if (m.id !== msgId) return m;
+            const r = { ...(m.reactions ?? {}) };
+            if (m.myReaction && r[m.myReaction]) r[m.myReaction] = Math.max(0, r[m.myReaction] - 1);
+            r[emoji] = (r[emoji] ?? 0) + 1;
+            return { ...m, reactions: r, myReaction: emoji };
+          }),
+        );
+      } else {
+        await supabase
+          .from("message_reactions" as any)
+          .insert({ message_id: msgId, user_id: uid, emoji });
+        setMsgs((prev) =>
+          prev.map((m) => {
+            if (m.id !== msgId) return m;
+            const r = { ...(m.reactions ?? {}) };
+            r[emoji] = (r[emoji] ?? 0) + 1;
+            return { ...m, reactions: r, myReaction: emoji };
+          }),
+        );
+      }
+    } catch {
+      toast.error("Erro ao reagir");
+    }
+  };
+
+  // ── Eliminar para mim ──
+  // Guardado no localStorage por sala para a mensagem continuar escondida
+  // mesmo depois de sair e voltar à sala ou dar refresh.
+  const HIDDEN_KEY = `baya_sala_hidden_${slug}`;
+  function deleteForMe(id: string) {
+    setMsgs((prev) => prev.map((m) => (m.id === id ? { ...m, deletedForMe: true } : m)));
+    setLocalOverrides((p) => ({ ...p, [id]: { deletedForMe: true } }));
+    try {
+      const raw = localStorage.getItem(HIDDEN_KEY);
+      const ids: string[] = raw ? JSON.parse(raw) : [];
+      if (!ids.includes(id)) {
+        ids.push(id);
+        localStorage.setItem(HIDDEN_KEY, JSON.stringify(ids));
+      }
+    } catch {}
+    toast.success("Mensagem eliminada para ti");
+  }
+
+  // ── Eliminar para todos ── (só quem enviou)
+  // Marca localmente primeiro (resposta instantânea) — só confirma depois
+  // de o Supabase confirmar; se falhar, volta atrás e avisa.
+  async function deleteForEveryone(id: string) {
+    setMsgs((prev) => prev.map((m) => (m.id === id ? { ...m, deletedForAll: true } : m)));
+    const { error } = await supabase
+      .from("messages")
+      .update({ deleted_for_all: true } as any)
+      .eq("id", id);
+    if (error) {
+      console.error("[deleteForEveryone] falhou:", error);
+      setMsgs((prev) => prev.map((m) => (m.id === id ? { ...m, deletedForAll: false } : m)));
+      toast.error("Não foi possível eliminar para todos. Tenta novamente.");
+      return;
+    }
+    toast.success("Mensagem eliminada para todos");
+  }
 
   if (loading) {
     return (
@@ -1299,7 +1826,10 @@ export function SalaPanel({ slug, onBack }: { slug: string; onBack: () => void }
               >
                 {salaOnline ? (
                   <>
-                    <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: "#31D158" }} />
+                    <span
+                      className="w-1.5 h-1.5 rounded-full shrink-0"
+                      style={{ background: "#31D158" }}
+                    />
                     online agora
                   </>
                 ) : (
@@ -1345,22 +1875,29 @@ export function SalaPanel({ slug, onBack }: { slug: string; onBack: () => void }
         {/* Mensagens */}
         <div className="flex-1 overflow-y-auto px-4 py-4 relative" onScroll={handleMsgsScroll}>
           <div className="flex flex-col justify-end min-h-full">
-            {msgs.length === 0 ? (
+            {msgs.filter((m) => !m.deletedForMe).length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 gap-2">
                 <p className="text-sm font-bold" style={{ color: "var(--text-muted)" }}>
                   Ainda não há publicações nesta sala.
                 </p>
               </div>
             ) : (
-              msgs.map((m) => (
-                <MsgBubble
-                  key={m.id}
-                  m={m}
-                  isMe={m.sender_id === uid}
-                  isAnuncio={sala.tipo === "anuncios"}
-                  onLike={() => handleLike(m)}
-                />
-              ))
+              msgs
+                .filter((m) => !m.deletedForMe)
+                .map((m) => (
+                  <MsgBubble
+                    key={m.id}
+                    m={m}
+                    isMe={m.sender_id === uid}
+                    isAnuncio={sala.tipo === "anuncios"}
+                    replied={m.reply_to ? (msgs.find((x) => x.id === m.reply_to) ?? null) : null}
+                    onLike={() => handleLike(m)}
+                    onReply={() => setReplyTo(m)}
+                    onReact={(emoji) => handleReact(m.id, emoji)}
+                    onDeleteForMe={() => deleteForMe(m.id)}
+                    onDeleteForEveryone={() => deleteForEveryone(m.id)}
+                  />
+                ))
             )}
             <div ref={bottomRef} />
           </div>
@@ -1384,6 +1921,35 @@ export function SalaPanel({ slug, onBack }: { slug: string; onBack: () => void }
           >
             <ChevronDown className="h-4 w-4" />
           </button>
+        )}
+
+        {/* Faixa de resposta — mesmo padrão do ChatPanel */}
+        {replyTo && isMember && canPost && (
+          <div
+            className="flex items-center gap-2 px-3 py-2 shrink-0 border-t"
+            style={{ borderColor: `${P}44`, background: "var(--s2)" }}
+          >
+            <div
+              className="flex-1 px-3 py-1.5 rounded-xl border-l-4 min-w-0"
+              style={{ borderColor: P, background: "var(--s3)" }}
+            >
+              <p className="text-[11px] font-bold" style={{ color: P }}>
+                {replyTo.sender?.full_name || replyTo.sender?.username || "Utilizador"}
+              </p>
+              <p className="text-[11px] truncate" style={{ color: "var(--text-secondary)" }}>
+                {replyTo.message_type === "image"
+                  ? "📷 Imagem"
+                  : replyTo.message_type === "video"
+                    ? "🎥 Vídeo"
+                    : replyTo.message_type === "sticker"
+                      ? "Sticker"
+                      : replyTo.content}
+              </p>
+            </div>
+            <button onClick={() => setReplyTo(null)}>
+              <X className="h-4 w-4" style={{ color: "var(--text-muted)" }} />
+            </button>
+          </div>
         )}
 
         {/* Composer — mesmo estilo (pílula arredondada) da barra de input do Chat */}
@@ -1418,10 +1984,14 @@ export function SalaPanel({ slug, onBack }: { slug: string; onBack: () => void }
               )}
               {showEmoji && (
                 <ChatPicker
-                  tab={pickerTab} setTab={setPickerTab}
-                  emojiSearch={emojiSearch} setEmojiSearch={setEmojiSearch}
-                  gifSearch={gifSearch} setGifSearch={setGifSearch}
-                  gifs={gifs} gifLoading={gifLoading}
+                  tab={pickerTab}
+                  setTab={setPickerTab}
+                  emojiSearch={emojiSearch}
+                  setEmojiSearch={setEmojiSearch}
+                  gifSearch={gifSearch}
+                  setGifSearch={setGifSearch}
+                  gifs={gifs}
+                  gifLoading={gifLoading}
                   onEmoji={(e) => setText((p) => p + e)}
                   onSticker={handleSendSticker}
                   onGif={handleSendGif}
