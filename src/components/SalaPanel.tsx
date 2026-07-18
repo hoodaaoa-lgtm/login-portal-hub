@@ -1344,24 +1344,26 @@ export function SalaPanel({ slug, onBack }: { slug: string; onBack: () => void }
 
         {/* Mensagens */}
         <div className="flex-1 overflow-y-auto px-4 py-4 relative" onScroll={handleMsgsScroll}>
-          {msgs.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 gap-2">
-              <p className="text-sm font-bold" style={{ color: "var(--text-muted)" }}>
-                Ainda não há publicações nesta sala.
-              </p>
-            </div>
-          ) : (
-            msgs.map((m) => (
-              <MsgBubble
-                key={m.id}
-                m={m}
-                isMe={m.sender_id === uid}
-                isAnuncio={sala.tipo === "anuncios"}
-                onLike={() => handleLike(m)}
-              />
-            ))
-          )}
-          <div ref={bottomRef} />
+          <div className="flex flex-col justify-end min-h-full">
+            {msgs.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 gap-2">
+                <p className="text-sm font-bold" style={{ color: "var(--text-muted)" }}>
+                  Ainda não há publicações nesta sala.
+                </p>
+              </div>
+            ) : (
+              msgs.map((m) => (
+                <MsgBubble
+                  key={m.id}
+                  m={m}
+                  isMe={m.sender_id === uid}
+                  isAnuncio={sala.tipo === "anuncios"}
+                  onLike={() => handleLike(m)}
+                />
+              ))
+            )}
+            <div ref={bottomRef} />
+          </div>
         </div>
         {showScrollBtn && (
           <button
