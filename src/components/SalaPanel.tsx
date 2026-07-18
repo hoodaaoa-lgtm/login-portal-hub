@@ -11,6 +11,7 @@ import { extractUrl } from "@/lib/linkPreview";
 import { LinkPreview } from "@/components/LinkPreview";
 import { StickerView } from "@/components/StickerView";
 import { ChatPicker } from "@/components/ChatPicker";
+import { UniversalSkeleton } from "@/components/Skeletons";
 import {
   ArrowLeft,
   Users,
@@ -1564,8 +1565,26 @@ export function SalaPanel({ slug, onBack }: { slug: string; onBack: () => void }
   const { user } = useAuth();
   const uid = user?.id ?? "";
 
-  const [sala, setSala] = useState<Sala | null>(null);
-  const [loading, setLoading] = useState(true);
+  // ── Cache local permanente (por sala) — mostra a sala e as mensagens
+  // instantaneamente ao reabrir, em vez do spinner cheio de ecrã a cada
+  // vez; o load() por trás continua a refrescar na mesma. Mesma ideia
+  // do cache de conversas 1-para-1 no ChatPanel. ──
+  const SALA_META_CACHE_KEY = `hooda_sala_meta_${slug}`;
+  const SALA_MSGS_CACHE_KEY = `hooda_sala_msgs_${slug}`;
+
+  const [sala, setSala] = useState<Sala | null>(() => {
+    try {
+      if (typeof window === "undefined") return null;
+      const raw = localStorage.getItem(SALA_META_CACHE_KEY);
+      return raw ? (JSON.parse(raw) as Sala) : null;
+    } catch { return null; }
+  });
+  const [loading, setLoading] = useState(() => {
+    try {
+      if (typeof window === "undefined") return true;
+      return !localStorage.getItem(SALA_META_CACHE_KEY);
+    } catch { return true; }
+  });
   const [isMember, setIsMember] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [joining, setJoining] = useState(false);
@@ -1585,7 +1604,28 @@ export function SalaPanel({ slug, onBack }: { slug: string; onBack: () => void }
   const [banidos, setBanidos] = useState<
     { user_id: string; username?: string; full_name?: string; avatar_url?: string }[]
   >([]);
-  const [msgs, setMsgs] = useState<Msg[]>([]);
+  const [msgs, setMsgs] = useState<Msg[]>(() => {
+    try {
+      if (typeof window === "undefined") return [];
+      const raw = localStorage.getItem(SALA_MSGS_CACHE_KEY);
+      return raw ? (JSON.parse(raw) as Msg[]) : [];
+    } catch { return []; }
+  });
+
+  function saveSalaMetaCache(s: Sala | null) {
+    try {
+      if (typeof window === "undefined" || !s) return;
+      localStorage.setItem(SALA_META_CACHE_KEY, JSON.stringify(s));
+    } catch {}
+  }
+  function saveSalaMsgsCache(messages: Msg[]) {
+    try {
+      if (typeof window === "undefined") return;
+      // Não guardar mensagens temporárias (ainda a enviar) na cache.
+      const clean = messages.filter((m) => !String(m.id).startsWith("temp-")).slice(-200);
+      localStorage.setItem(SALA_MSGS_CACHE_KEY, JSON.stringify(clean));
+    } catch {}
+  }
   const [replyTo, setReplyTo] = useState<Msg | null>(null);
   // "Eliminar para mim" — guardado por sala neste dispositivo, para a
   // mensagem não voltar a aparecer depois de sair e voltar (mesma lógica
@@ -1631,7 +1671,9 @@ export function SalaPanel({ slug, onBack }: { slug: string; onBack: () => void }
   const instanceIdRef = useRef(`${Date.now()}-${Math.random().toString(36).slice(2)}`);
 
   const load = async () => {
-    setLoading(true);
+    // Só bloqueia o ecrã com o spinner se ainda não há nada em cache para
+    // mostrar — com cache, o refresh acontece em silêncio por trás.
+    if (!sala) setLoading(true);
     const { data: salaData } = await supabase
       .from("salas" as any)
       .select("*")
@@ -1639,6 +1681,7 @@ export function SalaPanel({ slug, onBack }: { slug: string; onBack: () => void }
       .maybeSingle();
     const s = salaData as unknown as Sala | null;
     setSala(s);
+    saveSalaMetaCache(s);
     if (!s) {
       setLoading(false);
       return;
@@ -1748,6 +1791,14 @@ export function SalaPanel({ slug, onBack }: { slug: string; onBack: () => void }
   useEffect(() => {
     load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */
   }, [slug, uid]);
+
+  // Mantém a cache local sempre sincronizada com o estado atual das
+  // mensagens (novas, editadas, reagidas, eliminadas, etc.) — cobre todos
+  // os pontos que fazem setMsgs sem ter de repetir o saveCache em cada um.
+  useEffect(() => {
+    saveSalaMsgsCache(msgs);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [msgs]);
 
   useEffect(() => {
     if (!sala) return;
@@ -2429,10 +2480,23 @@ export function SalaPanel({ slug, onBack }: { slug: string; onBack: () => void }
     toast.success("Mensagem eliminada para todos");
   }
 
-  if (loading) {
+  // Só mostra o skeleton de carregamento se ainda não há NADA em cache
+  // (primeira vez a abrir esta sala neste dispositivo). Havendo cache, o
+  // painel renderiza já com o conteúdo anterior enquanto o load() atualiza
+  // por trás — sem o "flash" de ecrã em branco a cada entrada na sala.
+  if (loading && !sala) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <Loader2 className="w-6 h-6 animate-spin" style={{ color: P }} />
+      <div className="flex flex-col h-full">
+        <div className="flex items-center gap-3 px-4 py-3 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle,#f0f0f0)" }}>
+          <div className="w-10 h-10 rounded-full animate-pulse" style={{ background: "var(--s2)" }} />
+          <div className="flex-1 space-y-2">
+            <div className="h-3 w-32 rounded-full animate-pulse" style={{ background: "var(--s2)" }} />
+            <div className="h-2.5 w-20 rounded-full animate-pulse" style={{ background: "var(--s2)" }} />
+          </div>
+        </div>
+        <div className="flex-1 overflow-hidden">
+          <UniversalSkeleton variant="chat-bubbles" />
+        </div>
       </div>
     );
   }
@@ -2562,7 +2626,9 @@ export function SalaPanel({ slug, onBack }: { slug: string; onBack: () => void }
         {/* Mensagens */}
         <div className="flex-1 overflow-y-auto px-4 py-4 relative" onScroll={handleMsgsScroll}>
           <div className="flex flex-col justify-end min-h-full">
-            {msgs.filter((m) => !m.deletedForMe).length === 0 ? (
+            {loading && msgs.length === 0 ? (
+              <UniversalSkeleton variant="chat-bubbles" />
+            ) : msgs.filter((m) => !m.deletedForMe).length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 gap-2">
                 <p className="text-sm font-bold" style={{ color: "var(--text-muted)" }}>
                   Ainda não há publicações nesta sala.
