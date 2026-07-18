@@ -5124,7 +5124,7 @@ function ContactList({ contacts, loading, refreshing, search, setSearch, active,
           </div>
         </div>
         {/* Barra de pesquisa — flat, com borda fina */}
-        <div className="flex items-center gap-2 px-3.5 h-10 rounded-xl transition-shadow focus-within:shadow-[0_0_0_2px_rgba(47,111,237,0.25)]"
+        <div className="flex items-center gap-2 pl-5 pr-3.5 h-10 rounded-xl transition-shadow focus-within:shadow-[0_0_0_2px_rgba(47,111,237,0.25)]"
           style={{ background: "var(--s2)", border: "1px solid var(--border-subtle,#eee)" }}>
           <Search className="h-4 w-4 shrink-0" style={{ color: "var(--text-muted)" }} />
           <input
