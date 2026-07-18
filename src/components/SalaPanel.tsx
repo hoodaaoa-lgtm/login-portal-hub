@@ -730,13 +730,18 @@ export function SalaPanel({ slug, onBack }: { slug: string; onBack: () => void }
       })),
     );
 
-    const { data: msgRows } = await supabase
+    const { data: msgRowsDesc } = await supabase
       .from("messages")
       .select("id,conversation_id,sender_id,content,message_type,media_url,created_at")
       .eq("conversation_id", s.conversation_id)
       .eq("deleted_for_all", false)
-      .order("created_at", { ascending: true })
+      .order("created_at", { ascending: false })
       .limit(200);
+    // A query vem por ordem decrescente (mais recentes primeiro) para
+    // garantir que os últimos 200 são os que aparecem — depois inverte-se
+    // para ordem cronológica normal (mais antiga em cima, mais recente em
+    // baixo) para mostrar no ecrã.
+    const msgRows = ((msgRowsDesc as any[]) ?? []).slice().reverse();
     const senderIds = Array.from(new Set(((msgRows as any[]) ?? []).map((m) => m.sender_id)));
     const senderMap: Record<string, any> = profileMap;
     const missing = senderIds.filter((id) => !senderMap[id]);
