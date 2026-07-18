@@ -4854,13 +4854,17 @@ function saveHiddenConversations(map: Record<string, number>) {
    incorporada aqui em vez de um ícone próprio no menu lateral. Ao clicar
    numa sala vai para /salas/$slug, que reutiliza o mesmo sistema de
    mensagens (texto, fotos, vídeos). ── */
-function SalasTabPanel({ activeSalaSlug, onSelectSala }: { activeSalaSlug?: string | null; onSelectSala?: (slug: string) => void }) {
+function SalasTabPanel({ search, activeSalaSlug, onSelectSala }: { search?: string; activeSalaSlug?: string | null; onSelectSala?: (slug: string) => void }) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const uid = user?.id ?? "";
   const [salas, setSalas] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
+  const [descobertas, setDescobertas] = useState<any[]>([]);
+  const [descobrindo, setDescobrindo] = useState(false);
+  const [entrandoId, setEntrandoId] = useState<string | null>(null);
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const TIPO_INFO: Record<string, { label: string; color: string }> = {
     publica:  { label: "Pública",  color: "#2F6FED" },
@@ -4882,6 +4886,48 @@ function SalasTabPanel({ activeSalaSlug, onSelectSala }: { activeSalaSlug?: stri
 
   useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [uid]);
 
+  // ── Descobrir grupos públicos pelo nome (só "publica" — privadas e
+  // anúncios continuam a só aparecer para quem já é membro). ──
+  useEffect(() => {
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    const q = (search ?? "").trim();
+    if (!q) { setDescobertas([]); setDescobrindo(false); return; }
+    setDescobrindo(true);
+    searchDebounceRef.current = setTimeout(async () => {
+      const { data } = await supabase
+        .from("salas" as any)
+        .select("*")
+        .eq("tipo", "publica")
+        .ilike("nome", `%${q}%`)
+        .order("membros_count", { ascending: false })
+        .limit(20);
+      setDescobertas((data as any[]) ?? []);
+      setDescobrindo(false);
+    }, 300);
+    return () => { if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current); };
+  }, [search]);
+
+  const minhasFiltered = (salas ?? []).filter((s) => {
+    const q = (search ?? "").trim().toLowerCase();
+    if (!q) return true;
+    return (s.nome ?? "").toLowerCase().includes(q);
+  });
+  const meusIds = new Set(salas.map((s) => s.id));
+  const descobertasFiltered = descobertas.filter((s) => !meusIds.has(s.id));
+
+  const handleEntrarDescoberta = async (s: any) => {
+    setEntrandoId(s.id);
+    try {
+      const { error } = await supabase.rpc("sala_entrar" as any, { p_sala_id: s.id });
+      if (error) throw error;
+      onSelectSala ? onSelectSala(s.slug) : navigate({ to: "/salas/$slug", params: { slug: s.slug } });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Não foi possível entrar na sala.");
+    } finally {
+      setEntrandoId(null);
+    }
+  };
+
   return (
     <div className="flex flex-col h-full">
       <div className="px-4 py-3 flex items-center justify-between shrink-0" style={{ borderBottom: "1px solid var(--border-subtle,#f0f0f0)" }}>
@@ -4896,18 +4942,18 @@ function SalasTabPanel({ activeSalaSlug, onSelectSala }: { activeSalaSlug?: stri
       </div>
       <div className="flex-1 overflow-y-auto">
         {loading && <UniversalSkeleton variant="messages" count={6} />}
-        {!loading && salas.length === 0 && (
+        {!loading && minhasFiltered.length === 0 && descobertasFiltered.length === 0 && !descobrindo && (
           <div className="text-center py-12" style={{ color: "var(--text-muted,#888)" }}>
             <Users className="h-12 w-12 mx-auto mb-3" style={{ color: "#d1d1d1" }} />
-            <p className="text-sm font-semibold">Ainda não há salas</p>
-            {uid && (
+            <p className="text-sm font-semibold">{(search ?? "").trim() ? "Nenhuma sala encontrada" : "Ainda não há salas"}</p>
+            {uid && !(search ?? "").trim() && (
               <button onClick={() => setShowCreate(true)} className="mt-4 px-5 py-2.5 rounded-full text-sm font-bold text-white" style={{ background: "#2F6FED" }}>
                 Criar a primeira Sala
               </button>
             )}
           </div>
         )}
-        {salas.map((s) => {
+        {minhasFiltered.map((s) => {
           const info = TIPO_INFO[s.tipo] ?? TIPO_INFO.publica;
           const isActive = activeSalaSlug === s.slug;
           return (
@@ -4933,6 +4979,45 @@ function SalasTabPanel({ activeSalaSlug, onSelectSala }: { activeSalaSlug?: stri
             </button>
           );
         })}
+
+        {(search ?? "").trim() && (descobrindo || descobertasFiltered.length > 0) && (
+          <>
+            <p className="px-4 pt-4 pb-1 text-xs font-bold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
+              Grupos públicos encontrados
+            </p>
+            {descobrindo && <UniversalSkeleton variant="messages" count={3} />}
+            {!descobrindo && descobertasFiltered.map((s) => {
+              const info = TIPO_INFO.publica;
+              return (
+                <div key={s.id}
+                  className="w-full flex items-center gap-3 px-4 py-3.5 text-left"
+                  style={{ borderBottom: "1px solid var(--border-subtle,#f0f0f0)" }}>
+                  <div className="rounded-2xl overflow-hidden flex items-center justify-center shrink-0 font-extrabold text-white"
+                    style={{ width: 44, height: 44, background: s.foto_url ? "transparent" : "#2F6FED" }}>
+                    {s.foto_url ? <img src={optimizeAvatar(s.foto_url, 88)} alt="" className="w-full h-full object-cover" /> : (s.nome?.[0] ?? "S").toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <p className="font-bold text-sm truncate" style={{ color: "var(--text-primary)" }}>{s.nome}</p>
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0" style={{ color: info.color, background: `${info.color}18` }}>{info.label}</span>
+                    </div>
+                    <p className="text-xs truncate" style={{ color: "var(--text-muted)" }}>
+                      {fmtN(s.membros_count)} membro{s.membros_count === 1 ? "" : "s"}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => handleEntrarDescoberta(s)}
+                    disabled={entrandoId === s.id}
+                    className="px-3 h-8 rounded-full text-xs font-bold shrink-0 text-white disabled:opacity-60"
+                    style={{ background: "#2F6FED" }}
+                  >
+                    {entrandoId === s.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Entrar"}
+                  </button>
+                </div>
+              );
+            })}
+          </>
+        )}
       </div>
 
       {showCreate && (
@@ -5182,7 +5267,7 @@ function ContactList({ contacts, loading, refreshing, search, setSearch, active,
       </div>
 
       {listTab === "salas" ? (
-        <SalasTabPanel activeSalaSlug={activeSalaSlug} onSelectSala={onSelectSala} />
+        <SalasTabPanel search={search} activeSalaSlug={activeSalaSlug} onSelectSala={onSelectSala} />
       ) : (
       <div className="flex-1 overflow-y-auto">
         {loading && <UniversalSkeleton variant="messages" count={8} />}
