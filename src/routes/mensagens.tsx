@@ -5619,12 +5619,31 @@ function MensagensPage() {
         });
       }
 
-      contactList.sort((a, b) => {
+      // Rede de segurança: se por algum motivo existirem duas conversas
+      // 1-para-1 com a mesma pessoa (ex.: conversas antigas duplicadas
+      // antes da correção na RPC de criação), nunca mostrar a mesma
+      // pessoa duas vezes na lista — junta num só contacto, mantendo a
+      // conversa com a mensagem mais recente e somando as não lidas.
+      const byPerson = new Map<string, Contact>();
+      for (const c of contactList) {
+        const existing = byPerson.get(c.id);
+        if (!existing) {
+          byPerson.set(c.id, c);
+          continue;
+        }
+        const keepNew = (c as any).lastTimestamp > (existing as any).lastTimestamp;
+        const merged = keepNew ? { ...c } : { ...existing };
+        merged.unread = (existing.unread ?? 0) + (c.unread ?? 0);
+        byPerson.set(c.id, merged);
+      }
+      const dedupedList = Array.from(byPerson.values());
+
+      dedupedList.sort((a, b) => {
         if (b.unread !== a.unread) return b.unread - a.unread;
         return (b as any).lastTimestamp - (a as any).lastTimestamp;
       });
 
-      return contactList;
+      return dedupedList;
     } catch (err) {
       console.error("[fetchContacts] Erro inesperado:", err);
       return []; // nunca lança — o Error Boundary não dispara por causa disto
