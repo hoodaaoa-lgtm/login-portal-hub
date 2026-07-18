@@ -3290,6 +3290,30 @@ function ChatPanel({ myId, contact, onBack, contacts }: {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [myId, decrypt]);
 
+  // ── Junta a lista vinda do servidor com mensagens optimistic ("temp-")
+  // que ainda não foram confirmadas (a enviar / a subir media). Sem isto,
+  // qualquer refresh (loadMsgs no foco/reconexão, quietSyncMsgs a cada 6s)
+  // substituía a lista inteira pela do servidor e a bolha que acabou de
+  // ser enviada desaparecia por instantes até o realtime (ou o próximo
+  // refresh) a repor. ──
+  const mergeWithPendingTemps = useCallback((prev: Message[], serverMsgs: Message[]) => {
+    const pendingTemps = prev.filter((x) => {
+      if (!x.id.startsWith("temp-")) return false;
+      // já existe uma mensagem confirmada equivalente no servidor? então
+      // deixa de ser "pendente" — o servidor já a tem, não precisa do temp.
+      return !serverMsgs.some(
+        (p) =>
+          p.senderId === x.senderId &&
+          p.type === x.type &&
+          Math.abs(new Date(p.time).getTime() - new Date(x.time).getTime()) < 10000,
+      );
+    });
+    if (pendingTemps.length === 0) return serverMsgs;
+    return [...serverMsgs, ...pendingTemps].sort(
+      (a, b) => new Date(a.time).getTime() - new Date(b.time).getTime(),
+    );
+  }, []);
+
   // ── Load msgs from Supabase ──
   const loadMsgs = useCallback(async () => {
     if (!contact.conversationId) return;
@@ -3329,8 +3353,11 @@ function ChatPanel({ myId, contact, onBack, contacts }: {
       return { ...r, reactions: counts, myReaction: myRx?.emoji };
     });
     const parsed = await Promise.all(enriched.map(parseRow));
-    setMsgs(parsed);
-    saveCache(parsed);
+    setMsgs((prev) => {
+      const merged = mergeWithPendingTemps(prev, parsed);
+      saveCache(merged);
+      return merged;
+    });
     setMsgsLoading(false);
     // marcar como lido
     await db.from("messages")
@@ -3340,7 +3367,7 @@ function ChatPanel({ myId, contact, onBack, contacts }: {
       .neq("status", "read");
     markMessagesRead(contact.conversationId);
     queryClient.invalidateQueries({ queryKey: QUERY_KEYS.conversations(myId) });
-  }, [contact.conversationId, myId, markMessagesRead, queryClient, parseRow]);
+  }, [contact.conversationId, myId, markMessagesRead, queryClient, parseRow, mergeWithPendingTemps]);
 
   // ── Rede de segurança silenciosa: busca só mensagens novas (sem mexer no
   // loading nem no scroll) a cada poucos segundos enquanto a conversa está
@@ -3375,14 +3402,15 @@ function ChatPanel({ myId, contact, onBack, contacts }: {
     });
     const parsed = await Promise.all(enriched.map(parseRow));
     setMsgs(prev => {
+      const merged = mergeWithPendingTemps(prev, parsed);
       // Só atualiza se algo realmente mudou (evita re-render/flicker à toa)
-      if (prev.length === parsed.length && prev.every((x, i) => x.id === parsed[i].id && x.status === parsed[i].status)) {
+      if (prev.length === merged.length && prev.every((x, i) => x.id === merged[i].id && x.status === merged[i].status)) {
         return prev;
       }
-      saveCache(parsed);
-      return parsed;
+      saveCache(merged);
+      return merged;
     });
-  }, [contact.conversationId, myId, parseRow]);
+  }, [contact.conversationId, myId, parseRow, mergeWithPendingTemps]);
 
   // ── Realtime: INSERT + UPDATE + DELETE ──
   useEffect(() => {
