@@ -10,7 +10,7 @@ import { useBadges } from "@/contexts/BadgeContext";
 import { UserDrawer } from "@/components/UserDrawer";
 import { QuickPostModal } from "@/components/QuickComposer";
 import {
-  Home, Compass, MessageCircle, User, Tv, Menu,
+  Home, Compass, MessagesSquare, User, Tv, Menu,
   Moon, Sun, Bell, MoreHorizontal, ArrowLeft,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,7 +19,7 @@ import { optimizeAvatar } from "@/lib/imageOptimize";
 const NAV_ITEMS = [
   { to: "/home",       label: t("nav.home"),          Icon: Home,          search: undefined as Record<string, string> | undefined },
   { to: "/explorar",   label: t("nav.explore"),     Icon: Compass,       search: undefined as Record<string, string> | undefined },
-  { to: "/mensagens",  label: t("nav.messages"),    Icon: MessageCircle, search: undefined as Record<string, string> | undefined },
+  { to: "/mensagens",  label: t("nav.messages"),    Icon: MessagesSquare, search: undefined as Record<string, string> | undefined },
   { to: "/home",       label: "Notificações",  Icon: Bell,          search: { notifications: "1" } as Record<string, string> | undefined },
   { to: "/perfil",     label: t("nav.profile"),       Icon: User,          search: undefined as Record<string, string> | undefined },
 ] as const;
@@ -27,7 +27,7 @@ const NAV_ITEMS = [
 const MOBILE_ITEMS = [
   { to: "/home",       label: t("nav.home"),      Icon: Home,          search: undefined as Record<string, string> | undefined },
   { to: "/explorar",   label: t("nav.explore"),  Icon: Compass,        search: undefined as Record<string, string> | undefined },
-  { to: "/mensagens",  label: t("nav.messages"), Icon: MessageCircle,   search: undefined as Record<string, string> | undefined },
+  { to: "/mensagens",  label: t("nav.messages"), Icon: MessagesSquare,   search: undefined as Record<string, string> | undefined },
   { to: "/perfil",     label: t("nav.profile"),  Icon: User,           search: undefined as Record<string, string> | undefined },
 ] as const;
 
