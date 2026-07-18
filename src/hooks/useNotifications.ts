@@ -24,6 +24,7 @@ function textFor(type: NotifType): string {
     case "video_new":     return "publicou um vídeo novo";
     case "video_like":    return "gostou do teu vídeo";
     case "video_comment": return "comentou o teu vídeo";
+    case "sala_add":      return "adicionou-te a um grupo";
     case "system":        return "";
     default:              return "";
   }
@@ -41,9 +42,14 @@ function timeAgo(iso: string): string {
   return new Date(iso).toLocaleDateString("pt-PT", { day: "2-digit", month: "short" });
 }
 
-async function mapRow(row: any, profilesCache: Map<string, any>): Promise<Notif> {
+async function mapRow(
+  row: any,
+  profilesCache: Map<string, any>,
+  salasCache?: Map<string, { nome: string; slug: string }>,
+): Promise<Notif> {
   const profile = row.actor_id ? profilesCache.get(row.actor_id) : null;
   const name = profile?.full_name || row.actor_username || "Alguém";
+  const sala = row.sala_id ? salasCache?.get(row.sala_id) : null;
   return {
     id: row.id,
     type: row.type as NotifType,
@@ -51,6 +57,8 @@ async function mapRow(row: any, profilesCache: Map<string, any>): Promise<Notif>
     name,
     color: profile?.avatar_color || colorFor(row.actor_username || row.id),
     text: textFor(row.type as NotifType),
+    detail: sala?.nome,
+    salaSlug: sala?.slug,
     time: timeAgo(row.created_at),
     read: row.read,
   };
@@ -73,6 +81,17 @@ export function useNotifications(userId: string | null) {
     return cache;
   }, []);
 
+  // Usado só pela notificação "sala_add" — nome + slug da sala para o
+  // texto ("Fulano adicionou-te ao grupo X") e para navegar ao clicar.
+  const loadSalas = useCallback(async (salaIds: string[]) => {
+    const cache = new Map<string, { nome: string; slug: string }>();
+    const ids = [...new Set(salaIds.filter(Boolean))];
+    if (ids.length === 0) return cache;
+    const { data } = await db.from("salas").select("id, nome, slug").in("id", ids);
+    (data || []).forEach((s: any) => cache.set(s.id, { nome: s.nome, slug: s.slug }));
+    return cache;
+  }, []);
+
   const refresh = useCallback(async () => {
     if (!userId) return;
     setLoading(true);
@@ -87,14 +106,15 @@ export function useNotifications(userId: string | null) {
       if (error) throw error;
 
       const profilesCache = await loadProfiles((data || []).map((r: any) => r.actor_id));
-      const mapped = await Promise.all((data || []).map((r: any) => mapRow(r, profilesCache)));
+      const salasCache = await loadSalas((data || []).map((r: any) => r.sala_id));
+      const mapped = await Promise.all((data || []).map((r: any) => mapRow(r, profilesCache, salasCache)));
       setNotifications(mapped);
     } catch (err) {
       console.error("[notifications] erro ao carregar:", err);
     } finally {
       setLoading(false);
     }
-  }, [userId, loadProfiles]);
+  }, [userId, loadProfiles, loadSalas]);
 
   useEffect(() => {
     if (!userId) { setNotifications([]); return; }
@@ -112,7 +132,8 @@ export function useNotifications(userId: string | null) {
         async (payload: any) => {
           const row = payload.new;
           const profilesCache = await loadProfiles([row.actor_id]);
-          const notif = await mapRow(row, profilesCache);
+          const salasCache = await loadSalas([row.sala_id]);
+          const notif = await mapRow(row, profilesCache, salasCache);
 
           // Mensagens não entram na lista persistente do sino (ficam só na
           // aba Mensagens), mas têm de aparecer como toast na hora — é
@@ -140,7 +161,7 @@ export function useNotifications(userId: string | null) {
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [userId, loadProfiles]);
+  }, [userId, loadProfiles, loadSalas]);
 
   const markAllRead = useCallback(async () => {
     if (!userId) return;
