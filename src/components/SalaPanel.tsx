@@ -666,6 +666,10 @@ export function SalaPanel({ slug, onBack }: { slug: string; onBack: () => void }
   const imgInputRef = useRef<HTMLInputElement>(null);
   const vidInputRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  // Instância única por montagem: evita colisão de nome de canal quando o
+  // mesmo SalaPanel é montado em paralelo (layout desktop + mobile ficam
+  // ambos no DOM, só um está escondido via CSS).
+  const instanceIdRef = useRef(`${Date.now()}-${Math.random().toString(36).slice(2)}`);
 
   const load = async () => {
     setLoading(true);
@@ -768,7 +772,7 @@ export function SalaPanel({ slug, onBack }: { slug: string; onBack: () => void }
   useEffect(() => {
     if (!sala) return;
     const channel = supabase
-      .channel(`sala-${sala.id}`)
+      .channel(`sala-${sala.id}-${instanceIdRef.current}`)
       .on(
         "postgres_changes",
         {
@@ -815,7 +819,7 @@ export function SalaPanel({ slug, onBack }: { slug: string; onBack: () => void }
   useEffect(() => {
     if (!sala) return;
     const channel = supabase
-      .channel(`sala-admin-${sala.id}`)
+      .channel(`sala-admin-${sala.id}-${instanceIdRef.current}`)
       .on(
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "salas", filter: `id=eq.${sala.id}` },
