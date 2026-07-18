@@ -700,20 +700,30 @@ function SalaInfoModal({
           >
             Link da sala
           </p>
-          <button
-            onClick={copiarLink}
-            className="w-full flex items-center justify-between gap-2 px-4 py-3 rounded-2xl text-left"
+          <div
+            className="w-full flex items-center justify-between gap-2 px-4 py-3 rounded-2xl"
             style={{ background: "var(--s1)" }}
           >
-            <span className="text-sm truncate" style={{ color: P }}>
-              {link.replace(/^https?:\/\//, "")}
-            </span>
-            {copiado ? (
-              <Check className="w-4 h-4 shrink-0" style={{ color: "#31D158" }} />
-            ) : (
-              <Copy className="w-4 h-4 shrink-0" style={{ color: "var(--text-muted)" }} />
-            )}
-          </button>
+            <a
+              href={link}
+              className="text-sm truncate underline underline-offset-2"
+              style={{ color: P }}
+            >
+              {link}
+            </a>
+            <button
+              onClick={copiarLink}
+              className="p-1.5 rounded-full shrink-0"
+              style={{ background: "var(--s2)" }}
+              title="Copiar link"
+            >
+              {copiado ? (
+                <Check className="w-4 h-4" style={{ color: "#31D158" }} />
+              ) : (
+                <Copy className="w-4 h-4" style={{ color: "var(--text-muted)" }} />
+              )}
+            </button>
+          </div>
         </div>
 
         {/* Descrição */}

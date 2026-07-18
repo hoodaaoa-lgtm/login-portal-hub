@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
@@ -285,6 +285,9 @@ function ComposerHighlightOverlay({ text }: { text: string }) {
 
 export const Route = createFileRoute("/mensagens")({
   head: () => ({ meta: [{ title: "Snapper" }] }),
+  validateSearch: (search: Record<string, unknown>): { sala?: string } => ({
+    sala: typeof search.sala === "string" ? search.sala : undefined,
+  }),
   component: MensagensPage,
 });
 
@@ -5344,6 +5347,7 @@ function MensagensPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { sala: salaFromLink } = useSearch({ from: "/mensagens" });
   // A sessão já foi resolvida pelo AuthGate antes desta página sequer
   // montar — usar isso em vez de voltar a chamar supabase.auth.getSession()
   // aqui evita uma viagem assíncrona extra que atrasava a 1ª aparição
@@ -5354,7 +5358,10 @@ function MensagensPage() {
   const [active, setActive] = useState<Contact | null>(null);
   const [officialMessages, setOfficialMessages] = useState<UserOfficialMessage[]>([]);
   const [activeOfficial, setActiveOfficial] = useState<UserOfficialMessage | null>(null);
-  const [activeSalaSlug, setActiveSalaSlug] = useState<string | null>(null);
+  // Se veio de um link direto de Sala (/salas/:slug → redireciona para cá com
+  // ?sala=slug), a Sala já arranca aberta, com a lista de conversas/salas
+  // visível ao lado (em vez do ecrã isolado que existia antes).
+  const [activeSalaSlug, setActiveSalaSlug] = useState<string | null>(salaFromLink ?? null);
   const [showAddContact, setShowAddContact] = useState(false);
   const [showRequests, setShowRequests] = useState(false);
   const [pendingRequestCount, setPendingRequestCount] = useState(0);

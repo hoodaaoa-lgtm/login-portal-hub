@@ -1,30 +1,12 @@
-import { createFileRoute, useNavigate, useParams } from "@tanstack/react-router";
-import { SideNav, BottomNav, PageWrapper } from "@/components/AppShell";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { SalaPanel } from "@/components/SalaPanel";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
+/* Link direto a uma Sala (partilhado, favorito, etc.) — em vez de abrir a
+   Sala sozinha numa página isolada (sem a caixa de conversas/salas ao
+   lado), redireciona sempre para dentro de /mensagens, que já sabe abrir
+   a Sala certa (via ?sala=slug) mantendo a lista visível, tal como a
+   navegação normal entre Salas. */
 export const Route = createFileRoute("/salas/$slug")({
-  head: () => ({ meta: [{ title: "Sala · Snapper" }] }),
-  component: SalaPage,
+  beforeLoad: ({ params }) => {
+    throw redirect({ to: "/mensagens", search: { sala: params.slug } });
+  },
 });
-
-/* Esta rota existe para permitir link direto a uma Sala (partilhado, favorito, etc).
-   A navegação normal entre Salas dentro de /mensagens usa o mesmo SalaPanel, mas
-   troca por estado em vez de vir aqui — ver SalasTabPanel em mensagens.tsx. */
-function SalaPage() {
-  const navigate = useNavigate();
-  const isMobile = useIsMobile();
-  const { slug } = useParams({ from: "/salas/$slug" });
-
-  return (
-    <>
-      <SideNav />
-      <PageWrapper noPageScroll>
-        <div className="flex flex-col" style={{ height: isMobile ? "calc(100dvh - 62px)" : "100%" }}>
-          <SalaPanel slug={slug} onBack={() => navigate({ to: "/mensagens" })} />
-        </div>
-        <BottomNav />
-      </PageWrapper>
-    </>
-  );
-}
