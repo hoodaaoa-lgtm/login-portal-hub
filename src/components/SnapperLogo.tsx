@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useCountry } from "@/contexts/CountryContext";
 import snapperIcon from "@/assets/site/snapper-icon-only.png";
+import snapperWordmark from "@/assets/site/snapper-wordmark-v2.png";
 
 type Props = {
   className?: string;
@@ -9,6 +10,7 @@ type Props = {
 };
 
 const iconHeightMap = { sm: 28, md: 44, lg: 68, xl: 104 };
+const wordmarkHeightMap = { sm: 22, md: 35, lg: 54, xl: 82 };
 const suffixSizeMap = { sm: "text-[11px]", md: "text-[14px]", lg: "text-[18px]", xl: "text-[20px]" };
 
 export function SnapperLogo({ className = "", size = "lg", animate = true }: Props) {
@@ -38,6 +40,21 @@ export function SnapperLogo({ className = "", size = "lg", animate = true }: Pro
           transform: visible ? "translateY(0) scale(1)" : "translateY(20px) scale(0.85)",
           transition: animate
             ? "opacity 0.45s cubic-bezier(0.34,1.56,0.64,1), transform 0.45s cubic-bezier(0.34,1.56,0.64,1)"
+            : "none",
+        }}
+      />
+      <img
+        src={snapperWordmark}
+        alt="Snapper"
+        style={{
+          height: wordmarkHeightMap[size],
+          width: "auto",
+          display: "block",
+          marginTop: Math.round(iconHeightMap[size] * 0.19),
+          opacity: visible ? 1 : 0,
+          transform: visible ? "translateY(0) scale(1)" : "translateY(20px) scale(0.85)",
+          transition: animate
+            ? "opacity 0.45s cubic-bezier(0.34,1.56,0.64,1) 0.08s, transform 0.45s cubic-bezier(0.34,1.56,0.64,1) 0.08s"
             : "none",
         }}
       />
