@@ -133,7 +133,7 @@ function LoginPage() {
               <div className="mb-8">
                 <h2 className="text-[30px] font-extrabold tracking-tight text-[var(--text-primary)]">Entrar</h2>
                 <p className="mt-1.5 text-[15px] text-[var(--text-muted)]">
-                  Bem-vindo de volta à <span className="font-bold text-[#2F6FED]">hooda</span>.
+                  Bem-vindo de volta à <span className="font-bold text-[#2F6FED]">Snapper</span>.
                 </p>
               </div>
 
@@ -213,7 +213,7 @@ function LoginPage() {
                 <a href="/uso" target="_blank" rel="noopener noreferrer" className="text-[#2F6FED] font-medium hover:underline">Termos</a>{" "}
                 e a{" "}
                 <a href="/privacidade" target="_blank" rel="noopener noreferrer" className="text-[#2F6FED] font-medium hover:underline">Política de Privacidade</a>{" "}
-                da hooda.
+                da Snapper.
               </p>
             </>
           ) : (

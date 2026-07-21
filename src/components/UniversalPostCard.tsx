@@ -1368,7 +1368,7 @@ export function UniversalPostCard({ post: p, onDeleted, onBookmarkChange }: {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-white text-xs font-bold truncate">{p.music_title}</p>
-            <p className="text-white/50 text-[10px] truncate">{p.music_artist ?? "hooda music"}</p>
+            <p className="text-white/50 text-[10px] truncate">{p.music_artist ?? "Snapper music"}</p>
           </div>
           <Music className="h-4 w-4 text-[#2F6FED] flex-shrink-0" />
         </div>

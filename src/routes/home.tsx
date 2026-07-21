@@ -138,7 +138,7 @@ function HomePage() {
         return {
           id: p.id, user_id: p.author_id, author_id: p.author_id,
           author_username: p.author_username || null,
-          user: p.author_name || p.author_username || "hooda",
+          user: p.author_name || p.author_username || "Snapper",
           name: `@${p.author_username || "?"}`,
           color: p.author_color || "#2F6FED",
           avatar_url: null,
@@ -329,8 +329,8 @@ function HomePage() {
       const authorKey = p.author_id || p.user_id;
       const rawName = p.author_name || nameMap[authorKey] || "";
       const name = rawName.includes("@") && rawName.includes(".")
-        ? (p.author_username || usernameMap[authorKey] || "hooda")
-        : (rawName || p.author_username || "hooda");
+        ? (p.author_username || usernameMap[authorKey] || "Snapper")
+        : (rawName || p.author_username || "Snapper");
       const username = p.author_username || usernameMap[authorKey] || "";
       let text = p.content;
       let bg_color = null;
@@ -363,7 +363,7 @@ function HomePage() {
     // ── Mapear vídeos publicados (aparecem como "clipe" completo no feed) ──
     const mappedVideos = eligibleVideos.map((v: any) => {
       const authorKey = v.owner_id;
-      const name = nameMap[authorKey] || usernameMap[authorKey] || "hooda";
+      const name = nameMap[authorKey] || usernameMap[authorKey] || "Snapper";
       const username = usernameMap[authorKey] || "";
       return {
         id: `vidfeed_${v.id}`, user_id: authorKey, author_id: authorKey,

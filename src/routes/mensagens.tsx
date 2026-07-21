@@ -357,21 +357,11 @@ type Contact = Profile & {
   replyAllowed?: boolean;
 };
 
-// Cores da identidade visual da Snapper — usadas para colorir a palavra
-// "Snapper" letra a letra, igual ao logótipo (ver SnapperLogo.tsx).
-const HOODA_BRAND_LETTERS = [
-  { char: "H", color: "#2F6FED" },
-  { char: "o", color: "#2F6FED" },
-  { char: "o", color: "#1FAFA6" },
-  { char: "d", color: "#6BA547" },
-  { char: "a", color: "#2F6FED" },
-];
-
 /**
  * Nome do remetente exibido ACIMA da bolha para mensagens da conta
- * oficial ("Snapper Oficial"): "Snapper" colorido letra a letra (identidade
- * visual da marca), "Oficial" a roxo com peso forte, e o selo azul de
- * verificado ao lado. Nunca deve ser renderizado dentro da bolha.
+ * oficial ("Snapper Oficial"): "Snapper" em cor sólida, "Oficial" a
+ * roxo com peso forte, e o selo azul de verificado ao lado. Nunca
+ * deve ser renderizado dentro da bolha.
  */
 function OfficialSenderName({ size = 13 }: { size?: number }) {
   return (
@@ -379,11 +369,7 @@ function OfficialSenderName({ size = 13 }: { size?: number }) {
       className="flex items-center gap-1 px-1 mb-1 select-none"
       style={{ fontFamily: '"Nunito","Quicksand",system-ui,sans-serif' }}
     >
-      <span className="flex items-baseline" style={{ fontSize: size, fontWeight: 800, letterSpacing: "-0.01em" }}>
-        {HOODA_BRAND_LETTERS.map((l, i) => (
-          <span key={i} style={{ color: l.color }}>{l.char}</span>
-        ))}
-      </span>
+      <span style={{ fontSize: size, fontWeight: 800, letterSpacing: "-0.01em", color: "#2F6FED" }}>Snapper</span>
       <span style={{ fontSize: size, fontWeight: 700, color: "#2F6FED" }}>Oficial</span>
       <VerifiedBadge size={Math.round(size * 0.95)} />
     </div>
@@ -5588,7 +5574,7 @@ function MensagensPage() {
 
         (contactList as any[]).push({
           id: profile.id,
-          username: isOfficial ? "hooda" : (profile.username || "?"),
+          username: isOfficial ? "Snapper" : (profile.username || "?"),
           full_name: isOfficial ? "Snapper Oficial" : profile.full_name,
           avatar_url: isOfficial ? "/icons/icon-192.png" : profile.avatar_url,
           color: colorFor(profile.username || profile.id),

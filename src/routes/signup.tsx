@@ -287,7 +287,7 @@ function SignupPage() {
               {email}
             </p>
             <p className="text-[14px] text-[var(--text-muted)] leading-relaxed mb-8">
-              Abre o teu email e clica no link para ativar a tua conta hooda. Verifica também a pasta de <span className="font-semibold">spam</span> caso não encontres.
+              Abre o teu email e clica no link para ativar a tua conta Snapper. Verifica também a pasta de <span className="font-semibold">spam</span> caso não encontres.
             </p>
 
             {/* Acções */}
@@ -328,7 +328,7 @@ function SignupPage() {
           <div className="mb-8">
             <h2 className="text-[30px] font-extrabold tracking-tight text-[var(--text-primary)]">Criar conta</h2>
             <p className="mt-1.5 text-[15px] text-[var(--text-muted)]">
-              Junte-se à <span className="font-bold text-[#2F6FED]">hooda</span> e faça parte da comunidade.
+              Junte-se à <span className="font-bold text-[#2F6FED]">Snapper</span> e faça parte da comunidade.
             </p>
           </div>
 
@@ -432,7 +432,7 @@ function SignupPage() {
                 <a href="/uso" target="_blank" rel="noopener noreferrer" className="text-[#2F6FED] font-medium hover:underline">Termos</a>{" "}
                 e a{" "}
                 <a href="/privacidade" target="_blank" rel="noopener noreferrer" className="text-[#2F6FED] font-medium hover:underline">Política de Privacidade</a>{" "}
-                da hooda.
+                da Snapper.
               </span>
             </label>
 

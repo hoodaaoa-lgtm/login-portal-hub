@@ -262,7 +262,7 @@ function ExplorePage() {
 
     const fromChannelVideos = (searchChannelVideos ?? []).map((v: any) => {
       const author = authorMap[v.owner_id];
-      const name = author?.full_name || author?.username || "hooda";
+      const name = author?.full_name || author?.username || "Snapper";
       return {
         id: `vidfeed_${v.id}`, user_id: v.owner_id, author_id: v.owner_id,
         author_username: author?.username || null,
@@ -280,7 +280,7 @@ function ExplorePage() {
 
     const fromVideoPosts = (mergedSearchVideoPosts ?? []).map((p: any) => {
       const author = authorMap[p.author_id];
-      const name = p.author_name || author?.full_name || author?.username || "hooda";
+      const name = p.author_name || author?.full_name || author?.username || "Snapper";
       const username = p.author_username || author?.username || "";
       return {
         id: p.id, user_id: p.author_id, author_id: p.author_id,
@@ -385,7 +385,7 @@ function ExplorePage() {
      UniversalPostCard — antes estes resultados usavam um PostThumb próprio
      (grelha estática, sem player, sem ações de gostar/comentar/partilhar). */
   function toCanonicalPost(p: any) {
-    const name = p.author_username || "hooda";
+    const name = p.author_username || "Snapper";
     return {
       id: p.id, author_id: p.author_id ?? null, author_username: p.author_username ?? null,
       user: name, name: `@${p.author_username || "?"}`,
