@@ -9,8 +9,19 @@ type Props = {
   animate?: boolean;
 };
 
-const iconHeightMap = { sm: 28, md: 44, lg: 68, xl: 104 };
-const wordmarkHeightMap = { sm: 22, md: 35, lg: 54, xl: 82 };
+const iconHeightMap = {
+  sm: "clamp(22px, 6vw, 28px)",
+  md: "clamp(32px, 9vw, 44px)",
+  lg: "clamp(44px, 12vw, 68px)",
+  xl: "clamp(52px, 15vw, 104px)",
+};
+const wordmarkHeightMap = {
+  sm: "clamp(17px, 4.7vw, 22px)",
+  md: "clamp(25px, 7vw, 35px)",
+  lg: "clamp(35px, 9.5vw, 54px)",
+  xl: "clamp(41px, 12vw, 82px)",
+};
+const wordmarkMarginTopMap = { sm: 5, md: 8, lg: 13, xl: 20 };
 const suffixSizeMap = { sm: "text-[11px]", md: "text-[14px]", lg: "text-[18px]", xl: "text-[20px]" };
 
 export function SnapperLogo({ className = "", size = "lg", animate = true }: Props) {
@@ -27,7 +38,7 @@ export function SnapperLogo({ className = "", size = "lg", animate = true }: Pro
   return (
     <span
       aria-label={suffix ? `snapper ${suffix}` : "snapper"}
-      className={`inline-flex items-end gap-1 leading-none ${className}`}
+      className={`inline-flex items-center gap-1.5 leading-none max-w-full ${className}`}
     >
       <img
         src={snapperIcon}
@@ -50,7 +61,7 @@ export function SnapperLogo({ className = "", size = "lg", animate = true }: Pro
           height: wordmarkHeightMap[size],
           width: "auto",
           display: "block",
-          marginTop: Math.round(iconHeightMap[size] * 0.19),
+          marginTop: wordmarkMarginTopMap[size],
           opacity: visible ? 1 : 0,
           transform: visible ? "translateY(0) scale(1)" : "translateY(20px) scale(0.85)",
           transition: animate
