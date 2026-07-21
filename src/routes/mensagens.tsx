@@ -4899,7 +4899,7 @@ function SalasTabPanel({ search, activeSalaSlug, onSelectSala }: { search?: stri
       // com o texto exato/inteiro digitado.
       const palavras = q.split(/\s+/).filter(Boolean);
       const orConditions = palavras
-        .flatMap((p) => [`nome.ilike.%${p}%`, `descricao.ilike.%${p}%`])
+        .flatMap((p) => [`nome.ilike.%${p}%`, `descricao.ilike.%${p}%`, `slug.ilike.%${p}%`])
         .join(",");
       const { data } = await supabase
         .from("salas" as any)
@@ -4918,7 +4918,7 @@ function SalasTabPanel({ search, activeSalaSlug, onSelectSala }: { search?: stri
     const q = (search ?? "").trim().toLowerCase();
     if (!q) return true;
     const palavras = q.split(/\s+/).filter(Boolean);
-    const texto = `${s.nome ?? ""} ${s.descricao ?? ""}`.toLowerCase();
+    const texto = `${s.nome ?? ""} ${s.descricao ?? ""} ${s.slug ?? ""}`.toLowerCase();
     return palavras.some((p) => texto.includes(p));
   });
   const meusIds = new Set(salas.map((s) => s.id));
