@@ -4894,13 +4894,20 @@ function SalasTabPanel({ search, activeSalaSlug, onSelectSala }: { search?: stri
     if (!q) { setDescobertas([]); setDescobrindo(false); return; }
     setDescobrindo(true);
     searchDebounceRef.current = setTimeout(async () => {
+      // Divide a pesquisa em palavras — assim bate com qualquer palavra
+      // relacionada presente no nome OU na descrição da sala, não só
+      // com o texto exato/inteiro digitado.
+      const palavras = q.split(/\s+/).filter(Boolean);
+      const orConditions = palavras
+        .flatMap((p) => [`nome.ilike.%${p}%`, `descricao.ilike.%${p}%`])
+        .join(",");
       const { data } = await supabase
         .from("salas" as any)
         .select("*")
         .eq("tipo", "publica")
-        .ilike("nome", `%${q}%`)
+        .or(orConditions)
         .order("membros_count", { ascending: false })
-        .limit(20);
+        .limit(30);
       setDescobertas((data as any[]) ?? []);
       setDescobrindo(false);
     }, 300);
@@ -4910,7 +4917,9 @@ function SalasTabPanel({ search, activeSalaSlug, onSelectSala }: { search?: stri
   const minhasFiltered = (salas ?? []).filter((s) => {
     const q = (search ?? "").trim().toLowerCase();
     if (!q) return true;
-    return (s.nome ?? "").toLowerCase().includes(q);
+    const palavras = q.split(/\s+/).filter(Boolean);
+    const texto = `${s.nome ?? ""} ${s.descricao ?? ""}`.toLowerCase();
+    return palavras.some((p) => texto.includes(p));
   });
   const meusIds = new Set(salas.map((s) => s.id));
   const descobertasFiltered = descobertas.filter((s) => !meusIds.has(s.id));
