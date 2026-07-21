@@ -4942,7 +4942,7 @@ function SalasTabPanel({ search, activeSalaSlug, onSelectSala }: { search?: stri
         {!loading && minhasFiltered.length === 0 && descobertasFiltered.length === 0 && !descobrindo && (
           <div className="text-center py-12" style={{ color: "var(--text-muted,#888)" }}>
             <Users className="h-12 w-12 mx-auto mb-3" style={{ color: "#d1d1d1" }} />
-            <p className="text-sm font-semibold">{(search ?? "").trim() ? "Nenhuma sala encontrada" : "Ainda não há salas"}</p>
+            <p className="text-sm font-semibold">{(search ?? "").trim() ? "Esta sala não existe" : "Ainda não há salas"}</p>
             {uid && !(search ?? "").trim() && (
               <button onClick={() => setShowCreate(true)} className="mt-4 px-5 py-2.5 rounded-full text-sm font-bold text-white" style={{ background: "#2F6FED" }}>
                 Criar a primeira Sala
