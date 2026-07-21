@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useCountry } from "@/contexts/CountryContext";
+import snapperIcon from "@/assets/site/snapper-icon-only.png";
 
 type Props = {
   className?: string;
@@ -7,18 +8,8 @@ type Props = {
   animate?: boolean;
 };
 
-const sizeMap = { sm: "text-3xl", md: "text-5xl", lg: "text-7xl", xl: "text-8xl sm:text-9xl" };
+const iconHeightMap = { sm: 28, md: 44, lg: 68, xl: 104 };
 const suffixSizeMap = { sm: "text-[11px]", md: "text-[14px]", lg: "text-[18px]", xl: "text-[20px]" };
-
-const letters = [
-  { char: "S", color: "#2F6FED" },
-  { char: "n", color: "#F59E0B" },
-  { char: "a", color: "#1FAFA6" },
-  { char: "p", color: "#6BA547" },
-  { char: "p", color: "#EC4899" },
-  { char: "e", color: "#FFC93C" },
-  { char: "r", color: "#7F5AF0" },
-];
 
 export function SnapperLogo({ className = "", size = "lg", animate = true }: Props) {
   const [visible, setVisible] = useState(!animate);
@@ -34,28 +25,22 @@ export function SnapperLogo({ className = "", size = "lg", animate = true }: Pro
   return (
     <span
       aria-label={suffix ? `snapper ${suffix}` : "snapper"}
-      className={`inline-flex items-end gap-1 font-extrabold tracking-tight leading-none ${sizeMap[size]} ${className}`}
-      style={{ fontFamily: '"Nunito", "Quicksand", system-ui, sans-serif' }}
+      className={`inline-flex items-end gap-1 leading-none ${className}`}
     >
-      <span className="inline-flex">
-        {letters.map((l, i) => (
-          <span
-            key={i}
-            style={{
-              color: l.color,
-              display: "inline-block",
-              opacity: visible ? 1 : 0,
-              transform: visible ? "translateY(0) scale(1)" : "translateY(30px) scale(0.5)",
-              transition: animate
-                ? `opacity 0.45s cubic-bezier(0.34,1.56,0.64,1) ${i * 0.1}s, transform 0.45s cubic-bezier(0.34,1.56,0.64,1) ${i * 0.1}s`
-                : "none",
-              textShadow: `0 3px 14px ${l.color}44`,
-            }}
-          >
-            {l.char}
-          </span>
-        ))}
-      </span>
+      <img
+        src={snapperIcon}
+        alt=""
+        style={{
+          height: iconHeightMap[size],
+          width: "auto",
+          display: "block",
+          opacity: visible ? 1 : 0,
+          transform: visible ? "translateY(0) scale(1)" : "translateY(20px) scale(0.85)",
+          transition: animate
+            ? "opacity 0.45s cubic-bezier(0.34,1.56,0.64,1), transform 0.45s cubic-bezier(0.34,1.56,0.64,1)"
+            : "none",
+        }}
+      />
 
       {!loading && suffix && (
         <span
