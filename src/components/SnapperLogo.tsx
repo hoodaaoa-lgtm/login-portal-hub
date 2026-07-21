@@ -10,16 +10,16 @@ type Props = {
 };
 
 const iconHeightMap = {
-  sm: "clamp(22px, 6vw, 28px)",
-  md: "clamp(32px, 9vw, 44px)",
-  lg: "clamp(44px, 12vw, 68px)",
-  xl: "clamp(52px, 15vw, 104px)",
+  sm: "clamp(20px, 5vw, 28px)",
+  md: "clamp(28px, 7vw, 44px)",
+  lg: "clamp(36px, 9vw, 68px)",
+  xl: "clamp(38px, 10vw, 104px)",
 };
 const wordmarkHeightMap = {
-  sm: "clamp(17px, 4.7vw, 22px)",
-  md: "clamp(25px, 7vw, 35px)",
-  lg: "clamp(35px, 9.5vw, 54px)",
-  xl: "clamp(41px, 12vw, 82px)",
+  sm: "clamp(16px, 4vw, 22px)",
+  md: "clamp(22px, 5.5vw, 35px)",
+  lg: "clamp(28px, 7vw, 54px)",
+  xl: "clamp(30px, 8vw, 82px)",
 };
 const wordmarkMarginTopMap = { sm: 5, md: 8, lg: 13, xl: 20 };
 const suffixSizeMap = { sm: "text-[11px]", md: "text-[14px]", lg: "text-[18px]", xl: "text-[20px]" };
