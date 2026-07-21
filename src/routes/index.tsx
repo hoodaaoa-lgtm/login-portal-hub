@@ -5,7 +5,7 @@ import { SnapperLogo } from "@/components/SnapperLogo";
 import { AuthLeftPanel } from "@/components/AuthLeftPanel";
 import { InstallPwaButton } from "@/components/InstallPwaButton";
 import {
-  Field, EyeIcon, EyeOffIcon, ArrowLeftIcon, SpinIcon, MailIcon, LockIcon,
+  Field, EyeIcon, EyeOffIcon, ArrowLeftIcon, SpinIcon, MailIcon, LockIcon, GoogleIcon,
 } from "@/components/AuthField";
 
 export const Route = createFileRoute("/")(({
@@ -42,13 +42,46 @@ function LoginPage() {
     e.preventDefault();
     setError(null);
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+    let loginEmail = email.trim();
+    // Se não parece um email (não tem @), trata como nome de utilizador —
+    // procura o email associado antes de tentar entrar.
+    if (loginEmail && !loginEmail.includes("@")) {
+      const { data: found } = await supabase
+        .from("profiles")
+        .select("id")
+        .ilike("username", loginEmail.toLowerCase())
+        .maybeSingle();
+      if (!found) {
+        setLoading(false);
+        setError("Utilizador não encontrado.");
+        return;
+      }
+      const { data: emailData, error: emailErr } = await supabase.rpc("email_por_username" as any, { p_username: loginEmail.toLowerCase() });
+      if (emailErr || !emailData) {
+        setLoading(false);
+        setError("Não foi possível entrar com este nome de utilizador. Tenta com o teu Gmail.");
+        return;
+      }
+      loginEmail = emailData as string;
+    }
+
+    const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
     setLoading(false);
     if (error) {
-      setError(error.message === "Invalid login credentials" ? "Email ou senha incorretos." : error.message);
+      setError(error.message === "Invalid login credentials" ? "Utilizador/Gmail ou senha incorretos." : error.message);
       return;
     }
     navigate({ to: "/home", replace: true });
+  }
+
+  async function onGoogleLogin() {
+    setError(null);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: `${window.location.origin}/home` },
+    });
+    if (error) setError(error.message);
   }
 
   async function onForgot(e: React.FormEvent) {
@@ -106,9 +139,9 @@ function LoginPage() {
 
               <form className="space-y-4" onSubmit={onSubmit}>
                 <Field
-                  id="email" label="Email" type="email"
+                  id="email" label="Utilizador ou Gmail" type="text"
                   value={email} onChange={setEmail}
-                  placeholder="seunome@gmail.com" autoComplete="email"
+                  placeholder="@utilizador ou seunome@gmail.com" autoComplete="username"
                   icon={<MailIcon />}
                 />
 
@@ -150,6 +183,19 @@ function LoginPage() {
                       <SpinIcon /> Entrando...
                     </span>
                   ) : "Entrar"}
+                </button>
+
+                <div className="flex items-center gap-3 py-1">
+                  <div className="h-px flex-1" style={{ background: "var(--border-default,#e5e7eb)" }} />
+                  <span className="text-[12px] font-semibold text-neutral-400">ou</span>
+                  <div className="h-px flex-1" style={{ background: "var(--border-default,#e5e7eb)" }} />
+                </div>
+
+                <button
+                  type="button" onClick={onGoogleLogin}
+                  className="w-full h-[52px] rounded-xl border border-neutral-200 bg-white text-neutral-800 font-bold text-[15px] tracking-wide flex items-center justify-center gap-2.5 transition-all duration-200 hover:bg-neutral-50 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99]"
+                >
+                  <GoogleIcon /> Continuar com Google
                 </button>
 
                 {/* Sign up link */}

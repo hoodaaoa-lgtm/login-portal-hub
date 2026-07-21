@@ -48,6 +48,12 @@ function suggestUsername(name: string): string {
   return generateUsernameSuggestions(name)[0] ?? "";
 }
 
+// Categorias de interesse do canal
+const CATEGORIAS_DISPONIVEIS = [
+  "Música", "Dorama", "Anime", "Novela", "Desporto",
+  "Jogos", "Humor", "Notícias", "Tecnologia", "Viagens", "Moda", "Culinária",
+];
+
 function SignupPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -60,7 +66,7 @@ function SignupPage() {
   const [usernameSuggestions, setUsernameSuggestions] = useState<string[]>([]);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
-  const [birthDate, setBirthDate] = useState("");
+  const [categorias, setCategorias] = useState<string[]>([]);
   const [agreed, setAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -118,11 +124,12 @@ function SignupPage() {
     e.preventDefault();
     setError(null);
 
-    if (!name.trim()) return setError("O nome completo é obrigatório.");
-    if (!email.trim()) return setError("O email é obrigatório.");
+    if (!name.trim()) return setError("O nome do canal é obrigatório.");
+    if (!email.trim()) return setError("O Gmail é obrigatório.");
     if (!username.trim()) return setError("O nome de utilizador é obrigatório.");
     if (usernameStatus === "idle") return setError("Escolhe um nome de utilizador.");
     if (!password) return setError("A senha é obrigatória.");
+    if (categorias.length === 0) return setError("Escolhe pelo menos uma categoria do canal.");
     if (usernameStatus === "taken") return setError("Este username já está ocupado.");
     if (usernameStatus === "invalid") return setError("Username inválido.");
     if (usernameStatus === "checking") return setError("Aguarda a verificação do username.");
@@ -136,7 +143,7 @@ function SignupPage() {
     if (!agreed) return setError("É preciso aceitar os Termos e a Política de Privacidade.");
 
     setLoading(true);
-    const { error } = await supabase.auth.signUp({
+    const { data: signUpData, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -144,42 +151,61 @@ function SignupPage() {
         data: {
           full_name: name,
           username: username.toLowerCase(),
-          ...(birthDate ? { birth_date: birthDate } : {}),
+          categorias,
         },
       },
     });
-    setLoading(false);
     if (error) {
+      setLoading(false);
       // Log completo para diagnóstico (a consola do browser mostra o erro real).
       console.error("[hooda] Erro no signUp:", error);
       // Traduzir erros comuns do Supabase
       const msg = typeof error.message === "string" ? error.message : "";
       if (!msg || msg === "{}") {
         setError("Não foi possível criar a conta agora. Tenta novamente daqui a pouco ou contacta o suporte se persistir.");
-      } else if (msg.includes("User already registered")) setError("Este email já tem uma conta. Tenta iniciar sessão.");
+      } else if (msg.includes("User already registered")) setError("Este Gmail já tem uma conta. Tenta iniciar sessão.");
       else if (msg.includes("Password should be")) setError("A senha deve ter pelo menos 6 caracteres.");
-      else if (msg.includes("Unable to validate email")) setError("Email inválido. Verifica o formato.");
+      else if (msg.includes("Unable to validate email")) setError("Gmail inválido. Verifica o formato.");
       else if (msg.includes("username")) setError("Este nome de utilizador já está ocupado. Escolhe outro.");
       else setError(msg);
       return;
     }
 
-    // Rede de segurança: garante que o profile fica com o username certo
-    // mesmo que o trigger handle_new_user falhe ou demore (ex: confirmação de email pendente).
+    // Entra logo (sem ecrã de espera) — tenta usar a sessão devolvida pelo
+    // signUp; se o projeto ainda exigir confirmação de email antes de dar
+    // sessão, tenta um login imediato a seguir.
+    let session = signUpData.session;
+    if (!session) {
+      const { data: signInData } = await supabase.auth.signInWithPassword({ email, password });
+      session = signInData.session;
+    }
+
+    // Rede de segurança: garante que o profile fica com o username e as
+    // categorias certas mesmo que o trigger handle_new_user falhe ou demore.
     try {
-      const { data: { session } } = await supabase.auth.getSession();
       if (session?.user?.id) {
         await supabase.from("profiles").upsert({
           id: session.user.id,
           username: username.toLowerCase(),
           full_name: name,
-        } as { id: string; username: string; full_name: string }, { onConflict: "id", ignoreDuplicates: false });
+          categorias,
+        } as { id: string; username: string; full_name: string; categorias: string[] }, { onConflict: "id", ignoreDuplicates: false });
       }
     } catch (e) {
-      console.warn("[hooda] Não foi possível garantir o username no profile imediatamente:", e);
+      console.warn("[hooda] Não foi possível garantir o username/categorias no profile imediatamente:", e);
     }
 
-    setDone(true);
+    setLoading(false);
+
+    if (session) {
+      // Entra direto no app — a verificação do Gmail acontece depois,
+      // via notificação, sem bloquear o acesso.
+      navigate({ to: "/home", replace: true });
+    } else {
+      // O projeto ainda exige confirmação por email antes de dar sessão —
+      // mostra o ecrã de espera como último recurso.
+      setDone(true);
+    }
   }
 
   const usernameRightIcon = () => {
@@ -308,9 +334,9 @@ function SignupPage() {
 
           <form className="space-y-4" onSubmit={onSubmit}>
             <Field
-              id="name" label="Nome completo" type="text"
+              id="name" label="Nome do canal" type="text"
               value={name} onChange={setName}
-              placeholder="Seu nome completo" autoComplete="name"
+              placeholder="Nome do seu canal" autoComplete="name"
               icon={<UserIcon />}
             />
 
@@ -345,11 +371,36 @@ function SignupPage() {
               </div>
 
               <Field
-                id="email" label="E-mail" type="email"
+                id="email" label="Gmail" type="email"
                 value={email} onChange={setEmail}
-                placeholder="seuemail@exemplo.com" autoComplete="email"
+                placeholder="seuemail@gmail.com" autoComplete="email"
                 icon={<MailIcon />}
               />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-[11px] font-bold uppercase tracking-widest text-neutral-500">
+                Categorias do canal
+              </label>
+              <div className="flex flex-wrap gap-1.5">
+                {CATEGORIAS_DISPONIVEIS.map((c) => {
+                  const selected = categorias.includes(c);
+                  return (
+                    <button key={c} type="button"
+                      onClick={() => setCategorias((prev) =>
+                        prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]
+                      )}
+                      className="text-[12px] px-3 py-1.5 rounded-full border font-semibold transition active:scale-95"
+                      style={{
+                        borderColor: selected ? "#2F6FED" : "#d1d5db",
+                        background: selected ? "#2F6FED" : "var(--s2)",
+                        color: selected ? "#fff" : "var(--text-secondary)",
+                      }}>
+                      {c}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -369,14 +420,6 @@ function SignupPage() {
             {confirm && password !== confirm && (
               <p className="-mt-2 text-[11px] text-red-500">As senhas não coincidem.</p>
             )}
-
-            <Field
-              id="birth-date" label="Data de nascimento" type="date"
-              value={birthDate} onChange={setBirthDate}
-              placeholder="DD/MM/AAAA" autoComplete="bday"
-              icon={<CalendarIcon />}
-              optional
-            />
 
             <label className="flex items-start gap-2.5 pt-1 cursor-pointer select-none">
               <input

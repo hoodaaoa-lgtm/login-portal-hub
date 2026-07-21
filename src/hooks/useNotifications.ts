@@ -25,7 +25,7 @@ function textFor(type: NotifType): string {
     case "video_like":    return "gostou do teu vídeo";
     case "video_comment": return "comentou o teu vídeo";
     case "sala_add":      return "adicionou-te a um grupo";
-    case "system":        return "";
+    case "system":        return "Verifica o teu Gmail para confirmares a tua conta";
     default:              return "";
   }
 }
@@ -48,7 +48,7 @@ async function mapRow(
   salasCache?: Map<string, { nome: string; slug: string }>,
 ): Promise<Notif> {
   const profile = row.actor_id ? profilesCache.get(row.actor_id) : null;
-  const name = profile?.full_name || row.actor_username || "Alguém";
+  const name = row.type === "system" ? "hooda" : (profile?.full_name || row.actor_username || "Alguém");
   const sala = row.sala_id ? salasCache?.get(row.sala_id) : null;
   return {
     id: row.id,
