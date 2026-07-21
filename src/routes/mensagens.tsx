@@ -4894,31 +4894,19 @@ function SalasTabPanel({ search, activeSalaSlug, onSelectSala }: { search?: stri
     if (!q) { setDescobertas([]); setDescobrindo(false); return; }
     setDescobrindo(true);
     searchDebounceRef.current = setTimeout(async () => {
-      // Divide a pesquisa em palavras — assim bate com qualquer palavra
-      // relacionada presente no nome OU na descrição da sala, não só
-      // com o texto exato/inteiro digitado.
-      const palavras = q.split(/\s+/).filter(Boolean);
-      const orConditions = palavras
-        .flatMap((p) => [`nome.ilike.%${p}%`, `descricao.ilike.%${p}%`, `slug.ilike.%${p}%`])
-        .join(",");
-      const { data } = await supabase
-        .from("salas" as any)
-        .select("*")
-        .eq("tipo", "publica")
-        .or(orConditions)
-        .order("membros_count", { ascending: false })
-        .limit(30);
+      const { data } = await supabase.rpc("sala_buscar_publicas" as any, { p_query: q });
       setDescobertas((data as any[]) ?? []);
       setDescobrindo(false);
     }, 300);
     return () => { if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current); };
   }, [search]);
 
+  const semAcentos = (t: string) => t.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   const minhasFiltered = (salas ?? []).filter((s) => {
-    const q = (search ?? "").trim().toLowerCase();
+    const q = semAcentos((search ?? "").trim().toLowerCase());
     if (!q) return true;
     const palavras = q.split(/\s+/).filter(Boolean);
-    const texto = `${s.nome ?? ""} ${s.descricao ?? ""} ${s.slug ?? ""}`.toLowerCase();
+    const texto = semAcentos(`${s.nome ?? ""} ${s.descricao ?? ""} ${s.slug ?? ""}`.toLowerCase());
     return palavras.some((p) => texto.includes(p));
   });
   const meusIds = new Set(salas.map((s) => s.id));
