@@ -18,7 +18,7 @@ import {
   Banknote, BarChart3, Star, Heart, Share2,
   MoreHorizontal, Trash2, Send, Copy, Moon, Sun, ExternalLink,
   Twitter, Instagram, Youtube, Facebook, Linkedin, Music2, Loader, Tv, Film,
-  ArrowLeft, Check, AlignLeft, AtSign, Mail, User as UserIcon, Archive,
+  ArrowLeft, Check, AlignLeft, AtSign, Mail, User as UserIcon, Archive, Tag,
 } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useAvatar } from "@/contexts/AvatarContext";
@@ -1265,6 +1265,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
   const [postsLoading, setPostsLoading] = useState(true);
   const [website, setWebsite] = useState("");
   const [location, setLocation] = useState("");
+  const [categorias, setCategorias] = useState<string[]>([]);
   const [whatsapp, setWhatsapp] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
@@ -1319,7 +1320,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
       // Carregar avatar_url e username do perfil
       const { data: profData } = await supabase
         .from("profiles")
-        .select("avatar_url, username, msg_permission, website, location, cover_url, whatsapp")
+        .select("avatar_url, username, msg_permission, website, location, cover_url, whatsapp, categorias")
         .eq("id", session.user.id)
         .maybeSingle();
       if ((profData as any)?.avatar_url) setAvatarUrl((profData as any).avatar_url);
@@ -1328,6 +1329,7 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
       if ((profData as any)?.location) setLocation((profData as any).location);
       if ((profData as any)?.whatsapp) setWhatsapp((profData as any).whatsapp);
       if ((profData as any)?.cover_url) setCoverUrl((profData as any).cover_url);
+      if ((profData as any)?.categorias) setCategorias((profData as any).categorias);
 
       const { data } = await (supabase as any)
         .from("posts")
@@ -1560,6 +1562,18 @@ function MyProfile({ profile: initialProfile, email, onSignOut, loading: profile
           <span className="inline-flex items-center gap-1 mt-1.5 px-2.5 py-1 rounded-full text-xs font-semibold" style={{ background: ACCENT + "14", color: ACCENT }}>
             @{profile?.username || "utilizador"}
           </span>
+
+          {categorias.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {categorias.map((c) => (
+                <span key={c}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold"
+                  style={{ background: "var(--s2)", color: "var(--text-secondary)" }}>
+                  <Tag className="h-3 w-3" /> {c}
+                </span>
+              ))}
+            </div>
+          )}
 
           {profile?.bio && (
             <div className="mt-3 rounded-xl px-3.5 py-3" style={{ background: "var(--s2)" }}>

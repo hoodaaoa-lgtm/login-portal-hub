@@ -15,7 +15,7 @@ import {
   MoreHorizontal, X, MapPin,
   Link as LinkIcon, Calendar, MessageCircle,
   Copy, Check, RefreshCw, AlignLeft,
-  BookOpen, Archive,
+  BookOpen, Archive, Tag,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -267,7 +267,7 @@ function UserProfilePage() {
     queryKey:["profileByUsername", username],
     queryFn: async ()=>{
       const {data}=await (supabase as any).from("profiles")
-        .select("id,username,full_name,bio,avatar_url,cover_url,website,location,created_at,is_verified,whatsapp")
+        .select("id,username,full_name,bio,avatar_url,cover_url,website,location,created_at,is_verified,whatsapp,categorias")
         .eq("username",username).maybeSingle();
       return data;
     },
@@ -484,6 +484,18 @@ function UserProfilePage() {
             <span className="inline-flex items-center gap-1 mt-1.5 px-2.5 py-1 rounded-full text-xs font-semibold" style={{background:P+"14",color:P}}>
               @{profile.username}
             </span>
+
+            {profile.categorias?.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {profile.categorias.map((c: string) => (
+                  <span key={c}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold"
+                    style={{background:"var(--s2)",color:"var(--text-secondary)"}}>
+                    <Tag className="h-3 w-3" /> {c}
+                  </span>
+                ))}
+              </div>
+            )}
 
             {profile.bio && (
               <div className="mt-3 rounded-xl px-3.5 py-3" style={{background:"var(--s2)"}}>

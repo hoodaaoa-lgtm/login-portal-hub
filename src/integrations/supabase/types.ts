@@ -1357,6 +1357,7 @@ export type Database = {
           ban_reason: string | null
           banner_url: string | null
           bio: string | null
+          categorias: string[]
           category: string | null
           country: string | null
           cover_url: string | null
@@ -1390,6 +1391,7 @@ export type Database = {
           ban_reason?: string | null
           banner_url?: string | null
           bio?: string | null
+          categorias?: string[]
           category?: string | null
           country?: string | null
           cover_url?: string | null
@@ -1423,6 +1425,7 @@ export type Database = {
           ban_reason?: string | null
           banner_url?: string | null
           bio?: string | null
+          categorias?: string[]
           category?: string | null
           country?: string | null
           cover_url?: string | null
@@ -2079,6 +2082,21 @@ export type Database = {
         Returns: {
           is_online: boolean
           last_seen: string
+        }[]
+      }
+      admin_listar_cadastros: {
+        Args: never
+        Returns: {
+          id: string
+          username: string
+          full_name: string
+          categorias: string[]
+          email: string
+          gmail_confirmado: boolean
+          is_verified: boolean
+          is_banned: boolean
+          ban_reason: string | null
+          created_at: string
         }[]
       }
       get_hooda_official_id: { Args: never; Returns: string }

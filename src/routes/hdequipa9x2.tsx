@@ -43,6 +43,9 @@ type UserRow = {
   is_verified?: boolean;
   ban_reason?: string | null;
   created_at?: string;
+  categorias?: string[];
+  email?: string | null;
+  gmail_confirmado?: boolean;
 };
 
 type ReportRow = {
@@ -1019,10 +1022,25 @@ function AdminDashboard({ adminId }: { adminId: string }) {
   useEffect(() => {
     (async () => {
       setLoadingUsers(true);
-      // 1) Campos base — sempre existem, garantem que a lista aparece toda.
+
+      // 1) Tenta a função nova (categorias, canal, gmail confirmado, moderação —
+      //    tudo numa só chamada). Só funciona depois de correr a migration
+      //    admin_listar_cadastros no Supabase.
+      const { data: full, error: fullError } = await (db as any).rpc("admin_listar_cadastros");
+      if (!fullError && full) {
+        setUsers((full as UserRow[]).filter((u) => u.id !== adminId));
+        setLoadingUsers(false);
+        return;
+      }
+      if (fullError) {
+        console.warn("[admin] admin_listar_cadastros indisponível (falta correr a migration?):", fullError);
+      }
+
+      // 2) Fallback: método antigo, sem categorias/gmail — garante que a
+      //    lista continua a aparecer mesmo com a migration por correr.
       const { data: base, error: baseError } = await db
         .from("profiles")
-        .select("id,username,full_name,avatar_url,created_at")
+        .select("id,username,full_name,avatar_url,created_at,categorias")
         .neq("id", adminId)
         .order("username", { ascending: true })
         .limit(1000);
@@ -1034,7 +1052,7 @@ function AdminDashboard({ adminId }: { adminId: string }) {
         return;
       }
       let merged: UserRow[] = base ?? [];
-      // 2) Campos de moderação — tenta à parte; se as colunas ainda não
+      // 2b) Campos de moderação — tenta à parte; se as colunas ainda não
       //    existirem na base de dados (migration por correr), a lista de
       //    utilizadores continua a aparecer na mesma, só sem banir/verificar.
       const { data: mod, error: modError } = await db
@@ -1823,6 +1841,24 @@ function AdminDashboard({ adminId }: { adminId: string }) {
                         )}
                       </p>
                       <p className="text-[12px] text-neutral-400 truncate">@{u.username}{u.is_banned && u.ban_reason ? ` · ${u.ban_reason}` : ""}</p>
+                      <div className="flex flex-wrap items-center gap-1 mt-1">
+                        {u.gmail_confirmado !== undefined && (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
+                            style={{
+                              background: u.gmail_confirmado ? "rgba(34,197,94,0.14)" : "rgba(234,179,8,0.14)",
+                              color: u.gmail_confirmado ? "#16A34A" : "#CA8A04",
+                            }}>
+                            {u.gmail_confirmado ? <CheckCircle2 className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
+                            {u.gmail_confirmado ? "Gmail verificado" : "Gmail não verificado"}
+                          </span>
+                        )}
+                        {(u.categorias ?? []).map((c) => (
+                          <span key={c} className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
+                            style={{ background: "#f0f0f3", color: "#6b6b7a" }}>
+                            <Tag className="h-3 w-3" /> {c}
+                          </span>
+                        ))}
+                      </div>
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">
                       <button onClick={() => toggleVerified(u)} title={u.is_verified ? "Remover selo" : "Verificar conta"}
