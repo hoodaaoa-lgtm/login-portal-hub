@@ -261,13 +261,16 @@ function UserProfilePage() {
   const [photoViewing, setPhotoViewing] = useState<string|null>(null);
   const [isBlocked, setIsBlocked] = useState(false);
   const [showBlockConfirm, setShowBlockConfirm] = useState(false);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followersCount, setFollowersCount] = useState(0);
+  const [followBusy, setFollowBusy] = useState(false);
 
   /* ─ Query 1: Perfil ─ */
   const profileQuery = useQuery({
     queryKey:["profileByUsername", username],
     queryFn: async ()=>{
       const {data}=await (supabase as any).from("profiles")
-        .select("id,username,full_name,bio,avatar_url,cover_url,website,location,created_at,is_verified,whatsapp,categorias")
+        .select("id,username,full_name,bio,avatar_url,cover_url,website,location,created_at,is_verified,whatsapp,categorias,followers_count,following_count")
         .eq("username",username).maybeSingle();
       return data;
     },
@@ -286,6 +289,42 @@ function UserProfilePage() {
   const avatarUrl = profile?.avatar_url||null;
   const coverUrl = profile?.cover_url||null;
   const color = colorFor(username);
+
+  /* ─ Segue este canal? ─ */
+  useEffect(() => {
+    setFollowersCount(profile?.followers_count ?? 0);
+  }, [profile?.followers_count]);
+
+  useEffect(() => {
+    if (!myId || !profileId) { setIsFollowing(false); return; }
+    (supabase as any).from("follows").select("follower_id")
+      .eq("follower_id", myId).eq("following_id", profileId).maybeSingle()
+      .then(({ data }: any) => setIsFollowing(!!data));
+  }, [myId, profileId]);
+
+  async function toggleFollow() {
+    if (!myId) { navigate({ to: "/" }); return; }
+    if (!profileId || followBusy) return;
+    setFollowBusy(true);
+    // Otimista: já reflete na tela antes da resposta do servidor.
+    const wasFollowing = isFollowing;
+    setIsFollowing(!wasFollowing);
+    setFollowersCount((c) => c + (wasFollowing ? -1 : 1));
+    const { data, error } = await (supabase as any).rpc("toggle_follow", { p_following_id: profileId });
+    setFollowBusy(false);
+    if (error) {
+      // Reverte se falhar
+      setIsFollowing(wasFollowing);
+      setFollowersCount((c) => c + (wasFollowing ? 1 : -1));
+      toast.error("Não foi possível seguir este canal agora.");
+      return;
+    }
+    const row = Array.isArray(data) ? data[0] : data;
+    if (row) {
+      setIsFollowing(!!row.following);
+      setFollowersCount(row.followers_count ?? 0);
+    }
+  }
 
   /* ─ Abas: só Início e Arquivos ─ */
   const [tab, setTab] = useState<"inicio"|"arquivos">("inicio");
@@ -469,6 +508,13 @@ function UserProfilePage() {
 
           {/* ── Botões de ação ── */}
           <div className="flex justify-end gap-2 px-4 pt-3 pb-2">
+            <button onClick={toggleFollow} disabled={followBusy}
+              className="flex items-center gap-1.5 px-5 py-1.5 rounded-full text-sm font-bold transition active:scale-95 shadow-sm disabled:opacity-60"
+              style={isFollowing
+                ? {background:"var(--s2)",border:"1px solid var(--border-default)",color:"var(--text-secondary)"}
+                : {background:"#2F6FED",border:"1px solid #2F6FED",color:"#fff"}}>
+              {isFollowing ? "A seguir" : "Seguir"}
+            </button>
             <button onClick={() => navigate({ to: "/mensagens" })}
               className="flex items-center gap-1.5 px-5 py-1.5 rounded-full text-sm font-bold transition active:scale-95 shadow-sm"
               style={{background:"var(--s2)",border:"1px solid var(--border-default)",color:"var(--text-secondary)"}}>
@@ -483,6 +529,9 @@ function UserProfilePage() {
             </h1>
             <span className="inline-flex items-center gap-1 mt-1.5 px-2.5 py-1 rounded-full text-xs font-semibold" style={{background:P+"14",color:P}}>
               @{profile.username}
+            </span>
+            <span className="ml-2 text-xs font-semibold" style={{color:"var(--text-muted)"}}>
+              <b style={{color:"var(--text-primary)"}}>{fmtNum(followersCount)}</b> seguidores
             </span>
 
             {profile.categorias?.length > 0 && (
