@@ -1021,6 +1021,8 @@ export function UniversalPostCard({ post: p, onDeleted, onBookmarkChange }: {
   type PC = import("@/components/PostCommentsModal").PostComment;
   const meRef = useRef<{ id: string; username: string } | null>(null);
   const [myUserId, setMyUserId] = useState<string | null>(null);
+  const [isFollowingAuthor, setIsFollowingAuthor] = useState(false);
+  const [followBusy, setFollowBusy] = useState(false);
   const { liked: postLiked, likeCount: postLikeCount, toggle: toggleLikeShared } = usePostLikeState(p.id, myUserId, { liked: p.liked_by_me ?? false, count: p.likes ?? 0 });
   // Vídeos publicados nos canais aparecem no feed sem ter uma linha própria
   // em "posts" — o feed dá-lhes um id sintético "vidfeed_<video_id>" só
@@ -1086,6 +1088,30 @@ export function UniversalPostCard({ post: p, onDeleted, onBookmarkChange }: {
       pauseAllVideos();
     }
   }, [showComments]);
+
+  /* ─ Segue o autor deste post? (botão "Seguir" no cabeçalho do card) ─ */
+  useEffect(() => {
+    if (!myUserId || !p.author_id || myUserId === p.author_id) { setIsFollowingAuthor(false); return; }
+    let cancelled = false;
+    supabase.from("follows").select("follower_id")
+      .eq("follower_id", myUserId).eq("following_id", p.author_id).maybeSingle()
+      .then(({ data }: any) => { if (!cancelled) setIsFollowingAuthor(!!data); });
+    return () => { cancelled = true; };
+  }, [myUserId, p.author_id]);
+
+  async function toggleFollowAuthor() {
+    if (!authUser) { navigate({ to: "/" }); return; }
+    if (!p.author_id || followBusy) return;
+    setFollowBusy(true);
+    const wasFollowing = isFollowingAuthor;
+    setIsFollowingAuthor(!wasFollowing);
+    const { error } = await (supabase as any).rpc("toggle_follow", { p_following_id: p.author_id });
+    setFollowBusy(false);
+    if (error) {
+      setIsFollowingAuthor(wasFollowing);
+      toast.error("Não foi possível seguir este canal agora.");
+    }
+  }
 
   const { data: comments = [], isLoading: commentsLoading } = useQuery({
     queryKey: QUERY_KEYS.comments(p.id),
@@ -1237,6 +1263,15 @@ export function UniversalPostCard({ post: p, onDeleted, onBookmarkChange }: {
           </div>
         </div>
         <div className="flex items-center gap-1.5">
+          {!isAd && !isOwnPost && p.author_id && (
+            <button onClick={toggleFollowAuthor} disabled={followBusy}
+              className="px-3 py-1 rounded-full text-xs font-bold transition active:scale-95 disabled:opacity-60"
+              style={isFollowingAuthor
+                ? {background:"var(--s2)",border:"1px solid var(--border-default)",color:"var(--text-secondary)"}
+                : {background:"#2F6FED",border:"1px solid #2F6FED",color:"#fff"}}>
+              {isFollowingAuthor ? "A seguir" : "Seguir"}
+            </button>
+          )}
           {!isAd && isOwnPost && (
             <div className="relative">
               <button onClick={() => setShowMenu(v => !v)}
