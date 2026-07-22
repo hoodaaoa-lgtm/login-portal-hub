@@ -5,7 +5,7 @@ import { SnapperLogo } from "@/components/SnapperLogo";
 import { AuthLeftPanel } from "@/components/AuthLeftPanel";
 import { InstallPwaButton } from "@/components/InstallPwaButton";
 import {
-  Field, EyeIcon, EyeOffIcon, ArrowLeftIcon, SpinIcon, MailIcon, LockIcon, GoogleIcon,
+  Field, EyeIcon, EyeOffIcon, ArrowLeftIcon, SpinIcon, MailIcon, LockIcon,
 } from "@/components/AuthField";
 
 export const Route = createFileRoute("/")(({
@@ -75,14 +75,6 @@ function LoginPage() {
     navigate({ to: "/home", replace: true });
   }
 
-  async function onGoogleLogin() {
-    setError(null);
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: `${window.location.origin}/home` },
-    });
-    if (error) setError(error.message);
-  }
 
   async function onForgot(e: React.FormEvent) {
     e.preventDefault();
@@ -183,19 +175,6 @@ function LoginPage() {
                       <SpinIcon /> Entrando...
                     </span>
                   ) : "Entrar"}
-                </button>
-
-                <div className="flex items-center gap-3 py-1">
-                  <div className="h-px flex-1" style={{ background: "var(--border-default,#e5e7eb)" }} />
-                  <span className="text-[12px] font-semibold text-neutral-400">ou</span>
-                  <div className="h-px flex-1" style={{ background: "var(--border-default,#e5e7eb)" }} />
-                </div>
-
-                <button
-                  type="button" onClick={onGoogleLogin}
-                  className="w-full h-[52px] rounded-xl border border-neutral-200 bg-white text-neutral-800 font-bold text-[15px] tracking-wide flex items-center justify-center gap-2.5 transition-all duration-200 hover:bg-neutral-50 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99]"
-                >
-                  <GoogleIcon /> Continuar com Google
                 </button>
 
                 {/* Sign up link */}
