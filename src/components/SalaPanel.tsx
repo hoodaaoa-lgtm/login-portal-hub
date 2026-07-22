@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { uploadImageToCloudinary } from "@/lib/cloudinary";
-import { uploadFeedVideo } from "@/lib/cloudinaryFeedVideo";
+import { uploadMessageImage, uploadMessageMedia } from "@/lib/cloudinaryMessages";
 import { optimizeAvatar, optimizePostPhoto } from "@/lib/imageOptimize";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -10,6 +9,8 @@ import { toast } from "sonner";
 import { extractUrl } from "@/lib/linkPreview";
 import { LinkPreview } from "@/components/LinkPreview";
 import { StickerView } from "@/components/StickerView";
+import { FeedVideoPlayer } from "@/components/FeedVideoPlayer";
+import { getCloudinaryPosterFromUrl } from "@/lib/cloudinary";
 import { ChatPicker } from "@/components/ChatPicker";
 import { UniversalSkeleton } from "@/components/Skeletons";
 import {
@@ -1462,7 +1463,13 @@ function MsgBubble({
             />
           )}
           {m.message_type === "video" && m.media_url && (
-            <video src={m.media_url} controls className="max-w-full max-h-80" />
+            <FeedVideoPlayer
+              src={m.media_url}
+              poster={getCloudinaryPosterFromUrl(m.media_url) ?? undefined}
+              rounded="rounded-xl"
+              maxHeightRatio={0.4}
+              autoPlay={false}
+            />
           )}
           {m.message_type === "sticker" && m.media_url && (
             <StickerView url={m.media_url} size={120} className="rounded-xl" />
@@ -2255,16 +2262,11 @@ export function SalaPanel({ slug, onBack }: { slug: string; onBack: () => void }
       let media_url: string | null = null;
       if (pendingMedia) {
         if (pendingMedia.type === "image") {
-          const up = await uploadImageToCloudinary(pendingMedia.file, `hooda/salas/${sala.id}`);
+          const up = await uploadMessageImage(pendingMedia.file, `salas/${sala.id}`);
           media_url = up.url;
           message_type = "image";
         } else {
-          const up = await uploadFeedVideo(
-            pendingMedia.file,
-            { title: sala.nome, creatorId: uid, userId: uid },
-            () => {},
-          );
-          media_url = up.playbackUrl;
+          media_url = await uploadMessageMedia(pendingMedia.file, "video", `salas/${sala.id}`);
           message_type = "video";
         }
       }
