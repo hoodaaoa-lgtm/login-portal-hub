@@ -6,8 +6,21 @@ function isNewSupabaseApiKey(value: string): boolean {
   return value.startsWith('sb_publishable_') || value.startsWith('sb_secret_');
 }
 
+// Evita disparar vários refreshSession() em paralelo quando várias
+// chamadas falham ao mesmo tempo por token expirado.
+let refreshPromise: Promise<unknown> | null = null;
+
+async function refreshAuthSessionOnce(): Promise<void> {
+  if (!refreshPromise) {
+    refreshPromise = _supabase!.auth.refreshSession().finally(() => {
+      refreshPromise = null;
+    });
+  }
+  await refreshPromise;
+}
+
 function createSupabaseFetch(supabaseKey: string): typeof fetch {
-  return (input, init) => {
+  const doFetch = (input: RequestInfo | URL, init?: RequestInit) => {
     const headers = new Headers(
       typeof Request !== 'undefined' && input instanceof Request ? input.headers : undefined,
     );
@@ -23,6 +36,50 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
 
     headers.set('apikey', supabaseKey);
     return fetch(input, { ...init, headers });
+  };
+
+  return async (input, init) => {
+    const response = await doFetch(input, init);
+
+    // O token de sessão pode expirar em segundo plano (ex: aba ficou
+    // minimizada/inativa e o refresh automático do Supabase não teve
+    // chance de correr a tempo). Sem isto, o pedido falha com 401 "JWT
+    // expired" e o conteúdo (posts, mensagens, etc.) some da tela até a
+    // pessoa recarregar a página. Aqui detetamos esse caso, renovamos a
+    // sessão uma vez e repetimos o pedido original automaticamente.
+    if (response.status === 401 && _supabase) {
+      let isExpiredJwt = false;
+      try {
+        const cloned = response.clone();
+        const body = await cloned.text();
+        isExpiredJwt = body.includes('JWT expired') || body.includes('PGRST303');
+      } catch {
+        // ignora — se não conseguirmos ler o corpo, seguimos sem retry
+      }
+
+      if (isExpiredJwt) {
+        try {
+          await refreshAuthSessionOnce();
+          const { data } = await _supabase.auth.getSession();
+          const freshToken = data.session?.access_token;
+          if (freshToken) {
+            const retryHeaders = new Headers(
+              typeof Request !== 'undefined' && input instanceof Request ? input.headers : undefined,
+            );
+            if (init?.headers) {
+              new Headers(init.headers).forEach((value, key) => retryHeaders.set(key, value));
+            }
+            retryHeaders.set('Authorization', `Bearer ${freshToken}`);
+            return doFetch(input, { ...init, headers: retryHeaders });
+          }
+        } catch {
+          // Se o refresh falhar (ex: sessão realmente inválida), devolve
+          // a resposta 401 original — o AuthContext vai tratar o logout.
+        }
+      }
+    }
+
+    return response;
   };
 }
 

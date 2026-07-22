@@ -152,6 +152,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  // ── Renova a sessão proativamente quando a aba volta a ficar visível.
+  // O refresh automático do Supabase corre num timer que pode não disparar
+  // a tempo se a aba ficou minimizada/inativa (o browser trava timers em
+  // segundo plano) — nesse caso o token expira e conteúdo (posts,
+  // mensagens, etc.) some da tela até algo forçar uma nova busca. Isto
+  // garante que, assim que a pessoa volta à aba, já há um token válido
+  // antes de qualquer pedido novo ser feito.
+  useEffect(() => {
+    function onVisible() {
+      if (document.visibilityState !== "visible") return;
+      supabase.auth.getSession().then(({ data }) => {
+        const expiresAt = data.session?.expires_at;
+        if (expiresAt && expiresAt * 1000 < Date.now() + 60_000) {
+          supabase.auth.refreshSession();
+        }
+      });
+    }
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, []);
+
   // ── Heartbeat de presença: enquanto autenticado e com a aba visível,
   // avisa o servidor a cada HEARTBEAT_SECONDS que o utilizador está online
   // e soma esse intervalo ao tempo total no site (profiles.total_time_seconds).
